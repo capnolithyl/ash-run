@@ -1,0 +1,520 @@
+import { createEmitter } from "../core/emitter.js";
+import { SCREEN_IDS, SLOT_IDS, TURN_SIDES } from "../core/constants.js";
+import { COMMANDERS } from "../content/commanders.js";
+import { StorageRepository } from "../services/StorageRepository.js";
+import { BattleSystem } from "../simulation/battleSystem.js";
+import {
+  applyBattleVictoryToRun,
+  createBattleStateForRun,
+  createNewRunState,
+  createSlotRecord,
+  isRunComplete
+} from "../state/runFactory.js";
+import { createDefaultMetaState } from "../state/defaults.js";
+
+function pickFirstAvailableSlot(slots) {
+  return slots.find((slot) => !slot.exists)?.slotId ?? SLOT_IDS[0];
+}
+
+function unlockNextCommander(metaState) {
+  const lockedCommander = COMMANDERS.find(
+    (commander) => !metaState.unlockedCommanderIds.includes(commander.id)
+  );
+
+  if (!lockedCommander) {
+    return null;
+  }
+
+  metaState.unlockedCommanderIds.push(lockedCommander.id);
+  return lockedCommander;
+}
+
+function createBattleUiState() {
+  return {
+    pauseMenuOpen: false,
+    confirmAbandon: false
+  };
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/**
+ * The controller owns app flow and save orchestration.
+ * Scenes and DOM views only talk to it through explicit methods.
+ */
+export class GameController {
+  constructor(storage = new StorageRepository()) {
+    this.storage = storage;
+    this.events = createEmitter();
+    this.battleSystem = null;
+    this.state = {
+      ready: false,
+      screen: SCREEN_IDS.TITLE,
+      metaState: createDefaultMetaState(),
+      slots: [],
+      runState: null,
+      battleSnapshot: null,
+      selectedCommanderId: null,
+      selectedSlotId: SLOT_IDS[0],
+      banner: "",
+      runStatus: null,
+      battleUi: createBattleUiState()
+    };
+  }
+
+  subscribe(handler) {
+    return this.events.on("state:changed", handler);
+  }
+
+  getState() {
+    return structuredClone(this.state);
+  }
+
+  emit() {
+    this.events.emit("state:changed", this.getState());
+  }
+
+  async initialize() {
+    this.state.metaState = await this.storage.loadMeta();
+    this.state.slots = await this.storage.listSlots();
+    this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
+    this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);
+    this.state.ready = true;
+    this.emit();
+  }
+
+  resetBattleUi() {
+    this.state.battleUi = createBattleUiState();
+  }
+
+  clearBattleSession() {
+    this.battleSystem = null;
+    this.state.runState = null;
+    this.state.battleSnapshot = null;
+    this.state.runStatus = null;
+    this.state.banner = "";
+    this.resetBattleUi();
+  }
+
+  openNewRun() {
+    this.state.screen = SCREEN_IDS.COMMANDER_SELECT;
+    this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
+    this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);
+    this.state.banner = "";
+    this.resetBattleUi();
+    this.emit();
+  }
+
+  openContinue() {
+    this.state.screen = SCREEN_IDS.LOAD_SLOT;
+    this.state.banner = "";
+    this.resetBattleUi();
+    this.emit();
+  }
+
+  openOptions() {
+    this.state.screen = SCREEN_IDS.OPTIONS;
+    this.resetBattleUi();
+    this.emit();
+  }
+
+  async returnToTitle() {
+    if (this.state.runStatus === "failed" || this.state.runStatus === "complete") {
+      await this.deleteSlot(this.state.selectedSlotId, false);
+    }
+
+    this.state.screen = SCREEN_IDS.TITLE;
+    this.clearBattleSession();
+    this.emit();
+  }
+
+  selectCommander(commanderId) {
+    if (!this.state.metaState.unlockedCommanderIds.includes(commanderId)) {
+      return;
+    }
+
+    this.state.selectedCommanderId = commanderId;
+    this.emit();
+  }
+
+  selectSlot(slotId) {
+    this.state.selectedSlotId = slotId;
+    this.emit();
+  }
+
+  async startNewRun() {
+    if (!this.state.selectedCommanderId) {
+      return;
+    }
+
+    const runState = createNewRunState({
+      slotId: this.state.selectedSlotId,
+      commanderId: this.state.selectedCommanderId
+    });
+    const battleState = createBattleStateForRun(runState);
+
+    this.battleSystem = new BattleSystem(battleState);
+    this.state.runState = runState;
+    this.state.screen = SCREEN_IDS.BATTLE;
+    this.state.runStatus = null;
+    this.resetBattleUi();
+    this.state.metaState.lastPlayedSlotId = this.state.selectedSlotId;
+    await this.storage.saveMeta(this.state.metaState);
+    await this.persistCurrentRun();
+  }
+
+  async loadSlot(slotId) {
+    const slotRecord = await this.storage.loadSlot(slotId);
+
+    if (!slotRecord) {
+      return;
+    }
+
+    this.state.selectedSlotId = slotId;
+    this.state.runState = slotRecord.runState;
+    this.battleSystem = new BattleSystem(slotRecord.battleState);
+    this.state.screen = SCREEN_IDS.BATTLE;
+    this.resetBattleUi();
+    this.state.metaState.lastPlayedSlotId = slotId;
+    this.state.runStatus =
+      slotRecord.battleState?.victory?.winner === TURN_SIDES.ENEMY ? "failed" : null;
+
+    await this.storage.saveMeta(this.state.metaState);
+    this.syncBattleState();
+  }
+
+  async updateOptions(patch) {
+    this.state.metaState.options = {
+      ...this.state.metaState.options,
+      ...patch
+    };
+    await this.storage.saveMeta(this.state.metaState);
+    this.emit();
+  }
+
+  async deleteSlot(slotId, emitAfter = true) {
+    await this.storage.deleteSlot(slotId);
+    this.state.slots = await this.storage.listSlots();
+
+    if (emitAfter) {
+      this.emit();
+    }
+  }
+
+  async quitGame() {
+    await this.storage.quit();
+  }
+
+  openPauseMenu() {
+    if (!this.battleSystem || this.state.screen !== SCREEN_IDS.BATTLE || this.state.battleSnapshot?.victory) {
+      return;
+    }
+
+    this.state.battleUi.pauseMenuOpen = true;
+    this.state.battleUi.confirmAbandon = false;
+    this.emit();
+  }
+
+  closePauseMenu() {
+    if (!this.state.battleUi.pauseMenuOpen) {
+      return;
+    }
+
+    this.state.battleUi.pauseMenuOpen = false;
+    this.state.battleUi.confirmAbandon = false;
+    this.emit();
+  }
+
+  promptAbandonRun() {
+    if (!this.state.battleUi.pauseMenuOpen) {
+      return;
+    }
+
+    this.state.battleUi.confirmAbandon = true;
+    this.emit();
+  }
+
+  cancelAbandonRun() {
+    if (!this.state.battleUi.pauseMenuOpen) {
+      return;
+    }
+
+    this.state.battleUi.confirmAbandon = false;
+    this.emit();
+  }
+
+  async abandonRun() {
+    if (this.state.runState) {
+      await this.deleteSlot(this.state.selectedSlotId, false);
+    }
+
+    this.state.screen = SCREEN_IDS.TITLE;
+    this.clearBattleSession();
+    this.emit();
+  }
+
+  async handleBattleTileClick(x, y) {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.handleTileSelection(x, y);
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async recruitUnit(unitTypeId) {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.recruitUnit(unitTypeId);
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async waitWithSelectedUnit() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.waitWithPendingUnit();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async captureWithSelectedUnit() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.captureWithPendingUnit();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async beginSelectedAttack() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.beginPendingAttack();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async cancelSelectedAttack() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.cancelPendingAttack();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async redoSelectedMove() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.redoPendingMove();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async endTurn() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.endTurn();
+
+    if (!changed) {
+      this.syncBattleState();
+      return;
+    }
+
+    this.syncBattleState();
+
+    if (this.battleSystem.hasPendingEnemyTurn() && !this.state.battleSnapshot?.victory) {
+      await this.runEnemyTurnSequence();
+      return;
+    }
+
+    if (this.state.battleSnapshot?.turn.activeSide === TURN_SIDES.ENEMY && !this.state.battleSnapshot?.victory) {
+      this.battleSystem.finalizeEnemyTurn();
+    }
+
+    await this.persistCurrentRun();
+  }
+
+  async activatePower() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.activatePower();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async advanceRun() {
+    if (!this.battleSystem || !this.state.runState) {
+      return;
+    }
+
+    const battleState = this.battleSystem.getStateForSave();
+
+    if (battleState.victory?.winner !== TURN_SIDES.PLAYER) {
+      return;
+    }
+
+    const nextRunState = applyBattleVictoryToRun(this.state.runState, battleState);
+
+    if (isRunComplete(nextRunState)) {
+      this.state.runState = nextRunState;
+      this.state.runStatus = "complete";
+
+      const unlocked = unlockNextCommander(this.state.metaState);
+      if (unlocked) {
+        this.state.banner = `${unlocked.name} is now unlocked for future runs.`;
+      } else {
+        this.state.banner = "Run clear. All commanders are already unlocked.";
+      }
+
+      await this.storage.saveMeta(this.state.metaState);
+      await this.deleteSlot(this.state.selectedSlotId, false);
+      this.syncBattleState();
+      return;
+    }
+
+    this.state.runState = nextRunState;
+    const nextBattleState = createBattleStateForRun(nextRunState);
+    this.battleSystem = new BattleSystem(nextBattleState);
+    this.state.runStatus = null;
+    this.resetBattleUi();
+    await this.persistCurrentRun();
+  }
+
+  async acknowledgeDefeat() {
+    this.state.runStatus = "failed";
+    this.emit();
+  }
+
+  async acknowledgeLevelUp() {
+    if (!this.battleSystem) {
+      return;
+    }
+
+    const changed = this.battleSystem.acknowledgeLevelUp();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async persistCurrentRun() {
+    if (!this.battleSystem || !this.state.runState) {
+      return;
+    }
+
+    const battleState = this.battleSystem.getStateForSave();
+
+    if (battleState.victory?.winner === TURN_SIDES.ENEMY) {
+      this.state.runStatus = "failed";
+    }
+
+    const slotRecord = createSlotRecord(this.state.runState, battleState);
+    await this.storage.saveSlot(this.state.selectedSlotId, slotRecord);
+    this.state.slots = await this.storage.listSlots();
+    this.syncBattleState();
+  }
+
+  async runEnemyTurnSequence() {
+    while (this.battleSystem?.hasPendingEnemyTurn()) {
+      while (this.state.battleUi.pauseMenuOpen) {
+        await delay(100);
+      }
+
+      const step = this.battleSystem.processEnemyTurnStep();
+      this.syncBattleState();
+
+      if (!step.changed || this.state.battleSnapshot?.victory) {
+        break;
+      }
+
+      while (this.state.battleSnapshot?.levelUpQueue?.length) {
+        await delay(100);
+      }
+
+      const stepDelay =
+        step.type === "move" || step.type === "move-attack" ? 780 : 560;
+      await delay(stepDelay);
+    }
+
+    this.battleSystem?.finalizeEnemyTurn();
+    await this.persistCurrentRun();
+  }
+
+  syncBattleState() {
+    this.state.battleSnapshot = this.battleSystem?.getSnapshot() ?? null;
+    this.emit();
+  }
+}
