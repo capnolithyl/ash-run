@@ -1,4 +1,11 @@
 import Phaser from "phaser";
+import {
+  BATTLE_ATTACK_IMPACT_DELAY_MS,
+  BATTLE_TURN_BANNER_SETTLE_MS
+} from "../../core/constants.js";
+import { getMovementPath, getSelectedUnit } from "../../simulation/selectors.js";
+import { deriveBattleAnimationEvents } from "../view/battleAnimationEvents.js";
+import { BattleFxLayer } from "../view/BattleFxLayer.js";
 import { BuildingLayer } from "../view/BuildingLayer.js";
 import { GridLayer } from "../view/GridLayer.js";
 import { SelectionLayer } from "../view/SelectionLayer.js";
@@ -8,11 +15,52 @@ function isBattleScreen(state) {
   return state?.screen === "battle" && state?.battleSnapshot;
 }
 
+function getHoveredMovementPath(snapshot, hoveredTile) {
+  const presentation = snapshot.presentation ?? {};
+  const selectedUnit = getSelectedUnit(snapshot);
+
+  if (
+    !hoveredTile ||
+    !selectedUnit ||
+    selectedUnit.owner !== "player" ||
+    snapshot.turn.activeSide !== "player" ||
+    selectedUnit.hasMoved ||
+    presentation.pendingAction?.unitId === selectedUnit.id
+  ) {
+    return [];
+  }
+
+  const isReachable = presentation.reachableTiles?.some(
+    (tile) => tile.x === hoveredTile.x && tile.y === hoveredTile.y
+  );
+
+  if (!isReachable) {
+    return [];
+  }
+
+  return getMovementPath(
+    snapshot,
+    selectedUnit,
+    presentation.movementBudget ?? selectedUnit.stats.movement,
+    hoveredTile.x,
+    hoveredTile.y
+  );
+}
+
+function getTurnTransitionDelay(previousSnapshot, nextSnapshot) {
+  if (!previousSnapshot || previousSnapshot.turn.activeSide === nextSnapshot.turn.activeSide) {
+    return 0;
+  }
+
+  return BATTLE_TURN_BANNER_SETTLE_MS;
+}
+
 export class BattleScene extends Phaser.Scene {
   constructor() {
     super("BattleScene");
     this.latestState = null;
     this.hoveredTile = null;
+    this.previousSnapshot = null;
   }
 
   create() {
@@ -21,6 +69,7 @@ export class BattleScene extends Phaser.Scene {
     this.selectionLayer = new SelectionLayer(this);
     this.buildingLayer = new BuildingLayer(this);
     this.unitLayer = new UnitLayer(this);
+    this.fxLayer = new BattleFxLayer(this);
 
     if (!this.controller) {
       return;
@@ -121,17 +170,61 @@ export class BattleScene extends Phaser.Scene {
       this.selectionLayer.clear();
       this.buildingLayer.clear();
       this.unitLayer.clear();
+      this.fxLayer.clear();
       this.hoveredTile = null;
+      this.previousSnapshot = null;
       return;
     }
 
     const snapshot = this.latestState.battleSnapshot;
     const layout = this.getBoardLayout(snapshot);
     const showGrid = this.latestState.metaState.options.showGrid;
+    const hoveredMovementPath = getHoveredMovementPath(snapshot, this.hoveredTile);
+    const previousSnapshot =
+      this.previousSnapshot?.id === snapshot.id && this.previousSnapshot?.map.id === snapshot.map.id
+        ? this.previousSnapshot
+        : null;
+
+    if (!previousSnapshot && this.previousSnapshot) {
+      this.fxLayer.clear();
+    }
+
+    const animationEvents = deriveBattleAnimationEvents(previousSnapshot, snapshot);
+    const movementEvents = animationEvents.filter((event) => event.type === "move");
+    const turnTransitionDelay = getTurnTransitionDelay(previousSnapshot, snapshot);
 
     this.gridLayer.render(snapshot, layout);
-    this.selectionLayer.render(snapshot, layout, showGrid, this.hoveredTile);
+    this.selectionLayer.render(snapshot, layout, showGrid, this.hoveredTile, hoveredMovementPath);
     this.buildingLayer.render(snapshot, layout);
-    this.unitLayer.render(snapshot, layout);
+    this.unitLayer.render(snapshot, layout, movementEvents);
+
+    for (const event of animationEvents) {
+      if (event.type === "deploy") {
+        this.fxLayer.schedule(turnTransitionDelay, () => this.unitLayer.playDeploy(event.unitId));
+      }
+
+      if (event.type === "heal" || event.type === "resupply") {
+        this.fxLayer.schedule(turnTransitionDelay, () => this.unitLayer.playHeal(event.unitId));
+      }
+
+      if (event.type === "attack") {
+        const attackDelay = turnTransitionDelay + (event.delay ?? 0);
+        this.fxLayer.schedule(attackDelay, () =>
+          this.unitLayer.playAttack(
+            event.attackerId,
+            event.toX - event.fromX,
+            event.toY - event.fromY
+          )
+        );
+        this.fxLayer.schedule(attackDelay + BATTLE_ATTACK_IMPACT_DELAY_MS, () =>
+          this.unitLayer.playDamage(event.targetId)
+        );
+      }
+    }
+
+    this.fxLayer.playEvents(animationEvents, layout, {
+      baseDelay: turnTransitionDelay
+    });
+    this.previousSnapshot = structuredClone(snapshot);
   }
 }

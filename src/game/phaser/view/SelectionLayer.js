@@ -35,6 +35,75 @@ function drawCornerMarkers(graphics, x, y, size, color, alpha = 1) {
   graphics.strokePath();
 }
 
+function getTileCenter(layout, tile) {
+  return {
+    x: layout.originX + tile.x * layout.cellSize + layout.cellSize / 2,
+    y: layout.originY + tile.y * layout.cellSize + layout.cellSize / 2
+  };
+}
+
+function drawMovementPath(graphics, layout, path) {
+  if (!path || path.length < 2) {
+    return;
+  }
+
+  const points = path.map((tile) => getTileCenter(layout, tile));
+
+  graphics.lineStyle(Math.max(7, Math.floor(layout.cellSize * 0.16)), 0x12061f, 0.92);
+  graphics.beginPath();
+  graphics.moveTo(points[0].x, points[0].y);
+  for (const point of points.slice(1)) {
+    graphics.lineTo(point.x, point.y);
+  }
+  graphics.strokePath();
+
+  graphics.lineStyle(Math.max(4, Math.floor(layout.cellSize * 0.1)), 0xfff2d4, 0.96);
+  graphics.beginPath();
+  graphics.moveTo(points[0].x, points[0].y);
+  for (const point of points.slice(1)) {
+    graphics.lineTo(point.x, point.y);
+  }
+  graphics.strokePath();
+
+  graphics.lineStyle(Math.max(2, Math.floor(layout.cellSize * 0.05)), 0xff8a3d, 0.95);
+  graphics.beginPath();
+  graphics.moveTo(points[0].x, points[0].y);
+  for (const point of points.slice(1)) {
+    graphics.lineTo(point.x, point.y);
+  }
+  graphics.strokePath();
+
+  for (const point of points.slice(1, -1)) {
+    graphics.fillStyle(0xfff2d4, 0.94);
+    graphics.fillCircle(point.x, point.y, Math.max(3.5, layout.cellSize * 0.07));
+    graphics.lineStyle(2, 0xff8a3d, 0.9);
+    graphics.strokeCircle(point.x, point.y, Math.max(3.5, layout.cellSize * 0.07));
+  }
+
+  const tip = points.at(-1);
+  const previous = points.at(-2);
+  const angle = Phaser.Math.Angle.Between(previous.x, previous.y, tip.x, tip.y);
+  const headSize = Math.max(10, layout.cellSize * 0.2);
+  const leftAngle = angle + Math.PI * 0.82;
+  const rightAngle = angle - Math.PI * 0.82;
+
+  graphics.fillStyle(0xfff2d4, 0.98);
+  graphics.lineStyle(2, 0xff8a3d, 0.96);
+  graphics.beginPath();
+  graphics.moveTo(tip.x, tip.y);
+  graphics.lineTo(
+    tip.x + Math.cos(leftAngle) * headSize,
+    tip.y + Math.sin(leftAngle) * headSize
+  );
+  graphics.lineTo(
+    tip.x + Math.cos(rightAngle) * headSize,
+    tip.y + Math.sin(rightAngle) * headSize
+  );
+  graphics.closePath();
+  graphics.fillPath();
+  graphics.strokePath();
+}
+
 export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
@@ -45,7 +114,7 @@ export class SelectionLayer {
     this.graphics.clear();
   }
 
-  render(snapshot, layout, showGridHighlights, hoveredTile) {
+  render(snapshot, layout, showGridHighlights, hoveredTile, hoveredMovementPath = []) {
     this.clear();
 
     const presentation = snapshot.presentation ?? {};
@@ -88,6 +157,8 @@ export class SelectionLayer {
         this.graphics.lineStyle(3, 0xff8a3d, 0.92);
         this.graphics.strokeRoundedRect(x + 4, y + 4, layout.cellSize - 10, layout.cellSize - 10, 6);
       }
+
+      drawMovementPath(this.graphics, layout, hoveredMovementPath);
     }
 
     if (presentation.selectedTile) {

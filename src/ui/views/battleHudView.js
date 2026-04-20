@@ -31,6 +31,19 @@ function renderFundsPanel(label, value, modifierClass = "") {
   `;
 }
 
+function canSelectNextReadyUnit(battleSnapshot) {
+  if (
+    !battleSnapshot ||
+    battleSnapshot.victory ||
+    battleSnapshot.turn.activeSide !== "player" ||
+    battleSnapshot.presentation?.pendingAction
+  ) {
+    return false;
+  }
+
+  return battleSnapshot.player.units.some((unit) => !unit.hasMoved && unit.current.hp > 0);
+}
+
 function getBattleLayout(battleSnapshot) {
   if (typeof window === "undefined") {
     return null;
@@ -224,6 +237,21 @@ function renderLevelUpOverlay(battleSnapshot) {
   `;
 }
 
+function renderTurnBanner(turnBanner) {
+  if (!turnBanner) {
+    return "";
+  }
+
+  return `
+    <div class="turn-banner turn-banner--${turnBanner.side}">
+      <div class="turn-banner__card">
+        <p class="eyebrow">Turn ${turnBanner.number}</p>
+        <h2>${turnBanner.side === "player" ? "Player Turn" : "Enemy Turn"}</h2>
+      </div>
+    </div>
+  `;
+}
+
 function renderRecruitPanel(battleSnapshot) {
   const options = battleSnapshot.presentation?.recruitOptions ?? [];
 
@@ -332,8 +360,11 @@ function renderOutcomeOverlay(state, battleSnapshot) {
   `;
 }
 
-export function renderBattleHudView(state) {
+export function renderBattleHudView(state, options = {}) {
   const battleSnapshot = state.battleSnapshot;
+  const suppressLevelUpOverlay = options.suppressLevelUpOverlay ?? false;
+  const suppressOutcomeOverlay = options.suppressOutcomeOverlay ?? false;
+  const turnBanner = options.turnBanner ?? null;
 
   if (!battleSnapshot) {
     return "";
@@ -341,6 +372,7 @@ export function renderBattleHudView(state) {
 
   const playerCommander = getCommanderById(battleSnapshot.player.commanderId);
   const enemyCommander = getCommanderById(battleSnapshot.enemy.commanderId);
+  const nextUnitEnabled = canSelectNextReadyUnit(battleSnapshot);
   return `
     <div class="battle-shell">
       <aside class="battle-rail">
@@ -394,15 +426,23 @@ export function renderBattleHudView(state) {
         </div>
         <div class="battle-actions">
           <button class="ghost-button ghost-button--small" data-action="pause-battle">Pause</button>
+          <button
+            class="ghost-button ghost-button--small"
+            data-action="select-next-unit"
+            ${nextUnitEnabled ? "" : "disabled"}
+          >
+            Next Unit
+          </button>
           <button class="menu-button menu-button--small" data-action="activate-power">Use Commander Power</button>
           <button class="ghost-button ghost-button--small" data-action="end-turn">End Turn</button>
         </div>
       </aside>
       ${renderActionPrompt(battleSnapshot)}
       ${renderTargetingPrompt(battleSnapshot)}
-      ${renderLevelUpOverlay(battleSnapshot)}
+      ${renderTurnBanner(turnBanner)}
+      ${suppressLevelUpOverlay ? "" : renderLevelUpOverlay(battleSnapshot)}
       ${renderPauseOverlay(state)}
-      ${renderOutcomeOverlay(state, battleSnapshot)}
+      ${suppressOutcomeOverlay ? "" : renderOutcomeOverlay(state, battleSnapshot)}
     </div>
   `;
 }

@@ -1,5 +1,12 @@
 import { createEmitter } from "../core/emitter.js";
-import { SCREEN_IDS, SLOT_IDS, TURN_SIDES } from "../core/constants.js";
+import {
+  BATTLE_MOVE_SETTLE_MS,
+  BATTLE_TURN_BANNER_SETTLE_MS,
+  SCREEN_IDS,
+  SLOT_IDS,
+  TURN_SIDES,
+  getBattleMoveDuration
+} from "../core/constants.js";
 import { COMMANDERS } from "../content/commanders.js";
 import { StorageRepository } from "../services/StorageRepository.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
@@ -289,6 +296,22 @@ export class GameController {
     }
   }
 
+  async selectNextReadyUnit() {
+    if (
+      !this.battleSystem ||
+      this.state.battleUi.pauseMenuOpen ||
+      this.state.battleSnapshot?.levelUpQueue?.length
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.selectNextReadyUnit();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
   async waitWithSelectedUnit() {
     if (
       !this.battleSystem ||
@@ -488,6 +511,10 @@ export class GameController {
   }
 
   async runEnemyTurnSequence() {
+    if (this.state.battleSnapshot?.turn.activeSide === TURN_SIDES.ENEMY && !this.state.battleSnapshot?.victory) {
+      await delay(BATTLE_TURN_BANNER_SETTLE_MS);
+    }
+
     while (this.battleSystem?.hasPendingEnemyTurn()) {
       while (this.state.battleUi.pauseMenuOpen) {
         await delay(100);
@@ -505,7 +532,9 @@ export class GameController {
       }
 
       const stepDelay =
-        step.type === "move" || step.type === "move-attack" ? 780 : 560;
+        step.type === "move"
+          ? getBattleMoveDuration(step.moveSegments ?? 0) + BATTLE_MOVE_SETTLE_MS
+          : 760;
       await delay(stepDelay);
     }
 

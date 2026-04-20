@@ -731,13 +731,80 @@ input {
   white-space: nowrap;
 }
 
+.turn-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  animation: turn-banner-fade 1100ms ease forwards;
+}
+
+.turn-banner__card {
+  min-width: min(24rem, calc(100vw - 3rem));
+  padding: 1rem 1.4rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.12), transparent 10rem),
+    rgba(10, 5, 20, 0.92);
+  box-shadow:
+    0 0 32px rgba(255, 79, 216, 0.12),
+    0 24px 40px rgba(5, 2, 14, 0.44);
+  animation: turn-banner-card 1100ms ease forwards;
+}
+
+.turn-banner--player .turn-banner__card {
+  border-color: rgba(255, 79, 216, 0.4);
+  box-shadow:
+    0 0 34px rgba(255, 79, 216, 0.18),
+    0 24px 40px rgba(5, 2, 14, 0.44);
+}
+
+.turn-banner--enemy .turn-banner__card {
+  border-color: rgba(255, 138, 61, 0.42);
+  box-shadow:
+    0 0 34px rgba(255, 138, 61, 0.18),
+    0 24px 40px rgba(5, 2, 14, 0.44);
+}
+
+.turn-banner__card h2 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.turn-banner--player .turn-banner__card h2 {
+  color: #ffd8f6;
+  text-shadow: 0 0 20px rgba(255, 79, 216, 0.28);
+}
+
+.turn-banner--enemy .turn-banner__card h2 {
+  color: #ffe1c6;
+  text-shadow: 0 0 20px rgba(255, 138, 61, 0.28);
+}
+
 .battle-overlay--level-up {
   z-index: 10;
   backdrop-filter: blur(10px);
+  animation: overlay-fade-in 220ms ease forwards;
 }
 
 .overlay-card--level-up {
   width: min(26rem, calc(100vw - 2rem));
+  animation: level-up-overlay-in 260ms ease forwards;
+}
+
+.battle-overlay--closing {
+  animation: overlay-fade-out 220ms ease forwards;
+}
+
+.overlay-card--closing {
+  animation: level-up-overlay-out 220ms ease forwards;
 }
 
 .level-up-stats {
@@ -845,6 +912,90 @@ input {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes level-up-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes level-up-overlay-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+@keyframes turn-banner-fade {
+  0% {
+    opacity: 0;
+  }
+
+  16% {
+    opacity: 1;
+  }
+
+  78% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes turn-banner-card {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  78% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) scale(1.02);
   }
 }
 

@@ -36,12 +36,72 @@ function carvePatch(grid, rectangles, terrainKey) {
   }
 }
 
+function stampTile(grid, x, y, terrainKey) {
+  if (grid[y]?.[x] !== undefined) {
+    grid[y][x] = terrainKey;
+  }
+}
+
 function addRoadSpine(grid, row, skipColumns = []) {
   for (let column = 0; column < grid[row].length; column += 1) {
     if (!skipColumns.includes(column)) {
       grid[row][column] = TERRAIN_KEYS.ROAD;
     }
   }
+}
+
+function addRiverCrossings(grid, columns, rows) {
+  for (const row of rows) {
+    for (const column of columns) {
+      stampTile(grid, column, row, TERRAIN_KEYS.ROAD);
+    }
+  }
+}
+
+function stampBuildings(grid, buildings) {
+  for (const building of buildings) {
+    stampTile(grid, building.x, building.y, TERRAIN_KEYS.ROAD);
+  }
+}
+
+function isGroundPassable(grid, x, y) {
+  const terrain = grid[y]?.[x];
+  return terrain !== TERRAIN_KEYS.WATER && terrain !== TERRAIN_KEYS.RIDGE && terrain !== undefined;
+}
+
+function hasGroundRoute(grid, start, goal) {
+  const queue = [{ x: start.x, y: start.y }];
+  const visited = new Set([`${start.x},${start.y}`]);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    if (current.x === goal.x && current.y === goal.y) {
+      return true;
+    }
+
+    const directions = [
+      { x: 1, y: 0 },
+      { x: -1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: -1 }
+    ];
+
+    for (const direction of directions) {
+      const nextX = current.x + direction.x;
+      const nextY = current.y + direction.y;
+      const key = `${nextX},${nextY}`;
+
+      if (visited.has(key) || !isGroundPassable(grid, nextX, nextY)) {
+        continue;
+      }
+
+      visited.add(key);
+      queue.push({ x: nextX, y: nextY });
+    }
+  }
+
+  return false;
 }
 
 function mirrorBuildings(width, leftSideBuildings) {
@@ -64,8 +124,9 @@ export function createBattlefield(spec) {
   const width = spec.width ?? 14;
   const height = spec.height ?? 10;
   const grid = createGrid(width, height);
+  const middleRow = Math.floor(height / 2);
 
-  addRoadSpine(grid, Math.floor(height / 2), spec.roadGaps ?? []);
+  addRoadSpine(grid, middleRow, spec.roadGaps ?? []);
   carveLine(grid, "column", spec.riverColumns ?? [], TERRAIN_KEYS.WATER);
   carvePatch(grid, spec.forests ?? [], TERRAIN_KEYS.FOREST);
   carvePatch(grid, spec.ridges ?? [], TERRAIN_KEYS.RIDGE);
@@ -74,27 +135,29 @@ export function createBattlefield(spec) {
     carveLine(grid, "column", [spur], TERRAIN_KEYS.ROAD);
   }
 
+  addRiverCrossings(grid, spec.riverColumns ?? [], spec.bridgeRows ?? [middleRow]);
+
   const leftBuildings = [
     {
       id: `${spec.id}-command`,
       type: BUILDING_KEYS.COMMAND,
       owner: "player",
       x: 1,
-      y: Math.floor(height / 2)
+      y: middleRow
     },
     {
       id: `${spec.id}-production`,
       type: spec.playerProduction ?? BUILDING_KEYS.BARRACKS,
       owner: "player",
       x: 2,
-      y: Math.max(1, Math.floor(height / 2) - 2)
+      y: Math.max(1, middleRow - 2)
     },
     {
       id: `${spec.id}-sector-home`,
       type: BUILDING_KEYS.SECTOR,
       owner: "player",
       x: 3,
-      y: Math.min(height - 2, Math.floor(height / 2) + 2)
+      y: Math.min(height - 2, middleRow + 2)
     },
     ...(spec.leftBuildings ?? [])
   ];
@@ -103,6 +166,18 @@ export function createBattlefield(spec) {
     ...mirrorBuildings(width, leftBuildings),
     ...(spec.neutralBuildings ?? [])
   ];
+  stampBuildings(grid, buildings);
+
+  const playerCommand = buildings.find(
+    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === "player"
+  );
+  const enemyCommand = buildings.find(
+    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === "enemy"
+  );
+
+  if (playerCommand && enemyCommand && !hasGroundRoute(grid, playerCommand, enemyCommand)) {
+    throw new Error(`Map ${spec.id} does not have a valid ground route between command posts.`);
+  }
 
   return {
     id: spec.id,
@@ -130,4 +205,3 @@ export function createBattlefield(spec) {
     buildings
   };
 }
-

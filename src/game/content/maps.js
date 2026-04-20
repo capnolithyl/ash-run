@@ -14,7 +14,7 @@ export const MAP_POOL = [
     roadGaps: [6, 7],
     roadSpurs: [2, 11],
     forests: [{ x: 3, y: 1, width: 2, height: 2 }, { x: 9, y: 7, width: 2, height: 2 }],
-    neutralBuildings: [{ id: "ashline-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 6, y: 4 }]
+    neutralBuildings: [{ id: "ashline-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 6, y: 5 }]
   }),
   createBattlefield({
     id: "signal-ridge",

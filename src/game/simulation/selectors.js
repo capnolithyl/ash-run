@@ -85,18 +85,24 @@ function getMovementCost(unit, terrain) {
   return unit.family === UNIT_TAGS.VEHICLE ? terrain.vehicleMoveCost : terrain.moveCost;
 }
 
-/**
- * Breadth-first flood fill is enough for the current board sizes and keeps
- * the movement rules readable while we are prototyping.
- */
-export function getReachableTiles(state, unit, movementBudget) {
-  const openSet = [{ x: unit.x, y: unit.y, cost: 0 }];
-  const visited = new Map([[tileKey(unit.x, unit.y), 0]]);
+function getMovementSearch(state, unit, movementBudget) {
+  const frontier = [{ x: unit.x, y: unit.y, cost: 0 }];
+  const bestCosts = new Map([[tileKey(unit.x, unit.y), 0]]);
+  const previous = new Map();
+  const settled = new Set();
   const reachable = [];
 
-  while (openSet.length > 0) {
-    const current = openSet.shift();
-    reachable.push({ x: current.x, y: current.y });
+  while (frontier.length > 0) {
+    frontier.sort((left, right) => left.cost - right.cost || left.y - right.y || left.x - right.x);
+    const current = frontier.shift();
+    const currentKey = tileKey(current.x, current.y);
+
+    if (settled.has(currentKey)) {
+      continue;
+    }
+
+    settled.add(currentKey);
+    reachable.push({ x: current.x, y: current.y, cost: current.cost });
 
     const directions = [
       { x: 1, y: 0 },
@@ -117,22 +123,63 @@ export function getReachableTiles(state, unit, movementBudget) {
       const nextCost = current.cost + getMovementCost(unit, terrain);
       const key = tileKey(nextX, nextY);
       const occupied = isTileOccupied(state, nextX, nextY);
+      const bestKnownCost = bestCosts.get(key);
 
       if (
         nextCost > movementBudget ||
-        terrain.blocksGround && unit.family !== UNIT_TAGS.AIR ||
+        (terrain.blocksGround && unit.family !== UNIT_TAGS.AIR) ||
         (occupied && !(nextX === unit.x && nextY === unit.y)) ||
-        visited.has(key)
+        (bestKnownCost !== undefined && bestKnownCost <= nextCost)
       ) {
         continue;
       }
 
-      visited.set(key, nextCost);
-      openSet.push({ x: nextX, y: nextY, cost: nextCost });
+      bestCosts.set(key, nextCost);
+      previous.set(key, currentKey);
+      frontier.push({ x: nextX, y: nextY, cost: nextCost });
     }
   }
 
-  return reachable;
+  return {
+    reachable,
+    bestCosts,
+    previous
+  };
+}
+
+function parseTileKey(key) {
+  const [x, y] = key.split(",").map(Number);
+  return { x, y };
+}
+
+/**
+ * Breadth-first flood fill is enough for the current board sizes and keeps
+ * the movement rules readable while we are prototyping.
+ */
+export function getReachableTiles(state, unit, movementBudget) {
+  return getMovementSearch(state, unit, movementBudget).reachable.map((tile) => ({
+    x: tile.x,
+    y: tile.y
+  }));
+}
+
+export function getMovementPath(state, unit, movementBudget, targetX, targetY) {
+  const search = getMovementSearch(state, unit, movementBudget);
+  const targetKey = tileKey(targetX, targetY);
+
+  if (!search.bestCosts.has(targetKey)) {
+    return [];
+  }
+
+  const path = [];
+  let currentKey = targetKey;
+
+  while (currentKey) {
+    path.unshift(parseTileKey(currentKey));
+    currentKey = search.previous.get(currentKey);
+  }
+
+  return path;
 }
 
 export function getTargetsInRange(state, unit, minimumRange, maximumRange) {

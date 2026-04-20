@@ -9,6 +9,19 @@ export const DEFAULT_SAVE_VERSION = 1;
 export const PLAYER_STARTING_FUNDS = 900;
 export const ENEMY_STARTING_FUNDS = 900;
 export const COMMANDER_POWER_MAX = 100;
+// Keep the JS timing values aligned with the turn-banner CSS animation.
+export const BATTLE_TURN_BANNER_DISPLAY_MS = 1100;
+export const BATTLE_TURN_BANNER_SETTLE_MS = 1120;
+export const BATTLE_MOVE_SEGMENT_DURATION_MS = 230;
+export const BATTLE_MOVE_SETTLE_MS = 70;
+export const BATTLE_ATTACK_STAGGER_MS = 380;
+export const BATTLE_ATTACK_IMPACT_DELAY_MS = 140;
+export const BATTLE_ATTACK_WINDOW_MS = 620;
+export const BATTLE_EXPERIENCE_STAGGER_MS = 960;
+
+export function getBattleMoveDuration(moveSegments = 0) {
+  return Math.max(0, moveSegments) * BATTLE_MOVE_SEGMENT_DURATION_MS;
+}
 
 export const BUILDING_INCOME = {
   sector: 100,
@@ -49,4 +62,3 @@ export const UNIT_TAGS = {
   VEHICLE: "vehicle",
   AIR: "air"
 };
-

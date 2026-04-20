@@ -1,10 +1,20 @@
-import { SCREEN_IDS } from "../game/core/constants.js";
+import {
+  BATTLE_TURN_BANNER_DISPLAY_MS,
+  BATTLE_TURN_BANNER_SETTLE_MS,
+  SCREEN_IDS
+} from "../game/core/constants.js";
 import { renderBattleHudView } from "./views/battleHudView.js";
 import { renderCommanderSelectView } from "./views/commanderSelectView.js";
 import { titleCaseSlot } from "./formatters.js";
 import { renderOptionsView } from "./views/optionsView.js";
 import { renderSaveSlotView } from "./views/saveSlotView.js";
 import { renderTitleView } from "./views/titleView.js";
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 /**
  * The DOM shell handles all text-heavy UI.
@@ -15,6 +25,15 @@ export class AppShell {
     this.root = root;
     this.controller = controller;
     this.latestState = null;
+    this.previousBattleSnapshot = null;
+    this.levelUpRevealUntil = 0;
+    this.levelUpRevealTimer = null;
+    this.victoryRevealUntil = 0;
+    this.victoryRevealTimer = null;
+    this.turnBanner = null;
+    this.turnBannerUntil = 0;
+    this.turnBannerTimer = null;
+    this.lastTurnBannerKey = null;
 
     this.root.addEventListener("click", (event) => this.handleClick(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));
@@ -33,18 +52,183 @@ export class AppShell {
 
     switch (state.screen) {
       case SCREEN_IDS.LOAD_SLOT:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
         this.root.innerHTML = renderSaveSlotView(state);
         return;
       case SCREEN_IDS.OPTIONS:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
         this.root.innerHTML = renderOptionsView(state);
         return;
-      case SCREEN_IDS.BATTLE:
-        this.root.innerHTML = renderBattleHudView(state);
+      case SCREEN_IDS.BATTLE: {
+        const suppressLevelUpOverlay = this.shouldSuppressLevelUpOverlay(state);
+        const suppressOutcomeOverlay = this.shouldSuppressOutcomeOverlay(state);
+        const turnBanner = this.getTurnBanner(state);
+        this.root.innerHTML = renderBattleHudView(state, {
+          suppressLevelUpOverlay,
+          suppressOutcomeOverlay,
+          turnBanner
+        });
+        this.previousBattleSnapshot = state.battleSnapshot;
         return;
+      }
       case SCREEN_IDS.TITLE:
       default:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
         this.root.innerHTML = renderTitleView(state);
     }
+  }
+
+  resetBattleUiTimers() {
+    if (this.levelUpRevealTimer) {
+      window.clearTimeout(this.levelUpRevealTimer);
+      this.levelUpRevealTimer = null;
+    }
+
+    if (this.victoryRevealTimer) {
+      window.clearTimeout(this.victoryRevealTimer);
+      this.victoryRevealTimer = null;
+    }
+
+    if (this.turnBannerTimer) {
+      window.clearTimeout(this.turnBannerTimer);
+      this.turnBannerTimer = null;
+    }
+
+    this.levelUpRevealUntil = 0;
+    this.victoryRevealUntil = 0;
+    this.turnBannerUntil = 0;
+    this.turnBanner = null;
+    this.lastTurnBannerKey = null;
+  }
+
+  getVictoryKey(snapshot) {
+    const victory = snapshot?.victory;
+
+    if (!victory) {
+      return null;
+    }
+
+    return `${snapshot.id}-${victory.winner}-${victory.message}`;
+  }
+
+  getTurnKey(snapshot) {
+    if (!snapshot) {
+      return null;
+    }
+
+    return `${snapshot.id}-${snapshot.turn.number}-${snapshot.turn.activeSide}`;
+  }
+
+  getLevelUpKey(snapshot) {
+    const levelUpEvent = snapshot?.levelUpQueue?.[0];
+
+    if (!levelUpEvent) {
+      return null;
+    }
+
+    return `${levelUpEvent.unitId}-${levelUpEvent.previousLevel}-${levelUpEvent.newLevel}`;
+  }
+
+  shouldSuppressLevelUpOverlay(state) {
+    const currentKey = this.getLevelUpKey(state.battleSnapshot);
+    const previousKey = this.getLevelUpKey(this.previousBattleSnapshot);
+    const isFreshReveal = currentKey && !previousKey;
+
+    if (isFreshReveal) {
+      this.levelUpRevealUntil = Date.now() + 2200;
+
+      if (this.levelUpRevealTimer) {
+        window.clearTimeout(this.levelUpRevealTimer);
+      }
+
+      this.levelUpRevealTimer = window.setTimeout(() => {
+        this.levelUpRevealTimer = null;
+
+        if (this.latestState?.screen === SCREEN_IDS.BATTLE) {
+          this.render(this.latestState);
+        }
+      }, 2220);
+    }
+
+    if (!currentKey) {
+      this.levelUpRevealUntil = 0;
+      return false;
+    }
+
+    return Date.now() < this.levelUpRevealUntil;
+  }
+
+  shouldSuppressOutcomeOverlay(state) {
+    const currentKey = this.getVictoryKey(state.battleSnapshot);
+    const previousKey = this.getVictoryKey(this.previousBattleSnapshot);
+    const isFreshVictory = currentKey && !previousKey;
+
+    if (isFreshVictory) {
+      this.victoryRevealUntil = Date.now() + 1800;
+
+      if (this.victoryRevealTimer) {
+        window.clearTimeout(this.victoryRevealTimer);
+      }
+
+      this.victoryRevealTimer = window.setTimeout(() => {
+        this.victoryRevealTimer = null;
+
+        if (this.latestState?.screen === SCREEN_IDS.BATTLE) {
+          this.render(this.latestState);
+        }
+      }, 1820);
+    }
+
+    if (!currentKey) {
+      this.victoryRevealUntil = 0;
+      return false;
+    }
+
+    if (state.battleSnapshot?.levelUpQueue?.length) {
+      return true;
+    }
+
+    return Date.now() < this.victoryRevealUntil;
+  }
+
+  getTurnBanner(state) {
+    const snapshot = state.battleSnapshot;
+    const currentKey = this.getTurnKey(snapshot);
+
+    if (!snapshot || !currentKey || snapshot.victory) {
+      return null;
+    }
+
+    if (currentKey !== this.lastTurnBannerKey) {
+      this.lastTurnBannerKey = currentKey;
+      this.turnBanner = {
+        key: currentKey,
+        side: snapshot.turn.activeSide,
+        number: snapshot.turn.number
+      };
+      this.turnBannerUntil = Date.now() + BATTLE_TURN_BANNER_DISPLAY_MS;
+
+      if (this.turnBannerTimer) {
+        window.clearTimeout(this.turnBannerTimer);
+      }
+
+      this.turnBannerTimer = window.setTimeout(() => {
+        this.turnBannerTimer = null;
+
+        if (this.latestState?.screen === SCREEN_IDS.BATTLE) {
+          this.render(this.latestState);
+        }
+      }, BATTLE_TURN_BANNER_SETTLE_MS);
+    }
+
+    if (Date.now() >= this.turnBannerUntil) {
+      return null;
+    }
+
+    return this.turnBanner;
   }
 
   renderCommanderSelect(state) {
@@ -126,9 +310,15 @@ export class AppShell {
       case "confirm-abandon-run":
         await this.controller.abandonRun();
         break;
-      case "acknowledge-level-up":
+      case "acknowledge-level-up": {
+        const overlay = this.root.querySelector(".battle-overlay--level-up");
+        const card = overlay?.querySelector(".overlay-card--level-up");
+        overlay?.classList.add("battle-overlay--closing");
+        card?.classList.add("overlay-card--closing");
+        await delay(220);
         await this.controller.acknowledgeLevelUp();
         break;
+      }
       case "quit-game":
         await this.controller.quitGame();
         break;
@@ -155,6 +345,9 @@ export class AppShell {
         break;
       case "recruit-unit":
         await this.controller.recruitUnit(unitTypeId);
+        break;
+      case "select-next-unit":
+        await this.controller.selectNextReadyUnit();
         break;
       case "wait-unit":
         await this.controller.waitWithSelectedUnit();

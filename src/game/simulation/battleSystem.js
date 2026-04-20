@@ -23,6 +23,7 @@ import {
 import {
   getBuildingAt,
   getLivingUnits,
+  getMovementPath,
   getReachableTiles,
   getRecruitmentOptions,
   getSelectionCoordinates,
@@ -54,6 +55,7 @@ function createEmptyPresentation() {
     movePreviewTiles: [],
     attackPreviewTiles: [],
     attackableUnitIds: [],
+    movementBudget: null,
     recruitOptions: []
   };
 }
@@ -77,6 +79,24 @@ function describeTerrain(terrain) {
 
 function findUnitById(state, unitId) {
   return [...state.player.units, ...state.enemy.units].find((unit) => unit.id === unitId);
+}
+
+function compareUnitsForSelectionOrder(left, right) {
+  if (left.y !== right.y) {
+    return left.y - right.y;
+  }
+
+  if (left.x !== right.x) {
+    return left.x - right.x;
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
+function getReadyPlayerUnits(state) {
+  return getLivingUnits(state, TURN_SIDES.PLAYER)
+    .filter((unit) => !unit.hasMoved)
+    .sort(compareUnitsForSelectionOrder);
 }
 
 function canCaptureBuilding(unit, building) {
@@ -201,6 +221,10 @@ function getNonKillExperience(damage) {
   return Math.max(12, Math.round(damage * 2.5));
 }
 
+function getDefenseExperience(damage) {
+  return Math.max(8, Math.round(damage * 1.6));
+}
+
 function getKillExperience(attacker, defender) {
   const levelDelta = defender.level - attacker.level;
   const threshold = getXpThreshold(attacker.level);
@@ -292,6 +316,9 @@ export class BattleSystem {
     this.state.pendingAction ??= null;
     this.state.enemyTurn ??= null;
     this.state.levelUpQueue ??= [];
+    if (this.state.enemyTurn && !("pendingAttack" in this.state.enemyTurn)) {
+      this.state.enemyTurn.pendingAttack = null;
+    }
     if (this.state.pendingAction && !this.state.pendingAction.mode) {
       this.state.pendingAction.mode = "menu";
     }
@@ -335,6 +362,7 @@ export class BattleSystem {
         selectedUnitId: selectedUnit.id,
         selectedTile,
         pendingAction,
+        movementBudget,
         movePreviewTiles,
         attackPreviewTiles,
         reachableTiles:
@@ -514,6 +542,41 @@ export class BattleSystem {
     return true;
   }
 
+  selectNextReadyUnit() {
+    if (
+      this.state.victory ||
+      this.state.turn.activeSide !== TURN_SIDES.PLAYER ||
+      this.state.pendingAction
+    ) {
+      return false;
+    }
+
+    const readyUnits = getReadyPlayerUnits(this.state);
+
+    if (readyUnits.length === 0) {
+      return false;
+    }
+
+    const selectedUnit = getSelectedUnit(this.state);
+    const currentIndex = selectedUnit
+      ? readyUnits.findIndex((unit) => unit.id === selectedUnit.id)
+      : -1;
+    const nextUnit = readyUnits[(currentIndex + 1 + readyUnits.length) % readyUnits.length];
+
+    if (!nextUnit) {
+      return false;
+    }
+
+    this.state.selection = {
+      type: "unit",
+      id: nextUnit.id,
+      x: nextUnit.x,
+      y: nextUnit.y
+    };
+
+    return true;
+  }
+
   attackTarget(attackerId, defenderId) {
     const attacker = findUnitById(this.state, attackerId);
     const defender = findUnitById(this.state, defenderId);
@@ -549,6 +612,9 @@ export class BattleSystem {
       primaryStrike.damage,
       primaryStrike.damage
     );
+    const defenderDefenseXp = defender.current.hp > 0 ? getDefenseExperience(primaryStrike.damage) : 0;
+    let defenderCounterXp = 0;
+    let attackerDefenseXp = 0;
 
     if (defender.current.hp > 0 && defender.current.ammo > 0) {
       const counterRange = defender.stats.maxRange + getRangeModifier(this.state, defender);
@@ -571,18 +637,42 @@ export class BattleSystem {
           counterStrike.damage,
           counterStrike.damage
         );
+        defenderCounterXp =
+          attacker.current.hp <= 0
+            ? getKillExperience(defender, attacker)
+            : getNonKillExperience(counterStrike.damage);
+
+        if (attacker.current.hp > 0) {
+          attackerDefenseXp = getDefenseExperience(counterStrike.damage);
+        }
       }
     }
 
-    const xpGain =
+    const attackerXpGain =
       defender.current.hp <= 0
         ? getKillExperience(attacker, defender)
         : getNonKillExperience(primaryStrike.damage);
-    const attackerAfterXp = awardExperience(attacker, xpGain, this.state.seed);
+    const attackerAfterXp = awardExperience(
+      attacker,
+      attackerXpGain + attackerDefenseXp,
+      this.state.seed
+    );
     this.state.seed = attackerAfterXp.seed;
     Object.assign(attacker, attackerAfterXp.unit);
     attackerAfterXp.notes.forEach((note) => appendLog(this.state, note));
     pushLevelUpEvents(this.state, attacker, attackerAfterXp.levelUps);
+
+    if (defender.current.hp > 0 && defenderDefenseXp + defenderCounterXp > 0) {
+      const defenderAfterXp = awardExperience(
+        defender,
+        defenderDefenseXp + defenderCounterXp,
+        this.state.seed
+      );
+      this.state.seed = defenderAfterXp.seed;
+      Object.assign(defender, defenderAfterXp.unit);
+      defenderAfterXp.notes.forEach((note) => appendLog(this.state, note));
+      pushLevelUpEvents(this.state, defender, defenderAfterXp.levelUps);
+    }
 
     if (defender.current.hp <= 0) {
       appendLog(this.state, `${defender.name} was destroyed.`);
@@ -771,6 +861,7 @@ export class BattleSystem {
       serviceUnitsOnSectors(this.state, TURN_SIDES.ENEMY);
       this.performEnemyRecruitment();
       this.state.enemyTurn = {
+        pendingAttack: null,
         pendingUnitIds: getLivingUnits(this.state, TURN_SIDES.ENEMY)
           .filter((unit) => !unit.hasMoved && !unit.hasAttacked)
           .map((unit) => unit.id)
@@ -783,12 +874,29 @@ export class BattleSystem {
   }
 
   hasPendingEnemyTurn() {
-    return Boolean(this.state.enemyTurn?.pendingUnitIds?.length);
+    return Boolean(
+      this.state.enemyTurn?.pendingAttack || this.state.enemyTurn?.pendingUnitIds?.length
+    );
   }
 
   processEnemyTurnStep() {
     if (!this.state.enemyTurn || this.state.turn.activeSide !== TURN_SIDES.ENEMY || this.state.victory) {
       return { changed: false, done: true };
+    }
+
+    if (this.state.enemyTurn.pendingAttack) {
+      const queuedAttack = this.state.enemyTurn.pendingAttack;
+      this.state.enemyTurn.pendingAttack = null;
+      const changed = this.attackTarget(queuedAttack.attackerId, queuedAttack.targetId);
+
+      if (changed) {
+        return {
+          changed: true,
+          done: this.state.victory || !this.hasPendingEnemyTurn(),
+          type: "attack",
+          unitId: queuedAttack.attackerId
+        };
+      }
     }
 
     while (this.state.enemyTurn.pendingUnitIds.length > 0) {
@@ -844,6 +952,11 @@ export class BattleSystem {
       }
 
       const moved = bestTile.x !== unit.x || bestTile.y !== unit.y;
+      const movementBudget = unit.stats.movement + getMovementModifier(this.state, unit);
+      const movePath = moved
+        ? getMovementPath(this.state, unit, movementBudget, bestTile.x, bestTile.y)
+        : [];
+      const moveSegments = Math.max(0, movePath.length - 1);
 
       if (moved) {
         unit.x = bestTile.x;
@@ -861,12 +974,16 @@ export class BattleSystem {
 
       if (postMoveTargets.length > 0) {
         const target = postMoveTargets.sort((left, right) => left.current.hp - right.current.hp)[0];
-        this.attackTarget(unit.id, target.id);
+        this.state.enemyTurn.pendingAttack = {
+          attackerId: unit.id,
+          targetId: target.id
+        };
         return {
           changed: true,
-          done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
-          type: moved ? "move-attack" : "attack",
-          unitId
+          done: this.state.victory || !this.hasPendingEnemyTurn(),
+          type: "move",
+          unitId,
+          moveSegments
         };
       }
 
@@ -876,7 +993,8 @@ export class BattleSystem {
           changed: true,
           done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
           type: "move",
-          unitId
+          unitId,
+          moveSegments
         };
       }
     }

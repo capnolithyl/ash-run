@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
 
 function unitColor(owner) {
   return owner === "player" ? 0xff5fd6 : 0xff8a3d;
@@ -47,8 +48,10 @@ export class UnitLayer {
       body,
       label,
       moveTween: null,
+      effectTweens: [],
       targetX: 0,
-      targetY: 0
+      targetY: 0,
+      alphaTarget: 1
     };
   }
 
@@ -57,6 +60,68 @@ export class UnitLayer {
       x: layout.originX + unit.x * layout.cellSize + layout.cellSize / 2,
       y: layout.originY + unit.y * layout.cellSize + layout.cellSize / 2
     };
+  }
+
+  getTileCenterFromCoordinates(layout, x, y) {
+    return {
+      x: layout.originX + x * layout.cellSize + layout.cellSize / 2,
+      y: layout.originY + y * layout.cellSize + layout.cellSize / 2
+    };
+  }
+
+  playPathMovement(entity, layout, path) {
+    const worldPoints = path.map((tile) =>
+      this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
+    );
+    const tweens = [];
+
+    for (let index = 1; index < worldPoints.length; index += 1) {
+      const point = worldPoints[index];
+
+      tweens.push({
+        x: point.x,
+        y: point.y,
+        duration: BATTLE_MOVE_SEGMENT_DURATION_MS,
+        ease: "Sine.Out"
+      });
+    }
+
+    entity.moveTween = this.scene.tweens.chain({
+      targets: entity.container,
+      tweens,
+      onComplete: () => {
+        entity.moveTween = null;
+        entity.container.setPosition(entity.targetX, entity.targetY);
+      }
+    });
+  }
+
+  resetEntityEffects(entity) {
+    entity.container.setPosition(entity.targetX, entity.targetY);
+    entity.container.setScale(1);
+    entity.container.setAlpha(entity.alphaTarget);
+    entity.body.setScale(1);
+    entity.glow.setScale(1);
+    entity.aura.setScale(1);
+    entity.glow.setAlpha(0.12);
+    entity.aura.setAlpha(0.2);
+  }
+
+  stopEffectTweens(entity) {
+    for (const tween of entity.effectTweens) {
+      tween.stop();
+    }
+
+    entity.effectTweens = [];
+    this.resetEntityEffects(entity);
+  }
+
+  trackEffectTween(entity, tween) {
+    entity.effectTweens.push(tween);
+    tween.on("complete", () => {
+      entity.effectTweens = entity.effectTweens.filter((activeTween) => activeTween !== tween);
+    });
+    return tween;
   }
 
   destroyEntity(unitId) {
@@ -70,6 +135,8 @@ export class UnitLayer {
       entity.moveTween.stop();
     }
 
+    this.stopEffectTweens(entity);
+
     this.scene.tweens.add({
       targets: entity.container,
       alpha: 0,
@@ -82,7 +149,136 @@ export class UnitLayer {
     this.entities.delete(unitId);
   }
 
-  render(snapshot, layout) {
+  playDeploy(unitId) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    entity.container.setScale(0.22);
+    entity.container.setAlpha(0);
+    entity.container.y += this.cellSize ? this.cellSize * 0.14 : 6;
+    this.scene.tweens.add({
+      targets: entity.container,
+      alpha: entity.alphaTarget,
+      scaleX: 1,
+      scaleY: 1,
+      y: entity.targetY,
+      duration: 460,
+      ease: "Back.Out"
+    });
+  }
+
+  playAttack(unitId, directionX = 0, directionY = 0) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    this.stopEffectTweens(entity);
+
+    const offsetX = Math.sign(directionX) * Math.max(5, (this.cellSize ?? 40) * 0.12);
+    const offsetY = Math.sign(directionY) * Math.max(5, (this.cellSize ?? 40) * 0.12);
+    entity.glow.setAlpha(0.3);
+    entity.aura.setAlpha(0.45);
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.container,
+      x: entity.targetX + offsetX,
+      y: entity.targetY + offsetY,
+      duration: 120,
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        entity.container.setPosition(entity.targetX, entity.targetY);
+      }
+    }));
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.body,
+      scale: 1.14,
+      duration: 110,
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        entity.body.setScale(1);
+      }
+    }));
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: [entity.glow, entity.aura],
+      scale: 1.24,
+      duration: 180,
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        this.resetEntityEffects(entity);
+      }
+    }));
+  }
+
+  playDamage(unitId) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    this.stopEffectTweens(entity);
+
+    entity.aura.setAlpha(0.5);
+    entity.glow.setAlpha(0.3);
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.container,
+      x: entity.targetX + (Math.random() > 0.5 ? 1 : -1) * Math.max(4, this.cellSize * 0.08),
+      duration: 52,
+      yoyo: true,
+      repeat: 2,
+      ease: "Sine.InOut"
+    }));
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.body,
+      scale: 1.24,
+      duration: 170,
+      yoyo: true,
+      ease: "Sine.InOut"
+    }));
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.aura,
+      scale: 1.32,
+      alpha: { from: 0.5, to: 0.2 },
+      duration: 170,
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        this.resetEntityEffects(entity);
+      }
+    }));
+  }
+
+  playHeal(unitId) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    this.stopEffectTweens(entity);
+
+    entity.glow.setAlpha(0.28);
+    entity.aura.setAlpha(0.38);
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: [entity.glow, entity.aura],
+      scale: 1.42,
+      duration: 240,
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        this.resetEntityEffects(entity);
+      }
+    }));
+  }
+
+  render(snapshot, layout, movementEvents = []) {
     if (this.cellSize !== layout.cellSize) {
       this.clear();
       this.cellSize = layout.cellSize;
@@ -90,6 +286,9 @@ export class UnitLayer {
 
     const units = [...snapshot.player.units, ...snapshot.enemy.units];
     const activeIds = new Set();
+    const movementEventMap = new Map(
+      movementEvents.map((event) => [event.unitId, event])
+    );
 
     for (const unit of units) {
       activeIds.add(unit.id);
@@ -139,15 +338,16 @@ export class UnitLayer {
         unit.hasMoved ||
         unit.hasAttacked ||
         snapshot.presentation?.pendingAction?.unitId === unit.id;
-      entity.container.setAlpha(
+      entity.alphaTarget =
         unit.current.hp > 0
           ? dimmed
             ? 0.68
             : 1
-          : 0.4
-      );
+          : 0.4;
+      entity.container.setAlpha(entity.alphaTarget);
 
       const nextPosition = this.getTileCenter(unit, layout);
+      const movementEvent = movementEventMap.get(unit.id);
       const distance =
         Math.abs(nextPosition.x - entity.targetX) + Math.abs(nextPosition.y - entity.targetY);
 
@@ -158,13 +358,21 @@ export class UnitLayer {
 
         entity.targetX = nextPosition.x;
         entity.targetY = nextPosition.y;
-        entity.moveTween = this.scene.tweens.add({
-          targets: entity.container,
-          x: nextPosition.x,
-          y: nextPosition.y,
-          duration: 340 + Math.max(220, distance * 0.55),
-          ease: "Sine.Out"
-        });
+
+        if (movementEvent?.path?.length > 1) {
+          this.playPathMovement(entity, layout, movementEvent.path);
+        } else {
+          entity.moveTween = this.scene.tweens.add({
+            targets: entity.container,
+            x: nextPosition.x,
+            y: nextPosition.y,
+            duration: 340 + Math.max(220, distance * 0.55),
+            ease: "Sine.Out",
+            onComplete: () => {
+              entity.moveTween = null;
+            }
+          });
+        }
       }
     }
 
