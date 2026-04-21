@@ -1,34 +1,85 @@
 import Phaser from "phaser";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "../../content/terrain.js";
-
-function buildingColorForOwner(owner) {
-  if (owner === "player") {
-    return 0xff5fd6;
-  }
-
-  if (owner === "enemy") {
-    return 0xff8a3d;
-  }
-
-  return 0xffd166;
-}
+import { getTerrainSpriteKey } from "../assets.js";
 
 export class GridLayer {
   constructor(scene) {
     this.scene = scene;
     this.glowGraphics = scene.add.graphics();
     this.glowGraphics.setBlendMode(Phaser.BlendModes.ADD);
+    this.glowGraphics.setDepth(0);
     this.graphics = scene.add.graphics();
+    this.graphics.setDepth(1);
+    this.overlayGraphics = scene.add.graphics();
+    this.overlayGraphics.setDepth(6);
+    this.terrainSprites = [];
+    this.terrainRenderKey = null;
   }
 
   clear() {
     this.glowGraphics.clear();
     this.graphics.clear();
+    this.overlayGraphics.clear();
+    this.clearTerrainSprites();
+  }
+
+  clearTerrainSprites() {
+    this.terrainSprites.forEach((sprite) => sprite.destroy());
+    this.terrainSprites = [];
+    this.terrainRenderKey = null;
+  }
+
+  getTerrainRenderKey(snapshot, layout) {
+    const tileSignature = snapshot.map.tiles.map((row) => row.join(",")).join("|");
+    return [
+      snapshot.map.id,
+      layout.cellSize,
+      layout.originX,
+      layout.originY,
+      tileSignature
+    ].join(":");
+  }
+
+  renderTerrainSprites(snapshot, layout) {
+    const renderKey = this.getTerrainRenderKey(snapshot, layout);
+
+    if (renderKey === this.terrainRenderKey) {
+      return;
+    }
+
+    this.clearTerrainSprites();
+
+    for (let row = 0; row < snapshot.map.height; row += 1) {
+      for (let column = 0; column < snapshot.map.width; column += 1) {
+        const terrainId = snapshot.map.tiles[row][column];
+        const textureKey = getTerrainSpriteKey(terrainId);
+        const x = layout.originX + column * layout.cellSize;
+        const y = layout.originY + row * layout.cellSize;
+
+        if (!textureKey || !this.scene.textures.exists(textureKey)) {
+          const terrain = TERRAIN_LIBRARY[terrainId];
+          this.graphics.fillStyle(Phaser.Display.Color.HexStringToColor(terrain.color).color, 0.96);
+          this.graphics.fillRect(x, y, layout.cellSize, layout.cellSize);
+          continue;
+        }
+
+        const sprite = this.scene.add
+          .image(x + layout.cellSize / 2, y + layout.cellSize / 2, textureKey)
+          .setDepth(4)
+          .setDisplaySize(layout.cellSize, layout.cellSize);
+
+        this.terrainSprites.push(sprite);
+      }
+    }
+
+    this.terrainRenderKey = renderKey;
   }
 
   render(snapshot, layout) {
     const theme = MAP_THEME_PALETTES[snapshot.map.theme];
-    this.clear();
+    this.glowGraphics.clear();
+    this.graphics.clear();
+    this.overlayGraphics.clear();
     this.graphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.background).color, 0.92);
     this.graphics.fillRect(0, 0, this.scene.scale.width, this.scene.scale.height);
     this.graphics.fillStyle(0x12061f, 0.66);
@@ -46,8 +97,10 @@ export class GridLayer {
       24
     );
 
-    this.graphics.lineStyle(2, Phaser.Display.Color.HexStringToColor(theme.gridGlow).color, 0.28);
-    this.graphics.strokeRoundedRect(
+    this.renderTerrainSprites(snapshot, layout);
+
+    this.overlayGraphics.lineStyle(1.5, Phaser.Display.Color.HexStringToColor(theme.gridGlow).color, 0.18);
+    this.overlayGraphics.strokeRoundedRect(
       layout.originX - 8,
       layout.originY - 8,
       snapshot.map.width * layout.cellSize + 14,
@@ -62,49 +115,8 @@ export class GridLayer {
         const y = layout.originY + row * layout.cellSize;
 
         this.graphics.fillStyle(Phaser.Display.Color.HexStringToColor(terrain.color).color, 0.96);
-        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-        this.graphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.gridGlow).color, 0.08);
-        this.graphics.fillRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 4);
-        this.graphics.lineStyle(1.4, Phaser.Display.Color.HexStringToColor(terrain.border).color, 0.62);
-        this.graphics.strokeRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.graphics.fillRect(x, y, layout.cellSize, layout.cellSize);
       }
-    }
-
-    for (const building of snapshot.map.buildings) {
-      const x = layout.originX + building.x * layout.cellSize;
-      const y = layout.originY + building.y * layout.cellSize;
-      this.glowGraphics.fillStyle(buildingColorForOwner(building.owner), 0.11);
-      this.glowGraphics.fillRoundedRect(
-        x + layout.cellSize * 0.05,
-        y + layout.cellSize * 0.05,
-        layout.cellSize * 0.9,
-        layout.cellSize * 0.9,
-        12
-      );
-      this.graphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.accent).color, 0.18);
-      this.graphics.fillRoundedRect(
-        x + layout.cellSize * 0.08,
-        y + layout.cellSize * 0.08,
-        layout.cellSize * 0.82,
-        layout.cellSize * 0.82,
-        10
-      );
-      this.graphics.fillStyle(buildingColorForOwner(building.owner), 0.92);
-      this.graphics.fillRoundedRect(
-        x + layout.cellSize * 0.15,
-        y + layout.cellSize * 0.15,
-        layout.cellSize * 0.68,
-        layout.cellSize * 0.68,
-        8
-      );
-      this.graphics.lineStyle(2, buildingColorForOwner(building.owner), 0.85);
-      this.graphics.strokeRoundedRect(
-        x + layout.cellSize * 0.15,
-        y + layout.cellSize * 0.15,
-        layout.cellSize * 0.68,
-        layout.cellSize * 0.68,
-        8
-      );
     }
   }
 }

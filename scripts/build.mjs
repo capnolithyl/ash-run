@@ -33,3 +33,7 @@ const productionHtml = indexTemplate
   .replace('./src/main.js', "./assets/main.js");
 
 await fs.writeFile(path.join(distRoot, "index.html"), productionHtml, "utf8");
+
+await fs.cp(path.resolve(root, "assets/sprites"), path.join(assetsRoot, "sprites"), {
+  recursive: true
+});

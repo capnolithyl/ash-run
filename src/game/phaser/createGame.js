@@ -11,6 +11,10 @@ export function createGame(parent, controller) {
     type: Phaser.AUTO,
     parent,
     backgroundColor: "#091210",
+    render: {
+      pixelArt: true,
+      roundPixels: true
+    },
     callbacks: {
       /**
        * Scenes need the controller during their own `create()` lifecycle.

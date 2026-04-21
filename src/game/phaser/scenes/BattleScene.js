@@ -4,6 +4,7 @@ import {
   BATTLE_TURN_BANNER_SETTLE_MS
 } from "../../core/constants.js";
 import { getMovementPath, getSelectedUnit } from "../../simulation/selectors.js";
+import { preloadSpriteAssets } from "../assets.js";
 import { deriveBattleAnimationEvents } from "../view/battleAnimationEvents.js";
 import { BattleFxLayer } from "../view/BattleFxLayer.js";
 import { BuildingLayer } from "../view/BuildingLayer.js";
@@ -85,6 +86,10 @@ export class BattleScene extends Phaser.Scene {
     this.latestState = null;
     this.hoveredTile = null;
     this.previousSnapshot = null;
+  }
+
+  preload() {
+    preloadSpriteAssets(this);
   }
 
   create() {

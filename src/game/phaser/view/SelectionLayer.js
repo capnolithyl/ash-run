@@ -108,6 +108,7 @@ export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
     this.graphics = scene.add.graphics();
+    this.graphics.setDepth(12);
     this.tooltipBackground = scene.add.rectangle(0, 0, 10, 10, 0x12061f, 0.9).setVisible(false);
     this.tooltipBackground.setStrokeStyle(2, 0xff8a3d, 0.95);
     this.tooltipLabel = scene.add

@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
+import { getUnitSpriteKey } from "../assets.js";
 
 function unitColor(owner) {
   return owner === "player" ? 0xff5fd6 : 0xff8a3d;
@@ -20,33 +21,63 @@ export class UnitLayer {
 
   createEntity(unit, layout) {
     const color = unitColor(unit.owner);
+    const textureKey = getUnitSpriteKey(unit.unitTypeId);
     const glow = this.scene.add
       .circle(0, 0, layout.cellSize * 0.42, color, 0.12)
       .setBlendMode(Phaser.BlendModes.ADD);
     const aura = this.scene.add
       .circle(0, 0, layout.cellSize * 0.34, color, 0.2)
       .setBlendMode(Phaser.BlendModes.ADD);
-    const body = this.scene.add.circle(0, 0, layout.cellSize * 0.28, color, 0.95);
-    body.setStrokeStyle(2, 0xfff2fc, 0.78);
-    const label = this.scene.add
-      .text(0, -4, unit.name.slice(0, 2).toUpperCase(), {
-        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
-        fontSize: `${Math.max(12, Math.floor(layout.cellSize * 0.2))}px`,
-        color: "#240817"
-      })
-      .setOrigin(0.5);
-    const healthRing = this.scene.add.graphics();
+    const ownerMarker = this.scene.add.rectangle(
+      0,
+      layout.cellSize * 0.3,
+      layout.cellSize * 0.52,
+      Math.max(5, layout.cellSize * 0.08),
+      color,
+      0.9
+    );
+    ownerMarker.setStrokeStyle(1.5, 0xfff2fc, 0.65);
 
-    const container = this.scene.add.container(0, 0, [glow, aura, healthRing, body, label]);
+    let visual = null;
+    let fallbackLabel = null;
+
+    if (textureKey && this.scene.textures.exists(textureKey)) {
+      visual = this.scene.add
+        .image(0, -layout.cellSize * 0.03, textureKey)
+        .setOrigin(0.5)
+        .setDisplaySize(layout.cellSize * 0.76, layout.cellSize * 0.76);
+      visual.setFlipX(unit.owner === "enemy");
+    } else {
+      visual = this.scene.add.circle(0, 0, layout.cellSize * 0.28, color, 0.95);
+      visual.setStrokeStyle(2, 0xfff2fc, 0.78);
+      fallbackLabel = this.scene.add
+        .text(0, -4, unit.name.slice(0, 2).toUpperCase(), {
+          fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+          fontSize: `${Math.max(12, Math.floor(layout.cellSize * 0.2))}px`,
+          color: "#240817"
+        })
+        .setOrigin(0.5);
+    }
+
+    const healthRing = this.scene.add.graphics();
+    const children = fallbackLabel
+      ? [glow, aura, ownerMarker, visual, healthRing, fallbackLabel]
+      : [glow, aura, ownerMarker, visual, healthRing];
+
+    const container = this.scene.add.container(0, 0, children);
     container.setDepth(28);
 
     return {
       container,
       glow,
       aura,
+      ownerMarker,
       healthRing,
-      body,
-      label,
+      visual,
+      visualBaseScaleX: visual.scaleX,
+      visualBaseScaleY: visual.scaleY,
+      fallbackLabel,
+      textureKey,
       moveTween: null,
       effectTweens: [],
       targetX: 0,
@@ -96,11 +127,19 @@ export class UnitLayer {
     });
   }
 
+  setVisualScale(entity, multiplier = 1) {
+    entity.visual.setScale(
+      entity.visualBaseScaleX * multiplier,
+      entity.visualBaseScaleY * multiplier
+    );
+  }
+
   resetEntityEffects(entity) {
     entity.container.setPosition(entity.targetX, entity.targetY);
     entity.container.setScale(1);
     entity.container.setAlpha(entity.alphaTarget);
-    entity.body.setScale(1);
+    this.setVisualScale(entity, 1);
+    entity.ownerMarker.setScale(1);
     entity.glow.setScale(1);
     entity.aura.setScale(1);
     entity.glow.setAlpha(0.12);
@@ -195,13 +234,14 @@ export class UnitLayer {
       }
     }));
     this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.body,
-      scale: 1.14,
+      targets: entity.visual,
+      scaleX: entity.visualBaseScaleX * 1.14,
+      scaleY: entity.visualBaseScaleY * 1.14,
       duration: 110,
       yoyo: true,
       ease: "Sine.InOut",
       onComplete: () => {
-        entity.body.setScale(1);
+        this.setVisualScale(entity, 1);
       }
     }));
     this.trackEffectTween(entity, this.scene.tweens.add({
@@ -236,8 +276,9 @@ export class UnitLayer {
       ease: "Sine.InOut"
     }));
     this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.body,
-      scale: 1.24,
+      targets: entity.visual,
+      scaleX: entity.visualBaseScaleX * 1.24,
+      scaleY: entity.visualBaseScaleY * 1.24,
       duration: 170,
       yoyo: true,
       ease: "Sine.InOut"
@@ -305,10 +346,12 @@ export class UnitLayer {
       }
 
       const color = unitColor(unit.owner);
-      entity.body.setFillStyle(color, 0.95);
       entity.glow.setFillStyle(color, 0.12);
       entity.aura.setFillStyle(color, 0.2);
-      entity.label.setText(unit.name.slice(0, 2).toUpperCase());
+      entity.ownerMarker.setFillStyle(color, 0.9);
+      entity.ownerMarker.setStrokeStyle(1.5, 0xfff2fc, 0.65);
+      entity.visual.setFlipX?.(unit.owner === "enemy");
+      entity.fallbackLabel?.setText(unit.name.slice(0, 2).toUpperCase());
       const ringYOffset = -layout.cellSize * 0.42;
       const ringRadius = layout.cellSize * 0.12;
       const hpRatio = Math.max(0, Math.min(1, unit.current.hp / unit.stats.maxHealth));
