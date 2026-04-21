@@ -37,14 +37,6 @@ export function renderTitleView(state) {
             Return To Windows
           </button>
         </div>
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
         <div class="title-run-stats">
           <p class="eyebrow">LTC Records</p>
           <p><strong>Latest Clear:</strong> ${formatTurnCount(latestClearTurnCount)}</p>
@@ -53,7 +45,6 @@ export function renderTitleView(state) {
         <p class="footer-note">
           Prototype goal: clear 10 maps in a row. Locked commanders remain in the enemy pool until unlocked.
         </p>
->>>>>>> theirs
       </section>
     </div>
   `;

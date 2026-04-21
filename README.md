@@ -4,60 +4,36 @@ Ash Run is a Phaser + Electron prototype for a turn-based tactics roguelite with
 
 ## Current Prototype (April 2026)
 
-<<<<<<< ours
-<<<<<<< ours
-- Title screen with:
-  - `New Run`
-  - `Continue`
-  - `Options`
-  - `Return To Windows`
-- Commander selection with:
-  - 10 total commanders in data
-  - 3 commanders unlocked by default
-  - slot selection before starting a run
-- Save slot flow with 3 slots
-- Tactical battle scene with:
-  - grid map rendering
-  - unit selection
-  - next-ready-unit cycling
-  - movement
-  - path previews
-  - attacks and counterattacks
-  - unit experience gain and level ups
-  - capture actions
-  - simple enemy AI
-  - recruitment from owned production buildings
-  - commander charge and powers
-  - battle-to-battle run progression
-  - pause menu and save-slot flow
-- 20 map definitions in the prototype pool
-=======
-=======
->>>>>>> theirs
 - Full menu shell with:
   - Title
   - New Run / Continue
   - Save-slot load screen (3 slots)
   - Options
-- Commander selection:
+  - Return To Windows
+- Commander selection with:
   - 10 commanders defined in data
   - 3 commanders unlocked at start (`Atlas`, `Viper`, `Rook`)
-  - Locked commanders can still appear as enemy commanders
+  - Locked commanders still available to enemy armies
+  - Slot selection before starting a run
 - Tactical battles with:
-  - Tile-based movement and attack flow
-  - Counterattacks
-  - Commander passives and active powers
-  - Income economy from Command + Sector structures
-  - Recruitment at Barracks / Motor Pool / Airfield
-  - Capture action (infantry only)
+  - Grid map rendering
+  - Unit selection and next-ready-unit cycling
+  - Tile-based movement and path previews
+  - Attacks and counterattacks
+  - Commander passives, charge, and active powers
+  - Income economy from Command and Sector structures
+  - Recruitment at Barracks, Motor Pool, and Airfield
+  - Infantry capture actions
   - Enemy turn automation
   - Persistent unit leveling and random stat growth
-  - Level-up presentation queue in HUD
-- Run flow:
+  - Level-up presentation queue in the HUD
+  - Pause menu and save-slot flow
+- Run flow with:
   - 10-map run goal
-  - 20-map authored pool sampled into run sequence
-  - Surviving units persist between maps
-  - Defeat ends run
+  - 20-map authored pool sampled into each run sequence
+  - Surviving units persisting between maps
+  - Clear records shown on the title screen
+  - Defeat ending the run
 
 ## Tech Stack
 
@@ -65,30 +41,18 @@ Ash Run is a Phaser + Electron prototype for a turn-based tactics roguelite with
 - **Shell:** Electron
 - **Tooling:** Vite
 - **Package manager:** Yarn
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
 
 ## Project Structure
 
 ```text
 electron/
-<<<<<<< ours
   main.cjs
   preload.cjs
-tests/
-  helpers/
-=======
-  main.js
-  preload.cjs
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
 scripts/
   build.mjs
   dev-server.mjs
+  dev.mjs
+  full-playthrough-check.mjs
   start-electron.mjs
 src/
   game/
@@ -102,6 +66,8 @@ src/
   ui/
     views/
   styles/
+tests/
+  helpers/
 docs/
   core/
   design/
@@ -110,18 +76,12 @@ docs/
 
 ## Commands
 
-<<<<<<< ours
-<<<<<<< ours
-- `yarn dev`
-- `yarn start`
-- `yarn build`
-- `yarn test`
-- `yarn package`
-=======
-- `yarn dev` → Vite + Electron dev workflow
-- `yarn start` → packaged-style Electron launch
-- `yarn build` → production build
->>>>>>> theirs
+- `yarn dev` -> Vite + Electron dev workflow
+- `yarn start` -> packaged-style Electron launch
+- `yarn build` -> production build
+- `yarn test` -> Node test suite
+- `yarn test:playthrough` -> forced full-run smoke check
+- `yarn package` -> production build plus Electron Builder package
 
 The scripts in `scripts/` call Vite/Electron through Node APIs rather than shell wrappers to stay stable across Windows/network-share paths.
 
@@ -129,27 +89,9 @@ Set `ASH_RUN_DEV_PORT` before `yarn dev` when port `5173` is already taken.
 
 ## Known Prototype Limits
 
-<<<<<<< ours
 - Objectives are still command-post / elimination focused rather than fully authored scenario scripting.
+- Capture is ownership-flip only, with no staged capture meter yet.
 - Enemy AI is tactical-prototype level and does not plan around long-term economy or baiting.
+- Rewards/meta loop exists as structure, but content depth is intentionally light.
 - Audio is not implemented yet, so the options menu only exposes live visual/gameplay toggles.
 - Visuals are still primarily code-drawn placeholders rather than final authored art.
-=======
-=======
-- `yarn dev` → Vite + Electron dev workflow
-- `yarn start` → packaged-style Electron launch
-- `yarn build` → production build
-
-The scripts in `scripts/` call Vite/Electron through Node APIs rather than shell wrappers to stay stable across Windows/network-share paths.
-
-## Known Prototype Limits
-
->>>>>>> theirs
-- No multi-objective mission types yet (currently elimination-centric).
-- Capture is ownership-flip only (no staged capture meter).
-- Rewards/meta loop exists as structure, but content depth is intentionally light.
-- Presentation remains code-drawn and placeholder-oriented.
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs

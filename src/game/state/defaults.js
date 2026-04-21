@@ -1,4 +1,4 @@
-import { DEFAULT_SAVE_VERSION, SLOT_IDS } from "../core/constants.js";
+import { DEFAULT_SAVE_VERSION, PROTOTYPE_RUN_GOAL, SLOT_IDS } from "../core/constants.js";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
 
 function createDefaultOptions() {
@@ -13,26 +13,10 @@ export function createDefaultMetaState() {
     version: DEFAULT_SAVE_VERSION,
     unlockedCommanderIds: [...DEFAULT_UNLOCKED_COMMANDER_IDS],
     options: createDefaultOptions(),
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-    lastPlayedSlotId: null
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     highestClearGoal: PROTOTYPE_RUN_GOAL,
     lastPlayedSlotId: null,
     latestClearTurnCount: null,
     bestClearTurnCount: null
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
   };
 }
 
