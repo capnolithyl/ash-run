@@ -41,7 +41,8 @@ function createBattleUiState() {
   return {
     pauseMenuOpen: false,
     confirmAbandon: false,
-    fundsGain: null
+    fundsGain: null,
+    hoveredTile: null
   };
 }
 
@@ -50,6 +51,8 @@ function delay(ms) {
     setTimeout(resolve, ms);
   });
 }
+
+const BATTLE_CONTEXT_ACTION_DEDUPE_MS = 180;
 
 /**
  * The controller owns app flow and save orchestration.
@@ -61,6 +64,7 @@ export class GameController {
     this.events = createEmitter();
     this.battleSystem = null;
     this.fundsGainSequence = 0;
+    this.lastBattleContextActionAt = 0;
     this.state = {
       ready: false,
       screen: SCREEN_IDS.TITLE,
@@ -321,6 +325,25 @@ export class GameController {
     }
   }
 
+  setBattleHoverTile(tile) {
+    if (!this.battleSystem || this.state.screen !== SCREEN_IDS.BATTLE) {
+      return;
+    }
+
+    const nextTile =
+      tile && Number.isInteger(tile.x) && Number.isInteger(tile.y)
+        ? { x: tile.x, y: tile.y }
+        : null;
+    const currentTile = this.state.battleUi.hoveredTile;
+
+    if (currentTile?.x === nextTile?.x && currentTile?.y === nextTile?.y) {
+      return;
+    }
+
+    this.state.battleUi.hoveredTile = nextTile;
+    this.emit();
+  }
+
   async handleBattleContextAction() {
     if (
       !this.battleSystem ||
@@ -328,6 +351,14 @@ export class GameController {
     ) {
       return;
     }
+
+    const now = Date.now();
+
+    if (now - this.lastBattleContextActionAt < BATTLE_CONTEXT_ACTION_DEDUPE_MS) {
+      return;
+    }
+
+    this.lastBattleContextActionAt = now;
 
     const changed = this.battleSystem.handleContextAction();
 

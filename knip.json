@@ -1,7 +1,16 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
   "entry": [
+    "index.html",
     "electron/preload.cjs",
-    "scripts/dev-server.mjs"
+    "scripts/*.mjs",
+    "tests/**/*.test.js",
+    "tests/helpers/**/*.js"
+  ],
+  "project": [
+    "src/**/*.js",
+    "electron/**/*.cjs",
+    "scripts/**/*.mjs",
+    "tests/**/*.js"
   ]
 }

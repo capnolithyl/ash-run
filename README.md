@@ -22,6 +22,7 @@ Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite 
   - Attacks and counterattacks
   - Commander passives, charge, and active powers
   - Income economy from Command and Sector structures
+  - Sector healing/resupply for units holding owned sector tiles
   - Recruitment at Barracks, Motor Pool, and Airfield
   - Infantry capture actions
   - Enemy turn automation
@@ -32,6 +33,8 @@ Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite 
   - 10-map run goal
   - 20-map authored pool sampled into each run sequence
   - Surviving units persisting between maps
+  - Unique redeployment tiles for carried survivors
+  - Gradual enemy opening pressure across later maps
   - Clear records shown on the title screen
   - Defeat ending the run
 
@@ -79,6 +82,7 @@ docs/
 - `yarn dev` -> Vite + Electron dev workflow
 - `yarn start` -> packaged-style Electron launch
 - `yarn build` -> production build
+- `yarn check:unused` -> unused files/exports/dependencies sweep
 - `yarn test` -> Node test suite
 - `yarn test:playthrough` -> forced full-run smoke check
 - `yarn package` -> production build plus Electron Builder package
@@ -91,7 +95,8 @@ Set `ASH_RUN_84_DEV_PORT` before `yarn dev` when port `5173` is already taken.
 
 - Objectives are still command-post / elimination focused rather than fully authored scenario scripting.
 - Capture is ownership-flip only, with no staged capture meter yet.
-- Enemy AI is tactical-prototype level and does not plan around long-term economy or baiting.
+- Enemy AI scores short-term trades, capture priorities, staging ranges, and recruit composition, but does not plan around long-term economy or baiting yet.
+- Enemy battle recruitment has per-turn throttles and a per-map total cap to keep small maps from becoming infinite slugfests.
 - Rewards/meta loop exists as structure, but content depth is intentionally light.
 - Audio is not implemented yet, so the options menu only exposes live visual/gameplay toggles.
 - Visuals are still primarily code-drawn placeholders rather than final authored art.

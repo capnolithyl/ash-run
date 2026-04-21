@@ -14,4 +14,4 @@ Current building types:
 - Recruitment is limited by available funds and roster cap.
 - Commander passives can modify recruit costs.
 - Infantry can capture non-owned buildings to flip ownership.
-- Sector ownership also provides automatic field servicing (heal/resupply) for units standing on owned sector tiles.
+- Sector ownership also provides automatic field servicing for units standing on owned sector tiles: 33% max HP healing, full ammo, and full stamina.

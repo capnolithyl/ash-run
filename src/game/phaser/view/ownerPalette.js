@@ -1,4 +1,4 @@
-export const OWNER_PALETTE = {
+const OWNER_PALETTE = {
   player: 0xc35cff,
   enemy: 0xff8a3d,
   neutral: 0xd8b65d

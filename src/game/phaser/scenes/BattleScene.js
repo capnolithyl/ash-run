@@ -183,7 +183,11 @@ export class BattleScene extends Phaser.Scene {
 
       if (hoveredChanged) {
         this.hoveredTile = nextHoveredTile;
-        this.renderBattle();
+        if (this.controller.setBattleHoverTile) {
+          this.controller.setBattleHoverTile(nextHoveredTile);
+        } else {
+          this.renderBattle();
+        }
       }
     });
   }

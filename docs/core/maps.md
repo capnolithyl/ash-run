@@ -9,7 +9,8 @@
 ## Common Features
 
 - Terrain mixes: road, forest, ridge, water, plain
-- Neutral economy points on select maps
+- At least two neutral economy points on every map
+- Wider central route/bridge bands to avoid single-tile stall points
 - Variable player production building assignments
 
 ## Run Usage

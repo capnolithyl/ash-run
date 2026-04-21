@@ -3,6 +3,8 @@
 ## Unit Leveling
 
 - Units gain XP through battle actions.
+- Combat XP is based on actual HP removed, target cost/value, and level difference.
+- Kill bonuses are larger for healthy or valuable targets and smaller for low-HP cleanup kills.
 - XP threshold grows by level (`80 + 35 * (level-1)`).
 - On level-up, one stat increases from a weighted random table.
 
@@ -19,3 +21,11 @@ Range growth is skipped for units that cannot attack at range.
 - Survivor snapshots carry level, XP, and rolled stats to next map.
 - Units reduced to 0 HP are permanently removed from the run roster.
 - Roster deployment is capped at 10 units per battle.
+- Returning rosters are redeployed to unique nearby starting tiles so carried units cannot stack on the same spawn.
+
+## Enemy Map Scaling
+
+- Enemy pressure rises with map index.
+- Map 2 starts adding light reinforcements and extra opening funds.
+- Later maps add higher-level enemy units, heavier starting reinforcements, and a small number of enemy-held forward sectors.
+- The scaling remains capped so it pressures snowballing without replacing authored map balance.

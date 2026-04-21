@@ -13,14 +13,16 @@ export const COMMANDERS = [
     title: "Armored Spearhead",
     accent: "#f3a55a",
     passive: {
-      type: "armor-tag",
-      tag: UNIT_TAGS.VEHICLE,
+      type: "turn-heal",
       value: 1,
-      summary: "Vehicles gain +1 armor."
+      summary: "All units recover 1 HP at the start of each turn."
     },
     active: {
-      type: "team-shield",
-      summary: "Bulwark: allied units gain +2 armor for 1 turn."
+      type: "field-repair-push",
+      healRatio: 0.5,
+      attack: 2,
+      movement: 1,
+      summary: "Hyper Repair: all units recover 50% HP and gain +1 movement/+2 attack for 1 turn."
     }
   },
   {
@@ -29,14 +31,18 @@ export const COMMANDERS = [
     title: "Linebreaker",
     accent: "#ec775e",
     passive: {
-      type: "attack-tag",
-      tag: UNIT_TAGS.INFANTRY,
-      value: 1,
-      summary: "Infantry gain +1 attack."
+      type: "attack-group",
+      group: "infantry-recon",
+      value: 2,
+      summary: "Infantry and recons gain +2 attack."
     },
     active: {
-      type: "team-assault",
-      summary: "Overrun: allied units gain +2 attack until your next turn."
+      type: "viper-infantry-push",
+      attackGroup: "infantry-recon",
+      attack: 5,
+      movementGroup: "infantry",
+      movement: 2,
+      summary: "Overrun: infantry and recons gain +5 attack; infantry also gain +2 movement for 1 turn."
     }
   },
   {
@@ -51,7 +57,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "supply-drop",
-      summary: "Supply Drop: gain 350 funds and fully resupply allied units."
+      summary: "Supply Drop: gain 600 funds and fully resupply allied units."
     }
   },
   {
@@ -81,7 +87,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "team-mobility",
-      summary: "Afterburn: allied units gain +1 movement until your next turn."
+      summary: "Afterburn: allied units gain +2 movement until your next turn."
     }
   },
   {
@@ -96,7 +102,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "team-heal",
-      summary: "Field Marshal: allied units recover 4 HP."
+      summary: "Field Marshal: allied units recover 8 HP."
     }
   },
   {
@@ -112,7 +118,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "orbital-strike",
-      summary: "Skylance: deal 4 damage to up to 3 random enemy units."
+      summary: "Skylance: deal 7 damage to up to 4 random enemy units."
     }
   },
   {
@@ -128,7 +134,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "team-shield",
-      summary: "Dust Wall: allied units gain +2 armor for 1 turn."
+      summary: "Dust Wall: allied units gain +3 armor for 1 turn."
     }
   },
   {
@@ -144,7 +150,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "team-assault",
-      summary: "Brightside: allied units gain +2 attack until your next turn."
+      summary: "Brightside: allied units gain +3 attack until your next turn."
     }
   },
   {
@@ -159,7 +165,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "team-heal",
-      summary: "Second Wind: allied units recover 4 HP."
+      summary: "Second Wind: allied units recover 8 HP."
     }
   }
 ];

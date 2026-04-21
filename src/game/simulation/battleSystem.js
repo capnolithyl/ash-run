@@ -1,443 +1,59 @@
 import {
   BUILDING_KEYS,
   COMMANDER_POWER_MAX,
+  ENEMY_RECRUITMENT_UNIT_LEAD_LIMIT,
   PROTOTYPE_ROSTER_CAP,
-  TERRAIN_KEYS,
-  TURN_SIDES,
-  UNIT_TAGS
+  TURN_SIDES
 } from "../core/constants.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
-import { randomInt } from "../core/random.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
-import { describeBuilding } from "../content/buildings.js";
-import { awardExperience, getLevelProgress, getXpThreshold } from "./progression.js";
+import { awardExperience } from "./progression.js";
+import { appendLog, pushLevelUpEvents } from "./battleLog.js";
+import { buildBattlePresentation } from "./battlePresentation.js";
+import { serviceUnitsOnSectors } from "./battleServicing.js";
+import { findUnitById, getReadyPlayerUnits } from "./battleUnits.js";
+import { canCaptureBuilding, captureBuildingForUnit } from "./captureRules.js";
 import {
   activateCommanderPower,
   applyChargeFromCombat,
-  getArmorModifier,
-  getAttackModifier,
   getIncomeBonus,
   getMovementModifier,
-  getRangeModifier,
   getRecruitDiscount,
   tickSideStatuses
 } from "./commanderEffects.js";
+import {
+  getAttackRangeCap,
+  getAttackableUnitIds,
+  getDamageResult,
+  getDefenseExperience,
+  getKillExperience,
+  getNonKillExperience,
+  removeDeadUnits
+} from "./combatResolver.js";
+import {
+  getBestCapturePlan,
+  getBestMoveAttackOption,
+  getEnemyRecruitmentLimit,
+  getEnemyRecruitmentMapCap,
+  pickBestFavorableAttack,
+  pickEnemyRecruitmentCandidate,
+  pickFallbackMovementTile
+} from "./enemyAi.js";
 import {
   canUnitAttackTarget,
   getBuildingAt,
   getLivingUnits,
   getMovementPath,
   getReachableTiles,
-  getRecruitmentOptions,
-  getSelectionCoordinates,
   getSelectedBuilding,
   getSelectedUnit,
   getTerrainAt,
-  getTilesInRange,
-  getTargetsInRange,
-  getUnitAt
+  getUnitAt,
+  getUnitAttackProfile
 } from "./selectors.js";
 import { createUnitFromType } from "./unitFactory.js";
 
-const STAT_LABELS = {
-  attack: "Attack",
-  armor: "Armor",
-  maxHealth: "Max HP",
-  movement: "Movement",
-  maxRange: "Range",
-  staminaMax: "Stamina",
-  ammoMax: "Ammo",
-  luck: "Luck"
-};
-
-function createEmptyPresentation() {
-  return {
-    selectedTile: null,
-    pendingAction: null,
-    reachableTiles: [],
-    movePreviewTiles: [],
-    attackPreviewTiles: [],
-    attackableUnitIds: [],
-    movementBudget: null,
-    recruitOptions: []
-  };
-}
-
-function formatSelectionOwner(owner) {
-  return owner === TURN_SIDES.PLAYER ? "Player" : "Enemy";
-}
-
-function describeTerrain(terrain) {
-  if (!terrain) {
-    return null;
-  }
-
-  return {
-    label: terrain.label,
-    armorBonus: terrain.armorBonus ?? 0,
-    moveCost: terrain.moveCost,
-    vehicleMoveCost: terrain.vehicleMoveCost,
-    blocksGround: terrain.blocksGround,
-    blockedFamilies: [...(terrain.blockedFamilies ?? [])]
-  };
-}
-
-function getTerrainArmorBonus(state, unit) {
-  if (unit.family === UNIT_TAGS.AIR) {
-    return 0;
-  }
-
-  const terrain = getTerrainAt(state, unit.x, unit.y);
-  return terrain?.armorBonus ?? 0;
-}
-
-function getBuildingArmorBonus(state, unit) {
-  if (unit.family === UNIT_TAGS.AIR) {
-    return 0;
-  }
-
-  const building = getBuildingAt(state, unit.x, unit.y);
-
-  if (!building || building.owner !== unit.owner) {
-    return 0;
-  }
-
-  if (building.type === BUILDING_KEYS.COMMAND) {
-    return 5;
-  }
-
-  if (building.type === BUILDING_KEYS.SECTOR) {
-    return 3;
-  }
-
-  return 3;
-}
-
-function getElevationRangeBonus(state, unit) {
-  if (unit.unitTypeId !== "longshot") {
-    return 0;
-  }
-
-  return state.map.tiles[unit.y]?.[unit.x] === TERRAIN_KEYS.MOUNTAIN ? 1 : 0;
-}
-
-function findUnitById(state, unitId) {
-  return [...state.player.units, ...state.enemy.units].find((unit) => unit.id === unitId);
-}
-
-function compareUnitsForSelectionOrder(left, right) {
-  if (left.y !== right.y) {
-    return left.y - right.y;
-  }
-
-  if (left.x !== right.x) {
-    return left.x - right.x;
-  }
-
-  return left.id.localeCompare(right.id);
-}
-
-function getReadyPlayerUnits(state) {
-  return getLivingUnits(state, TURN_SIDES.PLAYER)
-    .filter((unit) => !unit.hasMoved)
-    .sort(compareUnitsForSelectionOrder);
-}
-
-function canCaptureBuilding(unit, building) {
-  return Boolean(
-    unit &&
-    building &&
-    unit.owner === TURN_SIDES.PLAYER &&
-    unit.family === UNIT_TAGS.INFANTRY &&
-    building.owner !== unit.owner
-  );
-}
-
-function describeUnit(state, unit) {
-  if (!unit) {
-    return null;
-  }
-
-  const experience = getLevelProgress(unit);
-
-  return {
-    id: unit.id,
-    owner: unit.owner,
-    ownerLabel: formatSelectionOwner(unit.owner),
-    name: unit.name,
-    family: unit.family,
-    level: unit.level,
-    hp: unit.current.hp,
-    maxHealth: unit.stats.maxHealth,
-    attack: unit.stats.attack + getAttackModifier(state, unit),
-    armor: unit.stats.armor + getArmorModifier(state, unit),
-    movement: unit.stats.movement + getMovementModifier(state, unit),
-    minRange: unit.stats.minRange,
-    maxRange: unit.stats.maxRange + getRangeModifier(state, unit) + getElevationRangeBonus(state, unit),
-    experience: experience.current,
-    experienceToNextLevel: experience.threshold,
-    experienceRatio: experience.ratio,
-    stamina: unit.current.stamina,
-    staminaMax: unit.stats.staminaMax,
-    ammo: unit.current.ammo,
-    ammoMax: unit.stats.ammoMax,
-    luck: unit.stats.luck,
-    hasMoved: unit.hasMoved,
-    hasAttacked: unit.hasAttacked
-  };
-}
-
-function buildSelectedTile(state, selectionCoordinates) {
-  if (!selectionCoordinates) {
-    return null;
-  }
-
-  const terrain = getTerrainAt(state, selectionCoordinates.x, selectionCoordinates.y);
-
-  if (!terrain) {
-    return null;
-  }
-
-  return {
-    x: selectionCoordinates.x,
-    y: selectionCoordinates.y,
-    terrain: describeTerrain(terrain),
-    unit: describeUnit(state, getUnitAt(state, selectionCoordinates.x, selectionCoordinates.y)),
-    building: (() => {
-      const building = getBuildingAt(state, selectionCoordinates.x, selectionCoordinates.y);
-      return building ? describeBuilding(building) : null;
-    })()
-  };
-}
-
-function appendLog(state, message) {
-  state.log.unshift(message);
-  state.log = state.log.slice(0, 10);
-}
-
-function pushLevelUpEvents(state, unit, levelUps) {
-  if (unit.owner !== TURN_SIDES.PLAYER || levelUps.length === 0) {
-    return;
-  }
-
-  for (const levelUp of levelUps) {
-    state.levelUpQueue.push({
-      unitId: unit.id,
-      unitName: unit.name,
-      previousLevel: levelUp.previousLevel,
-      newLevel: levelUp.newLevel,
-      statGains: [
-        {
-          stat: levelUp.stat,
-          label: STAT_LABELS[levelUp.stat] ?? levelUp.stat,
-          delta: levelUp.increment,
-          previousValue: levelUp.previousValue,
-          nextValue: levelUp.nextValue
-        }
-      ]
-    });
-  }
-}
-
-function getDamageResult(state, attacker, defender) {
-  const attackerAttack = attacker.stats.attack + getAttackModifier(state, attacker);
-  const defenderArmor =
-    defender.stats.armor +
-    getArmorModifier(state, defender) +
-    getTerrainArmorBonus(state, defender) +
-    getBuildingArmorBonus(state, defender);
-  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
-  const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
-
-  const attackRoll = randomInt(state.seed, 0, attacker.stats.luck);
-  state.seed = attackRoll.seed;
-
-  const baseAttack = isEffective ? attackerAttack * 2 : attackerAttack;
-  const scaledAttack = Math.round((baseAttack + attackRoll.value) * healthRatio);
-  const damage = Math.max(1, scaledAttack - defenderArmor);
-
-  return {
-    damage,
-    isEffective
-  };
-}
-
-function getDamageAmount(attackerAttack, defenderArmor, isEffective, hp, maxHealth, luckRoll) {
-  const healthRatio = Math.max(0, hp / maxHealth);
-  const baseAttack = isEffective ? attackerAttack * 2 : attackerAttack;
-  const scaledAttack = Math.round((baseAttack + luckRoll) * healthRatio);
-  return Math.max(1, scaledAttack - defenderArmor);
-}
-
-function getDamageRange(state, attacker, defender, hpMin, hpMax) {
-  const attackerAttack = attacker.stats.attack + getAttackModifier(state, attacker);
-  const defenderArmor = defender.stats.armor + getArmorModifier(state, defender);
-  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
-  const normalizedHpMin = Math.max(0, Math.min(hpMin, hpMax));
-  const normalizedHpMax = Math.max(0, Math.max(hpMin, hpMax));
-  const luckMin = 0;
-  const luckMax = Math.max(0, attacker.stats.luck);
-
-  return {
-    min: getDamageAmount(
-      attackerAttack,
-      defenderArmor,
-      isEffective,
-      normalizedHpMin,
-      attacker.stats.maxHealth,
-      luckMin
-    ),
-    max: getDamageAmount(
-      attackerAttack,
-      defenderArmor,
-      isEffective,
-      normalizedHpMax,
-      attacker.stats.maxHealth,
-      luckMax
-    ),
-    isEffective
-  };
-}
-
-function getAttackForecast(state, attacker, defender) {
-  const dealt = getDamageRange(state, attacker, defender, attacker.current.hp, attacker.current.hp);
-  const defenderHpAfterHitMin = Math.max(0, defender.current.hp - dealt.max);
-  const defenderHpAfterHitMax = Math.max(0, defender.current.hp - dealt.min);
-  const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
-  const defenderRangeCap = defender.stats.maxRange + getRangeModifier(state, defender);
-  const canCounter =
-    defender.current.ammo > 0 &&
-    defenderHpAfterHitMax > 0 &&
-    distance >= defender.stats.minRange &&
-    distance <= defenderRangeCap;
-  const received = canCounter
-    ? getDamageRange(
-        state,
-        defender,
-        attacker,
-        Math.max(1, defenderHpAfterHitMin),
-        defenderHpAfterHitMax
-      )
-    : null;
-
-  return {
-    attackerId: attacker.id,
-    defenderId: defender.id,
-    dealt: {
-      min: dealt.min,
-      max: dealt.max
-    },
-    received: received
-      ? {
-          min: received.min,
-          max: received.max
-        }
-      : null,
-    defenderHpAfterHit: {
-      min: defenderHpAfterHitMin,
-      max: defenderHpAfterHitMax
-    }
-  };
-}
-
-function removeDeadUnits(state) {
-  for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
-    state[side].units = state[side].units.filter((unit) => unit.current.hp > 0);
-  }
-}
-
-function getNonKillExperience(damage) {
-  return Math.max(12, Math.round(damage * 2.5));
-}
-
-function getDefenseExperience(damage) {
-  return Math.max(8, Math.round(damage * 1.6));
-}
-
-function getKillExperience(attacker, defender) {
-  const levelDelta = defender.level - attacker.level;
-  const threshold = getXpThreshold(attacker.level);
-  const multiplier = Math.max(0.45, 1 + levelDelta * 0.25);
-
-  return Math.round(threshold * multiplier);
-}
-
-function getAttackableUnitIds(state, unit) {
-  if (!unit || unit.hasAttacked || unit.current.ammo <= 0) {
-    return [];
-  }
-
-  const rangeCap = unit.stats.maxRange + getRangeModifier(state, unit) + getElevationRangeBonus(state, unit);
-
-  return getTargetsInRange(state, unit, unit.stats.minRange, rangeCap).map((target) => target.id);
-}
-
-function serviceUnitsOnSectors(state, side) {
-  let servicedUnits = 0;
-
-  for (const unit of getLivingUnits(state, side)) {
-    const building = getBuildingAt(state, unit.x, unit.y);
-
-    if (!building || building.type !== BUILDING_KEYS.SECTOR || building.owner !== side) {
-      continue;
-    }
-
-    const healAmount = Math.max(1, Math.ceil(unit.stats.maxHealth * 0.1));
-    const previousHp = unit.current.hp;
-    const previousAmmo = unit.current.ammo;
-    const previousStamina = unit.current.stamina;
-
-    unit.current.hp = Math.min(unit.stats.maxHealth, unit.current.hp + healAmount);
-    unit.current.ammo = unit.stats.ammoMax;
-    unit.current.stamina = unit.stats.staminaMax;
-
-    if (
-      unit.current.hp !== previousHp ||
-      unit.current.ammo !== previousAmmo ||
-      unit.current.stamina !== previousStamina
-    ) {
-      servicedUnits += 1;
-    }
-  }
-
-  if (servicedUnits > 0) {
-    appendLog(
-      state,
-      `${side === TURN_SIDES.PLAYER ? "Allied" : "Enemy"} sector nodes serviced ${servicedUnits} unit${
-        servicedUnits === 1 ? "" : "s"
-      }.`
-    );
-  }
-}
-
-function createPendingActionView(state) {
-  const pendingAction = state.pendingAction;
-
-  if (!pendingAction) {
-    return null;
-  }
-
-  const unit = findUnitById(state, pendingAction.unitId);
-
-  if (!unit) {
-    return null;
-  }
-
-  const building = getBuildingAt(state, unit.x, unit.y);
-  const mode = pendingAction.mode ?? "menu";
-  const attackableUnitIds = getAttackableUnitIds(state, unit);
-
-  return {
-    ...pendingAction,
-    mode,
-    unitName: unit.name,
-    canCapture: canCaptureBuilding(unit, building),
-    canFire: attackableUnitIds.length > 0,
-    isTargeting: mode === "fire",
-    attackableUnitIds,
-    building: building ? describeBuilding(building) : null
-  };
-}
+const PRODUCTION_BUILDING_TYPES = ["barracks", "motor-pool", "airfield"];
 
 export class BattleSystem {
   constructor(initialState) {
@@ -454,104 +70,14 @@ export class BattleSystem {
     if (this.state.pendingAction && !this.state.pendingAction.mode) {
       this.state.pendingAction.mode = "menu";
     }
+    this.state.enemy.recruitsBuiltThisMap ??= 0;
     this.state.player.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.PLAYER);
     this.state.enemy.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.ENEMY);
   }
 
   getSnapshot() {
     const snapshot = structuredClone(this.state);
-    const selectedUnit = getSelectedUnit(snapshot);
-    const selectedBuilding = getSelectedBuilding(snapshot);
-    const selectedTile = buildSelectedTile(snapshot, getSelectionCoordinates(snapshot));
-    const pendingAction = createPendingActionView(snapshot);
-
-    if (selectedUnit) {
-      const movementBudget =
-        selectedUnit.stats.movement + getMovementModifier(snapshot, selectedUnit);
-      const rangeCap =
-        selectedUnit.stats.maxRange +
-        getRangeModifier(snapshot, selectedUnit) +
-        getElevationRangeBonus(snapshot, selectedUnit);
-      const attackableUnitIds = getAttackableUnitIds(snapshot, selectedUnit);
-      const shouldRevealAttackTargets =
-        !pendingAction ||
-        pendingAction.unitId !== selectedUnit.id ||
-        pendingAction.isTargeting;
-      const movePreviewTiles =
-        pendingAction?.unitId === selectedUnit.id
-          ? []
-          : getReachableTiles(snapshot, selectedUnit, movementBudget);
-      const attackPreviewTiles =
-        selectedUnit.current.ammo > 0 && rangeCap > 0 && shouldRevealAttackTargets
-          ? getTilesInRange(
-              snapshot,
-              selectedUnit.x,
-              selectedUnit.y,
-              selectedUnit.stats.minRange,
-              rangeCap
-            )
-          : [];
-
-      snapshot.presentation = {
-        ...createEmptyPresentation(),
-        selectedUnitId: selectedUnit.id,
-        selectedTile,
-        pendingAction,
-        movementBudget,
-        movePreviewTiles,
-        attackPreviewTiles,
-        reachableTiles:
-          selectedUnit.owner === TURN_SIDES.PLAYER &&
-          snapshot.turn.activeSide === TURN_SIDES.PLAYER &&
-          pendingAction?.unitId !== selectedUnit.id &&
-          !selectedUnit.hasMoved
-            ? movePreviewTiles
-            : [],
-        attackableUnitIds:
-          selectedUnit.owner === TURN_SIDES.PLAYER &&
-          snapshot.turn.activeSide === TURN_SIDES.PLAYER &&
-          shouldRevealAttackTargets
-            ? attackableUnitIds
-            : [],
-        attackForecasts:
-          selectedUnit.owner === TURN_SIDES.PLAYER &&
-          snapshot.turn.activeSide === TURN_SIDES.PLAYER &&
-          pendingAction?.unitId === selectedUnit.id &&
-          pendingAction?.isTargeting
-            ? Object.fromEntries(
-                attackableUnitIds
-                  .map((targetId) => {
-                    const target = findUnitById(snapshot, targetId);
-                    return target ? [target.id, getAttackForecast(snapshot, selectedUnit, target)] : null;
-                  })
-                  .filter(Boolean)
-              )
-            : {}
-      };
-    } else if (selectedBuilding) {
-      snapshot.presentation = {
-        ...createEmptyPresentation(),
-        selectedBuildingId: selectedBuilding.id,
-        selectedTile,
-        pendingAction,
-        recruitOptions:
-          snapshot.turn.activeSide === TURN_SIDES.PLAYER && selectedBuilding.owner === TURN_SIDES.PLAYER
-            ? getRecruitmentOptions(snapshot, selectedBuilding, snapshot.player)
-            : []
-      };
-    } else if (selectedTile) {
-      snapshot.presentation = {
-        ...createEmptyPresentation(),
-        selectedTile,
-        pendingAction
-      };
-    } else {
-      snapshot.presentation = {
-        ...createEmptyPresentation(),
-        pendingAction
-      };
-    }
-
+    snapshot.presentation = buildBattlePresentation(snapshot);
     return snapshot;
   }
 
@@ -749,32 +275,38 @@ export class BattleSystem {
   attackTarget(attackerId, defenderId) {
     const attacker = findUnitById(this.state, attackerId);
     const defender = findUnitById(this.state, defenderId);
+    const attackProfile = getUnitAttackProfile(attacker);
 
-    if (!attacker || !defender || attacker.hasAttacked || attacker.current.ammo <= 0) {
+    if (!attacker || !defender || attacker.hasAttacked || !attackProfile) {
       return false;
     }
 
-    const rangeCap =
-      attacker.stats.maxRange + getRangeModifier(this.state, attacker) + getElevationRangeBonus(this.state, attacker);
+    const rangeCap = getAttackRangeCap(this.state, attacker, attackProfile);
     const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
 
     if (
-      distance < attacker.stats.minRange ||
+      distance < attackProfile.minRange ||
       distance > rangeCap ||
       !canUnitAttackTarget(attacker, defender)
     ) {
       return false;
     }
 
-    const primaryStrike = getDamageResult(this.state, attacker, defender);
+    const defenderHpBefore = defender.current.hp;
+    const primaryStrike = getDamageResult(this.state, attacker, defender, attackProfile);
     defender.current.hp = Math.max(0, defender.current.hp - primaryStrike.damage);
-    attacker.current.ammo = Math.max(0, attacker.current.ammo - 1);
+    const primaryDamageDealt = defenderHpBefore - defender.current.hp;
+    if (attackProfile.consumesAmmo) {
+      attacker.current.ammo = Math.max(0, attacker.current.ammo - 1);
+    }
     attacker.hasAttacked = true;
     attacker.hasMoved = true;
 
     appendLog(
       this.state,
-      `${attacker.name} hit ${defender.name} for ${primaryStrike.damage}${
+      `${attacker.name} hit ${defender.name}${
+        primaryStrike.weaponType === "secondary" ? " with secondary fire" : ""
+      } for ${primaryDamageDealt}${
         primaryStrike.isEffective ? " effective" : ""
       } damage.`
     );
@@ -783,52 +315,59 @@ export class BattleSystem {
       this.state,
       attacker.owner,
       defender.owner,
-      primaryStrike.damage,
-      primaryStrike.damage
+      primaryDamageDealt,
+      primaryDamageDealt
     );
-    const defenderDefenseXp = defender.current.hp > 0 ? getDefenseExperience(primaryStrike.damage) : 0;
+    const defenderDefenseXp = defender.current.hp > 0 ? getDefenseExperience(primaryDamageDealt, attacker) : 0;
     let defenderCounterXp = 0;
     let attackerDefenseXp = 0;
+    const defenderProfile = getUnitAttackProfile(defender);
 
-    if (defender.current.hp > 0 && defender.current.ammo > 0) {
-      const counterRange =
-        defender.stats.maxRange +
-        getRangeModifier(this.state, defender) +
-        getElevationRangeBonus(this.state, defender);
+    if (defender.current.hp > 0 && defenderProfile) {
+      const counterRange = getAttackRangeCap(this.state, defender, defenderProfile);
 
       if (
-        distance >= defender.stats.minRange &&
+        distance >= defenderProfile.minRange &&
         distance <= counterRange &&
         canUnitAttackTarget(defender, attacker)
       ) {
-        const counterStrike = getDamageResult(this.state, defender, attacker);
+        const attackerHpBefore = attacker.current.hp;
+        const counterStrike = getDamageResult(this.state, defender, attacker, defenderProfile);
         attacker.current.hp = Math.max(0, attacker.current.hp - counterStrike.damage);
-        defender.current.ammo = Math.max(0, defender.current.ammo - 1);
+        const counterDamageDealt = attackerHpBefore - attacker.current.hp;
+        if (defenderProfile.consumesAmmo) {
+          defender.current.ammo = Math.max(0, defender.current.ammo - 1);
+        }
 
-        appendLog(this.state, `${defender.name} countered for ${counterStrike.damage} damage.`);
+        appendLog(
+          this.state,
+          `${defender.name} countered${
+            counterStrike.weaponType === "secondary" ? " with secondary fire" : ""
+          } for ${counterDamageDealt} damage.`
+        );
 
         applyChargeFromCombat(
           this.state,
           defender.owner,
           attacker.owner,
-          counterStrike.damage,
-          counterStrike.damage
+          counterDamageDealt,
+          counterDamageDealt
         );
         defenderCounterXp =
           attacker.current.hp <= 0
-            ? getKillExperience(defender, attacker)
-            : getNonKillExperience(counterStrike.damage);
+            ? getKillExperience(defender, attacker, counterDamageDealt, attackerHpBefore)
+            : getNonKillExperience(counterDamageDealt, attacker);
 
         if (attacker.current.hp > 0) {
-          attackerDefenseXp = getDefenseExperience(counterStrike.damage);
+          attackerDefenseXp = getDefenseExperience(counterDamageDealt, defender);
         }
       }
     }
 
     const attackerXpGain =
       defender.current.hp <= 0
-        ? getKillExperience(attacker, defender)
-        : getNonKillExperience(primaryStrike.damage);
+        ? getKillExperience(attacker, defender, primaryDamageDealt, defenderHpBefore)
+        : getNonKillExperience(primaryDamageDealt, defender);
     const attackerAfterXp = awardExperience(
       attacker,
       attackerXpGain + attackerDefenseXp,
@@ -933,10 +472,7 @@ export class BattleSystem {
     const unit = findUnitById(this.state, this.state.pendingAction.unitId);
     const building = getBuildingAt(this.state, unit.x, unit.y);
 
-    building.owner = unit.owner;
-    unit.hasMoved = true;
-    unit.hasAttacked = true;
-    appendLog(this.state, `${unit.name} captured ${describeBuilding(building).name}.`);
+    captureBuildingForUnit(this.state, unit, building);
     this.clearPendingAction();
     this.state.selection = {
       type: "building",
@@ -1245,16 +781,48 @@ export class BattleSystem {
 
       this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
 
-      const immediateTargets = getTargetsInRange(
-        this.state,
-        unit,
-        unit.stats.minRange,
-        unit.stats.maxRange + getRangeModifier(this.state, unit) + getElevationRangeBonus(this.state, unit)
-      );
+      const movementBudget = unit.stats.movement + getMovementModifier(this.state, unit);
+      const reachableTiles = getReachableTiles(this.state, unit, movementBudget);
+      const capturePlan = getBestCapturePlan(this.state, unit, reachableTiles);
+      const isGrunt = unit.unitTypeId === "grunt";
+      const isSecondaryCapturer = ["breaker", "longshot"].includes(unit.unitTypeId);
 
-      if (immediateTargets.length > 0) {
-        const target = immediateTargets.sort((left, right) => left.current.hp - right.current.hp)[0];
-        this.attackTarget(unit.id, target.id);
+      if (isGrunt && capturePlan) {
+        const moved = capturePlan.tile.x !== unit.x || capturePlan.tile.y !== unit.y;
+        const movePath = moved
+          ? getMovementPath(this.state, unit, movementBudget, capturePlan.tile.x, capturePlan.tile.y)
+          : [];
+        const moveSegments = Math.max(0, movePath.length - 1);
+
+        if (moved) {
+          unit.x = capturePlan.tile.x;
+          unit.y = capturePlan.tile.y;
+          unit.hasMoved = true;
+          this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+        }
+
+        if (capturePlan.canCaptureAfterMove) {
+          captureBuildingForUnit(this.state, unit, capturePlan.building);
+          this.updateVictoryState();
+        } else if (moved) {
+          unit.hasAttacked = true;
+        }
+
+        if (moved || capturePlan.canCaptureAfterMove) {
+          return {
+            changed: true,
+            done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
+            type: moved ? "move" : "capture",
+            unitId,
+            moveSegments
+          };
+        }
+      }
+
+      const immediateAttack = pickBestFavorableAttack(this.state, unit);
+
+      if (immediateAttack) {
+        this.attackTarget(unit.id, immediateAttack.target.id);
         return {
           changed: true,
           done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
@@ -1263,56 +831,57 @@ export class BattleSystem {
         };
       }
 
-      const reachableTiles = getReachableTiles(
-        this.state,
-        unit,
-        unit.stats.movement + getMovementModifier(this.state, unit)
-      );
-      const playerUnits = getLivingUnits(this.state, TURN_SIDES.PLAYER);
+      if (isSecondaryCapturer && capturePlan) {
+        const moved = capturePlan.tile.x !== unit.x || capturePlan.tile.y !== unit.y;
+        const movePath = moved
+          ? getMovementPath(this.state, unit, movementBudget, capturePlan.tile.x, capturePlan.tile.y)
+          : [];
+        const moveSegments = Math.max(0, movePath.length - 1);
 
-      if (playerUnits.length === 0) {
-        break;
-      }
+        if (moved) {
+          unit.x = capturePlan.tile.x;
+          unit.y = capturePlan.tile.y;
+          unit.hasMoved = true;
+          this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+        }
 
-      let bestTile = { x: unit.x, y: unit.y, distance: Number.POSITIVE_INFINITY };
+        if (capturePlan.canCaptureAfterMove) {
+          captureBuildingForUnit(this.state, unit, capturePlan.building);
+          this.updateVictoryState();
+        } else if (moved) {
+          unit.hasAttacked = true;
+        }
 
-      for (const tile of reachableTiles) {
-        const nearestDistance = playerUnits.reduce((bestDistance, target) => {
-          const distance = Math.abs(tile.x - target.x) + Math.abs(tile.y - target.y);
-          return Math.min(bestDistance, distance);
-        }, Number.POSITIVE_INFINITY);
-
-        if (nearestDistance < bestTile.distance) {
-          bestTile = { ...tile, distance: nearestDistance };
+        if (moved || capturePlan.canCaptureAfterMove) {
+          return {
+            changed: true,
+            done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
+            type: moved ? "move" : "capture",
+            unitId,
+            moveSegments
+          };
         }
       }
 
-      const moved = bestTile.x !== unit.x || bestTile.y !== unit.y;
-      const movementBudget = unit.stats.movement + getMovementModifier(this.state, unit);
+      const moveAttackOption = getBestMoveAttackOption(this.state, unit, reachableTiles);
+      const fallbackTile = moveAttackOption?.tile ?? pickFallbackMovementTile(this.state, unit, reachableTiles);
+      const moved = fallbackTile && (fallbackTile.x !== unit.x || fallbackTile.y !== unit.y);
       const movePath = moved
-        ? getMovementPath(this.state, unit, movementBudget, bestTile.x, bestTile.y)
+        ? getMovementPath(this.state, unit, movementBudget, fallbackTile.x, fallbackTile.y)
         : [];
       const moveSegments = Math.max(0, movePath.length - 1);
 
       if (moved) {
-        unit.x = bestTile.x;
-        unit.y = bestTile.y;
+        unit.x = fallbackTile.x;
+        unit.y = fallbackTile.y;
         unit.hasMoved = true;
         this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
       }
 
-      const postMoveTargets = getTargetsInRange(
-        this.state,
-        unit,
-        unit.stats.minRange,
-        unit.stats.maxRange + getRangeModifier(this.state, unit) + getElevationRangeBonus(this.state, unit)
-      );
-
-      if (postMoveTargets.length > 0) {
-        const target = postMoveTargets.sort((left, right) => left.current.hp - right.current.hp)[0];
+      if (moveAttackOption && moved) {
         this.state.enemyTurn.pendingAttack = {
           attackerId: unit.id,
-          targetId: target.id
+          targetId: moveAttackOption.target.id
         };
         return {
           changed: true,
@@ -1325,6 +894,10 @@ export class BattleSystem {
 
       if (moved) {
         unit.hasAttacked = true;
+        appendLog(
+          this.state,
+          `${unit.name} ${fallbackTile.intent === "fallback" ? "fell back from danger" : "advanced into position"}.`
+        );
         return {
           changed: true,
           done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
@@ -1413,34 +986,48 @@ export class BattleSystem {
 
   performEnemyRecruitment() {
     const deployments = [];
+    const maxDeployments = getEnemyRecruitmentLimit(this.state);
+    const mapRecruitCap = getEnemyRecruitmentMapCap(this.state);
+    const playerUnitCount = getLivingUnits(this.state, TURN_SIDES.PLAYER).length;
     const productionSites = this.state.map.buildings.filter(
       (building) =>
         building.owner === TURN_SIDES.ENEMY &&
-        ["barracks", "motor-pool", "airfield"].includes(building.type) &&
+        PRODUCTION_BUILDING_TYPES.includes(building.type) &&
         !getUnitAt(this.state, building.x, building.y)
     );
 
-    for (const building of productionSites) {
-      const options = getRecruitmentOptions(this.state, building, this.state.enemy)
-        .sort((left, right) => left.adjustedCost - right.adjustedCost);
-      const affordable = options.find((option) => option.adjustedCost <= this.state.enemy.funds);
+    const usedBuildingIds = new Set();
 
-      if (!affordable) {
-        continue;
+    while (
+      deployments.length < maxDeployments &&
+      this.state.enemy.recruitsBuiltThisMap < mapRecruitCap
+    ) {
+      const enemyUnitLead = getLivingUnits(this.state, TURN_SIDES.ENEMY).length - playerUnitCount;
+
+      if (enemyUnitLead >= ENEMY_RECRUITMENT_UNIT_LEAD_LIMIT) {
+        break;
       }
 
-      const recruit = createUnitFromType(affordable.id, TURN_SIDES.ENEMY);
-      recruit.x = building.x;
-      recruit.y = building.y;
+      const candidate = pickEnemyRecruitmentCandidate(this.state, productionSites, usedBuildingIds);
+
+      if (!candidate) {
+        break;
+      }
+
+      const recruit = createUnitFromType(candidate.option.id, TURN_SIDES.ENEMY);
+      recruit.x = candidate.building.x;
+      recruit.y = candidate.building.y;
       recruit.hasMoved = true;
       recruit.hasAttacked = true;
       this.state.enemy.units.push(recruit);
-      this.state.enemy.funds -= affordable.adjustedCost;
+      this.state.enemy.funds -= candidate.option.adjustedCost;
+      this.state.enemy.recruitsBuiltThisMap += 1;
+      usedBuildingIds.add(candidate.building.id);
       appendLog(this.state, `Enemy deployed ${recruit.name}.`);
       deployments.push({
         unitId: recruit.id,
         unitTypeId: recruit.unitTypeId,
-        buildingId: building.id,
+        buildingId: candidate.building.id,
         x: recruit.x,
         y: recruit.y
       });

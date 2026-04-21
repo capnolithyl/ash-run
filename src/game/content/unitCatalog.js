@@ -16,7 +16,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 1,
     staminaMax: 4,
-    ammoMax: 4,
+    ammoMax: 7,
     luck: 2,
     effectiveAgainstTags: []
   },
@@ -32,7 +32,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 1,
     staminaMax: 4,
-    ammoMax: 3,
+    ammoMax: 5,
     luck: 3,
     effectiveAgainstTags: [UNIT_TAGS.VEHICLE]
   },
@@ -48,7 +48,7 @@ export const UNIT_CATALOG = {
     minRange: 2,
     maxRange: 3,
     staminaMax: 3,
-    ammoMax: 4,
+    ammoMax: 6,
     luck: 4,
     effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
   },
@@ -64,7 +64,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 1,
     staminaMax: 6,
-    ammoMax: 5,
+    ammoMax: 7,
     luck: 2,
     effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
   },
@@ -80,7 +80,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 1,
     staminaMax: 5,
-    ammoMax: 4,
+    ammoMax: 6,
     luck: 1,
     effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
   },
@@ -96,9 +96,9 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 1,
     staminaMax: 4,
-    ammoMax: 4,
+    ammoMax: 6,
     luck: 1,
-    effectiveAgainstTags: [UNIT_TAGS.VEHICLE]
+    effectiveAgainstTags: [UNIT_TAGS.INFANTRY, UNIT_TAGS.VEHICLE]
   },
   "siege-gun": {
     id: "siege-gun",
@@ -112,7 +112,7 @@ export const UNIT_CATALOG = {
     minRange: 2,
     maxRange: 3,
     staminaMax: 3,
-    ammoMax: 4,
+    ammoMax: 6,
     luck: 1,
     effectiveAgainstTags: [UNIT_TAGS.VEHICLE]
   },
@@ -128,7 +128,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 2,
     staminaMax: 5,
-    ammoMax: 4,
+    ammoMax: 6,
     luck: 2,
     effectiveAgainstTags: [UNIT_TAGS.AIR]
   },
@@ -144,7 +144,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 1,
     staminaMax: 7,
-    ammoMax: 5,
+    ammoMax: 7,
     luck: 3,
     effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
   },
@@ -160,7 +160,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 2,
     staminaMax: 6,
-    ammoMax: 4,
+    ammoMax: 6,
     luck: 2,
     effectiveAgainstTags: [UNIT_TAGS.INFANTRY, UNIT_TAGS.VEHICLE]
   },
@@ -176,7 +176,7 @@ export const UNIT_CATALOG = {
     minRange: 1,
     maxRange: 1,
     staminaMax: 8,
-    ammoMax: 5,
+    ammoMax: 7,
     luck: 3,
     effectiveAgainstTags: [UNIT_TAGS.AIR]
   },

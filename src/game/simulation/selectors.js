@@ -2,6 +2,10 @@ import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import { BUILDING_RECRUITMENT, UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 
+const PRIMARY_EFFECTIVE_MULTIPLIER = 2;
+const SECONDARY_ATTACK_RATIO = 0.55;
+const SECONDARY_EFFECTIVE_MULTIPLIER = 1.25;
+
 function tileKey(x, y) {
   return `${x},${y}`;
 }
@@ -24,8 +28,30 @@ export function getBuildingAt(state, x, y) {
   return state.map.buildings.find((building) => building.x === x && building.y === y);
 }
 
-function isTileOccupied(state, x, y) {
-  return Boolean(getUnitAt(state, x, y));
+export function getUnitAttackProfile(unit) {
+  if (!unit || unit.stats?.maxRange <= 0 || unit.stats?.attack <= 0) {
+    return null;
+  }
+
+  if (unit.current?.ammo > 0) {
+    return {
+      type: "primary",
+      attack: unit.stats.attack,
+      minRange: unit.stats.minRange,
+      maxRange: unit.stats.maxRange,
+      consumesAmmo: true,
+      effectiveMultiplier: PRIMARY_EFFECTIVE_MULTIPLIER
+    };
+  }
+
+  return {
+    type: "secondary",
+    attack: Math.max(1, Math.floor(unit.stats.attack * SECONDARY_ATTACK_RATIO)),
+    minRange: 1,
+    maxRange: 1,
+    consumesAmmo: false,
+    effectiveMultiplier: SECONDARY_EFFECTIVE_MULTIPLIER
+  };
 }
 
 export function getSelectedUnit(state) {
@@ -118,7 +144,12 @@ function getMovementSearch(state, unit, movementBudget) {
     }
 
     settled.add(currentKey);
-    reachable.push({ x: current.x, y: current.y, cost: current.cost });
+
+    const currentOccupant = getUnitAt(state, current.x, current.y);
+
+    if (!currentOccupant || currentOccupant.id === unit.id) {
+      reachable.push({ x: current.x, y: current.y, cost: current.cost });
+    }
 
     const directions = [
       { x: 1, y: 0 },
@@ -138,13 +169,17 @@ function getMovementSearch(state, unit, movementBudget) {
 
       const nextCost = current.cost + getMovementCost(unit, terrain);
       const key = tileKey(nextX, nextY);
-      const occupied = isTileOccupied(state, nextX, nextY);
+      const occupant = getUnitAt(state, nextX, nextY);
+      const occupiedByBlockingUnit =
+        occupant &&
+        occupant.id !== unit.id &&
+        occupant.owner !== unit.owner;
       const bestKnownCost = bestCosts.get(key);
 
       if (
         nextCost > movementBudget ||
         isTerrainBlockedForUnit(unit, terrain) ||
-        (occupied && !(nextX === unit.x && nextY === unit.y)) ||
+        occupiedByBlockingUnit ||
         (bestKnownCost !== undefined && bestKnownCost <= nextCost)
       ) {
         continue;
@@ -218,7 +253,7 @@ export function getTargetsInRange(state, unit, minimumRange, maximumRange) {
 }
 
 export function canUnitAttackTarget(attacker, target) {
-  if (!attacker || !target || attacker.current?.ammo <= 0 || attacker.stats?.maxRange <= 0) {
+  if (!attacker || !target || !getUnitAttackProfile(attacker)) {
     return false;
   }
 

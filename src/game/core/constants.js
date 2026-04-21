@@ -8,7 +8,13 @@ export const PROTOTYPE_RUN_GOAL = 10;
 export const DEFAULT_SAVE_VERSION = 1;
 export const PLAYER_STARTING_FUNDS = 0;
 export const ENEMY_STARTING_FUNDS = 0;
-export const COMMANDER_POWER_MAX = 100;
+export const COMMANDER_POWER_MAX = 70;
+export const ENEMY_RECRUITMENT_EARLY_LIMIT = 1;
+export const ENEMY_RECRUITMENT_STANDARD_LIMIT = 2;
+export const ENEMY_RECRUITMENT_UNIT_LEAD_LIMIT = 2;
+export const ENEMY_RECRUITMENT_BASE_MAP_CAP = 3;
+export const ENEMY_RECRUITMENT_MAP_CAP_STEP_INTERVAL = 2;
+export const ENEMY_RECRUITMENT_MAX_MAP_CAP = 7;
 // Keep the JS timing values aligned with the turn-banner CSS animation.
 export const BATTLE_TURN_BANNER_DISPLAY_MS = 1100;
 export const BATTLE_TURN_BANNER_SETTLE_MS = 1120;

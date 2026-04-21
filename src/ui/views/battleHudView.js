@@ -169,6 +169,68 @@ function renderSelectionDetails(battleSnapshot) {
   `;
 }
 
+function getHoveredTargetReference(battleSnapshot, hoveredTile) {
+  const pendingAction = battleSnapshot.presentation?.pendingAction;
+
+  if (!pendingAction?.isTargeting || !hoveredTile) {
+    return null;
+  }
+
+  const target = battleSnapshot.enemy.units.find(
+    (unit) => unit.current.hp > 0 && unit.x === hoveredTile.x && unit.y === hoveredTile.y
+  );
+
+  if (!target) {
+    return null;
+  }
+
+  const forecast = battleSnapshot.presentation?.attackForecasts?.[target.id] ?? null;
+
+  if (!forecast) {
+    return null;
+  }
+
+  return {
+    target,
+    forecast
+  };
+}
+
+function renderTargetReference(battleSnapshot, hoveredTile) {
+  const targetReference = getHoveredTargetReference(battleSnapshot, hoveredTile);
+
+  if (!targetReference) {
+    return "";
+  }
+
+  const { target, forecast } = targetReference;
+  const counterLabel = forecast.received
+    ? `${forecast.received.min}-${forecast.received.max}`
+    : "0";
+
+  return `
+    <div class="card-block card-block--target-reference">
+      <div class="selection-header">
+        <h3>Target</h3>
+        <span class="selection-chip selection-chip--enemy">Enemy</span>
+      </div>
+      <div class="selection-section">
+        <div class="selection-header">
+          <strong>${target.name}</strong>
+          <span class="selection-chip">Lv ${target.level}</span>
+        </div>
+        <p>HP ${target.current.hp}/${target.stats.maxHealth} | XP ${target.experience}</p>
+        <p>ATK ${target.stats.attack} | ARM ${target.stats.armor} | MOV ${target.stats.movement}</p>
+        <p>RNG ${target.stats.minRange}-${target.stats.maxRange} | Ammo ${target.current.ammo}/${target.stats.ammoMax}</p>
+      </div>
+      <div class="selection-section">
+        <strong>Forecast</strong>
+        <p>Damage ${forecast.dealt.min}-${forecast.dealt.max} | Counter ${counterLabel}</p>
+      </div>
+    </div>
+  `;
+}
+
 function renderActionPrompt(battleSnapshot) {
   const pendingAction = battleSnapshot.presentation?.pendingAction;
 
@@ -484,6 +546,7 @@ export function renderBattleHudView(state, options = {}) {
           </div>
           <p class="commander-funds">Funds ${battleSnapshot.player.funds}</p>
         </div>
+        ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
         ${renderSelectionDetails(battleSnapshot)}
         ${renderRecruitPanel(battleSnapshot)}
       </aside>

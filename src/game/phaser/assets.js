@@ -2,8 +2,8 @@ import { BUILDING_KEYS } from "../core/constants.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
 
-export const SPRITE_ASSET_ROOT = "./assets/sprites";
-export const SPRITE_SOURCE_SIZE = 64;
+const SPRITE_ASSET_ROOT = "./assets/sprites";
+const SPRITE_SOURCE_SIZE = 64;
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
 export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
 
@@ -19,7 +19,7 @@ function createSpriteAsset(group, id, owner = null) {
   };
 }
 
-export const UNIT_SPRITES = Object.fromEntries(
+const UNIT_SPRITES = Object.fromEntries(
   Object.keys(UNIT_CATALOG).map((unitTypeId) => [
     unitTypeId,
     Object.fromEntries(
@@ -31,14 +31,14 @@ export const UNIT_SPRITES = Object.fromEntries(
   ])
 );
 
-export const TERRAIN_SPRITES = Object.fromEntries(
+const TERRAIN_SPRITES = Object.fromEntries(
   Object.keys(TERRAIN_LIBRARY).map((terrainId) => [
     terrainId,
     createSpriteAsset("terrain", terrainId)
   ])
 );
 
-export const BUILDING_SPRITES = Object.fromEntries(
+const BUILDING_SPRITES = Object.fromEntries(
   Object.values(BUILDING_KEYS).map((buildingTypeId) => [
     buildingTypeId,
     Object.fromEntries(

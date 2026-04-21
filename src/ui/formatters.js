@@ -1,4 +1,4 @@
-import { COMMANDERS, getCommanderById } from "../game/content/commanders.js";
+import { getCommanderById } from "../game/content/commanders.js";
 
 export function titleCaseSlot(slotId) {
   return slotId.replace("slot-", "Slot ");
@@ -15,14 +15,6 @@ export function formatRelativeTimestamp(timestamp) {
 
   const date = new Date(timestamp);
   return date.toLocaleString();
-}
-
-export function getCommanderAccent(commanderId) {
-  return getCommanderById(commanderId)?.accent ?? "#f5a455";
-}
-
-export function getLockedCommanderCount(unlockedCommanderIds) {
-  return COMMANDERS.length - (unlockedCommanderIds?.length ?? 0);
 }
 
 export function formatTurnCount(turnCount) {

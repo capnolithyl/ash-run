@@ -177,13 +177,61 @@ function hasGroundRoute(grid, start, goal) {
   return false;
 }
 
+function getDefaultRouteRows(height, middleRow) {
+  return [middleRow - 1, middleRow, middleRow + 1].filter(
+    (row) => row > 0 && row < height - 1
+  );
+}
+
+function createDefaultNeutralBuildings(spec, width, height, middleRow) {
+  const centerX = Math.floor(width / 2);
+
+  return [
+    {
+      id: `${spec.id}-neutral-sector-west`,
+      type: BUILDING_KEYS.SECTOR,
+      owner: "neutral",
+      x: Math.max(1, centerX - 2),
+      y: Math.max(1, middleRow - 2)
+    },
+    {
+      id: `${spec.id}-neutral-sector-east`,
+      type: BUILDING_KEYS.SECTOR,
+      owner: "neutral",
+      x: Math.min(width - 2, centerX + 1),
+      y: Math.min(height - 2, middleRow + 2)
+    }
+  ];
+}
+
+function mergeUniqueBuildings(buildings) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const building of buildings) {
+    const key = `${building.x},${building.y}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    unique.push(building);
+  }
+
+  return unique;
+}
+
 export function createBattlefield(spec) {
   const width = spec.width ?? 18;
   const height = spec.height ?? 12;
   const grid = createGrid(width, height);
   const middleRow = Math.floor(height / 2);
+  const routeRows = spec.routeRows ?? getDefaultRouteRows(height, middleRow);
 
-  addRoadSpine(grid, middleRow, spec.roadGaps ?? []);
+  for (const routeRow of routeRows) {
+    addRoadSpine(grid, routeRow, spec.roadGaps ?? []);
+  }
   carveLine(grid, "column", spec.riverColumns ?? [], TERRAIN_KEYS.WATER);
   carvePatch(grid, spec.forests ?? [], TERRAIN_KEYS.FOREST);
   carvePatch(grid, spec.mountains ?? [], TERRAIN_KEYS.MOUNTAIN);
@@ -193,7 +241,7 @@ export function createBattlefield(spec) {
     carveLine(grid, "column", [spur], TERRAIN_KEYS.ROAD);
   }
 
-  addRiverCrossings(grid, spec.riverColumns ?? [], spec.bridgeRows ?? [middleRow]);
+  addRiverCrossings(grid, spec.riverColumns ?? [], spec.bridgeRows ?? routeRows);
   addTerrainVariation(grid, spec);
 
   const playerBuildings = [
@@ -260,10 +308,15 @@ export function createBattlefield(spec) {
     ...(spec.enemyBuildings ?? [])
   ];
 
+  const neutralBuildings = mergeUniqueBuildings([
+    ...(spec.neutralBuildings ?? []),
+    ...createDefaultNeutralBuildings(spec, width, height, middleRow)
+  ]);
+
   const buildings = [
     ...playerBuildings,
     ...enemyBuildings,
-    ...(spec.neutralBuildings ?? [])
+    ...neutralBuildings
   ];
   stampBuildings(grid, buildings);
 
