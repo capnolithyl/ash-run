@@ -36,6 +36,9 @@ export function formatTurnCount(turnCount) {
   return `${turns} turn${turns === 1 ? "" : "s"}`;
 }
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs

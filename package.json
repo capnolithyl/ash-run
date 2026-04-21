@@ -10,8 +10,13 @@
     "dev": "node scripts/dev.mjs",
     "start": "node scripts/start-electron.mjs",
     "build": "node scripts/build.mjs",
+<<<<<<< ours
     "test": "node --test",
     "package": "node scripts/build.mjs && electron-builder"
+=======
+    "package": "npm run build && electron-builder",
+    "test:playthrough": "node scripts/full-playthrough-check.mjs"
+>>>>>>> theirs
   },
   "dependencies": {
     "phaser": "^3.90.0"

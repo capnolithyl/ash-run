@@ -15,8 +15,11 @@ export function createDefaultMetaState() {
     options: createDefaultOptions(),
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
     lastPlayedSlotId: null
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
     highestClearGoal: PROTOTYPE_RUN_GOAL,
@@ -24,6 +27,9 @@ export function createDefaultMetaState() {
     latestClearTurnCount: null,
     bestClearTurnCount: null
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs

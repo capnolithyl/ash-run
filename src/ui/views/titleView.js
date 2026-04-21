@@ -39,7 +39,10 @@ export function renderTitleView(state) {
         </div>
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 =======
+=======
+>>>>>>> theirs
 =======
 >>>>>>> theirs
         <div class="title-run-stats">
