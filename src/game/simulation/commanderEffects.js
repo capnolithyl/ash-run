@@ -1,4 +1,5 @@
 import { COMMANDER_POWER_MAX, TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
+import { shuffle } from "../core/random.js";
 import { getCommanderById } from "../content/commanders.js";
 import { getLivingUnits } from "./selectors.js";
 
@@ -158,9 +159,9 @@ export function activateCommanderPower(state, side, seed) {
       notes.push(`${commander.name} called in a supply drop.`);
       break;
     case "orbital-strike": {
-      const targets = getLivingUnits(state, enemySide)
-        .sort((left, right) => right.current.hp - left.current.hp)
-        .slice(0, 3);
+      const randomizedTargets = shuffle(nextSeed, getLivingUnits(state, enemySide));
+      nextSeed = randomizedTargets.seed;
+      const targets = randomizedTargets.value.slice(0, 3);
 
       for (const target of targets) {
         target.current.hp = Math.max(0, target.current.hp - 4);

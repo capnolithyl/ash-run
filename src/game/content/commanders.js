@@ -20,7 +20,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "team-shield",
-      summary: "Bulwark: allied units gain a temporary 2-point damage shield."
+      summary: "Bulwark: allied units gain +2 armor for 1 turn."
     }
   },
   {
@@ -128,7 +128,7 @@ export const COMMANDERS = [
     },
     active: {
       type: "team-shield",
-      summary: "Dust Wall: allied units gain a temporary 2-point damage shield."
+      summary: "Dust Wall: allied units gain +2 armor for 1 turn."
     }
   },
   {
