@@ -1,6 +1,6 @@
 # Units
 
-Ash Run currently defines 12 recruitable unit types across 3 families.
+Ash Run '84 currently defines 12 recruitable unit types across 3 families.
 
 ## Infantry (Barracks)
 

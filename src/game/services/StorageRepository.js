@@ -1,7 +1,7 @@
 import { createDefaultMetaState, createEmptySlotSummaries } from "../state/defaults.js";
 
-const META_KEY = "ash-run:meta";
-const SLOT_KEY_PREFIX = "ash-run:slot:";
+const META_KEY = "ash-run-84:meta";
+const SLOT_KEY_PREFIX = "ash-run-84:slot:";
 
 /**
  * The repository hides whether we are running in Electron or in a browser.
@@ -9,7 +9,7 @@ const SLOT_KEY_PREFIX = "ash-run:slot:";
  */
 export class StorageRepository {
   constructor() {
-    this.desktopApi = globalThis.ashApi ?? null;
+    this.desktopApi = globalThis.ashRun84Api ?? null;
   }
 
   async loadMeta() {
@@ -100,4 +100,3 @@ export class StorageRepository {
     return true;
   }
 }
-

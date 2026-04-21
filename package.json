@@ -1,7 +1,7 @@
 {
-  "name": "ash-run",
+  "name": "ash-run-84",
   "version": "0.1.0",
-  "description": "Ash Run turn-based tactics roguelite prototype built with Phaser and Electron.",
+  "description": "Ash Run '84 turn-based tactics roguelite prototype built with Phaser and Electron.",
   "author": "OpenAI Codex",
   "private": true,
   "type": "module",
@@ -24,8 +24,8 @@
     "vite": "^6.3.5"
   },
   "build": {
-    "appId": "com.ashrun.game",
-    "productName": "Ash Run",
+    "appId": "com.ashrun84.game",
+    "productName": "Ash Run '84",
     "files": [
       "dist/**/*",
       "electron/**/*",

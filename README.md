@@ -1,6 +1,6 @@
-# Ash Run
+# Ash Run '84
 
-Ash Run is a Phaser + Electron prototype for a turn-based tactics roguelite with persistent run rosters.
+Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite with persistent run rosters.
 
 ## Current Prototype (April 2026)
 
@@ -85,7 +85,7 @@ docs/
 
 The scripts in `scripts/` call Vite/Electron through Node APIs rather than shell wrappers to stay stable across Windows/network-share paths.
 
-Set `ASH_RUN_DEV_PORT` before `yarn dev` when port `5173` is already taken.
+Set `ASH_RUN_84_DEV_PORT` before `yarn dev` when port `5173` is already taken.
 
 ## Known Prototype Limits
 

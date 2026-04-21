@@ -18,9 +18,9 @@ export function renderTitleView(state) {
         <div class="title-scene__grid"></div>
       </div>
       <section class="hero-card">
-        <div class="hero-logo" aria-label="Ash Run logo">
+        <div class="hero-logo" aria-label="Ash Run '84 logo">
           <div class="hero-logo__sun" aria-hidden="true"></div>
-          <h1 class="hero-logo__title">ASH RUN</h1>
+          <h1 class="hero-logo__title">ASH RUN '84</h1>
         </div>
         <div class="menu-stack">
           <button class="menu-button" data-action="open-new-run">New Run</button>

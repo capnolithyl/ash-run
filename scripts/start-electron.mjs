@@ -8,7 +8,7 @@ import electronPath from "electron";
 const useDevServer = process.argv.includes("--dev-server");
 const childEnv = {
   ...process.env,
-  ASH_RUN_DEV_SERVER: useDevServer ? "1" : "0"
+  ASH_RUN_84_DEV_SERVER: useDevServer ? "1" : "0"
 };
 
 delete childEnv.ELECTRON_RUN_AS_NODE;

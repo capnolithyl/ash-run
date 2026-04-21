@@ -3,11 +3,11 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 
 const DIST_PATH = path.resolve(__dirname, "../dist/index.html");
-const DEV_SERVER_PORT = Number(process.env.ASH_RUN_DEV_PORT ?? 5173);
+const DEV_SERVER_PORT = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
 const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 const SLOT_IDS = ["slot-1", "slot-2", "slot-3"];
 const META_FILE_NAME = "meta.json";
-const USE_DEV_SERVER = !app.isPackaged && process.env.ASH_RUN_DEV_SERVER === "1";
+const USE_DEV_SERVER = !app.isPackaged && process.env.ASH_RUN_84_DEV_SERVER === "1";
 
 /**
  * The main process owns desktop integration and save storage.
@@ -71,7 +71,7 @@ async function createWindow() {
     minWidth: 1200,
     minHeight: 720,
     backgroundColor: "#09110f",
-    title: "Ash Run",
+    title: "Ash Run '84",
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),

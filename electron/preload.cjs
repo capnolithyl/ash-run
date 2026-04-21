@@ -4,7 +4,7 @@ const { contextBridge, ipcRenderer } = require("electron");
  * Electron executes sandboxed preload scripts as CommonJS in this setup.
  * Keeping the bridge in `.cjs` avoids the module-loader mismatch shown in devtools.
  */
-contextBridge.exposeInMainWorld("ashApi", {
+contextBridge.exposeInMainWorld("ashRun84Api", {
   loadMeta: () => ipcRenderer.invoke("storage:load-meta"),
   saveMeta: (metaState) => ipcRenderer.invoke("storage:save-meta", metaState),
   listSlots: () => ipcRenderer.invoke("storage:list-slots"),

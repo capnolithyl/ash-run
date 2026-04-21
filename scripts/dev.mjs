@@ -3,10 +3,10 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 const root = process.cwd();
-const devPort = parseDevPort(process.env.ASH_RUN_DEV_PORT);
+const devPort = parseDevPort(process.env.ASH_RUN_84_DEV_PORT);
 const sharedEnv = {
   ...process.env,
-  ASH_RUN_DEV_PORT: String(devPort)
+  ASH_RUN_84_DEV_PORT: String(devPort)
 };
 const devServerScript = path.resolve(root, "scripts/dev-server.mjs");
 const electronScript = path.resolve(root, "scripts/start-electron.mjs");
@@ -87,7 +87,7 @@ function parseDevPort(rawPort) {
   const parsedPort = Number(rawPort ?? fallbackPort);
 
   if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
-    throw new Error(`ASH_RUN_DEV_PORT must be an integer between 1 and 65535. Received: ${rawPort}`);
+    throw new Error(`ASH_RUN_84_DEV_PORT must be an integer between 1 and 65535. Received: ${rawPort}`);
   }
 
   return parsedPort;

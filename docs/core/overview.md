@@ -1,6 +1,6 @@
 # Overview
 
-Ash Run is a single-player turn-based tactics roguelite built around a hybrid roster model:
+Ash Run '84 is a single-player turn-based tactics roguelite built around a hybrid roster model:
 
 - You deploy persistent survivors from your run roster each map.
 - You also recruit fresh units during battle from production structures.

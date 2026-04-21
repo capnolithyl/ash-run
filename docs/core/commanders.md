@@ -1,6 +1,6 @@
 # Commanders
 
-Ash Run currently defines **10 commanders** in data.
+Ash Run '84 currently defines **10 commanders** in data.
 
 ## Starting Availability
 
