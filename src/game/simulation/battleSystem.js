@@ -617,16 +617,6 @@ export class BattleSystem {
       return false;
     }
 
-    if (selectedUnit?.owner === TURN_SIDES.PLAYER && unitAtTile?.owner === TURN_SIDES.ENEMY) {
-      const changed = this.attackTarget(selectedUnit.id, unitAtTile.id);
-
-      if (!changed) {
-        appendLog(this.state, "Target is out of range or that unit already acted.");
-      }
-
-      return changed;
-    }
-
     if (selectedUnit?.owner === TURN_SIDES.PLAYER && !selectedUnit.hasMoved) {
       const movementBudget =
         selectedUnit.stats.movement + getMovementModifier(this.state, selectedUnit);
@@ -637,8 +627,9 @@ export class BattleSystem {
       );
 
       const canMoveToTile = reachableTiles.some((tile) => tile.x === x && tile.y === y);
+      const isCurrentTile = selectedUnit.x === x && selectedUnit.y === y;
 
-      if (canMoveToTile && (selectedUnit.x !== x || selectedUnit.y !== y)) {
+      if (canMoveToTile) {
         this.state.pendingAction = {
           type: "move",
           unitId: selectedUnit.id,
@@ -650,11 +641,14 @@ export class BattleSystem {
           toY: y
         };
 
-        selectedUnit.x = x;
-        selectedUnit.y = y;
-        selectedUnit.current.stamina = Math.max(0, selectedUnit.current.stamina - 1);
+        if (!isCurrentTile) {
+          selectedUnit.x = x;
+          selectedUnit.y = y;
+          selectedUnit.current.stamina = Math.max(0, selectedUnit.current.stamina - 1);
+          appendLog(this.state, `${selectedUnit.name} repositioned.`);
+        }
+
         this.state.selection = { type: "unit", id: selectedUnit.id, x, y };
-        appendLog(this.state, `${selectedUnit.name} repositioned.`);
         return true;
       }
     }
@@ -691,6 +685,30 @@ export class BattleSystem {
 
     this.clearSelection();
     return true;
+  }
+
+  handleContextAction() {
+    if (this.state.victory || this.state.turn.activeSide !== TURN_SIDES.PLAYER) {
+      return false;
+    }
+
+    const pendingAction = this.state.pendingAction;
+    const pendingUnit = pendingAction ? findUnitById(this.state, pendingAction.unitId) : null;
+
+    if (pendingAction && pendingUnit?.owner === TURN_SIDES.PLAYER) {
+      if ((pendingAction.mode ?? "menu") === "fire") {
+        return this.cancelPendingAttack();
+      }
+
+      return this.redoPendingMove();
+    }
+
+    if (this.state.selection?.type) {
+      this.clearSelection();
+      return true;
+    }
+
+    return false;
   }
 
   selectNextReadyUnit() {

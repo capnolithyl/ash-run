@@ -26,6 +26,154 @@ test("selectNextReadyUnit cycles through player units that have not moved", () =
   assert.equal(system.getStateForSave().selection.id, alpha.id);
 });
 
+test("clicking the selected unit's tile opens the command prompt without moving", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    current: {
+      stamina: 4
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 3);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(2, 2), true);
+
+  const snapshot = system.getSnapshot();
+  const pendingAction = snapshot.presentation.pendingAction;
+  const updatedUnit = snapshot.player.units[0];
+
+  assert.equal(pendingAction.unitId, unit.id);
+  assert.equal(pendingAction.mode, "menu");
+  assert.equal(pendingAction.fromX, 2);
+  assert.equal(pendingAction.fromY, 2);
+  assert.equal(pendingAction.toX, 2);
+  assert.equal(pendingAction.toY, 2);
+  assert.equal(pendingAction.canFire, true);
+  assert.equal(updatedUnit.x, 2);
+  assert.equal(updatedUnit.y, 2);
+  assert.equal(updatedUnit.current.stamina, 4);
+});
+
+test("clicking an enemy with a selected unit inspects it instead of attacking", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(enemy.x, enemy.y), true);
+
+  const afterClick = system.getStateForSave();
+
+  assert.equal(afterClick.enemy.units[0].current.hp, enemy.current.hp);
+  assert.equal(afterClick.selection.type, "unit");
+  assert.equal(afterClick.selection.id, enemy.id);
+  assert.equal(afterClick.pendingAction, null);
+});
+
+test("the fire command arms a pending unit to attack an enemy tile", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(unit.x, unit.y), true);
+  assert.equal(system.beginPendingAttack(), true);
+  assert.equal(system.getSnapshot().presentation.pendingAction.isTargeting, true);
+
+  const startingHp = system.getStateForSave().enemy.units[0].current.hp;
+
+  assert.equal(system.handleTileSelection(enemy.x, enemy.y), true);
+
+  const afterAttack = system.getStateForSave();
+
+  assert.ok(afterAttack.enemy.units.length === 0 || afterAttack.enemy.units[0].current.hp < startingHp);
+  assert.equal(afterAttack.pendingAction, null);
+});
+
+test("right-click context action clears the current selection", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleContextAction(), true);
+
+  const afterContextAction = system.getStateForSave();
+
+  assert.equal(afterContextAction.selection.type, null);
+  assert.equal(afterContextAction.selection.id, null);
+});
+
+test("right-click context action redoes a pending move", () => {
+  const unit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      stamina: 3
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(5, 3), true);
+  assert.equal(system.handleContextAction(), true);
+
+  const afterContextAction = system.getStateForSave();
+  const updatedUnit = afterContextAction.player.units[0];
+
+  assert.equal(updatedUnit.x, 1);
+  assert.equal(updatedUnit.y, 1);
+  assert.equal(updatedUnit.current.stamina, 3);
+  assert.equal(afterContextAction.pendingAction, null);
+  assert.equal(afterContextAction.selection.id, unit.id);
+});
+
+test("right-click context action cancels fire targeting before undoing movement", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(unit.x, unit.y), true);
+  assert.equal(system.beginPendingAttack(), true);
+  assert.equal(system.handleContextAction(), true);
+
+  const pendingAction = system.getSnapshot().presentation.pendingAction;
+
+  assert.equal(pendingAction.unitId, unit.id);
+  assert.equal(pendingAction.mode, "menu");
+  assert.equal(pendingAction.isTargeting, false);
+});
+
 test("enemy turns queue a post-move attack so combat resolves after movement", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3);
   const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 3);

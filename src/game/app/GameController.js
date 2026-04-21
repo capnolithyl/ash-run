@@ -321,6 +321,21 @@ export class GameController {
     }
   }
 
+  async handleBattleContextAction() {
+    if (
+      !this.battleSystem ||
+      this.isBattleInputLocked()
+    ) {
+      return;
+    }
+
+    const changed = this.battleSystem.handleContextAction();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
   async recruitUnit(unitTypeId) {
     if (
       !this.battleSystem ||

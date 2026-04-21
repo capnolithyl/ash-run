@@ -16,6 +16,10 @@ function isBattleScreen(state) {
   return state?.screen === "battle" && state?.battleSnapshot;
 }
 
+function isRightClick(pointer) {
+  return pointer?.button === 2 || pointer?.rightButtonDown?.();
+}
+
 function getHoveredMovementPath(snapshot, hoveredTile) {
   const presentation = snapshot.presentation ?? {};
   const selectedUnit = getSelectedUnit(snapshot);
@@ -104,6 +108,8 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
+    this.input.mouse?.disableContextMenu();
+
     this.latestState = this.controller.getState();
     this.renderBattle();
 
@@ -131,6 +137,11 @@ export class BattleScene extends Phaser.Scene {
 
     this.input.on("pointerdown", async (pointer) => {
       if (!isBattleScreen(this.latestState) || this.latestState?.battleUi?.pauseMenuOpen) {
+        return;
+      }
+
+      if (isRightClick(pointer)) {
+        await this.controller.handleBattleContextAction();
         return;
       }
 

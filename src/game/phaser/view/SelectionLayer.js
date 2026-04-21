@@ -1,5 +1,10 @@
 import Phaser from "phaser";
 
+const SELECTION_DEPTH = 24;
+const CURSOR_DEPTH = 34;
+const TOOLTIP_BACKGROUND_DEPTH = 62;
+const TOOLTIP_LABEL_DEPTH = 63;
+
 function drawCornerMarkers(graphics, x, y, size, color, alpha = 1) {
   const inset = Math.max(3, Math.floor(size * 0.08));
   const arm = Math.max(7, Math.floor(size * 0.16));
@@ -108,7 +113,9 @@ export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
     this.graphics = scene.add.graphics();
-    this.graphics.setDepth(12);
+    this.graphics.setDepth(SELECTION_DEPTH);
+    this.cursorGraphics = scene.add.graphics();
+    this.cursorGraphics.setDepth(CURSOR_DEPTH);
     this.tooltipBackground = scene.add.rectangle(0, 0, 10, 10, 0x12061f, 0.9).setVisible(false);
     this.tooltipBackground.setStrokeStyle(2, 0xff8a3d, 0.95);
     this.tooltipLabel = scene.add
@@ -120,12 +127,13 @@ export class SelectionLayer {
         lineSpacing: 4
       })
       .setVisible(false);
-    this.tooltipBackground.setDepth(62);
-    this.tooltipLabel.setDepth(63);
+    this.tooltipBackground.setDepth(TOOLTIP_BACKGROUND_DEPTH);
+    this.tooltipLabel.setDepth(TOOLTIP_LABEL_DEPTH);
   }
 
   clear() {
     this.graphics.clear();
+    this.cursorGraphics.clear();
     this.tooltipBackground.setVisible(false);
     this.tooltipLabel.setVisible(false);
   }
@@ -194,8 +202,8 @@ export class SelectionLayer {
     if (hoveredTile) {
       const x = layout.originX + hoveredTile.x * layout.cellSize;
       const y = layout.originY + hoveredTile.y * layout.cellSize;
-      drawCornerMarkers(this.graphics, x, y, layout.cellSize - 2, 0xfff1c9, 0.96);
-      drawCornerMarkers(this.graphics, x + 2, y + 2, layout.cellSize - 6, 0xff8a3d, 0.82);
+      drawCornerMarkers(this.cursorGraphics, x, y, layout.cellSize - 2, 0xfff1c9, 0.96);
+      drawCornerMarkers(this.cursorGraphics, x + 2, y + 2, layout.cellSize - 6, 0xff8a3d, 0.82);
     }
 
     if (hoveredAttackForecast) {

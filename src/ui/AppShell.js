@@ -41,6 +41,7 @@ export class AppShell {
 
     this.root.addEventListener("click", (event) => this.handleClick(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));
+    this.root.addEventListener("contextmenu", (event) => this.handleContextMenu(event));
 
     this.controller.subscribe((state) => {
       this.latestState = state;
@@ -355,6 +356,18 @@ export class AppShell {
     if (startRunButton) {
       startRunButton.disabled = !state.selectedCommanderId;
     }
+  }
+
+  async handleContextMenu(event) {
+    if (
+      this.latestState?.screen !== SCREEN_IDS.BATTLE ||
+      !event.target?.closest?.(".battle-shell")
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    await this.controller.handleBattleContextAction();
   }
 
   async handleClick(event) {
