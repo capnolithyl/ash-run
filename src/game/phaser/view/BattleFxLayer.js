@@ -30,6 +30,7 @@ export class BattleFxLayer {
     this.scene = scene;
     this.activeObjects = new Set();
     this.activeTimers = new Set();
+    this.screenShakeEnabled = true;
   }
 
   clear() {
@@ -60,6 +61,10 @@ export class BattleFxLayer {
       callback();
     });
     this.activeTimers.add(timer);
+  }
+
+  setScreenShakeEnabled(enabled) {
+    this.screenShakeEnabled = enabled;
   }
 
   playEvents(events, layout, options = {}) {
@@ -198,7 +203,9 @@ export class BattleFxLayer {
     });
     destroyAfterTween(shock, shockTween);
 
-    this.scene.cameras.main.shake(100, 0.0032);
+    if (this.screenShakeEnabled) {
+      this.scene.cameras.main.shake(100, 0.0032);
+    }
   }
 
   playRestore(event, layout) {

@@ -3,7 +3,7 @@ import { createBattlefield } from "./mapFactory.js";
 
 /**
  * The prototype ships with a 20-map pool built from hand-tuned blueprints.
- * They are intentionally symmetrical for early balance work.
+ * The shared generator now layers in asymmetric terrain and objective pressure.
  */
 export const MAP_POOL = [
   createBattlefield({

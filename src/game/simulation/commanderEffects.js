@@ -8,7 +8,7 @@ function getStatuses(unit, type) {
     .reduce((sum, status) => sum + status.value, 0);
 }
 
-export function getCommanderForSide(state, side) {
+function getCommanderForSide(state, side) {
   const commanderId = state[side].commanderId;
   return getCommanderById(commanderId);
 }
@@ -186,4 +186,3 @@ export function tickSideStatuses(state, side) {
       .filter((status) => status.turnsRemaining > 0);
   }
 }
-

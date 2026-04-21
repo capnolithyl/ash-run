@@ -65,6 +65,7 @@ export class GameController {
       slots: [],
       runState: null,
       battleSnapshot: null,
+      debugMode: false,
       selectedCommanderId: null,
       selectedSlotId: SLOT_IDS[0],
       banner: "",
@@ -86,7 +87,11 @@ export class GameController {
   }
 
   async initialize() {
-    this.state.metaState = await this.storage.loadMeta();
+    const loadedMeta = await this.storage.loadMeta();
+    this.state.metaState = {
+      ...createDefaultMetaState(),
+      ...loadedMeta
+    };
     this.state.slots = await this.storage.listSlots();
     this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
     this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);
@@ -102,6 +107,7 @@ export class GameController {
     this.battleSystem = null;
     this.state.runState = null;
     this.state.battleSnapshot = null;
+    this.state.debugMode = false;
     this.state.runStatus = null;
     this.state.banner = "";
     this.resetBattleUi();
@@ -112,8 +118,32 @@ export class GameController {
     this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
     this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);
     this.state.banner = "";
+    this.state.debugMode = false;
     this.resetBattleUi();
     this.emit();
+  }
+
+  startDebugRun() {
+    const commanderId = this.state.metaState.unlockedCommanderIds[0] ?? this.state.selectedCommanderId;
+
+    if (!commanderId) {
+      return;
+    }
+
+    const runState = createNewRunState({
+      slotId: this.state.selectedSlotId,
+      commanderId
+    });
+    const battleState = createBattleStateForRun(runState);
+
+    this.battleSystem = new BattleSystem(battleState);
+    this.state.runState = runState;
+    this.state.screen = SCREEN_IDS.BATTLE;
+    this.state.runStatus = null;
+    this.state.debugMode = true;
+    this.state.banner = "Debug mode active: saves are disabled.";
+    this.resetBattleUi();
+    this.syncBattleState();
   }
 
   openContinue() {
@@ -185,6 +215,7 @@ export class GameController {
     this.state.runState = slotRecord.runState;
     this.battleSystem = new BattleSystem(slotRecord.battleState);
     this.state.screen = SCREEN_IDS.BATTLE;
+    this.state.debugMode = false;
     this.resetBattleUi();
     this.state.metaState.lastPlayedSlotId = slotId;
     this.state.runStatus =
@@ -431,6 +462,10 @@ export class GameController {
       return;
     }
 
+    if (this.state.debugMode) {
+      this.battleSystem.setDebugCharge(this.state.battleSnapshot?.turn.activeSide ?? TURN_SIDES.PLAYER, 100);
+    }
+
     const changed = this.battleSystem.activatePower();
 
     if (changed) {
@@ -454,12 +489,17 @@ export class GameController {
     if (isRunComplete(nextRunState)) {
       this.state.runState = nextRunState;
       this.state.runStatus = "complete";
+      this.state.metaState.latestClearTurnCount = nextRunState.totalTurns;
+      this.state.metaState.bestClearTurnCount = Math.min(
+        this.state.metaState.bestClearTurnCount ?? Number.POSITIVE_INFINITY,
+        nextRunState.totalTurns
+      );
 
       const unlocked = unlockNextCommander(this.state.metaState);
       if (unlocked) {
-        this.state.banner = `${unlocked.name} is now unlocked for future runs.`;
+        this.state.banner = `${unlocked.name} is now unlocked. Clear time: ${nextRunState.totalTurns} turns.`;
       } else {
-        this.state.banner = "Run clear. All commanders are already unlocked.";
+        this.state.banner = `Run clear in ${nextRunState.totalTurns} turns. All commanders are already unlocked.`;
       }
 
       await this.storage.saveMeta(this.state.metaState);
@@ -495,6 +535,11 @@ export class GameController {
 
   async persistCurrentRun() {
     if (!this.battleSystem || !this.state.runState) {
+      return;
+    }
+
+    if (this.state.debugMode) {
+      this.syncBattleState();
       return;
     }
 
@@ -545,5 +590,53 @@ export class GameController {
   syncBattleState() {
     this.state.battleSnapshot = this.battleSystem?.getSnapshot() ?? null;
     this.emit();
+  }
+
+  async debugSpawnUnit({ owner, unitTypeId, x, y, stats }) {
+    if (!this.battleSystem || !this.state.debugMode) {
+      return;
+    }
+
+    const changed = this.battleSystem.spawnDebugUnit(unitTypeId, owner, x, y, stats);
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async debugApplySelectedUnitStats(stats) {
+    if (!this.battleSystem || !this.state.debugMode) {
+      return;
+    }
+
+    const changed = this.battleSystem.applyDebugStatsToSelectedUnit(stats);
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async debugSetCharge(side, charge) {
+    if (!this.battleSystem || !this.state.debugMode) {
+      return;
+    }
+
+    const changed = this.battleSystem.setDebugCharge(side, charge);
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async debugRefreshActions(side) {
+    if (!this.battleSystem || !this.state.debugMode) {
+      return;
+    }
+
+    const changed = this.battleSystem.resetDebugUnitActions(side);
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
   }
 }

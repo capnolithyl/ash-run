@@ -1,13 +1,11 @@
 # Gameplay Loop
 
-1. Choose Commander
-2. Start Run
-3. Enter Map With Current Run Roster
-4. Earn Income And Recruit Units During Battle
-5. Play Tactical Battle
-6. Win -> Keep Survivors, Receive Rewards, Reset Map Money And Commander Charge
-7. Proceed To Next Map
-8. Lose -> Run Ends
-9. Gain Meta Currency
-10. Unlock Upgrades
-11. Start New Run Or Continue From A Save Slot
+1. Choose a commander.
+2. Start a run in a save slot.
+3. Enter the next map using your current run roster.
+4. Take turns moving, attacking, capturing, and recruiting.
+5. Spend map income to reinforce at owned production buildings.
+6. Win the map and carry surviving units forward.
+7. Reset map-specific economy/charge context and load next map.
+8. Lose a battle and the run ends.
+9. Repeat runs to improve consistency and unlock future content.

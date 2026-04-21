@@ -1,22 +1,29 @@
 # Units
 
-## Barracks (Infantry)
+Ash Run currently defines 12 recruitable unit types across 3 families.
 
-- Grunts
-- Breakers
-- Longshots
+## Infantry (Barracks)
 
-## Motor Pool (Ground Vehicles)
+- Grunt
+- Breaker
+- Longshot
 
-- Runners
+## Vehicles (Motor Pool)
+
+- Runner
 - Bruiser
 - Juggernaut
 - Siege Gun
 - Skyguard
 
-## Airfield (Air Units)
+## Air (Airfield)
 
 - Gunship
 - Payload
 - Interceptor
 - Carrier
+
+## Notes
+
+- Unit data includes costs, family tags, ranges, and effectiveness tags.
+- Carrier is a non-attacking support-style unit in current prototype data.

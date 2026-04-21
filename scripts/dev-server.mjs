@@ -1,13 +1,14 @@
 import { createServer } from "vite";
 
 const root = process.cwd();
+const port = Number(process.env.ASH_RUN_DEV_PORT ?? 5173);
 
 const server = await createServer({
   configFile: false,
   root,
   server: {
     host: "127.0.0.1",
-    port: 5173,
+    port,
     strictPort: true
   }
 });
@@ -22,4 +23,3 @@ const shutdown = async () => {
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
-

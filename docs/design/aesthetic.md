@@ -1,20 +1,20 @@
 # Aesthetic Direction
 
-## Theme
+## Tone Targets
 
-- Retro military + synthwave
-- 70s/80s inspiration
-- Subtle neon, not overwhelming
+- Grounded military readability first
+- Retro-futuristic/synthwave influence as accent, not overload
+- Clean tactical legibility over heavy effects
 
-## Visual Style
+## Current Prototype Presentation
 
-- Strong silhouettes
-- Clean readability
-- Grid overlays
-- Limited glow effects
+- Code-rendered unit/building markers
+- Strong UI panel hierarchy (menu shell + battle HUD)
+- Color-coded ownership and turn-state cues
+- Lightweight overlays for turn banners, level-up, targeting, and pause
 
-## Audio
+## Visual Priorities Going Forward
 
-- Synthwave music
-- Retro SFX
-- Arcade feedback
+1. Preserve map readability at all zoom/window sizes.
+2. Keep action-state signaling immediate (move, fire, capture, recruit).
+3. Layer stylistic treatments only where they do not hide tactical information.

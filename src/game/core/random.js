@@ -13,7 +13,7 @@ export function stringToSeed(value) {
   return hash >>> 0;
 }
 
-export function nextRandom(seed) {
+function nextRandom(seed) {
   let value = seed + 0x6d2b79f5;
   value = Math.imul(value ^ (value >>> 15), value | 1);
   value ^= value + Math.imul(value ^ (value >>> 7), value | 61);

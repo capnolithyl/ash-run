@@ -1,13 +1,8 @@
-import {
-  DEFAULT_SAVE_VERSION,
-  PROTOTYPE_RUN_GOAL,
-  SLOT_IDS
-} from "../core/constants.js";
+import { DEFAULT_SAVE_VERSION, SLOT_IDS } from "../core/constants.js";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
 
-export function createDefaultOptions() {
+function createDefaultOptions() {
   return {
-    masterVolume: 70,
     showGrid: true,
     screenShake: true
   };
@@ -18,8 +13,20 @@ export function createDefaultMetaState() {
     version: DEFAULT_SAVE_VERSION,
     unlockedCommanderIds: [...DEFAULT_UNLOCKED_COMMANDER_IDS],
     options: createDefaultOptions(),
-    highestClearGoal: PROTOTYPE_RUN_GOAL,
+<<<<<<< ours
+<<<<<<< ours
     lastPlayedSlotId: null
+=======
+=======
+>>>>>>> theirs
+    highestClearGoal: PROTOTYPE_RUN_GOAL,
+    lastPlayedSlotId: null,
+    latestClearTurnCount: null,
+    bestClearTurnCount: null
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
   };
 }
 
@@ -31,4 +38,3 @@ export function createEmptySlotSummaries() {
     summary: null
   }));
 }
-

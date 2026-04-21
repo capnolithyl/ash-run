@@ -1,24 +1,26 @@
 {
   "name": "ash-run",
   "version": "0.1.0",
+  "description": "Ash Run turn-based tactics roguelite prototype built with Phaser and Electron.",
+  "author": "OpenAI Codex",
   "private": true,
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "scripts": {
-    "dev": "concurrently -k \"node scripts/dev-server.mjs\" \"wait-on tcp:5173 && node scripts/start-electron.mjs\"",
+    "dev": "node scripts/dev.mjs",
     "start": "node scripts/start-electron.mjs",
     "build": "node scripts/build.mjs",
-    "package": "npm run build && electron-builder"
+    "test": "node --test",
+    "package": "node scripts/build.mjs && electron-builder"
   },
   "dependencies": {
     "phaser": "^3.90.0"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
     "electron": "^41.2.1",
     "electron-builder": "^26.8.1",
-    "vite": "^6.3.5",
-    "wait-on": "^9.0.5"
+    "esbuild": "^0.25.12",
+    "vite": "^6.3.5"
   },
   "build": {
     "appId": "com.ashrun.game",
@@ -32,7 +34,8 @@
       "buildResources": "build"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": false
     }
   }
 }

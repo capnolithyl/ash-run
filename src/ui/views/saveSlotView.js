@@ -22,7 +22,7 @@ export function renderSaveSlotView(state) {
                   <div>
                     <h3>${titleCaseSlot(slot.slotId)}</h3>
                     <p>${hasData ? `${formatCommanderName(summary.commanderId)} | Map ${summary.mapIndex}/${summary.targetMapCount}` : "No run stored here yet."}</p>
-                    <small>${hasData ? `${summary.mapName} | ${formatRelativeTimestamp(slot.updatedAt)}` : "Empty"}</small>
+                    <small>${hasData ? `${summary.mapName} | Turns ${summary.totalTurns ?? 0} | ${formatRelativeTimestamp(slot.updatedAt)}` : "Empty"}</small>
                   </div>
                   <div class="save-slot__actions">
                     <button
@@ -51,4 +51,3 @@ export function renderSaveSlotView(state) {
     </div>
   `;
 }
-

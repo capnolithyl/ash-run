@@ -46,8 +46,8 @@ export const COMMANDERS = [
     accent: "#d2bc62",
     passive: {
       type: "income-bonus",
-      value: 100,
-      summary: "Gain +100 income at the start of each turn."
+      value: 200,
+      summary: "Gain +200 income at the start of each turn."
     },
     active: {
       type: "supply-drop",
@@ -167,4 +167,3 @@ export const COMMANDERS = [
 export function getCommanderById(commanderId) {
   return COMMANDERS.find((commander) => commander.id === commanderId);
 }
-

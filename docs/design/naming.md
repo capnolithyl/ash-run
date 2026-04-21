@@ -2,18 +2,13 @@
 
 ## Principles
 
-- Military-first naming
-- Synthwave influence (subtle)
-- Callsign-style names
-- Avoid over-the-top cyberpunk naming
+- Short, clear, military-adjacent names
+- Callsign flavor for commanders
+- Tactical readability over lore-heavy labels
+- Subtle retro tone, avoiding parody cyberpunk terms
 
-## Examples
+## Current Data Examples
 
-Grunts, Bruiser, Juggernaut, Skyguard, Interceptor
-
-## Tone
-
-- Serious
-- Punchy
-- Readable
-- Slight retro flair
+- Commanders: Atlas, Viper, Rook, Echo, Blaze, Knox, Falcon, Graves, Nova, Sable
+- Units: Grunt, Breaker, Longshot, Runner, Bruiser, Juggernaut, Siege Gun, Skyguard, Gunship, Payload, Interceptor, Carrier
+- Maps: Ashline Crossing, Signal Ridge, White Signal, Drift Command

@@ -64,6 +64,79 @@ function stampBuildings(grid, buildings) {
   }
 }
 
+function createSeededRandom(seedText) {
+  let seed = 2166136261;
+
+  for (let index = 0; index < seedText.length; index += 1) {
+    seed ^= seedText.charCodeAt(index);
+    seed = Math.imul(seed, 16777619);
+  }
+
+  return () => {
+    seed += 0x6d2b79f5;
+    let value = seed;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function addTerrainVariation(grid, spec) {
+  const random = createSeededRandom(spec.id);
+  const totalTiles = grid.length * grid[0].length;
+  const extraForestPatches = Math.max(2, Math.floor(totalTiles / 72));
+  const extraRidgePatches = Math.max(2, Math.floor(totalTiles / 104));
+  const extraMountainPatches = Math.max(1, Math.floor(totalTiles / 130));
+  const attempts = extraForestPatches + extraRidgePatches + extraMountainPatches + 12;
+
+  let forestsPlaced = 0;
+  let ridgesPlaced = 0;
+  let mountainsPlaced = 0;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const width = 1 + Math.floor(random() * 3);
+    const height = 1 + Math.floor(random() * 2);
+    const x = 1 + Math.floor(random() * Math.max(1, grid[0].length - width - 2));
+    const y = Math.floor(random() * Math.max(1, grid.length - height));
+    const terrain =
+      forestsPlaced < extraForestPatches
+        ? TERRAIN_KEYS.FOREST
+        : mountainsPlaced < extraMountainPatches
+          ? TERRAIN_KEYS.MOUNTAIN
+          : TERRAIN_KEYS.RIDGE;
+
+    if (terrain === TERRAIN_KEYS.RIDGE && ridgesPlaced >= extraRidgePatches) {
+      continue;
+    }
+
+    if (terrain === TERRAIN_KEYS.MOUNTAIN && mountainsPlaced >= extraMountainPatches) {
+      continue;
+    }
+
+    if (terrain === TERRAIN_KEYS.FOREST && forestsPlaced >= extraForestPatches) {
+      continue;
+    }
+
+    for (let row = y; row < y + height; row += 1) {
+      for (let column = x; column < x + width; column += 1) {
+        if (grid[row][column] === TERRAIN_KEYS.ROAD || column <= 1 || column >= grid[0].length - 2) {
+          continue;
+        }
+
+        grid[row][column] = terrain;
+      }
+    }
+
+    if (terrain === TERRAIN_KEYS.FOREST) {
+      forestsPlaced += 1;
+    } else if (terrain === TERRAIN_KEYS.MOUNTAIN) {
+      mountainsPlaced += 1;
+    } else {
+      ridgesPlaced += 1;
+    }
+  }
+}
+
 function isGroundPassable(grid, x, y) {
   const terrain = grid[y]?.[x];
   return terrain !== TERRAIN_KEYS.WATER && terrain !== TERRAIN_KEYS.RIDGE && terrain !== undefined;
@@ -104,31 +177,16 @@ function hasGroundRoute(grid, start, goal) {
   return false;
 }
 
-function mirrorBuildings(width, leftSideBuildings) {
-  const mirrored = [];
-
-  for (const building of leftSideBuildings) {
-    mirrored.push(building);
-    mirrored.push({
-      ...building,
-      id: `${building.id}-mirror`,
-      x: width - 1 - building.x,
-      owner: building.owner === "player" ? "enemy" : "player"
-    });
-  }
-
-  return mirrored;
-}
-
 export function createBattlefield(spec) {
-  const width = spec.width ?? 14;
-  const height = spec.height ?? 10;
+  const width = spec.width ?? 18;
+  const height = spec.height ?? 12;
   const grid = createGrid(width, height);
   const middleRow = Math.floor(height / 2);
 
   addRoadSpine(grid, middleRow, spec.roadGaps ?? []);
   carveLine(grid, "column", spec.riverColumns ?? [], TERRAIN_KEYS.WATER);
   carvePatch(grid, spec.forests ?? [], TERRAIN_KEYS.FOREST);
+  carvePatch(grid, spec.mountains ?? [], TERRAIN_KEYS.MOUNTAIN);
   carvePatch(grid, spec.ridges ?? [], TERRAIN_KEYS.RIDGE);
 
   for (const spur of spec.roadSpurs ?? []) {
@@ -136,8 +194,9 @@ export function createBattlefield(spec) {
   }
 
   addRiverCrossings(grid, spec.riverColumns ?? [], spec.bridgeRows ?? [middleRow]);
+  addTerrainVariation(grid, spec);
 
-  const leftBuildings = [
+  const playerBuildings = [
     {
       id: `${spec.id}-command`,
       type: BUILDING_KEYS.COMMAND,
@@ -146,24 +205,64 @@ export function createBattlefield(spec) {
       y: middleRow
     },
     {
-      id: `${spec.id}-production`,
+      id: `${spec.id}-production-a`,
       type: spec.playerProduction ?? BUILDING_KEYS.BARRACKS,
       owner: "player",
       x: 2,
       y: Math.max(1, middleRow - 2)
     },
     {
-      id: `${spec.id}-sector-home`,
-      type: BUILDING_KEYS.SECTOR,
+      id: `${spec.id}-production-b`,
+      type: spec.playerProductionSecondary ?? BUILDING_KEYS.MOTOR_POOL,
       owner: "player",
       x: 3,
       y: Math.min(height - 2, middleRow + 2)
     },
-    ...(spec.leftBuildings ?? [])
+    {
+      id: `${spec.id}-sector-home`,
+      type: BUILDING_KEYS.SECTOR,
+      owner: "player",
+      x: 4,
+      y: middleRow
+    },
+    ...(spec.playerBuildings ?? [])
+  ];
+
+  const enemyBuildings = [
+    {
+      id: `${spec.id}-enemy-command`,
+      type: BUILDING_KEYS.COMMAND,
+      owner: "enemy",
+      x: width - 2,
+      y: middleRow
+    },
+    {
+      id: `${spec.id}-enemy-production-a`,
+      type: spec.enemyProduction ?? BUILDING_KEYS.BARRACKS,
+      owner: "enemy",
+      x: width - 3,
+      y: Math.max(1, middleRow + 1)
+    },
+    {
+      id: `${spec.id}-enemy-production-b`,
+      type: spec.enemyProductionSecondary ?? BUILDING_KEYS.MOTOR_POOL,
+      owner: "enemy",
+      x: width - 4,
+      y: Math.max(1, middleRow - 2)
+    },
+    {
+      id: `${spec.id}-enemy-sector-forward`,
+      type: BUILDING_KEYS.SECTOR,
+      owner: "enemy",
+      x: width - 6,
+      y: middleRow
+    },
+    ...(spec.enemyBuildings ?? [])
   ];
 
   const buildings = [
-    ...mirrorBuildings(width, leftBuildings),
+    ...playerBuildings,
+    ...enemyBuildings,
     ...(spec.neutralBuildings ?? [])
   ];
   stampBuildings(grid, buildings);
@@ -190,17 +289,19 @@ export function createBattlefield(spec) {
       { x: 1, y: 2 },
       { x: 1, y: 4 },
       { x: 1, y: 6 },
-      { x: 2, y: 5 },
+      { x: 2, y: 8 },
       { x: 2, y: 7 },
-      { x: 3, y: 3 }
+      { x: 3, y: 3 },
+      { x: 4, y: 9 }
     ],
     enemySpawns: spec.enemySpawns ?? [
       { x: width - 2, y: 2 },
       { x: width - 2, y: 4 },
       { x: width - 2, y: 6 },
-      { x: width - 3, y: 5 },
+      { x: width - 2, y: 8 },
       { x: width - 3, y: 7 },
-      { x: width - 4, y: 3 }
+      { x: width - 4, y: 3 },
+      { x: width - 5, y: 9 }
     ],
     buildings
   };

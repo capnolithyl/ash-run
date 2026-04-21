@@ -1,21 +1,21 @@
 # Progression
 
-## Leveling
+## Unit Leveling
 
-- Units gain XP
-- Level-ups give random stat increases
-- Surviving units keep their levels, XP, and earned stats throughout the run
-- Newly recruited units start at level 1
-- Future option: let the player pay extra for higher starting levels on recruitment
+- Units gain XP through battle actions.
+- XP threshold grows by level (`80 + 35 * (level-1)`).
+- On level-up, one stat increases from a weighted random table.
 
-## Probability Weights
+## Current Stat Growth Weights
 
-- High: Attack, Armor, Health
-- Medium: Others
-- Low: Movement, Attack Range
+- High weight: Attack, Armor, Max Health
+- Medium weight: Stamina Max, Ammo Max, Luck
+- Low weight: Movement, Max Range
 
-## Permadeath
+Range growth is skipped for units that cannot attack at range.
 
-- Units are lost permanently when HP reaches 0
-- Surviving units persist between battles during a run
-- Prototype roster cap is 10 units to limit snowballing and roster abuse
+## Persistence + Permadeath
+
+- Survivor snapshots carry level, XP, and rolled stats to next map.
+- Units reduced to 0 HP are permanently removed from the run roster.
+- Roster deployment is capped at 10 units per battle.

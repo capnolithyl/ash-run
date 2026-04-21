@@ -1,10 +1,12 @@
 import {
-  BUILDING_INCOME,
   BUILDING_KEYS,
+  COMMANDER_POWER_MAX,
   PROTOTYPE_ROSTER_CAP,
+  TERRAIN_KEYS,
   TURN_SIDES,
   UNIT_TAGS
 } from "../core/constants.js";
+import { getBuildingIncomeForSide } from "../core/economy.js";
 import { randomInt } from "../core/random.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { describeBuilding } from "../content/buildings.js";
@@ -21,6 +23,7 @@ import {
   tickSideStatuses
 } from "./commanderEffects.js";
 import {
+  canUnitAttackTarget,
   getBuildingAt,
   getLivingUnits,
   getMovementPath,
@@ -71,10 +74,51 @@ function describeTerrain(terrain) {
 
   return {
     label: terrain.label,
+    armorBonus: terrain.armorBonus ?? 0,
     moveCost: terrain.moveCost,
     vehicleMoveCost: terrain.vehicleMoveCost,
-    blocksGround: terrain.blocksGround
+    blocksGround: terrain.blocksGround,
+    blockedFamilies: [...(terrain.blockedFamilies ?? [])]
   };
+}
+
+function getTerrainArmorBonus(state, unit) {
+  if (unit.family === UNIT_TAGS.AIR) {
+    return 0;
+  }
+
+  const terrain = getTerrainAt(state, unit.x, unit.y);
+  return terrain?.armorBonus ?? 0;
+}
+
+function getBuildingArmorBonus(state, unit) {
+  if (unit.family === UNIT_TAGS.AIR) {
+    return 0;
+  }
+
+  const building = getBuildingAt(state, unit.x, unit.y);
+
+  if (!building || building.owner !== unit.owner) {
+    return 0;
+  }
+
+  if (building.type === BUILDING_KEYS.COMMAND) {
+    return 5;
+  }
+
+  if (building.type === BUILDING_KEYS.SECTOR) {
+    return 3;
+  }
+
+  return 3;
+}
+
+function getElevationRangeBonus(state, unit) {
+  if (unit.unitTypeId !== "longshot") {
+    return 0;
+  }
+
+  return state.map.tiles[unit.y]?.[unit.x] === TERRAIN_KEYS.MOUNTAIN ? 1 : 0;
 }
 
 function findUnitById(state, unitId) {
@@ -129,12 +173,15 @@ function describeUnit(state, unit) {
     armor: unit.stats.armor + getArmorModifier(state, unit),
     movement: unit.stats.movement + getMovementModifier(state, unit),
     minRange: unit.stats.minRange,
-    maxRange: unit.stats.maxRange + getRangeModifier(state, unit),
+    maxRange: unit.stats.maxRange + getRangeModifier(state, unit) + getElevationRangeBonus(state, unit),
     experience: experience.current,
     experienceToNextLevel: experience.threshold,
     experienceRatio: experience.ratio,
+    stamina: unit.current.stamina,
+    staminaMax: unit.stats.staminaMax,
     ammo: unit.current.ammo,
     ammoMax: unit.stats.ammoMax,
+    luck: unit.stats.luck,
     hasMoved: unit.hasMoved,
     hasAttacked: unit.hasAttacked
   };
@@ -194,7 +241,11 @@ function pushLevelUpEvents(state, unit, levelUps) {
 
 function getDamageResult(state, attacker, defender) {
   const attackerAttack = attacker.stats.attack + getAttackModifier(state, attacker);
-  const defenderArmor = defender.stats.armor + getArmorModifier(state, defender);
+  const defenderArmor =
+    defender.stats.armor +
+    getArmorModifier(state, defender) +
+    getTerrainArmorBonus(state, defender) +
+    getBuildingArmorBonus(state, defender);
   const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
 
@@ -208,6 +259,84 @@ function getDamageResult(state, attacker, defender) {
   return {
     damage,
     isEffective
+  };
+}
+
+function getDamageAmount(attackerAttack, defenderArmor, isEffective, hp, maxHealth, luckRoll) {
+  const healthRatio = Math.max(0, hp / maxHealth);
+  const baseAttack = isEffective ? attackerAttack * 2 : attackerAttack;
+  const scaledAttack = Math.round((baseAttack + luckRoll) * healthRatio);
+  return Math.max(1, scaledAttack - defenderArmor);
+}
+
+function getDamageRange(state, attacker, defender, hpMin, hpMax) {
+  const attackerAttack = attacker.stats.attack + getAttackModifier(state, attacker);
+  const defenderArmor = defender.stats.armor + getArmorModifier(state, defender);
+  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
+  const normalizedHpMin = Math.max(0, Math.min(hpMin, hpMax));
+  const normalizedHpMax = Math.max(0, Math.max(hpMin, hpMax));
+  const luckMin = 0;
+  const luckMax = Math.max(0, attacker.stats.luck);
+
+  return {
+    min: getDamageAmount(
+      attackerAttack,
+      defenderArmor,
+      isEffective,
+      normalizedHpMin,
+      attacker.stats.maxHealth,
+      luckMin
+    ),
+    max: getDamageAmount(
+      attackerAttack,
+      defenderArmor,
+      isEffective,
+      normalizedHpMax,
+      attacker.stats.maxHealth,
+      luckMax
+    ),
+    isEffective
+  };
+}
+
+function getAttackForecast(state, attacker, defender) {
+  const dealt = getDamageRange(state, attacker, defender, attacker.current.hp, attacker.current.hp);
+  const defenderHpAfterHitMin = Math.max(0, defender.current.hp - dealt.max);
+  const defenderHpAfterHitMax = Math.max(0, defender.current.hp - dealt.min);
+  const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
+  const defenderRangeCap = defender.stats.maxRange + getRangeModifier(state, defender);
+  const canCounter =
+    defender.current.ammo > 0 &&
+    defenderHpAfterHitMax > 0 &&
+    distance >= defender.stats.minRange &&
+    distance <= defenderRangeCap;
+  const received = canCounter
+    ? getDamageRange(
+        state,
+        defender,
+        attacker,
+        Math.max(1, defenderHpAfterHitMin),
+        defenderHpAfterHitMax
+      )
+    : null;
+
+  return {
+    attackerId: attacker.id,
+    defenderId: defender.id,
+    dealt: {
+      min: dealt.min,
+      max: dealt.max
+    },
+    received: received
+      ? {
+          min: received.min,
+          max: received.max
+        }
+      : null,
+    defenderHpAfterHit: {
+      min: defenderHpAfterHitMin,
+      max: defenderHpAfterHitMax
+    }
   };
 }
 
@@ -238,7 +367,7 @@ function getAttackableUnitIds(state, unit) {
     return [];
   }
 
-  const rangeCap = unit.stats.maxRange + getRangeModifier(state, unit);
+  const rangeCap = unit.stats.maxRange + getRangeModifier(state, unit) + getElevationRangeBonus(state, unit);
 
   return getTargetsInRange(state, unit, unit.stats.minRange, rangeCap).map((target) => target.id);
 }
@@ -336,7 +465,10 @@ export class BattleSystem {
     if (selectedUnit) {
       const movementBudget =
         selectedUnit.stats.movement + getMovementModifier(snapshot, selectedUnit);
-      const rangeCap = selectedUnit.stats.maxRange + getRangeModifier(snapshot, selectedUnit);
+      const rangeCap =
+        selectedUnit.stats.maxRange +
+        getRangeModifier(snapshot, selectedUnit) +
+        getElevationRangeBonus(snapshot, selectedUnit);
       const attackableUnitIds = getAttackableUnitIds(snapshot, selectedUnit);
       const shouldRevealAttackTargets =
         !pendingAction ||
@@ -377,7 +509,21 @@ export class BattleSystem {
           snapshot.turn.activeSide === TURN_SIDES.PLAYER &&
           shouldRevealAttackTargets
             ? attackableUnitIds
-            : []
+            : [],
+        attackForecasts:
+          selectedUnit.owner === TURN_SIDES.PLAYER &&
+          snapshot.turn.activeSide === TURN_SIDES.PLAYER &&
+          pendingAction?.unitId === selectedUnit.id &&
+          pendingAction?.isTargeting
+            ? Object.fromEntries(
+                attackableUnitIds
+                  .map((targetId) => {
+                    const target = findUnitById(snapshot, targetId);
+                    return target ? [target.id, getAttackForecast(snapshot, selectedUnit, target)] : null;
+                  })
+                  .filter(Boolean)
+              )
+            : {}
       };
     } else if (selectedBuilding) {
       snapshot.presentation = {
@@ -585,10 +731,15 @@ export class BattleSystem {
       return false;
     }
 
-    const rangeCap = attacker.stats.maxRange + getRangeModifier(this.state, attacker);
+    const rangeCap =
+      attacker.stats.maxRange + getRangeModifier(this.state, attacker) + getElevationRangeBonus(this.state, attacker);
     const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
 
-    if (distance < attacker.stats.minRange || distance > rangeCap) {
+    if (
+      distance < attacker.stats.minRange ||
+      distance > rangeCap ||
+      !canUnitAttackTarget(attacker, defender)
+    ) {
       return false;
     }
 
@@ -617,12 +768,15 @@ export class BattleSystem {
     let attackerDefenseXp = 0;
 
     if (defender.current.hp > 0 && defender.current.ammo > 0) {
-      const counterRange = defender.stats.maxRange + getRangeModifier(this.state, defender);
+      const counterRange =
+        defender.stats.maxRange +
+        getRangeModifier(this.state, defender) +
+        getElevationRangeBonus(this.state, defender);
 
       if (
         distance >= defender.stats.minRange &&
         distance <= counterRange &&
-        defender.unitTypeId !== "carrier"
+        canUnitAttackTarget(defender, attacker)
       ) {
         const counterStrike = getDamageResult(this.state, defender, attacker);
         attacker.current.hp = Math.max(0, attacker.current.hp - counterStrike.damage);
@@ -841,6 +995,145 @@ export class BattleSystem {
     return result.changed;
   }
 
+  spawnDebugUnit(unitTypeId, owner, x, y, statOverrides = {}) {
+    if (!UNIT_CATALOG[unitTypeId] || ![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(owner)) {
+      return false;
+    }
+
+    if (!getTerrainAt(this.state, x, y) || getUnitAt(this.state, x, y)) {
+      return false;
+    }
+
+    const unit = createUnitFromType(unitTypeId, owner);
+    unit.x = x;
+    unit.y = y;
+    unit.hasMoved = false;
+    unit.hasAttacked = false;
+
+    for (const [statKey, value] of Object.entries(statOverrides)) {
+      if (Number.isFinite(value) && statKey in unit.stats) {
+        unit.stats[statKey] = Math.max(0, Math.floor(value));
+      }
+    }
+
+    unit.stats.maxHealth = Math.max(1, unit.stats.maxHealth);
+    unit.stats.movement = Math.max(1, unit.stats.movement);
+    unit.stats.maxRange = Math.max(unit.stats.minRange, unit.stats.maxRange);
+    unit.current.hp = unit.stats.maxHealth;
+    unit.current.stamina = unit.stats.staminaMax;
+    unit.current.ammo = unit.stats.ammoMax;
+
+    this.state[owner].units.push(unit);
+    this.state.selection = { type: "unit", id: unit.id, x, y };
+    this.clearPendingAction();
+    appendLog(this.state, `[Debug] Spawned ${unit.name} (${owner}) at ${x + 1},${y + 1}.`);
+    this.updateVictoryState();
+    return true;
+  }
+
+  applyDebugStatsToSelectedUnit(debugPatch) {
+    const selectedUnit = getSelectedUnit(this.state);
+
+    if (!selectedUnit) {
+      return false;
+    }
+
+    const patchValue = (key, min = 0) => {
+      const nextValue = Number(debugPatch[key]);
+
+      if (Number.isFinite(nextValue)) {
+        selectedUnit.stats[key] = Math.max(min, Math.floor(nextValue));
+      }
+    };
+
+    patchValue("attack");
+    patchValue("armor");
+    patchValue("movement", 1);
+    patchValue("minRange");
+    patchValue("maxRange");
+    patchValue("staminaMax");
+    patchValue("ammoMax");
+    patchValue("luck");
+
+    if (selectedUnit.stats.maxRange < selectedUnit.stats.minRange) {
+      selectedUnit.stats.maxRange = selectedUnit.stats.minRange;
+    }
+
+    const maxHealth = Number(debugPatch.maxHealth);
+
+    if (Number.isFinite(maxHealth)) {
+      selectedUnit.stats.maxHealth = Math.max(1, Math.floor(maxHealth));
+    }
+
+    const level = Number(debugPatch.level);
+
+    if (Number.isFinite(level)) {
+      selectedUnit.level = Math.max(1, Math.floor(level));
+    }
+
+    const experience = Number(debugPatch.experience);
+
+    if (Number.isFinite(experience)) {
+      selectedUnit.experience = Math.max(0, Math.floor(experience));
+    }
+
+    const hp = Number(debugPatch.hp);
+
+    if (Number.isFinite(hp)) {
+      selectedUnit.current.hp = Math.max(0, Math.min(selectedUnit.stats.maxHealth, Math.floor(hp)));
+    } else {
+      selectedUnit.current.hp = Math.min(selectedUnit.current.hp, selectedUnit.stats.maxHealth);
+    }
+
+    const stamina = Number(debugPatch.stamina);
+
+    if (Number.isFinite(stamina)) {
+      selectedUnit.current.stamina = Math.max(
+        0,
+        Math.min(selectedUnit.stats.staminaMax, Math.floor(stamina))
+      );
+    } else {
+      selectedUnit.current.stamina = Math.min(selectedUnit.current.stamina, selectedUnit.stats.staminaMax);
+    }
+
+    const ammo = Number(debugPatch.ammo);
+
+    if (Number.isFinite(ammo)) {
+      selectedUnit.current.ammo = Math.max(0, Math.min(selectedUnit.stats.ammoMax, Math.floor(ammo)));
+    } else {
+      selectedUnit.current.ammo = Math.min(selectedUnit.current.ammo, selectedUnit.stats.ammoMax);
+    }
+
+    appendLog(this.state, `[Debug] Updated stats for ${selectedUnit.name}.`);
+    this.updateVictoryState();
+    return true;
+  }
+
+  setDebugCharge(side, charge) {
+    if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(side)) {
+      return false;
+    }
+
+    this.state[side].charge = Math.max(0, Math.min(COMMANDER_POWER_MAX, Number(charge) || 0));
+    appendLog(this.state, `[Debug] ${side} commander charge set to ${Math.floor(this.state[side].charge)}.`);
+    return true;
+  }
+
+  resetDebugUnitActions(side) {
+    if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(side)) {
+      return false;
+    }
+
+    for (const unit of getLivingUnits(this.state, side)) {
+      unit.hasMoved = false;
+      unit.hasAttacked = false;
+      unit.current.stamina = unit.stats.staminaMax;
+    }
+
+    appendLog(this.state, `[Debug] Refreshed ${side} unit actions.`);
+    return true;
+  }
+
   endTurn() {
     if (this.state.victory) {
       return false;
@@ -884,6 +1177,8 @@ export class BattleSystem {
       return { changed: false, done: true };
     }
 
+    // Enemy turns are resolved as move and attack phases so the renderer can
+    // let movement finish before combat begins.
     if (this.state.enemyTurn.pendingAttack) {
       const queuedAttack = this.state.enemyTurn.pendingAttack;
       this.state.enemyTurn.pendingAttack = null;
@@ -913,7 +1208,7 @@ export class BattleSystem {
         this.state,
         unit,
         unit.stats.minRange,
-        unit.stats.maxRange + getRangeModifier(this.state, unit)
+        unit.stats.maxRange + getRangeModifier(this.state, unit) + getElevationRangeBonus(this.state, unit)
       );
 
       if (immediateTargets.length > 0) {
@@ -969,7 +1264,7 @@ export class BattleSystem {
         this.state,
         unit,
         unit.stats.minRange,
-        unit.stats.maxRange + getRangeModifier(this.state, unit)
+        unit.stats.maxRange + getRangeModifier(this.state, unit) + getElevationRangeBonus(this.state, unit)
       );
 
       if (postMoveTargets.length > 0) {
@@ -1026,9 +1321,7 @@ export class BattleSystem {
 
   collectIncome(side) {
     const commanderBonus = getIncomeBonus(this.state, side);
-    const buildingIncome = this.state.map.buildings
-      .filter((building) => building.owner === side)
-      .reduce((sum, building) => sum + (BUILDING_INCOME[building.type] ?? 0), 0);
+    const buildingIncome = getBuildingIncomeForSide(this.state.map.buildings, side);
 
     this.state[side].funds += buildingIncome + commanderBonus;
   }
@@ -1070,6 +1363,7 @@ export class BattleSystem {
   }
 
   updateVictoryState() {
+    this.state.victory = null;
     const livingPlayer = getLivingUnits(this.state, TURN_SIDES.PLAYER);
     const livingEnemy = getLivingUnits(this.state, TURN_SIDES.ENEMY);
 

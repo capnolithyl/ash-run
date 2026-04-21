@@ -1,29 +1,37 @@
 # Commanders
 
-Players select a commander at the start of each run.
+Ash Run currently defines **10 commanders** in data.
 
-## Features
+## Starting Availability
 
-- Passive Ability (always active)
-- Active Power (charged through combat)
+Default unlocked set:
 
-## Power Charge
-
-- Damage taken is the main source of charge
-- Damage dealt also grants charge, but at half the rate of damage taken
-- Commander charge resets at the start of each map
-
-## Naming Style
-
-Commanders use callsign-style names.
-
-Examples:
-
-- Viper
 - Atlas
-- Echo
-- Blaze
+- Viper
 - Rook
-- Graves
-- Knox
-- Falcon
+
+Other commanders are locked for player selection but still valid enemy commanders.
+
+## Commander Model
+
+Each commander has:
+
+- A passive modifier (always active)
+- An active power (requires full charge)
+
+Charge behavior:
+
+- Damage dealt grants charge (with commander-specific modifiers possible)
+- Damage taken grants charge
+- Charge caps at 100 and resets when power is used
+- Charge is battle-local (not carried map-to-map)
+
+## Active Power Families (current)
+
+- Team shield
+- Team assault
+- Team mobility
+- Team heal
+- Team resupply
+- Supply drop (funds + resupply)
+- Orbital strike (enemy HP pressure)

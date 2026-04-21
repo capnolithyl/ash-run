@@ -55,6 +55,30 @@ function getTurnTransitionDelay(previousSnapshot, nextSnapshot) {
   return BATTLE_TURN_BANNER_SETTLE_MS;
 }
 
+function getHoveredAttackForecast(snapshot, hoveredTile) {
+  if (!hoveredTile) {
+    return null;
+  }
+
+  const presentation = snapshot.presentation ?? {};
+  const pendingAction = presentation.pendingAction;
+  const isTargeting = pendingAction?.isTargeting && pendingAction?.mode === "fire";
+
+  if (!isTargeting) {
+    return null;
+  }
+
+  const hoveredEnemy = snapshot.enemy.units.find(
+    (unit) => unit.current.hp > 0 && unit.x === hoveredTile.x && unit.y === hoveredTile.y
+  );
+
+  if (!hoveredEnemy) {
+    return null;
+  }
+
+  return presentation.attackForecasts?.[hoveredEnemy.id] ?? null;
+}
+
 export class BattleScene extends Phaser.Scene {
   constructor() {
     super("BattleScene");
@@ -180,6 +204,7 @@ export class BattleScene extends Phaser.Scene {
     const layout = this.getBoardLayout(snapshot);
     const showGrid = this.latestState.metaState.options.showGrid;
     const hoveredMovementPath = getHoveredMovementPath(snapshot, this.hoveredTile);
+    const hoveredAttackForecast = getHoveredAttackForecast(snapshot, this.hoveredTile);
     const previousSnapshot =
       this.previousSnapshot?.id === snapshot.id && this.previousSnapshot?.map.id === snapshot.map.id
         ? this.previousSnapshot
@@ -192,9 +217,17 @@ export class BattleScene extends Phaser.Scene {
     const animationEvents = deriveBattleAnimationEvents(previousSnapshot, snapshot);
     const movementEvents = animationEvents.filter((event) => event.type === "move");
     const turnTransitionDelay = getTurnTransitionDelay(previousSnapshot, snapshot);
+    this.fxLayer.setScreenShakeEnabled(this.latestState.metaState.options.screenShake !== false);
 
     this.gridLayer.render(snapshot, layout);
-    this.selectionLayer.render(snapshot, layout, showGrid, this.hoveredTile, hoveredMovementPath);
+    this.selectionLayer.render(
+      snapshot,
+      layout,
+      showGrid,
+      this.hoveredTile,
+      hoveredMovementPath,
+      hoveredAttackForecast
+    );
     this.buildingLayer.render(snapshot, layout);
     this.unitLayer.render(snapshot, layout, movementEvents);
 

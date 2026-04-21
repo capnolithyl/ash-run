@@ -5,6 +5,7 @@ import {
   PROTOTYPE_RUN_GOAL,
   TURN_SIDES
 } from "../core/constants.js";
+import { getBuildingIncomeForSide } from "../core/economy.js";
 import { createId } from "../core/id.js";
 import { pickOne, shuffle, stringToSeed } from "../core/random.js";
 import { COMMANDERS } from "../content/commanders.js";
@@ -88,6 +89,7 @@ export function createNewRunState({ slotId, commanderId }) {
     slotId,
     commanderId,
     mapIndex: 0,
+    totalTurns: 0,
     targetMapCount,
     mapSequence: buildMapSequence(seed, targetMapCount),
     roster: [],
@@ -99,6 +101,8 @@ export function createBattleStateForRun(runState) {
   const mapId = runState.mapSequence[runState.mapIndex % runState.mapSequence.length];
   const mapDefinition = structuredClone(getMapById(mapId));
   const enemyCommanderId = pickEnemyCommander(runState.seed + runState.mapIndex, runState.commanderId);
+  const playerOpeningFunds =
+    PLAYER_STARTING_FUNDS + getBuildingIncomeForSide(mapDefinition.buildings, TURN_SIDES.PLAYER);
 
   return {
     id: createId("battle"),
@@ -110,7 +114,7 @@ export function createBattleStateForRun(runState) {
     },
     player: {
       commanderId: runState.commanderId,
-      funds: PLAYER_STARTING_FUNDS,
+      funds: playerOpeningFunds,
       charge: 0,
       recruitDiscount: 0,
       units: createPlayerBattleRoster(runState, mapDefinition)
@@ -146,14 +150,15 @@ export function createSlotRecord(runState, battleState) {
       commanderId: runState.commanderId,
       mapIndex: runState.mapIndex + 1,
       targetMapCount: runState.targetMapCount,
-      mapName: battleState?.map?.name ?? "No active map"
+      mapName: battleState?.map?.name ?? "No active map",
+      totalTurns: runState.totalTurns ?? 0
     },
     runState,
     battleState
   };
 }
 
-export function extractRosterFromBattle(battleState) {
+function extractRosterFromBattle(battleState) {
   return battleState.player.units
     .filter((unit) => unit.current.hp > 0)
     .map((unit) => createPersistentUnitSnapshot(unit));
@@ -162,6 +167,7 @@ export function extractRosterFromBattle(battleState) {
 export function applyBattleVictoryToRun(runState, battleState) {
   return {
     ...structuredClone(runState),
+    totalTurns: (runState.totalTurns ?? 0) + battleState.turn.number,
     roster: extractRosterFromBattle(battleState),
     completedMaps: [...runState.completedMaps, battleState.map.id],
     mapIndex: runState.mapIndex + 1

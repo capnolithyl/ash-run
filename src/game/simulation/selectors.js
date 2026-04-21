@@ -10,7 +10,7 @@ export function getLivingUnits(state, side) {
   return state[side].units.filter((unit) => unit.current.hp > 0);
 }
 
-export function getAllUnits(state) {
+function getAllUnits(state) {
   return [...state.player.units, ...state.enemy.units];
 }
 
@@ -24,7 +24,7 @@ export function getBuildingAt(state, x, y) {
   return state.map.buildings.find((building) => building.x === x && building.y === y);
 }
 
-export function isTileOccupied(state, x, y) {
+function isTileOccupied(state, x, y) {
   return Boolean(getUnitAt(state, x, y));
 }
 
@@ -85,6 +85,22 @@ function getMovementCost(unit, terrain) {
   return unit.family === UNIT_TAGS.VEHICLE ? terrain.vehicleMoveCost : terrain.moveCost;
 }
 
+function isTerrainBlockedForUnit(unit, terrain) {
+  if (!terrain) {
+    return true;
+  }
+
+  if (unit.family === UNIT_TAGS.AIR) {
+    return false;
+  }
+
+  if (terrain.blocksGround) {
+    return true;
+  }
+
+  return (terrain.blockedFamilies ?? []).includes(unit.family);
+}
+
 function getMovementSearch(state, unit, movementBudget) {
   const frontier = [{ x: unit.x, y: unit.y, cost: 0 }];
   const bestCosts = new Map([[tileKey(unit.x, unit.y), 0]]);
@@ -127,7 +143,7 @@ function getMovementSearch(state, unit, movementBudget) {
 
       if (
         nextCost > movementBudget ||
-        (terrain.blocksGround && unit.family !== UNIT_TAGS.AIR) ||
+        isTerrainBlockedForUnit(unit, terrain) ||
         (occupied && !(nextX === unit.x && nextY === unit.y)) ||
         (bestKnownCost !== undefined && bestKnownCost <= nextCost)
       ) {
@@ -189,12 +205,42 @@ export function getTargetsInRange(state, unit, minimumRange, maximumRange) {
   for (const target of getLivingUnits(state, enemySide)) {
     const distance = Math.abs(unit.x - target.x) + Math.abs(unit.y - target.y);
 
-    if (distance >= minimumRange && distance <= maximumRange) {
+    if (
+      distance >= minimumRange &&
+      distance <= maximumRange &&
+      canUnitAttackTarget(unit, target)
+    ) {
       targets.push(target);
     }
   }
 
   return targets;
+}
+
+export function canUnitAttackTarget(attacker, target) {
+  if (!attacker || !target || attacker.current?.ammo <= 0 || attacker.stats?.maxRange <= 0) {
+    return false;
+  }
+
+  const isAirTarget = target.family === UNIT_TAGS.AIR;
+
+  if (attacker.unitTypeId === "interceptor") {
+    return isAirTarget;
+  }
+
+  if (attacker.unitTypeId === "gunship") {
+    return target.unitTypeId !== "interceptor";
+  }
+
+  if (attacker.unitTypeId === "payload") {
+    return !isAirTarget;
+  }
+
+  if (isAirTarget) {
+    return attacker.unitTypeId === "skyguard";
+  }
+
+  return true;
 }
 
 export function getTilesInRange(state, originX, originY, minimumRange, maximumRange) {

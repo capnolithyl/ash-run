@@ -1,27 +1,26 @@
 # Unit Stats
 
-- Health → Unit dies at 0
-- Attack → Base damage
-- Armor → Damage reduction
-- Movement Range → Tiles moved
-- Attack Range → Attack distance
-- Stamina → Movement resource
-- Ammo → Attack resource
-- Luck → Random bonus effects
+Current normalized unit stat set:
 
-## Stamina
+- `maxHealth`
+- `attack`
+- `armor`
+- `movement`
+- `minRange`
+- `maxRange`
+- `staminaMax`
+- `ammoMax`
+- `luck`
 
-- -1 per tile moved
-- 0 = cannot move
+Runtime unit state also tracks:
 
-## Ammo
+- current HP/ammo/stamina
+- level + XP
+- move/attack completion flags
+- temporary statuses (shield/attack/mobility effects)
 
-- -1 per attack
-- 0 = cannot attack
+## Notes
 
-## Luck
-
-- Affects:
-  - Bonus damage
-  - Crit chance
-  - Dodge chance
+- `minRange/maxRange` controls direct-fire vs indirect-fire behavior.
+- `luck` contributes a random additive attack roll.
+- `staminaMax` and `ammoMax` are resupply-sensitive resources.

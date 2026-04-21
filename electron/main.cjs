@@ -1,14 +1,13 @@
-import { app, BrowserWindow, ipcMain } from "electron";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+const { app, BrowserWindow, ipcMain } = require("electron");
+const fs = require("node:fs/promises");
+const path = require("node:path");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const DIST_PATH = path.resolve(__dirname, "../dist/index.html");
-const DEV_SERVER_URL = "http://127.0.0.1:5173";
+const DEV_SERVER_PORT = Number(process.env.ASH_RUN_DEV_PORT ?? 5173);
+const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 const SLOT_IDS = ["slot-1", "slot-2", "slot-3"];
 const META_FILE_NAME = "meta.json";
+const USE_DEV_SERVER = !app.isPackaged && process.env.ASH_RUN_DEV_SERVER === "1";
 
 /**
  * The main process owns desktop integration and save storage.
@@ -81,11 +80,11 @@ async function createWindow() {
     }
   });
 
-  if (app.isPackaged) {
-    await window.loadFile(DIST_PATH);
-  } else {
+  if (USE_DEV_SERVER) {
     await window.loadURL(DEV_SERVER_URL);
     window.webContents.openDevTools({ mode: "detach" });
+  } else {
+    await window.loadFile(DIST_PATH);
   }
 }
 

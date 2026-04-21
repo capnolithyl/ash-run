@@ -44,6 +44,15 @@ export class AppShell {
     });
   }
 
+  getDebugField(field, fallback = "") {
+    return this.root.querySelector(`[data-debug-field="${field}"]`)?.value ?? fallback;
+  }
+
+  getDebugNumberField(field, fallback = 0) {
+    const parsed = Number(this.getDebugField(field, fallback));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
   render(state) {
     if (state.screen === SCREEN_IDS.COMMANDER_SELECT) {
       this.renderCommanderSelect(state);
@@ -292,6 +301,9 @@ export class AppShell {
       case "open-options":
         this.controller.openOptions();
         break;
+      case "open-debug-run":
+        this.controller.startDebugRun();
+        break;
       case "back-to-title":
         await this.controller.returnToTitle();
         break;
@@ -366,6 +378,55 @@ export class AppShell {
         break;
       case "advance-run":
         await this.controller.advanceRun();
+        break;
+      case "debug-spawn-unit":
+        await this.controller.debugSpawnUnit({
+          owner: this.getDebugField("spawn-owner", "player"),
+          unitTypeId: this.getDebugField("spawn-unit-type", "grunt"),
+          x: this.getDebugNumberField("spawn-x", 0),
+          y: this.getDebugNumberField("spawn-y", 0),
+          stats: {
+            attack: this.getDebugNumberField("spawn-attack", NaN),
+            armor: this.getDebugNumberField("spawn-armor", NaN),
+            maxHealth: this.getDebugNumberField("spawn-max-health", NaN),
+            movement: this.getDebugNumberField("spawn-movement", NaN),
+            minRange: this.getDebugNumberField("spawn-min-range", NaN),
+            maxRange: this.getDebugNumberField("spawn-max-range", NaN),
+            staminaMax: this.getDebugNumberField("spawn-max-stamina", NaN),
+            ammoMax: this.getDebugNumberField("spawn-max-ammo", NaN),
+            luck: this.getDebugNumberField("spawn-luck", NaN)
+          }
+        });
+        break;
+      case "debug-apply-selected-stats":
+        await this.controller.debugApplySelectedUnitStats({
+          hp: this.getDebugNumberField("unit-hp", NaN),
+          maxHealth: this.getDebugNumberField("unit-max-health", NaN),
+          attack: this.getDebugNumberField("unit-attack", NaN),
+          armor: this.getDebugNumberField("unit-armor", NaN),
+          movement: this.getDebugNumberField("unit-movement", NaN),
+          minRange: this.getDebugNumberField("unit-min-range", NaN),
+          maxRange: this.getDebugNumberField("unit-max-range", NaN),
+          stamina: this.getDebugNumberField("unit-stamina", NaN),
+          staminaMax: this.getDebugNumberField("unit-max-stamina", NaN),
+          ammo: this.getDebugNumberField("unit-ammo", NaN),
+          ammoMax: this.getDebugNumberField("unit-max-ammo", NaN),
+          luck: this.getDebugNumberField("unit-luck", NaN),
+          level: this.getDebugNumberField("unit-level", NaN),
+          experience: this.getDebugNumberField("unit-experience", NaN)
+        });
+        break;
+      case "debug-full-charge-player":
+        await this.controller.debugSetCharge("player", 100);
+        break;
+      case "debug-full-charge-enemy":
+        await this.controller.debugSetCharge("enemy", 100);
+        break;
+      case "debug-refresh-player-actions":
+        await this.controller.debugRefreshActions("player");
+        break;
+      case "debug-refresh-enemy-actions":
+        await this.controller.debugRefreshActions("enemy");
         break;
       default:
         break;

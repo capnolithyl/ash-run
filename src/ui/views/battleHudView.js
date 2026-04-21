@@ -1,5 +1,6 @@
 import { COMMANDER_POWER_MAX } from "../../game/core/constants.js";
 import { getCommanderById } from "../../game/content/commanders.js";
+import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 import { renderOptionFields } from "./optionFieldsView.js";
 
 function formatCostLabel(cost) {
@@ -147,7 +148,14 @@ function renderSelectionDetails(battleSnapshot) {
       <div class="selection-section selection-section--terrain">
         <strong>${selectedTile.terrain.label}</strong>
         <p>Infantry cost ${formatCostLabel(selectedTile.terrain.moveCost)} | Vehicles cost ${formatCostLabel(selectedTile.terrain.vehicleMoveCost)}</p>
-        <p>${selectedTile.terrain.blocksGround ? "Ground units cannot cross this tile." : "Ground units can traverse this tile."}</p>
+        <p>Armor bonus: +${selectedTile.terrain.armorBonus ?? 0}</p>
+        <p>${
+          selectedTile.terrain.blocksGround
+            ? "Ground units cannot cross this tile."
+            : selectedTile.terrain.blockedFamilies?.length
+              ? `${selectedTile.terrain.blockedFamilies.join(", ")} units cannot cross this tile.`
+              : "Ground units can traverse this tile."
+        }</p>
       </div>
     </div>
   `;
@@ -278,7 +286,85 @@ function renderRecruitPanel(battleSnapshot) {
   `;
 }
 
-function renderPauseOverlay(state) {
+function renderDebugControls(state, battleSnapshot) {
+  if (!state.debugMode) {
+    return "";
+  }
+
+  const selectedTile = battleSnapshot.presentation?.selectedTile;
+  const selectedUnit = selectedTile?.unit;
+  const unitOptions = Object.values(UNIT_CATALOG)
+    .map((unit) => `<option value="${unit.id}">${unit.name}</option>`)
+    .join("");
+  const spawnX = selectedTile?.x ?? 0;
+  const spawnY = selectedTile?.y ?? 0;
+
+  return `
+    <div class="debug-panel">
+      <h3>Debug Toolkit</h3>
+      <p class="debug-panel__hint">Spawn units anywhere, override stats, and recharge powers instantly.</p>
+      <div class="debug-grid">
+        <label>Side
+          <select data-debug-field="spawn-owner">
+            <option value="player">Player</option>
+            <option value="enemy">Enemy</option>
+          </select>
+        </label>
+        <label>Unit
+          <select data-debug-field="spawn-unit-type">${unitOptions}</select>
+        </label>
+        <label>X
+          <input data-debug-field="spawn-x" type="number" value="${spawnX}" min="0" max="${battleSnapshot.map.width - 1}" />
+        </label>
+        <label>Y
+          <input data-debug-field="spawn-y" type="number" value="${spawnY}" min="0" max="${battleSnapshot.map.height - 1}" />
+        </label>
+        <label>ATK <input data-debug-field="spawn-attack" type="number" placeholder="default" /></label>
+        <label>ARM <input data-debug-field="spawn-armor" type="number" placeholder="default" /></label>
+        <label>Max HP <input data-debug-field="spawn-max-health" type="number" placeholder="default" /></label>
+        <label>MOV <input data-debug-field="spawn-movement" type="number" placeholder="default" /></label>
+        <label>Min RNG <input data-debug-field="spawn-min-range" type="number" placeholder="default" /></label>
+        <label>Max RNG <input data-debug-field="spawn-max-range" type="number" placeholder="default" /></label>
+        <label>Max STA <input data-debug-field="spawn-max-stamina" type="number" placeholder="default" /></label>
+        <label>Max Ammo <input data-debug-field="spawn-max-ammo" type="number" placeholder="default" /></label>
+        <label>Luck <input data-debug-field="spawn-luck" type="number" placeholder="default" /></label>
+      </div>
+      <div class="battle-actions">
+        <button class="menu-button menu-button--small" data-action="debug-spawn-unit">Spawn Unit</button>
+        <button class="ghost-button ghost-button--small" data-action="debug-full-charge-player">Player Full Charge</button>
+        <button class="ghost-button ghost-button--small" data-action="debug-full-charge-enemy">Enemy Full Charge</button>
+        <button class="ghost-button ghost-button--small" data-action="debug-refresh-player-actions">Refresh Player Actions</button>
+        <button class="ghost-button ghost-button--small" data-action="debug-refresh-enemy-actions">Refresh Enemy Actions</button>
+      </div>
+      <h4>Selected Unit Overrides ${selectedUnit ? `(${selectedUnit.name})` : ""}</h4>
+      <div class="debug-grid">
+        <label>HP <input data-debug-field="unit-hp" type="number" value="${selectedUnit?.hp ?? ""}" /></label>
+        <label>Max HP <input data-debug-field="unit-max-health" type="number" value="${selectedUnit?.maxHealth ?? ""}" /></label>
+        <label>ATK <input data-debug-field="unit-attack" type="number" value="${selectedUnit?.attack ?? ""}" /></label>
+        <label>ARM <input data-debug-field="unit-armor" type="number" value="${selectedUnit?.armor ?? ""}" /></label>
+        <label>MOV <input data-debug-field="unit-movement" type="number" value="${selectedUnit?.movement ?? ""}" /></label>
+        <label>Min RNG <input data-debug-field="unit-min-range" type="number" value="${selectedUnit?.minRange ?? ""}" /></label>
+        <label>Max RNG <input data-debug-field="unit-max-range" type="number" value="${selectedUnit?.maxRange ?? ""}" /></label>
+        <label>STA <input data-debug-field="unit-stamina" type="number" value="${selectedUnit?.stamina ?? ""}" /></label>
+        <label>Max STA <input data-debug-field="unit-max-stamina" type="number" /></label>
+        <label>Ammo <input data-debug-field="unit-ammo" type="number" value="${selectedUnit?.ammo ?? ""}" /></label>
+        <label>Max Ammo <input data-debug-field="unit-max-ammo" type="number" /></label>
+        <label>Luck <input data-debug-field="unit-luck" type="number" /></label>
+        <label>Level <input data-debug-field="unit-level" type="number" value="${selectedUnit?.level ?? ""}" min="1" /></label>
+        <label>XP <input data-debug-field="unit-experience" type="number" value="${selectedUnit?.experience ?? ""}" min="0" /></label>
+      </div>
+      <div class="battle-actions">
+        <button class="menu-button menu-button--small" data-action="debug-apply-selected-stats" ${
+          selectedUnit ? "" : "disabled"
+        }>
+          Apply To Selected Unit
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderPauseOverlay(state, battleSnapshot) {
   if (!state.battleUi.pauseMenuOpen) {
     return "";
   }
@@ -306,6 +392,7 @@ function renderPauseOverlay(state) {
               <div class="options-list options-list--compact">
                 ${renderOptionFields(state.metaState.options)}
               </div>
+              ${renderDebugControls(state, battleSnapshot)}
               <div class="battle-actions">
                 <button class="menu-button" data-action="resume-battle">Continue Battle</button>
                 <button class="ghost-button" data-action="prompt-abandon-run">Back To Main Menu</button>
@@ -441,7 +528,7 @@ export function renderBattleHudView(state, options = {}) {
       ${renderTargetingPrompt(battleSnapshot)}
       ${renderTurnBanner(turnBanner)}
       ${suppressLevelUpOverlay ? "" : renderLevelUpOverlay(battleSnapshot)}
-      ${renderPauseOverlay(state)}
+      ${renderPauseOverlay(state, battleSnapshot)}
       ${suppressOutcomeOverlay ? "" : renderOutcomeOverlay(state, battleSnapshot)}
     </div>
   `;

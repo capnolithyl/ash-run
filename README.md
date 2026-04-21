@@ -1,9 +1,11 @@
 # Ash Run
 
-Initial Phaser + JavaScript + Electron prototype scaffold for a turn-based tactics roguelite.
+Ash Run is a Phaser + Electron prototype for a turn-based tactics roguelite with persistent run rosters.
 
-## Current Prototype Slice
+## Current Prototype (April 2026)
 
+<<<<<<< ours
+<<<<<<< ours
 - Title screen with:
   - `New Run`
   - `Continue`
@@ -17,20 +19,73 @@ Initial Phaser + JavaScript + Electron prototype scaffold for a turn-based tacti
 - Tactical battle scene with:
   - grid map rendering
   - unit selection
+  - next-ready-unit cycling
   - movement
+  - path previews
   - attacks and counterattacks
+  - unit experience gain and level ups
+  - capture actions
   - simple enemy AI
   - recruitment from owned production buildings
   - commander charge and powers
   - battle-to-battle run progression
+  - pause menu and save-slot flow
 - 20 map definitions in the prototype pool
+=======
+=======
+>>>>>>> theirs
+- Full menu shell with:
+  - Title
+  - New Run / Continue
+  - Save-slot load screen (3 slots)
+  - Options
+- Commander selection:
+  - 10 commanders defined in data
+  - 3 commanders unlocked at start (`Atlas`, `Viper`, `Rook`)
+  - Locked commanders can still appear as enemy commanders
+- Tactical battles with:
+  - Tile-based movement and attack flow
+  - Counterattacks
+  - Commander passives and active powers
+  - Income economy from Command + Sector structures
+  - Recruitment at Barracks / Motor Pool / Airfield
+  - Capture action (infantry only)
+  - Enemy turn automation
+  - Persistent unit leveling and random stat growth
+  - Level-up presentation queue in HUD
+- Run flow:
+  - 10-map run goal
+  - 20-map authored pool sampled into run sequence
+  - Surviving units persist between maps
+  - Defeat ends run
+
+## Tech Stack
+
+- **Client/gameplay:** JavaScript + Phaser
+- **Shell:** Electron
+- **Tooling:** Vite
+- **Package manager:** Yarn
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 
 ## Project Structure
 
 ```text
 electron/
+<<<<<<< ours
+  main.cjs
+  preload.cjs
+tests/
+  helpers/
+=======
   main.js
-  preload.js
+  preload.cjs
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 scripts/
   build.mjs
   dev-server.mjs
@@ -53,24 +108,48 @@ docs/
   planning/
 ```
 
-## Architecture Notes
-
-- `src/game/simulation/` owns the saveable battle rules and turn logic.
-- `src/game/phaser/` renders the battlefield and animated backdrop.
-- `src/ui/` owns menus, HUD, save slot UI, and options.
-- `electron/` owns save storage and desktop integration.
-
 ## Commands
 
+<<<<<<< ours
+<<<<<<< ours
 - `yarn dev`
 - `yarn start`
 - `yarn build`
+- `yarn test`
+- `yarn package`
+=======
+- `yarn dev` → Vite + Electron dev workflow
+- `yarn start` → packaged-style Electron launch
+- `yarn build` → production build
+>>>>>>> theirs
 
-The helper scripts in `scripts/` intentionally invoke Vite and Electron through Node APIs instead of shell wrappers. That makes the project more resilient on Windows network-share paths where plain CLI wrappers often fail.
+The scripts in `scripts/` call Vite/Electron through Node APIs rather than shell wrappers to stay stable across Windows/network-share paths.
+
+Set `ASH_RUN_DEV_PORT` before `yarn dev` when port `5173` is already taken.
 
 ## Known Prototype Limits
 
-- Capture mechanics are not implemented yet.
-- Objective types are still elimination-only.
-- Meta unlock progression is intentionally light.
-- Audio and art assets are still placeholder-free and code-drawn.
+<<<<<<< ours
+- Objectives are still command-post / elimination focused rather than fully authored scenario scripting.
+- Enemy AI is tactical-prototype level and does not plan around long-term economy or baiting.
+- Audio is not implemented yet, so the options menu only exposes live visual/gameplay toggles.
+- Visuals are still primarily code-drawn placeholders rather than final authored art.
+=======
+=======
+- `yarn dev` → Vite + Electron dev workflow
+- `yarn start` → packaged-style Electron launch
+- `yarn build` → production build
+
+The scripts in `scripts/` call Vite/Electron through Node APIs rather than shell wrappers to stay stable across Windows/network-share paths.
+
+## Known Prototype Limits
+
+>>>>>>> theirs
+- No multi-objective mission types yet (currently elimination-centric).
+- Capture is ownership-flip only (no staged capture meter).
+- Rewards/meta loop exists as structure, but content depth is intentionally light.
+- Presentation remains code-drawn and placeholder-oriented.
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs

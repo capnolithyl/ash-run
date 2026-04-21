@@ -108,13 +108,35 @@ export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
     this.graphics = scene.add.graphics();
+    this.tooltipBackground = scene.add.rectangle(0, 0, 10, 10, 0x12061f, 0.9).setVisible(false);
+    this.tooltipBackground.setStrokeStyle(2, 0xff8a3d, 0.95);
+    this.tooltipLabel = scene.add
+      .text(0, 0, "", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: "16px",
+        color: "#fff2d4",
+        align: "left",
+        lineSpacing: 4
+      })
+      .setVisible(false);
+    this.tooltipBackground.setDepth(62);
+    this.tooltipLabel.setDepth(63);
   }
 
   clear() {
     this.graphics.clear();
+    this.tooltipBackground.setVisible(false);
+    this.tooltipLabel.setVisible(false);
   }
 
-  render(snapshot, layout, showGridHighlights, hoveredTile, hoveredMovementPath = []) {
+  render(
+    snapshot,
+    layout,
+    showGridHighlights,
+    hoveredTile,
+    hoveredMovementPath = [],
+    hoveredAttackForecast = null
+  ) {
     this.clear();
 
     const presentation = snapshot.presentation ?? {};
@@ -173,6 +195,33 @@ export class SelectionLayer {
       const y = layout.originY + hoveredTile.y * layout.cellSize;
       drawCornerMarkers(this.graphics, x, y, layout.cellSize - 2, 0xfff1c9, 0.96);
       drawCornerMarkers(this.graphics, x + 2, y + 2, layout.cellSize - 6, 0xff8a3d, 0.82);
+    }
+
+    if (hoveredAttackForecast) {
+      const dealt = hoveredAttackForecast.dealt;
+      const received = hoveredAttackForecast.received;
+      const label = `Damage ${dealt.min}-${dealt.max}\nCounter ${
+        received ? `${received.min}-${received.max}` : "0"
+      }`;
+      const margin = Math.max(10, Math.floor(layout.cellSize * 0.2));
+      const width = Math.max(150, Math.floor(layout.cellSize * 3.2));
+      const x = Phaser.Math.Clamp(
+        layout.originX + hoveredTile.x * layout.cellSize + layout.cellSize + margin,
+        margin,
+        this.scene.scale.width - width - margin
+      );
+      const y = Phaser.Math.Clamp(
+        layout.originY + hoveredTile.y * layout.cellSize - margin * 0.5,
+        margin,
+        this.scene.scale.height - 72 - margin
+      );
+
+      this.tooltipLabel.setText(label).setPosition(x + 10, y + 10).setVisible(true);
+      const bounds = this.tooltipLabel.getBounds();
+      this.tooltipBackground
+        .setPosition(bounds.centerX, bounds.centerY)
+        .setSize(bounds.width + 20, bounds.height + 18)
+        .setVisible(true);
     }
   }
 }
