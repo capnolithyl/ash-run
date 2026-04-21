@@ -772,12 +772,14 @@ input {
 }
 
 .funds-panel {
+  position: relative;
   min-width: 10rem;
   padding: 0.7rem 0.9rem;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(10, 5, 20, 0.72);
   box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.02);
+  overflow: visible;
 }
 
 .funds-panel span {
@@ -794,6 +796,27 @@ input {
   font-size: 1.55rem;
   line-height: 1;
   color: #fff7d4;
+}
+
+.funds-panel--gaining strong {
+  animation: funds-count-pulse 900ms ease;
+}
+
+.funds-panel__gain {
+  position: absolute;
+  right: 0.85rem;
+  bottom: -0.45rem;
+  display: block;
+  color: #fff2bf;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow:
+    0 0 12px rgba(255, 209, 102, 0.64),
+    0 0 22px rgba(255, 138, 61, 0.36);
+  pointer-events: none;
+  animation: funds-gain-rise 900ms ease forwards;
 }
 
 .funds-panel--player {
@@ -1456,6 +1479,44 @@ input {
   }
 }
 
+@keyframes funds-gain-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0.55rem) scale(0.92);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  76% {
+    opacity: 1;
+    transform: translateY(-1.25rem) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-1.7rem) scale(1.04);
+  }
+}
+
+@keyframes funds-count-pulse {
+  0% {
+    color: #fff7d4;
+    text-shadow: none;
+  }
+
+  42% {
+    color: #fff2bf;
+    text-shadow: 0 0 16px rgba(255, 209, 102, 0.46);
+  }
+
+  100% {
+    color: #fff7d4;
+    text-shadow: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .title-scene::before,
   .title-scene__stars,
@@ -1463,7 +1524,9 @@ input {
   .title-scene__orb,
   .title-scene__haze,
   .title-scene__mountains,
-  .title-scene__grid {
+  .title-scene__grid,
+  .funds-panel--gaining strong,
+  .funds-panel__gain {
     animation: none;
   }
 }

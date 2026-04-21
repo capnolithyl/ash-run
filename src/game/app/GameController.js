@@ -1,5 +1,6 @@
 import { createEmitter } from "../core/emitter.js";
 import {
+  BATTLE_FUNDS_GAIN_ANIMATION_MS,
   BATTLE_MOVE_SETTLE_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
   SCREEN_IDS,
@@ -39,7 +40,8 @@ function unlockNextCommander(metaState) {
 function createBattleUiState() {
   return {
     pauseMenuOpen: false,
-    confirmAbandon: false
+    confirmAbandon: false,
+    fundsGain: null
   };
 }
 
@@ -58,6 +60,7 @@ export class GameController {
     this.storage = storage;
     this.events = createEmitter();
     this.battleSystem = null;
+    this.fundsGainSequence = 0;
     this.state = {
       ready: false,
       screen: SCREEN_IDS.TITLE,
@@ -267,6 +270,14 @@ export class GameController {
     this.emit();
   }
 
+  isBattleInputLocked() {
+    return Boolean(
+      this.state.battleUi.pauseMenuOpen ||
+        this.state.battleUi.fundsGain ||
+        this.state.battleSnapshot?.levelUpQueue?.length
+    );
+  }
+
   promptAbandonRun() {
     if (!this.state.battleUi.pauseMenuOpen) {
       return;
@@ -298,8 +309,7 @@ export class GameController {
   async handleBattleTileClick(x, y) {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -314,8 +324,7 @@ export class GameController {
   async recruitUnit(unitTypeId) {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -330,8 +339,7 @@ export class GameController {
   async selectNextReadyUnit() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -346,8 +354,7 @@ export class GameController {
   async waitWithSelectedUnit() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -362,8 +369,7 @@ export class GameController {
   async captureWithSelectedUnit() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -378,8 +384,7 @@ export class GameController {
   async beginSelectedAttack() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -394,8 +399,7 @@ export class GameController {
   async cancelSelectedAttack() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -410,8 +414,7 @@ export class GameController {
   async redoSelectedMove() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -426,8 +429,7 @@ export class GameController {
   async endTurn() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -441,7 +443,7 @@ export class GameController {
 
     this.syncBattleState();
 
-    if (this.battleSystem.hasPendingEnemyTurn() && !this.state.battleSnapshot?.victory) {
+    if (this.battleSystem.isEnemyTurnActive()) {
       await this.runEnemyTurnSequence();
       return;
     }
@@ -456,8 +458,7 @@ export class GameController {
   async activatePower() {
     if (
       !this.battleSystem ||
-      this.state.battleUi.pauseMenuOpen ||
-      this.state.battleSnapshot?.levelUpQueue?.length
+      this.isBattleInputLocked()
     ) {
       return;
     }
@@ -555,9 +556,83 @@ export class GameController {
     this.syncBattleState();
   }
 
+  prepareFundsGain(incomeGain, { pending = false } = {}) {
+    if (!incomeGain || incomeGain.amount <= 0) {
+      this.state.battleUi.fundsGain = null;
+      return null;
+    }
+
+    const fundsGain = {
+      id: `funds-${++this.fundsGainSequence}`,
+      side: incomeGain.side,
+      amount: incomeGain.amount,
+      from: incomeGain.previousFunds,
+      to: incomeGain.nextFunds,
+      durationMs: BATTLE_FUNDS_GAIN_ANIMATION_MS,
+      pending
+    };
+
+    this.state.battleUi.fundsGain = fundsGain;
+    return fundsGain;
+  }
+
+  async playPreparedFundsGain(fundsGainId) {
+    const currentGain = this.state.battleUi.fundsGain;
+
+    if (!currentGain || currentGain.id !== fundsGainId) {
+      return;
+    }
+
+    this.state.battleUi.fundsGain = {
+      ...currentGain,
+      pending: false
+    };
+    this.syncBattleState();
+    await delay(currentGain.durationMs);
+
+    if (this.state.battleUi.fundsGain?.id === fundsGainId) {
+      this.state.battleUi.fundsGain = null;
+      this.syncBattleState();
+    }
+  }
+
+  async playFundsGain(incomeGain) {
+    const fundsGain = this.prepareFundsGain(incomeGain);
+
+    if (!fundsGain) {
+      this.syncBattleState();
+      return;
+    }
+
+    await this.playPreparedFundsGain(fundsGain.id);
+  }
+
   async runEnemyTurnSequence() {
     if (this.state.battleSnapshot?.turn.activeSide === TURN_SIDES.ENEMY && !this.state.battleSnapshot?.victory) {
       await delay(BATTLE_TURN_BANNER_SETTLE_MS);
+    }
+
+    while (this.state.battleUi.pauseMenuOpen) {
+      await delay(100);
+    }
+
+    const enemyStart = this.battleSystem?.startEnemyTurnActions();
+
+    if (enemyStart?.changed) {
+      if (this.battleSystem.getStateForSave().victory) {
+        this.syncBattleState();
+        await this.persistCurrentRun();
+        return;
+      }
+
+      await this.playFundsGain(enemyStart.incomeGain);
+
+      if (this.state.battleSnapshot?.victory) {
+        await this.persistCurrentRun();
+        return;
+      }
+    } else {
+      this.syncBattleState();
     }
 
     while (this.battleSystem?.hasPendingEnemyTurn()) {
@@ -583,7 +658,32 @@ export class GameController {
       await delay(stepDelay);
     }
 
-    this.battleSystem?.finalizeEnemyTurn();
+    while (this.state.battleUi.pauseMenuOpen) {
+      await delay(100);
+    }
+
+    const recruitment = this.battleSystem?.performEnemyEndTurnRecruitment();
+
+    if (recruitment?.changed) {
+      this.syncBattleState();
+      await delay(760);
+    }
+
+    const playerStart = this.battleSystem?.finalizeEnemyTurn();
+
+    if (playerStart?.changed) {
+      const playerFundsGain = this.prepareFundsGain(playerStart.incomeGain, {
+        pending: true
+      });
+
+      this.syncBattleState();
+
+      if (playerFundsGain && !this.state.battleSnapshot?.victory) {
+        await delay(BATTLE_TURN_BANNER_SETTLE_MS);
+        await this.playPreparedFundsGain(playerFundsGain.id);
+      }
+    }
+
     await this.persistCurrentRun();
   }
 

@@ -6,7 +6,9 @@ import { BUILDING_KEYS } from "../src/game/core/constants.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../src/game/content/terrain.js";
 import {
+  BUILDING_OWNER_VARIANTS,
   SPRITE_ASSETS,
+  UNIT_OWNER_VARIANTS,
   getBuildingSpriteKey,
   getTerrainSpriteKey,
   getUnitSpriteKey
@@ -18,7 +20,12 @@ function resolveSpritePath(url) {
 
 test("sprite manifest covers all active unit, terrain, and building content", () => {
   for (const unitTypeId of Object.keys(UNIT_CATALOG)) {
-    assert.ok(getUnitSpriteKey(unitTypeId), `missing unit sprite key for ${unitTypeId}`);
+    for (const owner of UNIT_OWNER_VARIANTS) {
+      assert.ok(
+        getUnitSpriteKey(unitTypeId, owner),
+        `missing ${owner} unit sprite key for ${unitTypeId}`
+      );
+    }
   }
 
   for (const terrainId of Object.keys(TERRAIN_LIBRARY)) {
@@ -26,10 +33,12 @@ test("sprite manifest covers all active unit, terrain, and building content", ()
   }
 
   for (const buildingTypeId of Object.values(BUILDING_KEYS)) {
-    assert.ok(
-      getBuildingSpriteKey(buildingTypeId),
-      `missing building sprite key for ${buildingTypeId}`
-    );
+    for (const owner of BUILDING_OWNER_VARIANTS) {
+      assert.ok(
+        getBuildingSpriteKey(buildingTypeId, owner),
+        `missing ${owner} building sprite key for ${buildingTypeId}`
+      );
+    }
   }
 });
 

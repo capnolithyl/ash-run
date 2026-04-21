@@ -12,6 +12,7 @@ export const COMMANDER_POWER_MAX = 100;
 // Keep the JS timing values aligned with the turn-banner CSS animation.
 export const BATTLE_TURN_BANNER_DISPLAY_MS = 1100;
 export const BATTLE_TURN_BANNER_SETTLE_MS = 1120;
+export const BATTLE_FUNDS_GAIN_ANIMATION_MS = 900;
 // Movement timing is shared between Phaser tweens and the enemy turn queue.
 export const BATTLE_MOVE_SEGMENT_DURATION_MS = 230;
 export const BATTLE_MOVE_SETTLE_MS = 70;

@@ -448,6 +448,9 @@ export class BattleSystem {
     if (this.state.enemyTurn && !("pendingAttack" in this.state.enemyTurn)) {
       this.state.enemyTurn.pendingAttack = null;
     }
+    if (this.state.enemyTurn && !("started" in this.state.enemyTurn)) {
+      this.state.enemyTurn.started = true;
+    }
     if (this.state.pendingAction && !this.state.pendingAction.mode) {
       this.state.pendingAction.mode = "menu";
     }
@@ -625,10 +628,12 @@ export class BattleSystem {
     }
 
     if (selectedUnit?.owner === TURN_SIDES.PLAYER && !selectedUnit.hasMoved) {
+      const movementBudget =
+        selectedUnit.stats.movement + getMovementModifier(this.state, selectedUnit);
       const reachableTiles = getReachableTiles(
         this.state,
         selectedUnit,
-        selectedUnit.stats.movement + getMovementModifier(this.state, selectedUnit)
+        movementBudget
       );
 
       const canMoveToTile = reachableTiles.some((tile) => tile.x === x && tile.y === y);
@@ -1147,23 +1152,41 @@ export class BattleSystem {
     if (this.state.turn.activeSide === TURN_SIDES.PLAYER) {
       this.state.turn.activeSide = TURN_SIDES.ENEMY;
       this.state.turn.number += 1;
-      tickSideStatuses(this.state, TURN_SIDES.ENEMY);
-      this.collectIncome(TURN_SIDES.ENEMY);
       this.clearSelection();
-      this.resetActions(TURN_SIDES.ENEMY);
-      serviceUnitsOnSectors(this.state, TURN_SIDES.ENEMY);
-      this.performEnemyRecruitment();
       this.state.enemyTurn = {
+        started: false,
         pendingAttack: null,
-        pendingUnitIds: getLivingUnits(this.state, TURN_SIDES.ENEMY)
-          .filter((unit) => !unit.hasMoved && !unit.hasAttacked)
-          .map((unit) => unit.id)
+        pendingUnitIds: []
       };
       this.updateVictoryState();
       return true;
     }
 
     return false;
+  }
+
+  isEnemyTurnActive() {
+    return this.state.turn.activeSide === TURN_SIDES.ENEMY && !this.state.victory;
+  }
+
+  startEnemyTurnActions() {
+    if (!this.state.enemyTurn || !this.isEnemyTurnActive() || this.state.enemyTurn.started) {
+      return false;
+    }
+
+    this.state.enemyTurn.started = true;
+    tickSideStatuses(this.state, TURN_SIDES.ENEMY);
+    const incomeGain = this.collectIncome(TURN_SIDES.ENEMY);
+    this.resetActions(TURN_SIDES.ENEMY);
+    serviceUnitsOnSectors(this.state, TURN_SIDES.ENEMY);
+    this.state.enemyTurn.pendingUnitIds = getLivingUnits(this.state, TURN_SIDES.ENEMY)
+      .filter((unit) => !unit.hasMoved && !unit.hasAttacked)
+      .map((unit) => unit.id);
+    this.updateVictoryState();
+    return {
+      changed: true,
+      incomeGain
+    };
   }
 
   hasPendingEnemyTurn() {
@@ -1298,32 +1321,68 @@ export class BattleSystem {
     return { changed: false, done: true };
   }
 
+  performEnemyEndTurnRecruitment() {
+    if (!this.state.enemyTurn || !this.isEnemyTurnActive() || this.state.victory) {
+      return {
+        changed: false,
+        deployments: []
+      };
+    }
+
+    const deployments = this.performEnemyRecruitment();
+
+    return {
+      changed: deployments.length > 0,
+      deployments
+    };
+  }
+
   finalizeEnemyTurn() {
     if (this.state.turn.activeSide !== TURN_SIDES.ENEMY) {
-      return false;
+      return {
+        changed: false,
+        incomeGain: null
+      };
     }
 
     this.state.enemyTurn = null;
 
     if (this.state.victory) {
       this.clearSelection();
-      return true;
+      return {
+        changed: true,
+        incomeGain: null
+      };
     }
 
     this.state.turn.activeSide = TURN_SIDES.PLAYER;
     tickSideStatuses(this.state, TURN_SIDES.PLAYER);
-    this.collectIncome(TURN_SIDES.PLAYER);
+    const incomeGain = this.collectIncome(TURN_SIDES.PLAYER);
     this.resetActions(TURN_SIDES.PLAYER);
     serviceUnitsOnSectors(this.state, TURN_SIDES.PLAYER);
     this.clearSelection();
-    return true;
+    return {
+      changed: true,
+      incomeGain
+    };
   }
 
   collectIncome(side) {
     const commanderBonus = getIncomeBonus(this.state, side);
     const buildingIncome = getBuildingIncomeForSide(this.state.map.buildings, side);
+    const previousFunds = this.state[side].funds;
+    const amount = buildingIncome + commanderBonus;
 
-    this.state[side].funds += buildingIncome + commanderBonus;
+    this.state[side].funds += amount;
+
+    return {
+      side,
+      amount,
+      buildingIncome,
+      commanderBonus,
+      previousFunds,
+      nextFunds: this.state[side].funds
+    };
   }
 
   resetActions(side) {
@@ -1335,6 +1394,7 @@ export class BattleSystem {
   }
 
   performEnemyRecruitment() {
+    const deployments = [];
     const productionSites = this.state.map.buildings.filter(
       (building) =>
         building.owner === TURN_SIDES.ENEMY &&
@@ -1359,7 +1419,16 @@ export class BattleSystem {
       this.state.enemy.units.push(recruit);
       this.state.enemy.funds -= affordable.adjustedCost;
       appendLog(this.state, `Enemy deployed ${recruit.name}.`);
+      deployments.push({
+        unitId: recruit.id,
+        unitTypeId: recruit.unitTypeId,
+        buildingId: building.id,
+        x: recruit.x,
+        y: recruit.y
+      });
     }
+
+    return deployments;
   }
 
   updateVictoryState() {

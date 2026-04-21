@@ -20,6 +20,19 @@ function isWithinRange(unit, target) {
   return distance >= unit.stats.minRange && distance <= unit.stats.maxRange;
 }
 
+function isPendingMoveRollback(previousSnapshot, unitId, previousUnit, nextUnit) {
+  const pendingAction = previousSnapshot.presentation?.pendingAction ?? previousSnapshot.pendingAction;
+
+  return Boolean(
+    pendingAction?.type === "move" &&
+    pendingAction.unitId === unitId &&
+    previousUnit.x === pendingAction.toX &&
+    previousUnit.y === pendingAction.toY &&
+    nextUnit.x === pendingAction.fromX &&
+    nextUnit.y === pendingAction.fromY
+  );
+}
+
 function getGainedExperience(previousUnit, nextUnit) {
   if (nextUnit.level === previousUnit.level) {
     return Math.max(0, nextUnit.experience - previousUnit.experience);
@@ -129,6 +142,16 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
     }
 
     if (nextUnit.x !== previousUnit.x || nextUnit.y !== previousUnit.y) {
+      if (isPendingMoveRollback(previousSnapshot, unitId, previousUnit, nextUnit)) {
+        movements.push({
+          type: "move",
+          unitId,
+          owner: nextUnit.owner,
+          teleport: true
+        });
+        continue;
+      }
+
       const movementBudget =
         previousUnit.stats.movement + getMovementModifier(previousSnapshot, previousUnit);
       const path = getMovementPath(

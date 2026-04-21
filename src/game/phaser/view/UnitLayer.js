@@ -1,9 +1,10 @@
 import Phaser from "phaser";
 import { BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
 import { getUnitSpriteKey } from "../assets.js";
+import { getOwnerColor } from "./ownerPalette.js";
 
-function unitColor(owner) {
-  return owner === "player" ? 0xff5fd6 : 0xff8a3d;
+function getPointDistance(left, right) {
+  return Phaser.Math.Distance.Between(left.x, left.y, right.x, right.y);
 }
 
 export class UnitLayer {
@@ -20,32 +21,31 @@ export class UnitLayer {
   }
 
   createEntity(unit, layout) {
-    const color = unitColor(unit.owner);
-    const textureKey = getUnitSpriteKey(unit.unitTypeId);
+    const color = getOwnerColor(unit.owner);
+    const textureKey = getUnitSpriteKey(unit.unitTypeId, unit.owner);
     const glow = this.scene.add
-      .circle(0, 0, layout.cellSize * 0.42, color, 0.12)
+      .circle(0, 0, layout.cellSize * 0.44, color, 0.13)
       .setBlendMode(Phaser.BlendModes.ADD);
     const aura = this.scene.add
-      .circle(0, 0, layout.cellSize * 0.34, color, 0.2)
+      .circle(0, 0, layout.cellSize * 0.35, color, 0.18)
       .setBlendMode(Phaser.BlendModes.ADD);
-    const ownerMarker = this.scene.add.rectangle(
-      0,
-      layout.cellSize * 0.3,
-      layout.cellSize * 0.52,
-      Math.max(5, layout.cellSize * 0.08),
-      color,
-      0.9
-    );
-    ownerMarker.setStrokeStyle(1.5, 0xfff2fc, 0.65);
 
     let visual = null;
+    let shadow = null;
     let fallbackLabel = null;
 
     if (textureKey && this.scene.textures.exists(textureKey)) {
+      shadow = this.scene.add
+        .image(layout.cellSize * 0.04, layout.cellSize * 0.05, textureKey)
+        .setOrigin(0.5)
+        .setDisplaySize(layout.cellSize * 0.92, layout.cellSize * 0.92)
+        .setTint(0x08040f)
+        .setAlpha(0.64);
       visual = this.scene.add
         .image(0, -layout.cellSize * 0.03, textureKey)
         .setOrigin(0.5)
-        .setDisplaySize(layout.cellSize * 0.76, layout.cellSize * 0.76);
+        .setDisplaySize(layout.cellSize * 0.88, layout.cellSize * 0.88);
+      shadow.setFlipX(unit.owner === "enemy");
       visual.setFlipX(unit.owner === "enemy");
     } else {
       visual = this.scene.add.circle(0, 0, layout.cellSize * 0.28, color, 0.95);
@@ -61,8 +61,8 @@ export class UnitLayer {
 
     const healthRing = this.scene.add.graphics();
     const children = fallbackLabel
-      ? [glow, aura, ownerMarker, visual, healthRing, fallbackLabel]
-      : [glow, aura, ownerMarker, visual, healthRing];
+      ? [glow, aura, visual, healthRing, fallbackLabel]
+      : [glow, aura, shadow, visual, healthRing];
 
     const container = this.scene.add.container(0, 0, children);
     container.setDepth(28);
@@ -71,8 +71,8 @@ export class UnitLayer {
       container,
       glow,
       aura,
-      ownerMarker,
       healthRing,
+      shadow,
       visual,
       visualBaseScaleX: visual.scaleX,
       visualBaseScaleY: visual.scaleY,
@@ -100,11 +100,21 @@ export class UnitLayer {
     };
   }
 
+  stopMoveTween(entity) {
+    if (!entity.moveTween) {
+      return;
+    }
+
+    entity.moveTween.stop();
+    entity.moveTween = null;
+  }
+
   playPathMovement(entity, layout, path) {
     const worldPoints = path.map((tile) =>
       this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
     );
     const tweens = [];
+    entity.container.setPosition(worldPoints[0].x, worldPoints[0].y);
 
     for (let index = 1; index < worldPoints.length; index += 1) {
       const point = worldPoints[index];
@@ -115,6 +125,12 @@ export class UnitLayer {
         duration: BATTLE_MOVE_SEGMENT_DURATION_MS,
         ease: "Sine.Out"
       });
+    }
+
+    if (tweens.length === 0) {
+      entity.container.setPosition(entity.targetX, entity.targetY);
+      entity.moveTween = null;
+      return;
     }
 
     entity.moveTween = this.scene.tweens.chain({
@@ -139,11 +155,11 @@ export class UnitLayer {
     entity.container.setScale(1);
     entity.container.setAlpha(entity.alphaTarget);
     this.setVisualScale(entity, 1);
-    entity.ownerMarker.setScale(1);
     entity.glow.setScale(1);
     entity.aura.setScale(1);
-    entity.glow.setAlpha(0.12);
-    entity.aura.setAlpha(0.2);
+    entity.glow.setAlpha(0.13);
+    entity.aura.setAlpha(0.18);
+    entity.shadow?.setAlpha(0.64);
   }
 
   stopEffectTweens(entity) {
@@ -170,9 +186,7 @@ export class UnitLayer {
       return;
     }
 
-    if (entity.moveTween) {
-      entity.moveTween.stop();
-    }
+    this.stopMoveTween(entity);
 
     this.stopEffectTweens(entity);
 
@@ -345,12 +359,22 @@ export class UnitLayer {
         entity.targetY = initialPosition.y;
       }
 
-      const color = unitColor(unit.owner);
-      entity.glow.setFillStyle(color, 0.12);
-      entity.aura.setFillStyle(color, 0.2);
-      entity.ownerMarker.setFillStyle(color, 0.9);
-      entity.ownerMarker.setStrokeStyle(1.5, 0xfff2fc, 0.65);
+      const color = getOwnerColor(unit.owner);
+      const textureKey = getUnitSpriteKey(unit.unitTypeId, unit.owner);
+      entity.glow.setFillStyle(color, 0.13);
+      entity.aura.setFillStyle(color, 0.18);
+      if (
+        textureKey &&
+        entity.textureKey !== textureKey &&
+        entity.shadow &&
+        entity.visual.setTexture
+      ) {
+        entity.shadow.setTexture(textureKey);
+        entity.visual.setTexture(textureKey);
+        entity.textureKey = textureKey;
+      }
       entity.visual.setFlipX?.(unit.owner === "enemy");
+      entity.shadow?.setFlipX?.(unit.owner === "enemy");
       entity.fallbackLabel?.setText(unit.name.slice(0, 2).toUpperCase());
       const ringYOffset = -layout.cellSize * 0.42;
       const ringRadius = layout.cellSize * 0.12;
@@ -395,24 +419,29 @@ export class UnitLayer {
         Math.abs(nextPosition.x - entity.targetX) + Math.abs(nextPosition.y - entity.targetY);
 
       if (distance > 0) {
-        if (entity.moveTween) {
-          entity.moveTween.stop();
-        }
+        this.stopMoveTween(entity);
 
         entity.targetX = nextPosition.x;
         entity.targetY = nextPosition.y;
 
-        if (movementEvent?.path?.length > 1) {
+        if (movementEvent?.teleport) {
+          entity.container.setPosition(entity.targetX, entity.targetY);
+        } else if (movementEvent?.path?.length > 1) {
           this.playPathMovement(entity, layout, movementEvent.path);
         } else {
+          const renderedDistance = getPointDistance(
+            { x: entity.container.x, y: entity.container.y },
+            nextPosition
+          );
           entity.moveTween = this.scene.tweens.add({
             targets: entity.container,
             x: nextPosition.x,
             y: nextPosition.y,
-            duration: 340 + Math.max(220, distance * 0.55),
+            duration: 180 + Math.max(90, renderedDistance * 0.75),
             ease: "Sine.Out",
             onComplete: () => {
               entity.moveTween = null;
+              entity.container.setPosition(entity.targetX, entity.targetY);
             }
           });
         }

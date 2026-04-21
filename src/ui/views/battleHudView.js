@@ -23,11 +23,19 @@ function renderExperienceBar(unit) {
   `;
 }
 
-function renderFundsPanel(label, value, modifierClass = "") {
+function renderFundsPanel(label, value, side, modifierClass = "", fundsGain = null) {
+  const isGaining = fundsGain?.side === side;
+  const displayValue = isGaining ? fundsGain.from : value;
+
   return `
-    <div class="funds-panel ${modifierClass}">
+    <div class="funds-panel ${modifierClass} ${isGaining ? "funds-panel--gaining" : ""}" data-funds-panel="${side}">
       <span>${label}</span>
-      <strong>${value}</strong>
+      <strong data-funds-value="${side}">${displayValue}</strong>
+      ${
+        isGaining && !fundsGain.pending
+          ? `<em class="funds-panel__gain">+${fundsGain.amount}</em>`
+          : ""
+      }
     </div>
   `;
 }
@@ -460,6 +468,7 @@ export function renderBattleHudView(state, options = {}) {
   const playerCommander = getCommanderById(battleSnapshot.player.commanderId);
   const enemyCommander = getCommanderById(battleSnapshot.enemy.commanderId);
   const nextUnitEnabled = canSelectNextReadyUnit(battleSnapshot);
+  const fundsGain = state.battleUi?.fundsGain ?? null;
   return `
     <div class="battle-shell">
       <aside class="battle-rail">
@@ -484,8 +493,8 @@ export function renderBattleHudView(state, options = {}) {
           <h2>Map ${state.runState.mapIndex + 1}/${state.runState.targetMapCount}</h2>
         </div>
         <div class="battle-topbar__funds">
-          ${renderFundsPanel("Player Funds", battleSnapshot.player.funds, "funds-panel--player")}
-          ${renderFundsPanel("Enemy Funds", battleSnapshot.enemy.funds, "funds-panel--enemy")}
+          ${renderFundsPanel("Player Funds", battleSnapshot.player.funds, "player", "funds-panel--player", fundsGain)}
+          ${renderFundsPanel("Enemy Funds", battleSnapshot.enemy.funds, "enemy", "funds-panel--enemy", fundsGain)}
         </div>
         <div class="battle-topbar__meta">
           <span>Turn ${battleSnapshot.turn.number}</span>

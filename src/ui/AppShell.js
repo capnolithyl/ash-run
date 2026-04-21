@@ -1,4 +1,5 @@
 import {
+  BATTLE_FUNDS_GAIN_ANIMATION_MS,
   BATTLE_TURN_BANNER_DISPLAY_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
   SCREEN_IDS
@@ -34,6 +35,9 @@ export class AppShell {
     this.turnBannerUntil = 0;
     this.turnBannerTimer = null;
     this.lastTurnBannerKey = null;
+    this.fundsAnimationFrame = null;
+    this.activeFundsGainElement = null;
+    this.activeFundsGainId = null;
 
     this.root.addEventListener("click", (event) => this.handleClick(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));
@@ -79,6 +83,7 @@ export class AppShell {
           suppressOutcomeOverlay,
           turnBanner
         });
+        this.animateFundsGain(state);
         this.previousBattleSnapshot = state.battleSnapshot;
         return;
       }
@@ -106,11 +111,18 @@ export class AppShell {
       this.turnBannerTimer = null;
     }
 
+    if (this.fundsAnimationFrame) {
+      window.cancelAnimationFrame(this.fundsAnimationFrame);
+      this.fundsAnimationFrame = null;
+    }
+
     this.levelUpRevealUntil = 0;
     this.victoryRevealUntil = 0;
     this.turnBannerUntil = 0;
     this.turnBanner = null;
     this.lastTurnBannerKey = null;
+    this.activeFundsGainElement = null;
+    this.activeFundsGainId = null;
   }
 
   getVictoryKey(snapshot) {
@@ -238,6 +250,69 @@ export class AppShell {
     }
 
     return this.turnBanner;
+  }
+
+  animateFundsGain(state) {
+    const fundsGain = state.battleUi?.fundsGain;
+
+    if (!fundsGain || fundsGain.pending) {
+      if (this.fundsAnimationFrame) {
+        window.cancelAnimationFrame(this.fundsAnimationFrame);
+        this.fundsAnimationFrame = null;
+      }
+
+      this.activeFundsGainId = null;
+      this.activeFundsGainElement = null;
+      return;
+    }
+
+    const valueElement = this.root.querySelector(`[data-funds-value="${fundsGain.side}"]`);
+
+    if (!valueElement) {
+      return;
+    }
+
+    if (this.activeFundsGainId === fundsGain.id && this.activeFundsGainElement === valueElement) {
+      return;
+    }
+
+    if (this.fundsAnimationFrame) {
+      window.cancelAnimationFrame(this.fundsAnimationFrame);
+      this.fundsAnimationFrame = null;
+    }
+
+    this.activeFundsGainId = fundsGain.id;
+    this.activeFundsGainElement = valueElement;
+
+    const from = Number(fundsGain.from);
+    const to = Number(fundsGain.to);
+    const duration = Number(fundsGain.durationMs) || BATTLE_FUNDS_GAIN_ANIMATION_MS;
+
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      valueElement.textContent = `${to}`;
+      return;
+    }
+
+    const startedAt = performance.now();
+    valueElement.textContent = `${from}`;
+
+    const tick = (timestamp) => {
+      const progress = Math.min(1, (timestamp - startedAt) / duration);
+      const easedProgress = 1 - (1 - progress) ** 3;
+      const currentValue = Math.round(from + (to - from) * easedProgress);
+
+      valueElement.textContent = `${currentValue}`;
+
+      if (progress < 1 && this.activeFundsGainId === fundsGain.id) {
+        this.fundsAnimationFrame = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      valueElement.textContent = `${to}`;
+      this.fundsAnimationFrame = null;
+    };
+
+    this.fundsAnimationFrame = window.requestAnimationFrame(tick);
   }
 
   renderCommanderSelect(state) {

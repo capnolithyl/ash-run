@@ -1,18 +1,7 @@
 import Phaser from "phaser";
 import { getBuildingTypeMetadata } from "../../content/buildings.js";
 import { getBuildingSpriteKey } from "../assets.js";
-
-function buildingColorForOwner(owner) {
-  if (owner === "player") {
-    return 0xff5fd6;
-  }
-
-  if (owner === "enemy") {
-    return 0xff8a3d;
-  }
-
-  return 0xffd166;
-}
+import { getOwnerColor } from "./ownerPalette.js";
 
 export class BuildingLayer {
   constructor(scene) {
@@ -30,22 +19,29 @@ export class BuildingLayer {
 
     for (const building of snapshot.map.buildings) {
       const metadata = getBuildingTypeMetadata(building.type);
-      const accent = buildingColorForOwner(building.owner);
+      const accent = getOwnerColor(building.owner);
       const centerX = layout.originX + building.x * layout.cellSize + layout.cellSize / 2;
       const centerY = layout.originY + building.y * layout.cellSize + layout.cellSize / 2;
-      const textureKey = getBuildingSpriteKey(building.type);
+      const textureKey = getBuildingSpriteKey(building.type, building.owner);
       const glow = this.scene.add
         .circle(0, 0, layout.cellSize * 0.44, accent, 0.18)
         .setBlendMode(Phaser.BlendModes.ADD);
 
       let visual = null;
+      let shadow = null;
       let label = null;
 
       if (textureKey && this.scene.textures.exists(textureKey)) {
+        shadow = this.scene.add
+          .image(layout.cellSize * 0.04, layout.cellSize * 0.05, textureKey)
+          .setOrigin(0.5)
+          .setDisplaySize(layout.cellSize * 0.9, layout.cellSize * 0.9)
+          .setTint(0x08040f)
+          .setAlpha(0.55);
         visual = this.scene.add
           .image(0, 0, textureKey)
           .setOrigin(0.5)
-          .setDisplaySize(layout.cellSize * 0.82, layout.cellSize * 0.82);
+          .setDisplaySize(layout.cellSize * 0.86, layout.cellSize * 0.86);
       } else {
         const fallback = this.scene.add.graphics();
         fallback.fillStyle(0x11061f, 0.92);
@@ -68,18 +64,9 @@ export class BuildingLayer {
         label.setShadow(0, 0, "#ff4fd8", 10, false, true);
       }
 
-      const ownerMarker = this.scene.add.rectangle(
-        0,
-        layout.cellSize * 0.34,
-        layout.cellSize * 0.42,
-        Math.max(5, layout.cellSize * 0.08),
-        accent,
-        0.9
-      );
-
       const children = label
-        ? [glow, visual, ownerMarker, label]
-        : [glow, visual, ownerMarker];
+        ? [glow, visual, label]
+        : [glow, shadow, visual];
       const container = this.scene.add.container(centerX, centerY, children);
       container.setDepth(18);
       this.containers.push(container);
