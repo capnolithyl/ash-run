@@ -33,3 +33,12 @@ export function formatTurnCount(turnCount) {
   const turns = Math.max(0, Math.floor(turnCount));
   return `${turns} turn${turns === 1 ? "" : "s"}`;
 }
+
+export function formatTurnCount(turnCount) {
+  if (!Number.isFinite(turnCount)) {
+    return "No clears yet";
+  }
+
+  const turns = Math.max(0, Math.floor(turnCount));
+  return `${turns} turn${turns === 1 ? "" : "s"}`;
+}
