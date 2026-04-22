@@ -20,7 +20,11 @@ function getAllUnits(state) {
 
 export function getUnitAt(state, x, y) {
   return getAllUnits(state).find(
-    (unit) => unit.current.hp > 0 && unit.x === x && unit.y === y
+    (unit) =>
+      unit.current.hp > 0 &&
+      !unit.transport?.carriedByUnitId &&
+      unit.x === x &&
+      unit.y === y
   );
 }
 
@@ -125,6 +129,29 @@ function isTerrainBlockedForUnit(unit, terrain) {
   }
 
   return (terrain.blockedFamilies ?? []).includes(unit.family);
+}
+
+function canUnitOccupyTile(state, unit, x, y) {
+  const terrain = getTerrainAt(state, x, y);
+
+  if (isTerrainBlockedForUnit(unit, terrain)) {
+    return false;
+  }
+
+  return !getUnitAt(state, x, y);
+}
+
+export function getValidUnloadTiles(state, runner, carriedUnit) {
+  if (!runner || !carriedUnit || runner.transport?.carryingUnitId !== carriedUnit.id) {
+    return [];
+  }
+
+  return [
+    { x: runner.x + 1, y: runner.y },
+    { x: runner.x - 1, y: runner.y },
+    { x: runner.x, y: runner.y + 1 },
+    { x: runner.x, y: runner.y - 1 }
+  ].filter((tile) => canUnitOccupyTile(state, carriedUnit, tile.x, tile.y));
 }
 
 function getMovementSearch(state, unit, movementBudget) {
@@ -253,7 +280,13 @@ export function getTargetsInRange(state, unit, minimumRange, maximumRange) {
 }
 
 export function canUnitAttackTarget(attacker, target) {
-  if (!attacker || !target || !getUnitAttackProfile(attacker)) {
+  if (
+    !attacker ||
+    !target ||
+    attacker.transport?.carriedByUnitId ||
+    target.transport?.carriedByUnitId ||
+    !getUnitAttackProfile(attacker)
+  ) {
     return false;
   }
 

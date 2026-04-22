@@ -82,8 +82,10 @@ export function getTargetsForUnit(state, unit) {
 
 export function getDamageResult(state, attacker, defender, attackProfile = getUnitAttackProfile(attacker)) {
   const attackerAttack = attackProfile.attack + getAttackModifier(state, attacker);
+  const armorBreakStatus = defender.statuses?.find((status) => status.type === "armor-break");
+  const armorMultiplier = armorBreakStatus ? 0.5 : 1;
   const defenderArmor =
-    defender.stats.armor +
+    Math.floor(defender.stats.armor * armorMultiplier) +
     getArmorModifier(state, defender) +
     getTerrainArmorBonus(state, defender) +
     getBuildingArmorBonus(state, defender);
@@ -213,6 +215,20 @@ export function getAttackForecast(state, attacker, defender) {
 }
 
 export function removeDeadUnits(state) {
+  const carriers = [...state.player.units, ...state.enemy.units].filter((unit) => unit.current.hp <= 0);
+  for (const carrier of carriers) {
+    const carriedUnitId = carrier.transport?.carryingUnitId;
+    if (!carriedUnitId) {
+      continue;
+    }
+
+    const allUnits = [...state.player.units, ...state.enemy.units];
+    const carried = allUnits.find((unit) => unit.id === carriedUnitId);
+    if (carried) {
+      carried.current.hp = 0;
+    }
+  }
+
   for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
     state[side].units = state[side].units.filter((unit) => unit.current.hp > 0);
   }

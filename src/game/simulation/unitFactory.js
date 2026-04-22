@@ -39,6 +39,13 @@ export function createUnitFromType(unitTypeId, owner, level = 1) {
     y: 0,
     hasMoved: false,
     hasAttacked: false,
+    cooldowns: {},
+    transport: {
+      carryingUnitId: null,
+      carriedByUnitId: null,
+      canUnloadAfterMove: false,
+      hasLockedUnload: false
+    },
     statuses: []
   };
 }
@@ -71,7 +78,13 @@ export function deployPersistentUnit(persistentUnit, owner, spawnPoint) {
     },
     hasMoved: false,
     hasAttacked: false,
+    cooldowns: {},
+    transport: {
+      carryingUnitId: null,
+      carriedByUnitId: null,
+      canUnloadAfterMove: false,
+      hasLockedUnload: false
+    },
     statuses: []
   };
 }
-

@@ -149,6 +149,20 @@ export class SelectionLayer {
     this.clear();
 
     const presentation = snapshot.presentation ?? {};
+    const unloadTiles =
+      presentation.pendingAction?.mode === "unload"
+        ? presentation.pendingAction.unloadPreviewTiles ?? presentation.unloadPreviewTiles ?? []
+        : presentation.unloadPreviewTiles ?? [];
+
+    for (const tile of unloadTiles) {
+      const x = layout.originX + tile.x * layout.cellSize;
+      const y = layout.originY + tile.y * layout.cellSize;
+      this.graphics.fillStyle(0x66ffbf, 0.28);
+      this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+      this.graphics.lineStyle(3, 0xf6fffe, 0.78);
+      this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 4);
+      drawCornerMarkers(this.graphics, x + 4, y + 4, layout.cellSize - 10, 0x66ffbf, 0.95);
+    }
 
     if (showGridHighlights) {
       const moveTiles =
@@ -187,6 +201,40 @@ export class SelectionLayer {
         const y = layout.originY + target.y * layout.cellSize;
         this.graphics.lineStyle(3, 0xff8a3d, 0.92);
         this.graphics.strokeRoundedRect(x + 4, y + 4, layout.cellSize - 10, layout.cellSize - 10, 6);
+      }
+
+      for (const unitId of presentation.transportTargetUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
+
+        if (!target) {
+          continue;
+        }
+
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
+      }
+
+      for (const unitId of presentation.supportTargetUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
+
+        if (!target) {
+          continue;
+        }
+
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.fillStyle(0x66ffbf, 0.2);
+        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
       }
 
       drawMovementPath(this.graphics, layout, hoveredMovementPath);

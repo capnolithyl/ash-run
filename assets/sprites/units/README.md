@@ -19,6 +19,8 @@ This folder contains first-pass 64x64 pixel-art-style SVG sprites for every unit
 - `grunt.svg`
 - `breaker.svg`
 - `longshot.svg`
+- `medic.svg`
+- `mechanic.svg`
 - `runner.svg`
 - `bruiser.svg`
 - `juggernaut.svg`

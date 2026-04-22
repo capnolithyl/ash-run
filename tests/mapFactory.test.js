@@ -97,3 +97,30 @@ test("map pool avoids single-tile stall points on command routes", () => {
     }
   }
 });
+
+test("map pool uses varied layouts, sizes, and service buildings", () => {
+  const layouts = new Set(MAP_POOL.map((map) => map.layout));
+  const sizeKeys = new Set(MAP_POOL.map((map) => `${map.width}x${map.height}`));
+  const areas = MAP_POOL.map((map) => map.width * map.height);
+
+  assert.ok(layouts.has("east-west"));
+  assert.ok(layouts.has("north-south"));
+  assert.ok(layouts.has("corner"));
+  assert.ok(layouts.has("center-ring"));
+  assert.ok(sizeKeys.size >= 8, "map pool should include a broad spread of board dimensions");
+  assert.ok(Math.min(...areas) <= 180, "map pool should include compact skirmish boards");
+  assert.ok(Math.max(...areas) >= 400, "map pool should include large encounter boards");
+
+  for (const map of MAP_POOL) {
+    assert.ok(map.width >= 16, `${map.id} should remain wide enough for production and route placement`);
+    assert.ok(map.height >= 10, `${map.id} should remain tall enough for production and route placement`);
+    assert.ok(
+      map.buildings.some((building) => building.type === BUILDING_KEYS.HOSPITAL),
+      `${map.id} should include a hospital`
+    );
+    assert.ok(
+      map.buildings.some((building) => building.type === BUILDING_KEYS.REPAIR_STATION),
+      `${map.id} should include a repair station`
+    );
+  }
+});

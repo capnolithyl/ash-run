@@ -27,6 +27,7 @@ import {
 const ANTI_AIR_RECRUITS = new Set(["skyguard", "interceptor"]);
 const ANTI_VEHICLE_RECRUITS = new Set(["breaker", "juggernaut", "siege-gun", "payload"]);
 const ANTI_INFANTRY_RECRUITS = new Set(["longshot", "runner", "bruiser", "gunship", "payload"]);
+const SUPPORT_RECRUITS = new Set(["medic", "mechanic"]);
 
 export function getEnemyRecruitmentLimit(state) {
   return (state.difficultyTier ?? 1) <= 2
@@ -46,6 +47,18 @@ export function getEnemyRecruitmentMapCap(state) {
 
 function countUnitsByFamily(units, family) {
   return units.filter((unit) => unit.family === family).length;
+}
+
+function needsService(unit) {
+  return (
+    unit.current.hp < unit.stats.maxHealth ||
+    unit.current.ammo < unit.stats.ammoMax ||
+    unit.current.stamina < unit.stats.staminaMax
+  );
+}
+
+function countUnitsByType(units, unitTypeId) {
+  return units.filter((unit) => unit.unitTypeId === unitTypeId).length;
 }
 
 function scoreEnemyRecruitmentOption(state, option) {
@@ -76,6 +89,19 @@ function scoreEnemyRecruitmentOption(state, option) {
     if (state.enemy.funds >= 500) {
       score -= 6;
     }
+  }
+
+  if (SUPPORT_RECRUITS.has(option.id)) {
+    const targetFamily = option.id === "medic" ? UNIT_TAGS.INFANTRY : UNIT_TAGS.VEHICLE;
+    const hasRelevantAlly = countUnitsByFamily(enemyUnits, targetFamily) > 0;
+    const hasRelevantNeed = enemyUnits.some(
+      (unit) => unit.family === targetFamily && needsService(unit)
+    );
+    const existingSupport = countUnitsByType(enemyUnits, option.id);
+
+    score += hasRelevantNeed ? 18 : hasRelevantAlly ? 5 : -8;
+    score -= existingSupport * 14;
+    score -= enemyUnits.length < 3 ? 8 : 0;
   }
 
   if (fundsAfterPurchase >= 300) {
@@ -175,10 +201,54 @@ function getBuildingCapturePriority(building) {
     [BUILDING_KEYS.BARRACKS]: 34,
     [BUILDING_KEYS.MOTOR_POOL]: 34,
     [BUILDING_KEYS.AIRFIELD]: 34,
+    [BUILDING_KEYS.HOSPITAL]: 32,
+    [BUILDING_KEYS.REPAIR_STATION]: 32,
     [BUILDING_KEYS.COMMAND]: 28
   };
 
   return (typePriority[building.type] ?? 20) + (building.owner === "neutral" ? 18 : 6);
+}
+
+export function getBestSupportPlan(state, unit) {
+  const targetFamily =
+    unit.unitTypeId === "medic"
+      ? UNIT_TAGS.INFANTRY
+      : unit.unitTypeId === "mechanic"
+        ? UNIT_TAGS.VEHICLE
+        : null;
+
+  if (!targetFamily || (unit.cooldowns?.support ?? 0) > 0 || unit.transport?.carriedByUnitId) {
+    return null;
+  }
+
+  return getLivingUnits(state, unit.owner)
+    .filter((candidate) => {
+      if (
+        candidate.id === unit.id ||
+        candidate.family !== targetFamily ||
+        candidate.transport?.carriedByUnitId ||
+        !needsService(candidate)
+      ) {
+        return false;
+      }
+
+      return Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1;
+    })
+    .map((target) => {
+      const missingHp = target.stats.maxHealth - target.current.hp;
+      const missingAmmo = target.stats.ammoMax - target.current.ammo;
+      const missingStamina = target.stats.staminaMax - target.current.stamina;
+
+      return {
+        target,
+        score:
+          missingHp * 2 +
+          missingAmmo * 3 +
+          missingStamina * 2 +
+          Math.max(1, target.cost / 200)
+      };
+    })
+    .sort((left, right) => right.score - left.score)[0] ?? null;
 }
 
 export function getBestCapturePlan(state, unit, reachableTiles) {

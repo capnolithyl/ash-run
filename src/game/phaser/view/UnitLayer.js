@@ -60,9 +60,19 @@ export class UnitLayer {
     }
 
     const healthRing = this.scene.add.graphics();
+    const transportIcon = this.scene.add
+      .text(layout.cellSize * 0.2, layout.cellSize * 0.2, "IN", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: `${Math.max(8, Math.floor(layout.cellSize * 0.15))}px`,
+        color: "#f6fffe",
+        backgroundColor: "#12233a"
+      })
+      .setPadding(3, 1, 3, 1)
+      .setOrigin(0.5)
+      .setVisible(false);
     const children = fallbackLabel
-      ? [glow, aura, visual, healthRing, fallbackLabel]
-      : [glow, aura, shadow, visual, healthRing];
+      ? [glow, aura, visual, healthRing, fallbackLabel, transportIcon]
+      : [glow, aura, shadow, visual, healthRing, transportIcon];
 
     const container = this.scene.add.container(0, 0, children);
     container.setDepth(28);
@@ -82,7 +92,8 @@ export class UnitLayer {
       effectTweens: [],
       targetX: 0,
       targetY: 0,
-      alphaTarget: 1
+      alphaTarget: 1,
+      transportIcon
     };
   }
 
@@ -339,7 +350,9 @@ export class UnitLayer {
       this.cellSize = layout.cellSize;
     }
 
-    const units = [...snapshot.player.units, ...snapshot.enemy.units];
+    const units = [...snapshot.player.units, ...snapshot.enemy.units].filter(
+      (unit) => !unit.transport?.carriedByUnitId
+    );
     const activeIds = new Set();
     const movementEventMap = new Map(
       movementEvents.map((event) => [event.unitId, event])
@@ -401,6 +414,7 @@ export class UnitLayer {
         false
       );
       entity.healthRing.strokePath();
+      entity.transportIcon?.setVisible(Boolean(unit.transport?.carryingUnitId));
       const dimmed =
         unit.hasMoved ||
         unit.hasAttacked ||

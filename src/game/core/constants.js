@@ -35,7 +35,9 @@ export const BUILDING_INCOME = {
   command: 100,
   barracks: 100,
   "motor-pool": 100,
-  airfield: 100
+  airfield: 100,
+  hospital: 100,
+  "repair-station": 100
 };
 
 export const SCREEN_IDS = {
@@ -65,7 +67,9 @@ export const BUILDING_KEYS = {
   BARRACKS: "barracks",
   MOTOR_POOL: "motor-pool",
   AIRFIELD: "airfield",
-  SECTOR: "sector"
+  SECTOR: "sector",
+  HOSPITAL: "hospital",
+  REPAIR_STATION: "repair-station"
 };
 
 export const UNIT_TAGS = {

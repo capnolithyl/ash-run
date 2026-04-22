@@ -19,14 +19,28 @@ import {
   getBuildingAt,
   getReachableTiles,
   getRecruitmentOptions,
+  getLivingUnits,
   getSelectionCoordinates,
   getSelectedBuilding,
   getSelectedUnit,
+  getValidUnloadTiles,
   getTerrainAt,
   getTilesInRange,
   getUnitAt,
   getUnitAttackProfile
 } from "./selectors.js";
+
+function getLivingUnitsForSide(state, side) {
+  return getLivingUnits(state, side).filter((unit) => !unit.transport?.carriedByUnitId);
+}
+
+function getSupportNeedScore(unit) {
+  return (
+    Math.max(0, unit.stats.maxHealth - unit.current.hp) * 2 +
+    Math.max(0, unit.stats.ammoMax - unit.current.ammo) * 3 +
+    Math.max(0, unit.stats.staminaMax - unit.current.stamina) * 2
+  );
+}
 
 function createEmptyPresentation() {
   return {
@@ -35,6 +49,9 @@ function createEmptyPresentation() {
     reachableTiles: [],
     movePreviewTiles: [],
     attackPreviewTiles: [],
+    unloadPreviewTiles: [],
+    transportTargetUnitIds: [],
+    supportTargetUnitIds: [],
     attackableUnitIds: [],
     movementBudget: null,
     recruitOptions: []
@@ -132,6 +149,52 @@ function createPendingActionView(state) {
   const building = getBuildingAt(state, unit.x, unit.y);
   const mode = pendingAction.mode ?? "menu";
   const attackableUnitIds = getAttackableUnitIds(state, unit);
+  const carriedUnit = unit.transport?.carryingUnitId
+    ? findUnitById(state, unit.transport.carryingUnitId)
+    : null;
+  const validUnloadTiles = getValidUnloadTiles(state, unit, carriedUnit);
+  const unloadPreviewTiles = mode === "unload" ? validUnloadTiles : [];
+  const supportTargetFamily = unit.unitTypeId === "medic" ? "infantry" : unit.unitTypeId === "mechanic" ? "vehicle" : null;
+  const canSupport =
+    Boolean(supportTargetFamily) &&
+    (unit.cooldowns?.support ?? 0) <= 0;
+  const supportTargets = canSupport
+    ? getLivingUnitsForSide(state, unit.owner)
+        .filter((candidate) => {
+          if (candidate.id === unit.id || candidate.family !== supportTargetFamily) {
+            return false;
+          }
+          return Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1;
+        })
+        .map((target) => ({
+          target,
+          needScore: getSupportNeedScore(target)
+        }))
+        .filter((option) => option.needScore > 0)
+        .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id))
+    : [];
+  const adjacentRunners = unit.family === "infantry"
+    ? getLivingUnitsForSide(state, unit.owner)
+        .filter((candidate) =>
+          candidate.unitTypeId === "runner" &&
+          !candidate.transport?.carryingUnitId &&
+          Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1
+        )
+        .sort((left, right) => left.y - right.y || left.x - right.x || left.id.localeCompare(right.id))
+    : [];
+  const canEnterTransport = adjacentRunners.length > 0 && !unit.transport?.carriedByUnitId;
+  const transportTargetUnitIds = mode === "transport"
+    ? adjacentRunners.map((runner) => runner.id)
+    : [];
+  const supportTargetUnitIds = mode === "support"
+    ? supportTargets.map((option) => option.target.id)
+    : [];
+  const canUnloadTransport =
+    unit.unitTypeId === "runner" &&
+    Boolean(unit.transport?.carryingUnitId) &&
+    !unit.transport?.hasLockedUnload &&
+    (unit.transport?.canUnloadAfterMove || unit.hasMoved) &&
+    validUnloadTiles.length > 0;
 
   return {
     ...pendingAction,
@@ -139,7 +202,17 @@ function createPendingActionView(state) {
     unitName: unit.name,
     canCapture: canCaptureBuilding(unit, building),
     canFire: attackableUnitIds.length > 0,
+    canSupport: supportTargets.length > 0,
+    supportCooldown: unit.cooldowns?.support ?? 0,
+    canEnterTransport,
+    canUnloadTransport,
     isTargeting: mode === "fire",
+    isChoosingTransport: mode === "transport",
+    isChoosingSupport: mode === "support",
+    isUnloading: mode === "unload",
+    unloadPreviewTiles,
+    transportTargetUnitIds,
+    supportTargetUnitIds,
     attackableUnitIds,
     building: building ? describeBuilding(building) : null
   };
@@ -184,6 +257,12 @@ export function buildBattlePresentation(snapshot) {
       movementBudget,
       movePreviewTiles,
       attackPreviewTiles,
+      unloadPreviewTiles:
+        pendingAction?.unitId === selectedUnit.id ? pendingAction.unloadPreviewTiles ?? [] : [],
+      transportTargetUnitIds:
+        pendingAction?.unitId === selectedUnit.id ? pendingAction.transportTargetUnitIds ?? [] : [],
+      supportTargetUnitIds:
+        pendingAction?.unitId === selectedUnit.id ? pendingAction.supportTargetUnitIds ?? [] : [],
       reachableTiles:
         selectedUnit.owner === TURN_SIDES.PLAYER &&
         snapshot.turn.activeSide === TURN_SIDES.PLAYER &&

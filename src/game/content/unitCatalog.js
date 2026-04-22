@@ -88,7 +88,7 @@ export const UNIT_CATALOG = {
     id: "juggernaut",
     name: "Juggernaut",
     family: UNIT_TAGS.VEHICLE,
-    cost: 1600,
+    cost: 2000,
     maxHealth: 28,
     attack: 10,
     armor: 7,
@@ -99,6 +99,38 @@ export const UNIT_CATALOG = {
     ammoMax: 6,
     luck: 1,
     effectiveAgainstTags: [UNIT_TAGS.INFANTRY, UNIT_TAGS.VEHICLE]
+  },
+  medic: {
+    id: "medic",
+    name: "Medic",
+    family: UNIT_TAGS.INFANTRY,
+    cost: 500,
+    maxHealth: 18,
+    attack: 7,
+    armor: 1,
+    movement: 4,
+    minRange: 1,
+    maxRange: 1,
+    staminaMax: 4,
+    ammoMax: 7,
+    luck: 2,
+    effectiveAgainstTags: []
+  },
+  mechanic: {
+    id: "mechanic",
+    name: "Mechanic",
+    family: UNIT_TAGS.INFANTRY,
+    cost: 600,
+    maxHealth: 18,
+    attack: 7,
+    armor: 1,
+    movement: 4,
+    minRange: 1,
+    maxRange: 1,
+    staminaMax: 4,
+    ammoMax: 7,
+    luck: 2,
+    effectiveAgainstTags: []
   },
   "siege-gun": {
     id: "siege-gun",
@@ -199,7 +231,7 @@ export const UNIT_CATALOG = {
 };
 
 export const BUILDING_RECRUITMENT = {
-  barracks: ["grunt", "breaker", "longshot"],
+  barracks: ["grunt", "breaker", "longshot", "medic", "mechanic"],
   "motor-pool": ["runner", "bruiser", "juggernaut", "siege-gun", "skyguard"],
   airfield: ["gunship", "payload", "interceptor", "carrier"]
 };

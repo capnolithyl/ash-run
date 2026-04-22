@@ -31,6 +31,18 @@ const BUILDING_LIBRARY = {
     shortLabel: "SEC",
     summary: "Income site that boosts your funds while held.",
     canRecruit: false
+  },
+  [BUILDING_KEYS.HOSPITAL]: {
+    name: "Hospital",
+    shortLabel: "MED",
+    summary: "One-time instant infantry restoration on capture. Resets when lost.",
+    canRecruit: false
+  },
+  [BUILDING_KEYS.REPAIR_STATION]: {
+    name: "Repair Station",
+    shortLabel: "REP",
+    summary: "One-time vehicle restoration while held. Resets when captured by the enemy.",
+    canRecruit: false
   }
 };
 

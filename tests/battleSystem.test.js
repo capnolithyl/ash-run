@@ -9,7 +9,7 @@ import {
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { getAttackModifier, getMovementModifier } from "../src/game/simulation/commanderEffects.js";
-import { getReachableTiles } from "../src/game/simulation/selectors.js";
+import { getReachableTiles, getUnitAt } from "../src/game/simulation/selectors.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
 test("selectNextReadyUnit cycles through player units that have not moved", () => {
@@ -625,12 +625,10 @@ test("enemy recruitment happens at end of turn after units vacate production bui
 
   const recruitment = system.performEnemyEndTurnRecruitment();
   const afterRecruitment = system.getStateForSave();
-  const newUnitOnProduction = afterRecruitment.enemy.units.find(
-    (unit) => unit.id !== enemy.id && unit.x === production.x && unit.y === production.y
-  );
+  const deployedUnit = afterRecruitment.enemy.units.find((unit) => unit.id !== enemy.id);
 
   assert.equal(recruitment.changed, true);
-  assert.ok(newUnitOnProduction);
+  assert.ok(deployedUnit);
   assert.ok(afterRecruitment.log.some((line) => line.startsWith("Enemy deployed ")));
 });
 
@@ -698,6 +696,34 @@ test("enemy recruitment considers all factories and spends up when funds allow",
   assert.notEqual(deployments[0].unitTypeId, "grunt");
 });
 
+test("mechanics recruit from barracks instead of motor pools", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4)]
+  });
+  battleState.player.funds = 3000;
+
+  const barracks = battleState.map.buildings.find(
+    (building) => building.owner === TURN_SIDES.PLAYER && building.type === "barracks"
+  );
+  const motorPool = battleState.map.buildings.find(
+    (building) => building.owner === TURN_SIDES.PLAYER && building.type === "motor-pool"
+  );
+
+  battleState.selection = { type: "building", id: barracks.id, x: barracks.x, y: barracks.y };
+  const barracksSystem = new BattleSystem(battleState);
+  const barracksOptions = barracksSystem.getSnapshot().presentation.recruitOptions.map((option) => option.id);
+
+  assert.ok(barracksOptions.includes("mechanic"));
+  assert.ok(barracksOptions.includes("medic"));
+
+  battleState.selection = { type: "building", id: motorPool.id, x: motorPool.x, y: motorPool.y };
+  const motorPoolSystem = new BattleSystem(battleState);
+  const motorPoolOptions = motorPoolSystem.getSnapshot().presentation.recruitOptions.map((option) => option.id);
+
+  assert.equal(motorPoolOptions.includes("mechanic"), false);
+});
+
 test("enemy recruitment pauses when the enemy already has a large unit lead", () => {
   const battleState = createTestBattleState({
     width: 10,
@@ -757,4 +783,255 @@ test("pending move redo emits a teleport rollback instead of replaying movement"
   assert.equal(rolledBackSnapshot.pendingAction, null);
   assert.equal(moveEvent.teleport, true);
   assert.equal(moveEvent.path, undefined);
+});
+
+test("transported infantry are hidden from occupancy and expose unload tiles", () => {
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 2);
+  const infantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [runner, infantry],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: infantry.id, x: infantry.x, y: infantry.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(infantry.x, infantry.y), true);
+  assert.equal(system.enterTransportWithPendingUnit(), true);
+
+  let afterBoarding = system.getStateForSave();
+  const carriedAfterBoarding = afterBoarding.player.units.find((unit) => unit.id === infantry.id);
+
+  assert.equal(carriedAfterBoarding.transport.carriedByUnitId, runner.id);
+  assert.equal(getUnitAt(afterBoarding, runner.x, runner.y).id, runner.id);
+
+  assert.equal(system.handleTileSelection(3, 2), true);
+  assert.equal(system.beginPendingUnload(), true);
+
+  const unloadSnapshot = system.getSnapshot();
+  const carriedAfterMove = unloadSnapshot.player.units.find((unit) => unit.id === infantry.id);
+
+  assert.equal(carriedAfterMove.x, 3);
+  assert.equal(carriedAfterMove.y, 2);
+  assert.equal(unloadSnapshot.presentation.pendingAction.isUnloading, true);
+  assert.ok(unloadSnapshot.presentation.pendingAction.unloadPreviewTiles.length > 0);
+  assert.ok(
+    unloadSnapshot.presentation.pendingAction.unloadPreviewTiles.every(
+      (tile) => Math.abs(tile.x - 3) + Math.abs(tile.y - 2) === 1
+    )
+  );
+});
+
+test("infantry choose which adjacent runner to board when multiple are available", () => {
+  const leftRunner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 3);
+  const rightRunner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 4, 3);
+  const infantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 3, 3);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [leftRunner, rightRunner, infantry],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: infantry.id, x: infantry.x, y: infantry.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(infantry.x, infantry.y), true);
+  assert.equal(system.enterTransportWithPendingUnit(), true);
+
+  const choiceSnapshot = system.getSnapshot();
+
+  assert.equal(choiceSnapshot.presentation.pendingAction.mode, "transport");
+  assert.equal(choiceSnapshot.presentation.pendingAction.isChoosingTransport, true);
+  assert.deepEqual(
+    new Set(choiceSnapshot.presentation.pendingAction.transportTargetUnitIds),
+    new Set([leftRunner.id, rightRunner.id])
+  );
+  assert.equal(
+    choiceSnapshot.player.units.find((unit) => unit.id === infantry.id).transport.carriedByUnitId,
+    null
+  );
+
+  assert.equal(system.handleTileSelection(rightRunner.x, rightRunner.y), true);
+
+  const afterBoarding = system.getStateForSave();
+  const updatedInfantry = afterBoarding.player.units.find((unit) => unit.id === infantry.id);
+  const updatedLeftRunner = afterBoarding.player.units.find((unit) => unit.id === leftRunner.id);
+  const updatedRightRunner = afterBoarding.player.units.find((unit) => unit.id === rightRunner.id);
+
+  assert.equal(updatedInfantry.transport.carriedByUnitId, rightRunner.id);
+  assert.equal(updatedLeftRunner.transport.carryingUnitId, null);
+  assert.equal(updatedRightRunner.transport.carryingUnitId, infantry.id);
+  assert.equal(afterBoarding.pendingAction, null);
+  assert.equal(afterBoarding.selection.id, rightRunner.id);
+});
+
+test("medics choose which adjacent infantry to support when multiple need service", () => {
+  const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 3, 3);
+  const leftInfantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const rightInfantry = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 4, 3, {
+    current: {
+      hp: 4,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [medic, leftInfantry, rightInfantry],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: medic.id, x: medic.x, y: medic.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(medic.x, medic.y), true);
+  assert.equal(system.useSupportAbilityWithPendingUnit(), true);
+
+  const choiceSnapshot = system.getSnapshot();
+
+  assert.equal(choiceSnapshot.presentation.pendingAction.mode, "support");
+  assert.equal(choiceSnapshot.presentation.pendingAction.isChoosingSupport, true);
+  assert.deepEqual(
+    new Set(choiceSnapshot.presentation.pendingAction.supportTargetUnitIds),
+    new Set([leftInfantry.id, rightInfantry.id])
+  );
+
+  assert.equal(system.handleTileSelection(rightInfantry.x, rightInfantry.y), true);
+
+  const afterSupport = system.getStateForSave();
+  const updatedMedic = afterSupport.player.units.find((unit) => unit.id === medic.id);
+  const updatedLeft = afterSupport.player.units.find((unit) => unit.id === leftInfantry.id);
+  const updatedRight = afterSupport.player.units.find((unit) => unit.id === rightInfantry.id);
+
+  assert.equal(updatedLeft.current.hp, leftInfantry.current.hp);
+  assert.ok(updatedRight.current.hp > rightInfantry.current.hp);
+  assert.equal(updatedRight.current.ammo, updatedRight.stats.ammoMax);
+  assert.equal(updatedRight.current.stamina, updatedRight.stats.staminaMax);
+  assert.equal(updatedMedic.cooldowns.support, 2);
+  assert.equal(afterSupport.pendingAction, null);
+});
+
+test("mechanics choose which adjacent vehicle to support when multiple need service", () => {
+  const mechanic = createPlacedUnit("mechanic", TURN_SIDES.PLAYER, 3, 3);
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 3, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 4, 3, {
+    current: {
+      hp: 8,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [mechanic, runner, bruiser],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: mechanic.id, x: mechanic.x, y: mechanic.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(mechanic.x, mechanic.y), true);
+  assert.equal(system.useSupportAbilityWithPendingUnit(), true);
+  assert.equal(system.getSnapshot().presentation.pendingAction.mode, "support");
+
+  assert.equal(system.handleTileSelection(runner.x, runner.y), true);
+
+  const afterSupport = system.getStateForSave();
+  const updatedMechanic = afterSupport.player.units.find((unit) => unit.id === mechanic.id);
+  const updatedRunner = afterSupport.player.units.find((unit) => unit.id === runner.id);
+  const updatedBruiser = afterSupport.player.units.find((unit) => unit.id === bruiser.id);
+
+  assert.ok(updatedRunner.current.hp > runner.current.hp);
+  assert.equal(updatedRunner.current.ammo, updatedRunner.stats.ammoMax);
+  assert.equal(updatedRunner.current.stamina, updatedRunner.stats.staminaMax);
+  assert.equal(updatedBruiser.current.hp, bruiser.current.hp);
+  assert.equal(updatedMechanic.cooldowns.support, 3);
+});
+
+test("enemy medics use support on damaged adjacent infantry", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const medic = createPlacedUnit("medic", TURN_SIDES.ENEMY, 6, 4);
+  const wounded = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 5, {
+    current: {
+      hp: 4,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [player],
+    enemyUnits: [medic, wounded],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [medic.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const afterSupport = system.getStateForSave();
+  const updatedMedic = afterSupport.enemy.units.find((unit) => unit.id === medic.id);
+  const updatedWounded = afterSupport.enemy.units.find((unit) => unit.id === wounded.id);
+
+  assert.equal(step.type, "support");
+  assert.ok(updatedWounded.current.hp > wounded.current.hp);
+  assert.equal(updatedWounded.current.ammo, updatedWounded.stats.ammoMax);
+  assert.equal(updatedWounded.current.stamina, updatedWounded.stats.staminaMax);
+  assert.equal(updatedMedic.cooldowns.support, 2);
+});
+
+test("enemy runners opportunistically ferry adjacent infantry", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 10, 6);
+  const passenger = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 10, 5);
+  const battleState = createTestBattleState({
+    id: "enemy-runner-ferry",
+    width: 12,
+    height: 8,
+    playerUnits: [player],
+    enemyUnits: [runner, passenger],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 404
+  });
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [runner.id, passenger.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const afterMove = system.getStateForSave();
+  const updatedRunner = afterMove.enemy.units.find((unit) => unit.id === runner.id);
+  const updatedPassenger = afterMove.enemy.units.find((unit) => unit.id === passenger.id);
+
+  assert.equal(step.type, "move");
+  assert.equal(updatedRunner.transport.carryingUnitId, null);
+  assert.equal(updatedPassenger.transport.carriedByUnitId, null);
+  assert.notDeepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: passenger.x, y: passenger.y });
+  assert.ok(afterMove.log.some((line) => line.includes("boarded")));
+  assert.ok(afterMove.log.some((line) => line.includes("disembarked")));
 });

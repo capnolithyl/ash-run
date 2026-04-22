@@ -234,7 +234,12 @@ function renderTargetReference(battleSnapshot, hoveredTile) {
 function renderActionPrompt(battleSnapshot) {
   const pendingAction = battleSnapshot.presentation?.pendingAction;
 
-  if (!pendingAction || pendingAction.isTargeting) {
+  if (
+    !pendingAction ||
+    pendingAction.isTargeting ||
+    pendingAction.isChoosingTransport ||
+    pendingAction.isChoosingSupport
+  ) {
     return "";
   }
 
@@ -256,10 +261,63 @@ function renderActionPrompt(battleSnapshot) {
               ? '<button class="battle-command-prompt__action battle-command-prompt__action--capture" data-action="capture-building">Capture</button>'
               : ""
           }
+          ${
+            pendingAction.canSupport
+              ? '<button class="battle-command-prompt__action" data-action="use-support">Support</button>'
+              : ""
+          }
+          ${
+            pendingAction.canEnterTransport
+              ? '<button class="battle-command-prompt__action" data-action="enter-transport">Enter</button>'
+              : ""
+          }
+          ${
+            pendingAction.canUnloadTransport
+              ? '<button class="battle-command-prompt__action" data-action="begin-unload">Unload</button>'
+              : ""
+          }
           <button class="battle-command-prompt__action" data-action="wait-unit">Wait</button>
           <button class="battle-command-prompt__action battle-command-prompt__action--subtle" data-action="redo-move">Redo</button>
         </div>
       </div>
+    </div>
+  `;
+}
+
+function renderSupportPrompt(battleSnapshot) {
+  const pendingAction = battleSnapshot.presentation?.pendingAction;
+
+  if (!pendingAction?.isChoosingSupport) {
+    return "";
+  }
+
+  return `
+    <div class="battle-targeting-hint">
+      <div class="battle-targeting-hint__copy">
+        <p class="eyebrow">Support Mode</p>
+        <strong>${pendingAction.unitName} ready to support</strong>
+        <span>Select a highlighted ally or cancel.</span>
+      </div>
+      <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-support-choice">Cancel</button>
+    </div>
+  `;
+}
+
+function renderTransportPrompt(battleSnapshot) {
+  const pendingAction = battleSnapshot.presentation?.pendingAction;
+
+  if (!pendingAction?.isChoosingTransport) {
+    return "";
+  }
+
+  return `
+    <div class="battle-targeting-hint">
+      <div class="battle-targeting-hint__copy">
+        <p class="eyebrow">Transport Mode</p>
+        <strong>${pendingAction.unitName} ready to board</strong>
+        <span>Select a highlighted runner or cancel.</span>
+      </div>
+      <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-transport-choice">Cancel</button>
     </div>
   `;
 }
@@ -598,6 +656,8 @@ export function renderBattleHudView(state, options = {}) {
       </aside>
       ${renderActionPrompt(battleSnapshot)}
       ${renderTargetingPrompt(battleSnapshot)}
+      ${renderTransportPrompt(battleSnapshot)}
+      ${renderSupportPrompt(battleSnapshot)}
       ${renderTurnBanner(turnBanner)}
       ${suppressLevelUpOverlay ? "" : renderLevelUpOverlay(battleSnapshot)}
       ${renderPauseOverlay(state, battleSnapshot)}

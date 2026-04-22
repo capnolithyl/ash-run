@@ -19,6 +19,6 @@ function compareUnitsForSelectionOrder(left, right) {
 
 export function getReadyPlayerUnits(state) {
   return getLivingUnits(state, TURN_SIDES.PLAYER)
-    .filter((unit) => !unit.hasMoved)
+    .filter((unit) => !unit.hasMoved && !unit.transport?.carriedByUnitId)
     .sort(compareUnitsForSelectionOrder);
 }

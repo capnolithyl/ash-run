@@ -458,8 +458,23 @@ export class AppShell {
       case "cancel-attack":
         await this.controller.cancelSelectedAttack();
         break;
+      case "cancel-transport-choice":
+        await this.controller.handleBattleContextAction();
+        break;
+      case "cancel-support-choice":
+        await this.controller.handleBattleContextAction();
+        break;
       case "capture-building":
         await this.controller.captureWithSelectedUnit();
+        break;
+      case "use-support":
+        await this.controller.useSelectedSupportAbility();
+        break;
+      case "enter-transport":
+        await this.controller.enterSelectedTransport();
+        break;
+      case "begin-unload":
+        await this.controller.beginSelectedUnload();
         break;
       case "redo-move":
         await this.controller.redoSelectedMove();

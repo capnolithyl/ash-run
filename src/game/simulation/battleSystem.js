@@ -33,6 +33,7 @@ import {
 import {
   getBestCapturePlan,
   getBestMoveAttackOption,
+  getBestSupportPlan,
   getEnemyRecruitmentLimit,
   getEnemyRecruitmentMapCap,
   pickBestFavorableAttack,
@@ -49,11 +50,13 @@ import {
   getSelectedUnit,
   getTerrainAt,
   getUnitAt,
-  getUnitAttackProfile
+  getUnitAttackProfile,
+  getValidUnloadTiles
 } from "./selectors.js";
 import { createUnitFromType } from "./unitFactory.js";
 
 const PRODUCTION_BUILDING_TYPES = ["barracks", "motor-pool", "airfield"];
+const INFANTRY_RECRUIT_TYPES = new Set(["grunt", "breaker", "longshot", "medic", "mechanic"]);
 
 export class BattleSystem {
   constructor(initialState) {
@@ -71,6 +74,18 @@ export class BattleSystem {
       this.state.pendingAction.mode = "menu";
     }
     this.state.enemy.recruitsBuiltThisMap ??= 0;
+    for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
+      for (const unit of this.state[side].units) {
+        unit.cooldowns ??= {};
+        unit.transport ??= {
+          carryingUnitId: null,
+          carriedByUnitId: null,
+          canUnloadAfterMove: false,
+          hasLockedUnload: false
+        };
+        unit.statuses ??= [];
+      }
+    }
     this.state.player.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.PLAYER);
     this.state.enemy.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.ENEMY);
   }
@@ -91,6 +106,211 @@ export class BattleSystem {
 
   clearPendingAction() {
     this.state.pendingAction = null;
+  }
+
+  tickUnitDurations(side) {
+    for (const unit of getLivingUnits(this.state, side)) {
+      for (const [key, turns] of Object.entries(unit.cooldowns ?? {})) {
+        if (turns > 0) {
+          unit.cooldowns[key] = turns - 1;
+        }
+      }
+      unit.statuses = (unit.statuses ?? [])
+        .map((status) => ({ ...status, turns: Math.max(0, (status.turns ?? 0) - 1) }))
+        .filter((status) => (status.turns ?? 0) > 0);
+      if (unit.unitTypeId === "runner" && unit.transport) {
+        unit.transport.canUnloadAfterMove = false;
+        unit.transport.hasLockedUnload = false;
+      }
+    }
+  }
+
+  getAdjacentFriendlyTransport(unit) {
+    return this.getAdjacentFriendlyTransports(unit)[0] ?? null;
+  }
+
+  getAdjacentFriendlyTransports(unit) {
+    if (!unit || unit.family !== "infantry" || unit.transport?.carriedByUnitId) {
+      return [];
+    }
+
+    return getLivingUnits(this.state, unit.owner)
+      .filter((candidate) => {
+        if (candidate.unitTypeId !== "runner" || candidate.transport?.carryingUnitId) {
+          return false;
+        }
+        const distance = Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y);
+        return distance === 1;
+      })
+      .sort((left, right) => left.y - right.y || left.x - right.x || left.id.localeCompare(right.id));
+  }
+
+  syncTransportCargoPosition(runner) {
+    const carriedUnitId = runner?.transport?.carryingUnitId;
+
+    if (!carriedUnitId) {
+      return;
+    }
+
+    const carried = findUnitById(this.state, carriedUnitId);
+
+    if (carried?.transport?.carriedByUnitId === runner.id) {
+      carried.x = runner.x;
+      carried.y = runner.y;
+    }
+  }
+
+  getSupportTargetForUnit(unit, { requireNeed = false } = {}) {
+    return this.getSupportTargetsForUnit(unit, { requireNeed })[0]?.target ?? null;
+  }
+
+  getSupportTargetsForUnit(unit, { requireNeed = true } = {}) {
+    const targetFamily =
+      unit?.unitTypeId === "medic"
+        ? "infantry"
+        : unit?.unitTypeId === "mechanic"
+          ? "vehicle"
+          : null;
+
+    if (!targetFamily || (unit.cooldowns?.support ?? 0) > 0 || unit.transport?.carriedByUnitId) {
+      return [];
+    }
+
+    return getLivingUnits(this.state, unit.owner)
+      .filter((candidate) => {
+        if (
+          candidate.id === unit.id ||
+          candidate.family !== targetFamily ||
+          candidate.transport?.carriedByUnitId
+        ) {
+          return false;
+        }
+
+        return Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1;
+      })
+      .map((target) => {
+        const missingHp = target.stats.maxHealth - target.current.hp;
+        const missingAmmo = target.stats.ammoMax - target.current.ammo;
+        const missingStamina = target.stats.staminaMax - target.current.stamina;
+
+        return {
+          target,
+          needScore: missingHp * 2 + missingAmmo * 3 + missingStamina * 2
+        };
+      })
+      .filter((option) => !requireNeed || option.needScore > 0)
+      .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id));
+  }
+
+  applySupportAbility(unit, target) {
+    if (!unit || !target) {
+      return false;
+    }
+
+    target.current.hp = Math.min(target.stats.maxHealth, target.current.hp + Math.ceil(target.stats.maxHealth * 0.5));
+    target.current.ammo = target.stats.ammoMax;
+    target.current.stamina = target.stats.staminaMax;
+    unit.cooldowns.support = unit.unitTypeId === "medic" ? 2 : 3;
+    unit.hasMoved = true;
+    unit.hasAttacked = true;
+    appendLog(this.state, `${unit.name} serviced ${target.name}.`);
+    return true;
+  }
+
+  getAdjacentTransportPassenger(runner) {
+    if (runner?.unitTypeId !== "runner" || runner.transport?.carryingUnitId) {
+      return null;
+    }
+
+    return getLivingUnits(this.state, runner.owner)
+      .filter((candidate) => {
+        if (
+          candidate.id === runner.id ||
+          candidate.family !== "infantry" ||
+          candidate.transport?.carriedByUnitId ||
+          candidate.hasMoved ||
+          candidate.hasAttacked
+        ) {
+          return false;
+        }
+
+        return Math.abs(candidate.x - runner.x) + Math.abs(candidate.y - runner.y) === 1;
+      })
+      .sort((left, right) => {
+        const score = (unit) => {
+          if (unit.unitTypeId === "grunt") {
+            return 6;
+          }
+          if (unit.unitTypeId === "breaker" || unit.unitTypeId === "longshot") {
+            return 5;
+          }
+          return 3;
+        };
+
+        return score(right) - score(left);
+      })[0] ?? null;
+  }
+
+  boardUnitIntoRunner(unit, runner) {
+    if (!unit || !runner || runner.transport?.carryingUnitId) {
+      return false;
+    }
+
+    unit.transport.carriedByUnitId = runner.id;
+    unit.x = runner.x;
+    unit.y = runner.y;
+    unit.hasMoved = true;
+    unit.hasAttacked = true;
+    runner.transport.carryingUnitId = unit.id;
+    this.syncTransportCargoPosition(runner);
+    appendLog(this.state, `${unit.name} boarded ${runner.name}.`);
+    return true;
+  }
+
+  getNearestOpponentDistance(unit, tile) {
+    const opponentSide = unit.owner === TURN_SIDES.PLAYER ? TURN_SIDES.ENEMY : TURN_SIDES.PLAYER;
+    const opponents = getLivingUnits(this.state, opponentSide);
+
+    if (opponents.length === 0) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    return opponents.reduce(
+      (nearest, opponent) => Math.min(nearest, Math.abs(opponent.x - tile.x) + Math.abs(opponent.y - tile.y)),
+      Number.POSITIVE_INFINITY
+    );
+  }
+
+  unloadTransportForEnemy(runner) {
+    const carried = runner?.transport?.carryingUnitId
+      ? findUnitById(this.state, runner.transport.carryingUnitId)
+      : null;
+
+    if (!runner || !carried || runner.transport.hasLockedUnload) {
+      return false;
+    }
+
+    const destination = getValidUnloadTiles(this.state, runner, carried)
+      .sort(
+        (left, right) =>
+          this.getNearestOpponentDistance(carried, left) -
+          this.getNearestOpponentDistance(carried, right)
+      )[0];
+
+    if (!destination) {
+      return false;
+    }
+
+    carried.transport.carriedByUnitId = null;
+    carried.x = destination.x;
+    carried.y = destination.y;
+    carried.hasMoved = true;
+    carried.hasAttacked = true;
+    runner.transport.carryingUnitId = null;
+    runner.hasMoved = true;
+    runner.hasAttacked = true;
+    appendLog(this.state, `${carried.name} disembarked from ${runner.name}.`);
+    return true;
   }
 
   acknowledgeLevelUp() {
@@ -140,6 +360,34 @@ export class BattleSystem {
         return changed;
       }
 
+      if ((pendingAction.mode ?? "menu") === "unload") {
+        const changed = this.unloadTransportWithPendingUnit(x, y);
+        if (!changed) {
+          appendLog(this.state, "Unload destination is not valid.");
+        }
+        return changed;
+      }
+
+      if ((pendingAction.mode ?? "menu") === "transport") {
+        const changed = unitAtTile?.owner === TURN_SIDES.PLAYER
+          ? this.enterTransportWithPendingUnit(unitAtTile.id)
+          : false;
+        if (!changed) {
+          appendLog(this.state, "Choose a highlighted runner.");
+        }
+        return changed;
+      }
+
+      if ((pendingAction.mode ?? "menu") === "support") {
+        const changed = unitAtTile?.owner === TURN_SIDES.PLAYER
+          ? this.useSupportAbilityWithPendingUnit(unitAtTile.id)
+          : false;
+        if (!changed) {
+          appendLog(this.state, "Choose a highlighted unit.");
+        }
+        return changed;
+      }
+
       return false;
     }
 
@@ -171,6 +419,10 @@ export class BattleSystem {
           selectedUnit.x = x;
           selectedUnit.y = y;
           selectedUnit.current.stamina = Math.max(0, selectedUnit.current.stamina - 1);
+          if (selectedUnit.unitTypeId === "runner" && selectedUnit.transport?.carryingUnitId) {
+            selectedUnit.transport.canUnloadAfterMove = true;
+            this.syncTransportCargoPosition(selectedUnit);
+          }
           appendLog(this.state, `${selectedUnit.name} repositioned.`);
         }
 
@@ -224,6 +476,18 @@ export class BattleSystem {
     if (pendingAction && pendingUnit?.owner === TURN_SIDES.PLAYER) {
       if ((pendingAction.mode ?? "menu") === "fire") {
         return this.cancelPendingAttack();
+      }
+      if ((pendingAction.mode ?? "menu") === "unload") {
+        pendingAction.mode = "menu";
+        return true;
+      }
+      if ((pendingAction.mode ?? "menu") === "transport") {
+        pendingAction.mode = "menu";
+        return true;
+      }
+      if ((pendingAction.mode ?? "menu") === "support") {
+        pendingAction.mode = "menu";
+        return true;
       }
 
       return this.redoPendingMove();
@@ -293,6 +557,15 @@ export class BattleSystem {
     }
 
     const defenderHpBefore = defender.current.hp;
+    if (attacker.unitTypeId === "breaker" && defender.family === "vehicle") {
+      const existing = defender.statuses.find((status) => status.type === "armor-break");
+      if (existing) {
+        existing.turns = 1;
+      } else {
+        defender.statuses.push({ type: "armor-break", turns: 1 });
+      }
+      appendLog(this.state, `${defender.name} armor was broken by ${attacker.name}.`);
+    }
     const primaryStrike = getDamageResult(this.state, attacker, defender, attackProfile);
     defender.current.hp = Math.max(0, defender.current.hp - primaryStrike.damage);
     const primaryDamageDealt = defenderHpBefore - defender.current.hp;
@@ -301,6 +574,9 @@ export class BattleSystem {
     }
     attacker.hasAttacked = true;
     attacker.hasMoved = true;
+    if (attacker.unitTypeId === "runner" && attacker.transport?.carryingUnitId) {
+      attacker.transport.hasLockedUnload = true;
+    }
 
     appendLog(
       this.state,
@@ -442,6 +718,111 @@ export class BattleSystem {
     return true;
   }
 
+  beginPendingUnload() {
+    const pendingAction = this.state.pendingAction;
+    if (!pendingAction) {
+      return false;
+    }
+    const unit = findUnitById(this.state, pendingAction.unitId);
+    if (!unit?.transport?.carryingUnitId || unit.transport.hasLockedUnload) {
+      return false;
+    }
+    const carried = findUnitById(this.state, unit.transport.carryingUnitId);
+    if (getValidUnloadTiles(this.state, unit, carried).length === 0) {
+      return false;
+    }
+    pendingAction.mode = "unload";
+    return true;
+  }
+
+  unloadTransportWithPendingUnit(x, y) {
+    const pendingAction = this.state.pendingAction;
+    if (!pendingAction || (pendingAction.mode ?? "menu") !== "unload") {
+      return false;
+    }
+    const runner = findUnitById(this.state, pendingAction.unitId);
+    const carried = runner?.transport?.carryingUnitId
+      ? findUnitById(this.state, runner.transport.carryingUnitId)
+      : null;
+    if (!runner || !carried) {
+      return false;
+    }
+    const canUnloadToTile = getValidUnloadTiles(this.state, runner, carried)
+      .some((tile) => tile.x === x && tile.y === y);
+    if (!canUnloadToTile) {
+      return false;
+    }
+
+    carried.transport.carriedByUnitId = null;
+    carried.x = x;
+    carried.y = y;
+    carried.hasMoved = true;
+    carried.hasAttacked = true;
+    runner.transport.carryingUnitId = null;
+    runner.hasMoved = true;
+    runner.hasAttacked = true;
+    appendLog(this.state, `${carried.name} disembarked from ${runner.name}.`);
+    this.clearPendingAction();
+    this.clearSelection();
+    return true;
+  }
+
+  enterTransportWithPendingUnit(runnerId = null) {
+    const pendingAction = this.state.pendingAction;
+    const unit = pendingAction ? findUnitById(this.state, pendingAction.unitId) : null;
+    const validRunners = unit ? this.getAdjacentFriendlyTransports(unit) : [];
+    const runner = runnerId
+      ? validRunners.find((candidate) => candidate.id === runnerId)
+      : validRunners[0] ?? null;
+    if (!unit || !runner) {
+      return false;
+    }
+
+    if (!runnerId && validRunners.length > 1) {
+      pendingAction.mode = "transport";
+      return true;
+    }
+
+    this.boardUnitIntoRunner(unit, runner);
+    this.clearPendingAction();
+    this.state.selection = { type: "unit", id: runner.id, x: runner.x, y: runner.y };
+    return true;
+  }
+
+  useSupportAbilityWithPendingUnit(targetId = null) {
+    const pendingAction = this.state.pendingAction;
+    if (!pendingAction) {
+      return false;
+    }
+    const unit = findUnitById(this.state, pendingAction.unitId);
+    if (!unit || !["medic", "mechanic"].includes(unit.unitTypeId)) {
+      return false;
+    }
+    const cooldownKey = "support";
+    if ((unit.cooldowns?.[cooldownKey] ?? 0) > 0) {
+      return false;
+    }
+
+    const validTargets = this.getSupportTargetsForUnit(unit);
+    const target = targetId
+      ? validTargets.find((option) => option.target.id === targetId)?.target
+      : validTargets[0]?.target ?? null;
+
+    if (!target) {
+      return false;
+    }
+
+    if (!targetId && validTargets.length > 1) {
+      pendingAction.mode = "support";
+      return true;
+    }
+
+    this.applySupportAbility(unit, target);
+    this.clearPendingAction();
+    this.clearSelection();
+    return true;
+  }
+
   waitWithPendingUnit() {
     const pendingAction = this.state.pendingAction;
 
@@ -500,6 +881,7 @@ export class BattleSystem {
 
     unit.x = pendingAction.fromX;
     unit.y = pendingAction.fromY;
+    this.syncTransportCargoPosition(unit);
     unit.current.stamina = pendingAction.fromStamina;
     this.clearPendingAction();
     this.state.selection = {
@@ -513,11 +895,13 @@ export class BattleSystem {
 
   recruitUnit(unitTypeId) {
     const building = getSelectedBuilding(this.state);
+    const turnKey = `${this.state.turn.activeSide}-${this.state.turn.number}`;
 
     if (
       !building ||
       this.state.turn.activeSide !== TURN_SIDES.PLAYER ||
       building.owner !== TURN_SIDES.PLAYER ||
+      building.recruitLockedTurnKey === turnKey ||
       getUnitAt(this.state, building.x, building.y)
     ) {
       return false;
@@ -536,8 +920,13 @@ export class BattleSystem {
     const recruit = createUnitFromType(unitTypeId, TURN_SIDES.PLAYER);
     recruit.x = building.x;
     recruit.y = building.y;
-    recruit.hasMoved = true;
-    recruit.hasAttacked = true;
+    const isBarracksInfantry =
+      building.type === BUILDING_KEYS.BARRACKS && INFANTRY_RECRUIT_TYPES.has(unitTypeId);
+    recruit.hasMoved = !isBarracksInfantry;
+    recruit.hasAttacked = !isBarracksInfantry;
+    if (isBarracksInfantry) {
+      building.recruitLockedTurnKey = turnKey;
+    }
 
     this.state.player.units.push(recruit);
     this.state.player.funds -= adjustedCost;
@@ -730,11 +1119,12 @@ export class BattleSystem {
 
     this.state.enemyTurn.started = true;
     tickSideStatuses(this.state, TURN_SIDES.ENEMY);
+    this.tickUnitDurations(TURN_SIDES.ENEMY);
     const incomeGain = this.collectIncome(TURN_SIDES.ENEMY);
     this.resetActions(TURN_SIDES.ENEMY);
     serviceUnitsOnSectors(this.state, TURN_SIDES.ENEMY);
     this.state.enemyTurn.pendingUnitIds = getLivingUnits(this.state, TURN_SIDES.ENEMY)
-      .filter((unit) => !unit.hasMoved && !unit.hasAttacked)
+      .filter((unit) => !unit.hasMoved && !unit.hasAttacked && !unit.transport?.carriedByUnitId)
       .map((unit) => unit.id);
     this.updateVictoryState();
     return {
@@ -775,11 +1165,34 @@ export class BattleSystem {
       const unitId = this.state.enemyTurn.pendingUnitIds.shift();
       const unit = findUnitById(this.state, unitId);
 
-      if (!unit || unit.current.hp <= 0) {
+      if (
+        !unit ||
+        unit.current.hp <= 0 ||
+        unit.transport?.carriedByUnitId ||
+        (unit.hasMoved && unit.hasAttacked)
+      ) {
         continue;
       }
 
       this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+      if (unit.unitTypeId === "runner" && !unit.transport?.carryingUnitId) {
+        const passenger = this.getAdjacentTransportPassenger(unit);
+        if (passenger) {
+          this.boardUnitIntoRunner(passenger, unit);
+        }
+      }
+
+      const supportPlan = getBestSupportPlan(this.state, unit);
+
+      if (supportPlan && this.applySupportAbility(unit, supportPlan.target)) {
+        return {
+          changed: true,
+          done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
+          type: "support",
+          unitId
+        };
+      }
 
       const movementBudget = unit.stats.movement + getMovementModifier(this.state, unit);
       const reachableTiles = getReachableTiles(this.state, unit, movementBudget);
@@ -797,6 +1210,10 @@ export class BattleSystem {
         if (moved) {
           unit.x = capturePlan.tile.x;
           unit.y = capturePlan.tile.y;
+          if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
+            unit.transport.canUnloadAfterMove = true;
+          }
+          this.syncTransportCargoPosition(unit);
           unit.hasMoved = true;
           this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
         }
@@ -841,6 +1258,10 @@ export class BattleSystem {
         if (moved) {
           unit.x = capturePlan.tile.x;
           unit.y = capturePlan.tile.y;
+          if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
+            unit.transport.canUnloadAfterMove = true;
+          }
+          this.syncTransportCargoPosition(unit);
           unit.hasMoved = true;
           this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
         }
@@ -874,6 +1295,10 @@ export class BattleSystem {
       if (moved) {
         unit.x = fallbackTile.x;
         unit.y = fallbackTile.y;
+        if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
+          unit.transport.canUnloadAfterMove = true;
+        }
+        this.syncTransportCargoPosition(unit);
         unit.hasMoved = true;
         this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
       }
@@ -893,7 +1318,10 @@ export class BattleSystem {
       }
 
       if (moved) {
-        unit.hasAttacked = true;
+        const unloaded = this.unloadTransportForEnemy(unit);
+        if (!unloaded) {
+          unit.hasAttacked = true;
+        }
         appendLog(
           this.state,
           `${unit.name} ${fallbackTile.intent === "fallback" ? "fell back from danger" : "advanced into position"}.`
@@ -948,6 +1376,7 @@ export class BattleSystem {
 
     this.state.turn.activeSide = TURN_SIDES.PLAYER;
     tickSideStatuses(this.state, TURN_SIDES.PLAYER);
+    this.tickUnitDurations(TURN_SIDES.PLAYER);
     const incomeGain = this.collectIncome(TURN_SIDES.PLAYER);
     this.resetActions(TURN_SIDES.PLAYER);
     serviceUnitsOnSectors(this.state, TURN_SIDES.PLAYER);

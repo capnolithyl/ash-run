@@ -6,7 +6,8 @@ import { createUnitFromType } from "../src/game/simulation/unitFactory.js";
 function expectedDamage({ seed, attacker, defender, attackModifier = 0, armorModifier = 0 }) {
   const attackRoll = randomInt(seed, 0, attacker.stats.luck);
   const attackerAttack = attacker.stats.attack + attackModifier;
-  const defenderArmor = defender.stats.armor + armorModifier;
+  const armorBreak = attacker.unitTypeId === "breaker" && defender.family === "vehicle" ? 0.5 : 1;
+  const defenderArmor = Math.floor(defender.stats.armor * armorBreak) + armorModifier;
   const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
   const baseAttack = isEffective ? attackerAttack * 2 : attackerAttack;

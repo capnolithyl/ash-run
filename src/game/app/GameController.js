@@ -427,6 +427,36 @@ export class GameController {
     }
   }
 
+  async useSelectedSupportAbility() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+    const changed = this.battleSystem.useSupportAbilityWithPendingUnit();
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async enterSelectedTransport() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+    const changed = this.battleSystem.enterTransportWithPendingUnit();
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
+  async beginSelectedUnload() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+    const changed = this.battleSystem.beginPendingUnload();
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
   async beginSelectedAttack() {
     if (
       !this.battleSystem ||
