@@ -193,8 +193,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   getBoardLayout(snapshot) {
-    const maxBoardWidth = this.scale.width * 0.56;
-    const maxBoardHeight = this.scale.height * 0.72;
+    const isCompact = this.scale.width <= 1024;
+    const isShort = this.scale.height <= 520;
+    const reservedTop = isCompact ? (isShort ? 78 : 126) : 0;
+    const reservedBottom = isCompact ? (isShort ? 72 : this.scale.width <= 560 ? 132 : 96) : 0;
+    const availableHeight = Math.max(180, this.scale.height - reservedTop - reservedBottom);
+    const maxBoardWidth = this.scale.width * (isCompact ? 0.94 : 0.56);
+    const maxBoardHeight = isCompact ? availableHeight : this.scale.height * 0.72;
     const cellSize = Math.floor(
       Math.min(maxBoardWidth / snapshot.map.width, maxBoardHeight / snapshot.map.height)
     );
@@ -204,7 +209,9 @@ export class BattleScene extends Phaser.Scene {
     return {
       cellSize,
       originX: Math.round((this.scale.width - boardWidth) / 2),
-      originY: Math.round((this.scale.height - boardHeight) / 2)
+      originY: isCompact
+        ? Math.round(reservedTop + Math.max(0, (availableHeight - boardHeight) / 2))
+        : Math.round((this.scale.height - boardHeight) / 2)
     };
   }
 

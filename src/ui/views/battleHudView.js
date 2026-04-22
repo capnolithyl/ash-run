@@ -44,7 +44,7 @@ function canSelectNextReadyUnit(battleSnapshot) {
   if (
     !battleSnapshot ||
     battleSnapshot.victory ||
-    battleSnapshot.turn.activeSide !== "player" ||
+    battleSnapshot.turn.activeSide !== TURN_SIDES.PLAYER ||
     battleSnapshot.presentation?.pendingAction
   ) {
     return false;
@@ -55,7 +55,7 @@ function canSelectNextReadyUnit(battleSnapshot) {
 
 function canActivatePlayerPower(battleSnapshot) {
   return Boolean(
-      battleSnapshot &&
+    battleSnapshot &&
       !battleSnapshot.victory &&
       battleSnapshot.turn.activeSide === TURN_SIDES.PLAYER &&
       !battleSnapshot.presentation?.pendingAction &&
@@ -101,8 +101,13 @@ function getBattleLayout(battleSnapshot) {
 
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const maxBoardWidth = viewportWidth * 0.56;
-  const maxBoardHeight = viewportHeight * 0.72;
+  const isCompact = viewportWidth <= 1024;
+  const isShort = viewportHeight <= 520;
+  const reservedTop = isCompact ? (isShort ? 78 : 126) : 0;
+  const reservedBottom = isCompact ? (isShort ? 72 : viewportWidth <= 560 ? 132 : 96) : 0;
+  const availableHeight = Math.max(180, viewportHeight - reservedTop - reservedBottom);
+  const maxBoardWidth = viewportWidth * (isCompact ? 0.94 : 0.56);
+  const maxBoardHeight = isCompact ? availableHeight : viewportHeight * 0.72;
   const cellSize = Math.floor(
     Math.min(maxBoardWidth / battleSnapshot.map.width, maxBoardHeight / battleSnapshot.map.height)
   );
@@ -112,7 +117,9 @@ function getBattleLayout(battleSnapshot) {
   return {
     cellSize,
     originX: Math.round((viewportWidth - boardWidth) / 2),
-    originY: Math.round((viewportHeight - boardHeight) / 2)
+    originY: isCompact
+      ? Math.round(reservedTop + Math.max(0, (availableHeight - boardHeight) / 2))
+      : Math.round((viewportHeight - boardHeight) / 2)
   };
 }
 
@@ -633,7 +640,33 @@ export function renderBattleHudView(state, options = {}) {
   const fundsGain = state.battleUi?.fundsGain ?? null;
   return `
     <div class="battle-shell">
-      <aside class="battle-rail">
+      <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
+      <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
+      <div class="battle-mobile-actions" aria-label="Battle controls">
+        <label class="ghost-button ghost-button--small battle-drawer-button" for="battle-intel-drawer">Intel</label>
+        <button class="ghost-button ghost-button--small" data-action="pause-battle">Pause</button>
+        <button
+          class="ghost-button ghost-button--small"
+          data-action="select-next-unit"
+          ${nextUnitEnabled ? "" : "disabled"}
+        >
+          Next
+        </button>
+        <button
+          class="menu-button menu-button--small menu-button--power"
+          data-action="activate-power"
+          ${playerPowerEnabled ? "" : "disabled"}
+        >
+          Power
+        </button>
+        <button class="ghost-button ghost-button--small" data-action="end-turn">End</button>
+        <label class="ghost-button ghost-button--small battle-drawer-button" for="battle-command-drawer">Feed</label>
+      </div>
+      <aside class="battle-rail battle-rail--left">
+        <div class="battle-drawer-header">
+          <span>Battle Intel</span>
+          <label class="ghost-button ghost-button--small" for="battle-intel-drawer">Close</label>
+        </div>
         ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player")}
         ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
         ${renderSelectionDetails(battleSnapshot)}
@@ -654,6 +687,10 @@ export function renderBattleHudView(state, options = {}) {
         </div>
       </div>
       <aside class="battle-rail battle-rail--right">
+        <div class="battle-drawer-header">
+          <span>Command</span>
+          <label class="ghost-button ghost-button--small" for="battle-command-drawer">Close</label>
+        </div>
         ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy")}
         <div class="card-block">
           <h3>Command Feed</h3>

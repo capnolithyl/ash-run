@@ -38,6 +38,10 @@ export class AppShell {
     this.fundsAnimationFrame = null;
     this.activeFundsGainElement = null;
     this.activeFundsGainId = null;
+    this.battleDrawers = {
+      intel: false,
+      command: false
+    };
 
     this.root.addEventListener("click", (event) => this.handleClick(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));
@@ -79,11 +83,13 @@ export class AppShell {
         const suppressLevelUpOverlay = this.shouldSuppressLevelUpOverlay(state);
         const suppressOutcomeOverlay = this.shouldSuppressOutcomeOverlay(state);
         const turnBanner = this.getTurnBanner(state);
+        this.captureBattleDrawerState();
         this.root.innerHTML = renderBattleHudView(state, {
           suppressLevelUpOverlay,
           suppressOutcomeOverlay,
           turnBanner
         });
+        this.applyBattleDrawerState();
         this.animateFundsGain(state);
         this.previousBattleSnapshot = state.battleSnapshot;
         return;
@@ -124,6 +130,34 @@ export class AppShell {
     this.lastTurnBannerKey = null;
     this.activeFundsGainElement = null;
     this.activeFundsGainId = null;
+    this.battleDrawers.intel = false;
+    this.battleDrawers.command = false;
+  }
+
+  captureBattleDrawerState() {
+    const intelDrawer = this.root.querySelector("#battle-intel-drawer");
+    const commandDrawer = this.root.querySelector("#battle-command-drawer");
+
+    if (intelDrawer) {
+      this.battleDrawers.intel = intelDrawer.checked;
+    }
+
+    if (commandDrawer) {
+      this.battleDrawers.command = commandDrawer.checked;
+    }
+  }
+
+  applyBattleDrawerState() {
+    const intelDrawer = this.root.querySelector("#battle-intel-drawer");
+    const commandDrawer = this.root.querySelector("#battle-command-drawer");
+
+    if (intelDrawer) {
+      intelDrawer.checked = this.battleDrawers.intel;
+    }
+
+    if (commandDrawer) {
+      commandDrawer.checked = this.battleDrawers.command;
+    }
   }
 
   getVictoryKey(snapshot) {
@@ -358,6 +392,20 @@ export class AppShell {
     }
   }
 
+  scrollCommanderSlider(direction) {
+    const slider = this.root.querySelector('[data-role="commander-slider"]');
+
+    if (!slider) {
+      return;
+    }
+
+    const distance = Math.max(240, slider.clientWidth * 0.88);
+    slider.scrollBy({
+      left: direction * distance,
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    });
+  }
+
   async handleContextMenu(event) {
     if (
       this.latestState?.screen !== SCREEN_IDS.BATTLE ||
@@ -424,6 +472,12 @@ export class AppShell {
         break;
       case "select-commander":
         this.controller.selectCommander(commanderId);
+        break;
+      case "commander-slider-prev":
+        this.scrollCommanderSlider(-1);
+        break;
+      case "commander-slider-next":
+        this.scrollCommanderSlider(1);
         break;
       case "select-slot":
         this.controller.selectSlot(slotId);

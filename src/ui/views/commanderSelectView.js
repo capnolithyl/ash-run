@@ -42,35 +42,51 @@ export function renderCommanderSelectView(state) {
             })
             .join("")}
         </div>
-        <div class="commander-grid">
-          ${COMMANDERS.map((commander) => {
-            const unlocked = state.metaState.unlockedCommanderIds.includes(commander.id);
-            const selected = state.selectedCommanderId === commander.id ? "commander-card--selected" : "";
+        <div class="commander-slider">
+          <button
+            class="ghost-button ghost-button--small commander-slider__control commander-slider__control--prev"
+            data-action="commander-slider-prev"
+            aria-label="Previous commander"
+          >
+            Prev
+          </button>
+          <div class="commander-grid" data-role="commander-slider">
+            ${COMMANDERS.map((commander) => {
+              const unlocked = state.metaState.unlockedCommanderIds.includes(commander.id);
+              const selected = state.selectedCommanderId === commander.id ? "commander-card--selected" : "";
 
-            return `
-              <button
-                class="commander-card ${selected} ${unlocked ? "" : "commander-card--locked"}"
-                style="--accent:${commander.accent}"
-                data-action="select-commander"
-                data-commander-id="${commander.id}"
-                ${unlocked ? "" : "disabled"}
-              >
-                <div class="commander-card__header">
-                  <span class="commander-name">${commander.name}</span>
-                  <span class="commander-status">${unlocked ? "Ready" : "Locked"}</span>
-                </div>
-                <p class="commander-title">${commander.title}</p>
-                <div class="commander-rule-group">
-                  <span>Passive</span>
-                  <p class="commander-rule">${commander.passive.summary}</p>
-                </div>
-                <div class="commander-rule-group commander-rule-group--active">
-                  <span>Power</span>
-                  <p class="commander-rule commander-rule--active">${commander.active.summary}</p>
-                </div>
-              </button>
-            `;
-          }).join("")}
+              return `
+                <button
+                  class="commander-card ${selected} ${unlocked ? "" : "commander-card--locked"}"
+                  style="--accent:${commander.accent}"
+                  data-action="select-commander"
+                  data-commander-id="${commander.id}"
+                  ${unlocked ? "" : "disabled"}
+                >
+                  <div class="commander-card__header">
+                    <span class="commander-name">${commander.name}</span>
+                    <span class="commander-status">${unlocked ? "Ready" : "Locked"}</span>
+                  </div>
+                  <p class="commander-title">${commander.title}</p>
+                  <div class="commander-rule-group">
+                    <span>Passive</span>
+                    <p class="commander-rule">${commander.passive.summary}</p>
+                  </div>
+                  <div class="commander-rule-group commander-rule-group--active">
+                    <span>Power</span>
+                    <p class="commander-rule commander-rule--active">${commander.active.summary}</p>
+                  </div>
+                </button>
+              `;
+            }).join("")}
+          </div>
+          <button
+            class="ghost-button ghost-button--small commander-slider__control commander-slider__control--next"
+            data-action="commander-slider-next"
+            aria-label="Next commander"
+          >
+            Next
+          </button>
         </div>
         <div class="panel-footer">
           <div class="footer-meta">

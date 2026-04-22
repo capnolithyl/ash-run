@@ -86,6 +86,17 @@ test("battle HUD shows passive and active commander powers without duplicate com
   assert.doesNotMatch(html, /commander-funds/);
 });
 
+test("battle HUD includes compact drawer and quick-action controls", () => {
+  const battleState = createTestBattleState();
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /id="battle-intel-drawer"/);
+  assert.match(html, /id="battle-command-drawer"/);
+  assert.match(html, /class="battle-mobile-actions"/);
+  assert.match(html, /for="battle-intel-drawer">Intel/);
+  assert.match(html, /for="battle-command-drawer">Feed/);
+});
+
 test("battle HUD disables commander power until the player can use it", () => {
   const chargingState = createTestBattleState();
   chargingState.player.charge = COMMANDER_POWER_MAX - 1;
