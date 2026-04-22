@@ -539,8 +539,12 @@ export class GameController {
       return;
     }
 
+    if (this.state.battleSnapshot?.turn.activeSide !== TURN_SIDES.PLAYER) {
+      return;
+    }
+
     if (this.state.debugMode) {
-      this.battleSystem.setDebugCharge(this.state.battleSnapshot?.turn.activeSide ?? TURN_SIDES.PLAYER, 100);
+      this.battleSystem.setDebugCharge(TURN_SIDES.PLAYER, 100);
     }
 
     const changed = this.battleSystem.activatePower();

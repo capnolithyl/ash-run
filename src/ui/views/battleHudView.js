@@ -1,4 +1,4 @@
-import { COMMANDER_POWER_MAX } from "../../game/core/constants.js";
+import { COMMANDER_POWER_MAX, TURN_SIDES } from "../../game/core/constants.js";
 import { getCommanderById } from "../../game/content/commanders.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 import { renderOptionFields } from "./optionFieldsView.js";
@@ -51,6 +51,47 @@ function canSelectNextReadyUnit(battleSnapshot) {
   }
 
   return battleSnapshot.player.units.some((unit) => !unit.hasMoved && unit.current.hp > 0);
+}
+
+function canActivatePlayerPower(battleSnapshot) {
+  return Boolean(
+      battleSnapshot &&
+      !battleSnapshot.victory &&
+      battleSnapshot.turn.activeSide === TURN_SIDES.PLAYER &&
+      !battleSnapshot.presentation?.pendingAction &&
+      battleSnapshot.player.charge >= COMMANDER_POWER_MAX
+  );
+}
+
+function renderCommanderPanel(commander, sideState, side) {
+  const powerRatio = Math.min(1, sideState.charge / COMMANDER_POWER_MAX);
+  const sideLabel = side === "player" ? "Player Commander" : "Enemy Commander";
+
+  return `
+    <div class="commander-panel commander-panel--${side}" style="--accent:${commander.accent}">
+      <div class="commander-panel__header">
+        <div>
+          <p class="eyebrow">${sideLabel}</p>
+          <h2>${commander.name}</h2>
+        </div>
+        <span class="commander-panel__sigil">${commander.name.slice(0, 1)}</span>
+      </div>
+      <div class="commander-ability">
+        <span>Passive</span>
+        <p>${commander.passive.summary}</p>
+      </div>
+      <div class="commander-ability commander-ability--active">
+        <span>Power</span>
+        <p>${commander.active.summary}</p>
+      </div>
+      <div class="meter commander-meter">
+        <span>Power ${Math.floor(sideState.charge)}/${COMMANDER_POWER_MAX}</span>
+        <div class="meter__bar">
+          <div style="width:${powerRatio * 100}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function getBattleLayout(battleSnapshot) {
@@ -588,22 +629,12 @@ export function renderBattleHudView(state, options = {}) {
   const playerCommander = getCommanderById(battleSnapshot.player.commanderId);
   const enemyCommander = getCommanderById(battleSnapshot.enemy.commanderId);
   const nextUnitEnabled = canSelectNextReadyUnit(battleSnapshot);
+  const playerPowerEnabled = canActivatePlayerPower(battleSnapshot);
   const fundsGain = state.battleUi?.fundsGain ?? null;
   return `
     <div class="battle-shell">
       <aside class="battle-rail">
-        <div class="commander-panel" style="--accent:${playerCommander.accent}">
-          <p class="eyebrow">Player Commander</p>
-          <h2>${playerCommander.name}</h2>
-          <p>${playerCommander.passive.summary}</p>
-          <div class="meter">
-            <span>Power ${Math.floor(battleSnapshot.player.charge)}/${COMMANDER_POWER_MAX}</span>
-            <div class="meter__bar">
-              <div style="width:${(battleSnapshot.player.charge / COMMANDER_POWER_MAX) * 100}%"></div>
-            </div>
-          </div>
-          <p class="commander-funds">Funds ${battleSnapshot.player.funds}</p>
-        </div>
+        ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player")}
         ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
         ${renderSelectionDetails(battleSnapshot)}
         ${renderRecruitPanel(battleSnapshot)}
@@ -623,18 +654,7 @@ export function renderBattleHudView(state, options = {}) {
         </div>
       </div>
       <aside class="battle-rail battle-rail--right">
-        <div class="commander-panel commander-panel--enemy" style="--accent:${enemyCommander.accent}">
-          <p class="eyebrow">Enemy Commander</p>
-          <h2>${enemyCommander.name}</h2>
-          <p>${enemyCommander.passive.summary}</p>
-          <div class="meter">
-            <span>Power ${Math.floor(battleSnapshot.enemy.charge)}/${COMMANDER_POWER_MAX}</span>
-            <div class="meter__bar">
-              <div style="width:${(battleSnapshot.enemy.charge / COMMANDER_POWER_MAX) * 100}%"></div>
-            </div>
-          </div>
-          <p class="commander-funds">Funds ${battleSnapshot.enemy.funds}</p>
-        </div>
+        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy")}
         <div class="card-block">
           <h3>Command Feed</h3>
           <div class="log-feed">
@@ -650,7 +670,13 @@ export function renderBattleHudView(state, options = {}) {
           >
             Next Unit
           </button>
-          <button class="menu-button menu-button--small" data-action="activate-power">Use Commander Power</button>
+          <button
+            class="menu-button menu-button--small menu-button--power"
+            data-action="activate-power"
+            ${playerPowerEnabled ? "" : "disabled"}
+          >
+            Use Commander Power
+          </button>
           <button class="ghost-button ghost-button--small" data-action="end-turn">End Turn</button>
         </div>
       </aside>

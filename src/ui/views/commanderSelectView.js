@@ -6,11 +6,22 @@ export function renderCommanderSelectView(state) {
 
   return `
     <div class="screen screen--commander" data-screen-id="commander-select">
-      <section class="panel panel--wide panel--static">
-        <div class="panel-header">
-          <div>
+      <div class="title-scene commander-scene" aria-hidden="true">
+        <div class="title-scene__stars"></div>
+        <div class="title-scene__sun"></div>
+        <div class="title-scene__orb title-scene__orb--one"></div>
+        <div class="title-scene__orb title-scene__orb--two"></div>
+        <div class="title-scene__haze"></div>
+        <div class="title-scene__mountains title-scene__mountains--far"></div>
+        <div class="title-scene__mountains title-scene__mountains--near"></div>
+        <div class="title-scene__grid"></div>
+      </div>
+      <section class="panel panel--wide panel--static commander-select-panel">
+        <div class="panel-header panel-header--commander">
+          <div class="commander-select-heading">
             <p class="eyebrow">New Run</p>
             <h2>Select Your Commander</h2>
+            <p>Choose a doctrine, assign a save slot, and roll out.</p>
           </div>
           <button class="ghost-button" data-action="back-to-title">Back</button>
         </div>
@@ -49,8 +60,14 @@ export function renderCommanderSelectView(state) {
                   <span class="commander-status">${unlocked ? "Ready" : "Locked"}</span>
                 </div>
                 <p class="commander-title">${commander.title}</p>
-                <p class="commander-rule">${commander.passive.summary}</p>
-                <p class="commander-rule commander-rule--active">${commander.active.summary}</p>
+                <div class="commander-rule-group">
+                  <span>Passive</span>
+                  <p class="commander-rule">${commander.passive.summary}</p>
+                </div>
+                <div class="commander-rule-group commander-rule-group--active">
+                  <span>Power</span>
+                  <p class="commander-rule commander-rule--active">${commander.active.summary}</p>
+                </div>
               </button>
             `;
           }).join("")}
