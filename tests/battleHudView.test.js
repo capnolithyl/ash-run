@@ -118,3 +118,44 @@ test("battle HUD disables commander power until the player can use it", () => {
 
   assert.match(enemyTurnButton, /disabled/);
 });
+
+test("debug pause menu groups tools into accordion sections", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2)]
+  });
+  battleState.selection = { type: "unit", id: battleState.player.units[0].id, x: 2, y: 2 };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: true,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: true,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /class="pause-section" open/);
+  assert.match(html, /<strong>Debug Toolkit<\/strong>/);
+  assert.match(html, /class="debug-section" open/);
+  assert.match(html, /<strong>Spawn Unit<\/strong>/);
+  assert.match(html, /<strong>Battle Shortcuts<\/strong>/);
+  assert.match(html, /<strong>Selected Unit Overrides<\/strong>/);
+  assert.match(html, /data-debug-field="spawn-owner"/);
+  assert.match(html, /data-debug-field="unit-hp"/);
+});
