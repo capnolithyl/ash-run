@@ -30,3 +30,8 @@ This folder contains first-pass 64x64 pixel-art-style SVG sprites for every unit
 - `payload.svg`
 - `interceptor.svg`
 - `carrier.svg`
+
+## Variant pipeline
+
+- Top-level SVGs are source masters for `scripts/generate-sprite-variants.mjs`.
+- Runtime sprites load from generated `player/` and `enemy/` owner-color folders.

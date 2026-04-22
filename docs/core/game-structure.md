@@ -40,5 +40,6 @@
 - `src/game/simulation/battlePresentation.js` converts battle state into HUD/render-friendly presentation data without mutating the battle.
 - `src/game/simulation/battleServicing.js`, `captureRules.js`, `battleLog.js`, and `battleUnits.js` hold small shared battle helpers that keep the orchestrator lean.
 - `src/game/simulation/selectors.js`, `commanderEffects.js`, `unitFactory.js`, and `progression.js` own read helpers, commander modifiers, unit creation, and leveling.
-- `src/game/phaser` adapts simulation snapshots into canvas rendering, animation, and effects.
+- `src/game/phaser` adapts simulation snapshots into canvas rendering, animation, effects, and compact board layout sizing.
 - `src/ui` owns DOM menus and HUD surfaces.
+- `src/ui/AppShell.js` coordinates the DOM render lifecycle, responsive commander carousel controls, and persistent battle drawer state across rerenders.

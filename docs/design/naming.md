@@ -10,5 +10,5 @@
 ## Current Data Examples
 
 - Commanders: Atlas, Viper, Rook, Echo, Blaze, Knox, Falcon, Graves, Nova, Sable
-- Units: Grunt, Breaker, Longshot, Runner, Bruiser, Juggernaut, Siege Gun, Skyguard, Gunship, Payload, Interceptor, Carrier
+- Units: Grunt, Breaker, Longshot, Medic, Mechanic, Runner, Bruiser, Juggernaut, Siege Gun, Skyguard, Gunship, Payload, Interceptor, Carrier
 - Maps: Ashline Crossing, Signal Ridge, White Signal, Drift Command

@@ -17,6 +17,8 @@ Runtime unit state also tracks:
 - current HP/ammo/stamina
 - level + XP
 - move/attack completion flags
+- transport state for carried infantry and Runner cargo
+- support cooldowns for Medic/Mechanic service actions
 - temporary statuses (shield/attack/mobility effects)
 
 ## Notes

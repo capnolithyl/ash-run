@@ -42,17 +42,26 @@ Primary weapons use a 2x effective multiplier. Empty-ammo units switch to weaker
 
 | Unit        | Effective Against                       |
 | ----------- | --------------------------------------- |
-| Longshots   | Grunts, Breakers, Longshots             |
+| Longshots   | All Infantry                            |
 | Breakers    | All Vehicles                            |
-| Runners     | Grunts, Breakers, Longshots             |
-| Bruiser     | Runners, Bruisers, Skyguard, Siege Gun  |
-| Juggernaut  | Barracks units and all vehicles         |
-| Siege Gun   | Runners, Bruisers, Juggernaut, Skyguard |
+| Runners     | All Infantry                            |
+| Bruiser     | All Infantry                            |
+| Juggernaut  | All Infantry and Vehicles               |
+| Medics      | No special effectiveness                |
+| Mechanics   | No special effectiveness                |
+| Siege Gun   | All Vehicles                            |
 | Skyguard    | All Air Units                           |
-| Gunship     | Runners, Bruisers, Siege Gun            |
-| Payload     | All Land Units                          |
+| Gunship     | All Infantry                            |
+| Payload     | All Infantry and Vehicles               |
 | Interceptor | All Air Units                           |
 | Carrier     | Cannot attack                           |
+
+## Support Actions
+
+- Medics can support adjacent infantry.
+- Mechanics can support adjacent vehicles.
+- Support restores 50% max HP, full ammo, and full stamina.
+- Medics receive a 2-turn support cooldown; mechanics receive a 3-turn support cooldown.
 
 ## Combat Outcomes
 

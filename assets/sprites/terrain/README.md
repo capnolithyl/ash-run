@@ -13,5 +13,6 @@ This folder contains 64x64 pixel-art terrain tiles requested for tactical map us
 
 ## Notes
 
-- The first five match the terrain keys currently used by simulation (`plain`, `road`, `forest`, `water`, `ridge`).
-- `mountain.svg` is included as an extra tile for future expansion.
+- These tiles match the active terrain keys in `TERRAIN_LIBRARY`.
+- Water and ridge block ground units.
+- Mountain blocks vehicles while remaining passable for infantry and air units.

@@ -8,7 +8,7 @@
 
 ## Common Features
 
-- Terrain mixes: road, forest, ridge, water, plain
+- Terrain mixes: road, forest, mountain, ridge, water, plain
 - At least two neutral economy points on every map
 - Hospital and repair station service objectives on every map
 - Board sizes range from quick skirmish maps to wide, multi-front encounters

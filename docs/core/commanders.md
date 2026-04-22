@@ -12,6 +12,8 @@ Default unlocked set:
 
 Other commanders are locked for player selection but still valid enemy commanders.
 
+Full run clears unlock the next locked commander, one at a time, until the full commander roster is available.
+
 ## Commander Model
 
 Each commander has:

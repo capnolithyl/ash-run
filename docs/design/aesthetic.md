@@ -8,8 +8,10 @@
 
 ## Current Prototype Presentation
 
-- Code-rendered unit/building markers
-- Strong UI panel hierarchy (menu shell + battle HUD)
+- First-pass 64px SVG sprites for units, buildings, and terrain
+- Owner-color sprite variants for player, enemy, and neutral tactical entities
+- Code-rendered battlefield overlays, VFX, and title/menu backdrops
+- Strong responsive UI panel hierarchy (menu shell + battle HUD)
 - Color-coded ownership and turn-state cues
 - Lightweight overlays for turn banners, level-up, targeting, and pause
 

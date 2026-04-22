@@ -15,8 +15,10 @@ Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite 
   - 3 commanders unlocked at start (`Atlas`, `Viper`, `Rook`)
   - Locked commanders still available to enemy armies
   - Slot selection before starting a run
+  - Responsive commander carousel on small screens
 - Tactical battles with:
   - Grid map rendering
+  - 64px SVG unit, terrain, and building sprites with owner-color variants
   - Unit selection and next-ready-unit cycling
   - Tile-based movement and path previews
   - Attacks and counterattacks
@@ -29,6 +31,7 @@ Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite 
   - Persistent unit leveling and random stat growth
   - Level-up presentation queue in the HUD
   - Pause menu and save-slot flow
+  - Responsive battle HUD drawers for compact screens
 - Run flow with:
   - 10-map run goal
   - 20-map authored pool sampled into each run sequence
@@ -99,4 +102,4 @@ Set `ASH_RUN_84_DEV_PORT` before `yarn dev` when port `5173` is already taken.
 - Enemy battle recruitment has per-turn throttles and a per-map total cap to keep small maps from becoming infinite slugfests.
 - Rewards/meta loop exists as structure, but content depth is intentionally light.
 - Audio is not implemented yet, so the options menu only exposes live visual/gameplay toggles.
-- Visuals are still primarily code-drawn placeholders rather than final authored art.
+- Visuals use first-pass SVG sprites and code-rendered effects; final art, animation, and audio polish are still future work.
