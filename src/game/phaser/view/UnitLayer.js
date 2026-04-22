@@ -1,10 +1,51 @@
 import Phaser from "phaser";
 import { BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
-import { getUnitSpriteKey } from "../assets.js";
+import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
 
 function getPointDistance(left, right) {
   return Phaser.Math.Distance.Between(left.x, left.y, right.x, right.y);
+}
+
+function getUnitVisualSpec(scene, unit) {
+  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, unit.owner);
+
+  if (spriteDefinition?.type === "spritesheet" && scene.textures.exists(spriteDefinition.key)) {
+    return spriteDefinition;
+  }
+
+  if (spriteDefinition?.fallbackKey && scene.textures.exists(spriteDefinition.fallbackKey)) {
+    return {
+      type: "image",
+      key: spriteDefinition.fallbackKey
+    };
+  }
+
+  if (spriteDefinition?.type === "image" && scene.textures.exists(spriteDefinition.key)) {
+    return spriteDefinition;
+  }
+
+  return null;
+}
+
+function ensureUnitIdleAnimation(scene, visualSpec) {
+  if (visualSpec?.type !== "spritesheet" || visualSpec.frameCount <= 1) {
+    return null;
+  }
+
+  if (!scene.anims.exists(visualSpec.animationKey)) {
+    scene.anims.create({
+      key: visualSpec.animationKey,
+      frames: scene.anims.generateFrameNumbers(visualSpec.key, {
+        start: 0,
+        end: visualSpec.frameCount - 1
+      }),
+      frameRate: visualSpec.frameRate,
+      repeat: -1
+    });
+  }
+
+  return visualSpec.animationKey;
 }
 
 export class UnitLayer {
@@ -22,7 +63,7 @@ export class UnitLayer {
 
   createEntity(unit, layout) {
     const color = getOwnerColor(unit.owner);
-    const textureKey = getUnitSpriteKey(unit.unitTypeId, unit.owner);
+    const visualSpec = getUnitVisualSpec(this.scene, unit);
     const glow = this.scene.add
       .circle(0, 0, layout.cellSize * 0.44, color, 0.13)
       .setBlendMode(Phaser.BlendModes.ADD);
@@ -34,19 +75,27 @@ export class UnitLayer {
     let shadow = null;
     let fallbackLabel = null;
 
-    if (textureKey && this.scene.textures.exists(textureKey)) {
+    if (visualSpec) {
+      const textureFrame = visualSpec.type === "spritesheet" ? 0 : undefined;
       shadow = this.scene.add
-        .image(layout.cellSize * 0.04, layout.cellSize * 0.05, textureKey)
+        .image(layout.cellSize * 0.04, layout.cellSize * 0.05, visualSpec.key, textureFrame)
         .setOrigin(0.5)
         .setDisplaySize(layout.cellSize * 0.92, layout.cellSize * 0.92)
         .setTint(0x08040f)
         .setAlpha(0.64);
-      visual = this.scene.add
-        .image(0, -layout.cellSize * 0.03, textureKey)
-        .setOrigin(0.5)
-        .setDisplaySize(layout.cellSize * 0.88, layout.cellSize * 0.88);
+      visual =
+        visualSpec.type === "spritesheet"
+          ? this.scene.add.sprite(0, -layout.cellSize * 0.03, visualSpec.key, 0)
+          : this.scene.add.image(0, -layout.cellSize * 0.03, visualSpec.key);
+      visual.setOrigin(0.5).setDisplaySize(layout.cellSize * 0.88, layout.cellSize * 0.88);
       shadow.setFlipX(unit.owner === "enemy");
       visual.setFlipX(unit.owner === "enemy");
+
+      const animationKey = ensureUnitIdleAnimation(this.scene, visualSpec);
+
+      if (animationKey) {
+        visual.play(animationKey);
+      }
     } else {
       visual = this.scene.add.circle(0, 0, layout.cellSize * 0.28, color, 0.95);
       visual.setStrokeStyle(2, 0xfff2fc, 0.78);
@@ -87,7 +136,8 @@ export class UnitLayer {
       visualBaseScaleX: visual.scaleX,
       visualBaseScaleY: visual.scaleY,
       fallbackLabel,
-      textureKey,
+      textureKey: visualSpec?.key ?? null,
+      visualType: visualSpec?.type ?? "fallback",
       moveTween: null,
       effectTweens: [],
       targetX: 0,
@@ -373,18 +423,27 @@ export class UnitLayer {
       }
 
       const color = getOwnerColor(unit.owner);
-      const textureKey = getUnitSpriteKey(unit.unitTypeId, unit.owner);
+      const visualSpec = getUnitVisualSpec(this.scene, unit);
       entity.glow.setFillStyle(color, 0.13);
       entity.aura.setFillStyle(color, 0.18);
       if (
-        textureKey &&
-        entity.textureKey !== textureKey &&
+        visualSpec &&
+        entity.textureKey !== visualSpec.key &&
         entity.shadow &&
         entity.visual.setTexture
       ) {
-        entity.shadow.setTexture(textureKey);
-        entity.visual.setTexture(textureKey);
-        entity.textureKey = textureKey;
+        const textureFrame = visualSpec.type === "spritesheet" ? 0 : undefined;
+        entity.shadow.setTexture(visualSpec.key, textureFrame);
+        entity.visual.setTexture(visualSpec.key, textureFrame);
+        entity.textureKey = visualSpec.key;
+        entity.visualType = visualSpec.type;
+      }
+      if (visualSpec?.type === "spritesheet" && entity.visual.play) {
+        const animationKey = ensureUnitIdleAnimation(this.scene, visualSpec);
+
+        if (animationKey && entity.visual.anims?.currentAnim?.key !== animationKey) {
+          entity.visual.play(animationKey);
+        }
       }
       entity.visual.setFlipX?.(unit.owner === "enemy");
       entity.shadow?.setFlipX?.(unit.owner === "enemy");

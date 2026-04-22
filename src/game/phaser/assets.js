@@ -1,6 +1,7 @@
 import { BUILDING_KEYS } from "../core/constants.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
+import { GENERATED_UNIT_SPRITE_SHEETS } from "./generated/unitSpriteSheets.js";
 
 const SPRITE_ASSET_ROOT = "./assets/sprites";
 const AUDIO_ASSET_ROOT = "./assets/audio";
@@ -76,6 +77,9 @@ const MUSIC_TRACKS = {
 
 export const SPRITE_ASSETS = [
   ...Object.values(UNIT_SPRITES).flatMap((variants) => Object.values(variants)),
+  ...Object.values(GENERATED_UNIT_SPRITE_SHEETS).flatMap((variants) =>
+    Object.values(variants).map((asset) => ({ ...asset, type: "spritesheet" }))
+  ),
   ...Object.values(TERRAIN_SPRITES),
   ...Object.values(BUILDING_SPRITES).flatMap((variants) => Object.values(variants))
 ];
@@ -85,10 +89,17 @@ export const MUSIC_ASSETS = Object.values(MUSIC_TRACKS);
 export function preloadSpriteAssets(scene) {
   for (const asset of SPRITE_ASSETS) {
     if (!scene.textures.exists(asset.key)) {
-      scene.load.svg(asset.key, asset.url, {
-        width: SPRITE_SOURCE_SIZE,
-        height: SPRITE_SOURCE_SIZE
-      });
+      if (asset.type === "spritesheet") {
+        scene.load.spritesheet(asset.key, asset.url, {
+          frameWidth: asset.frameWidth,
+          frameHeight: asset.frameHeight
+        });
+      } else {
+        scene.load.svg(asset.key, asset.url, {
+          width: SPRITE_SOURCE_SIZE,
+          height: SPRITE_SOURCE_SIZE
+        });
+      }
     }
   }
 }
@@ -107,6 +118,26 @@ export function getMusicTrackKey(trackId) {
 
 export function getUnitSpriteKey(unitTypeId, owner = "player") {
   return UNIT_SPRITES[unitTypeId]?.[owner]?.key ?? UNIT_SPRITES[unitTypeId]?.player?.key ?? null;
+}
+
+export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
+  const fallbackKey = getUnitSpriteKey(unitTypeId, owner);
+  const sheet = GENERATED_UNIT_SPRITE_SHEETS[unitTypeId]?.[owner];
+
+  if (sheet) {
+    return {
+      ...sheet,
+      type: "spritesheet",
+      fallbackKey
+    };
+  }
+
+  return fallbackKey
+    ? {
+        type: "image",
+        key: fallbackKey
+      }
+    : null;
 }
 
 export function getTerrainSpriteKey(terrainId) {

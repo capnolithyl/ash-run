@@ -1,7 +1,10 @@
 import { createServer } from "vite";
+import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifest.mjs";
 
 const root = process.cwd();
 const port = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
+
+await generateUnitSpriteSheetManifest({ root });
 
 const server = await createServer({
   configFile: false,

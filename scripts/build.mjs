@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { build } from "esbuild";
+import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifest.mjs";
 
 const root = process.cwd();
 const distRoot = path.resolve(root, "dist");
@@ -12,6 +13,7 @@ const assetsRoot = path.join(distRoot, "assets");
  */
 await fs.rm(distRoot, { recursive: true, force: true });
 await fs.mkdir(assetsRoot, { recursive: true });
+await generateUnitSpriteSheetManifest({ root });
 
 await build({
   entryPoints: [path.resolve(root, "src/main.js")],

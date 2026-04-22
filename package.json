@@ -11,6 +11,7 @@
     "start": "node scripts/start-electron.mjs",
     "build": "node scripts/build.mjs",
     "check:unused": "knip --include dependencies,unlisted,exports,files",
+    "sprites:sheets": "node scripts/generate-sprite-sheet-manifest.mjs",
     "sprites:variants": "node scripts/generate-sprite-variants.mjs",
     "test": "node --test",
     "test:playthrough": "node scripts/full-playthrough-check.mjs",

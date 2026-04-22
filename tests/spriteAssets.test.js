@@ -11,6 +11,7 @@ import {
   UNIT_OWNER_VARIANTS,
   getBuildingSpriteKey,
   getTerrainSpriteKey,
+  getUnitSpriteDefinition,
   getUnitSpriteKey
 } from "../src/game/phaser/assets.js";
 
@@ -18,19 +19,23 @@ function resolveSpritePath(url) {
   return path.resolve(process.cwd(), url.replace(/^\.\//, ""));
 }
 
-function collectSvgFiles(root) {
+function collectSpriteFiles(root) {
   return fs.readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(root, entry.name);
 
     if (entry.isDirectory()) {
-      return collectSvgFiles(entryPath);
+      return collectSpriteFiles(entryPath);
     }
 
-    return entry.isFile() && entry.name.endsWith(".svg") ? [entryPath] : [];
+    return entry.isFile() && [".svg", ".png"].includes(path.extname(entry.name)) ? [entryPath] : [];
   });
 }
 
 function isSourceMasterSprite(filePath) {
+  if (path.extname(filePath) !== ".svg") {
+    return false;
+  }
+
   const relativePath = path.relative(path.resolve(process.cwd(), "assets/sprites"), filePath);
   const parts = relativePath.split(path.sep);
 
@@ -81,9 +86,28 @@ test("sprite manifest points at files that ship with the repo", () => {
   }
 });
 
+test("unit sprite sheets are preferred over static fallbacks when present", () => {
+  const bruiserSheetPath = path.resolve(
+    process.cwd(),
+    "assets/sprites/units/player/bruiser/bruiser.png"
+  );
+
+  if (!fs.existsSync(bruiserSheetPath)) {
+    return;
+  }
+
+  const spriteDefinition = getUnitSpriteDefinition("bruiser", "player");
+
+  assert.equal(spriteDefinition.type, "spritesheet");
+  assert.equal(spriteDefinition.fallbackKey, getUnitSpriteKey("bruiser", "player"));
+  assert.equal(spriteDefinition.frameWidth, 64);
+  assert.equal(spriteDefinition.frameHeight, 64);
+  assert.equal(spriteDefinition.frameCount, 3);
+});
+
 test("sprite folders only contain manifest assets or documented source masters", () => {
   const manifestPaths = new Set(SPRITE_ASSETS.map((asset) => resolveSpritePath(asset.url)));
-  const spriteFiles = collectSvgFiles(path.resolve(process.cwd(), "assets/sprites"));
+  const spriteFiles = collectSpriteFiles(path.resolve(process.cwd(), "assets/sprites"));
 
   for (const filePath of spriteFiles) {
     assert.ok(
