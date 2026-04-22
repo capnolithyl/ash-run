@@ -29,6 +29,7 @@
   - active battle state
   - summary (commander, map progress, map name)
 - Meta state stores unlocked commanders, options, and last played slot.
+- Audio options store master volume and mute state.
 
 ## Code Boundaries
 
@@ -41,5 +42,6 @@
 - `src/game/simulation/battleServicing.js`, `captureRules.js`, `battleLog.js`, and `battleUnits.js` hold small shared battle helpers that keep the orchestrator lean.
 - `src/game/simulation/selectors.js`, `commanderEffects.js`, `unitFactory.js`, and `progression.js` own read helpers, commander modifiers, unit creation, and leveling.
 - `src/game/phaser` adapts simulation snapshots into canvas rendering, animation, effects, and compact board layout sizing.
+- `src/game/phaser/audio` owns music playback, fades, and state-driven track selection.
 - `src/ui` owns DOM menus and HUD surfaces.
 - `src/ui/AppShell.js` coordinates the DOM render lifecycle, responsive commander carousel controls, and persistent battle drawer state across rerenders.

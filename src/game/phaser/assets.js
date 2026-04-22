@@ -3,9 +3,15 @@ import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
 
 const SPRITE_ASSET_ROOT = "./assets/sprites";
+const AUDIO_ASSET_ROOT = "./assets/audio";
 const SPRITE_SOURCE_SIZE = 64;
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
 export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
+export const MUSIC_TRACK_IDS = {
+  MENU: "menu",
+  ALLY_TURN: "ally-turn",
+  ENEMY_TURN: "enemy-turn"
+};
 
 function createSpriteAsset(group, id, owner = null) {
   return {
@@ -50,11 +56,31 @@ const BUILDING_SPRITES = Object.fromEntries(
   ])
 );
 
+const MUSIC_TRACKS = {
+  [MUSIC_TRACK_IDS.MENU]: {
+    id: MUSIC_TRACK_IDS.MENU,
+    key: "music:menu",
+    url: `${AUDIO_ASSET_ROOT}/music/Theme.mp3`
+  },
+  [MUSIC_TRACK_IDS.ALLY_TURN]: {
+    id: MUSIC_TRACK_IDS.ALLY_TURN,
+    key: "music:ally-turn",
+    url: `${AUDIO_ASSET_ROOT}/music/Ally Theme.mp3`
+  },
+  [MUSIC_TRACK_IDS.ENEMY_TURN]: {
+    id: MUSIC_TRACK_IDS.ENEMY_TURN,
+    key: "music:enemy-turn",
+    url: `${AUDIO_ASSET_ROOT}/music/Enemy Theme.mp3`
+  }
+};
+
 export const SPRITE_ASSETS = [
   ...Object.values(UNIT_SPRITES).flatMap((variants) => Object.values(variants)),
   ...Object.values(TERRAIN_SPRITES),
   ...Object.values(BUILDING_SPRITES).flatMap((variants) => Object.values(variants))
 ];
+
+export const MUSIC_ASSETS = Object.values(MUSIC_TRACKS);
 
 export function preloadSpriteAssets(scene) {
   for (const asset of SPRITE_ASSETS) {
@@ -65,6 +91,18 @@ export function preloadSpriteAssets(scene) {
       });
     }
   }
+}
+
+export function preloadMusicAssets(scene) {
+  for (const asset of MUSIC_ASSETS) {
+    if (!scene.cache.audio.exists(asset.key)) {
+      scene.load.audio(asset.key, asset.url);
+    }
+  }
+}
+
+export function getMusicTrackKey(trackId) {
+  return MUSIC_TRACKS[trackId]?.key ?? null;
 }
 
 export function getUnitSpriteKey(unitTypeId, owner = "player") {

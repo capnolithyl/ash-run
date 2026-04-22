@@ -4,7 +4,9 @@ import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
 function createDefaultOptions() {
   return {
     showGrid: true,
-    screenShake: true
+    screenShake: true,
+    masterVolume: 0.4,
+    muted: false
   };
 }
 

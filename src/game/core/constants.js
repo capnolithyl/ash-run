@@ -42,6 +42,7 @@ export const BUILDING_INCOME = {
 
 export const SCREEN_IDS = {
   TITLE: "title",
+  TUTORIAL: "tutorial",
   COMMANDER_SELECT: "commander-select",
   LOAD_SLOT: "load-slot",
   OPTIONS: "options",

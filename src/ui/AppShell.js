@@ -10,6 +10,7 @@ import { titleCaseSlot } from "./formatters.js";
 import { renderOptionsView } from "./views/optionsView.js";
 import { renderSaveSlotView } from "./views/saveSlotView.js";
 import { renderTitleView } from "./views/titleView.js";
+import { renderTutorialView } from "./views/tutorialView.js";
 
 function delay(ms) {
   return new Promise((resolve) => {
@@ -78,6 +79,11 @@ export class AppShell {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderOptionsView(state);
+        return;
+      case SCREEN_IDS.TUTORIAL:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
+        this.root.innerHTML = renderTutorialView(state);
         return;
       case SCREEN_IDS.BATTLE: {
         const suppressLevelUpOverlay = this.shouldSuppressLevelUpOverlay(state);
@@ -433,6 +439,9 @@ export class AppShell {
         break;
       case "open-continue":
         this.controller.openContinue();
+        break;
+      case "open-tutorial":
+        this.controller.openTutorial();
         break;
       case "open-options":
         this.controller.openOptions();

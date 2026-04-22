@@ -48,6 +48,10 @@ input {
   position: relative;
 }
 
+#game-root canvas {
+  touch-action: none;
+}
+
 #game-root,
 #ui-root {
   position: absolute;
@@ -78,7 +82,8 @@ input {
 }
 
 .screen--title,
-.screen--commander {
+.screen--commander,
+.screen--tutorial {
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -99,7 +104,14 @@ input {
   padding: clamp(1rem, 2vw, 2rem);
 }
 
-.screen--commander::after {
+.screen--tutorial {
+  align-items: stretch;
+  padding: clamp(0.85rem, 2vw, 2rem);
+  overflow-y: auto;
+}
+
+.screen--commander::after,
+.screen--tutorial::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -147,6 +159,17 @@ input {
 .commander-scene .title-scene__grid {
   bottom: -34%;
   height: 58%;
+}
+
+.tutorial-scene .title-scene__sun {
+  top: 8%;
+  right: 7%;
+  width: min(26vw, 21rem);
+}
+
+.tutorial-scene .title-scene__grid {
+  bottom: -30%;
+  height: 56%;
 }
 
 .title-scene::before,
@@ -811,6 +834,281 @@ input {
   color: var(--text);
 }
 
+.tutorial-panel {
+  position: relative;
+  z-index: 10;
+  align-self: center;
+  width: min(72rem, 100%);
+  max-height: calc(100vh - 4rem);
+  max-height: calc(100dvh - 4rem);
+  overflow: auto;
+  border-color: rgba(255, 138, 61, 0.32);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 79, 216, 0.16), transparent 16rem),
+    radial-gradient(circle at 90% 8%, rgba(255, 138, 61, 0.14), transparent 17rem),
+    linear-gradient(180deg, rgba(20, 9, 35, 0.94), rgba(9, 4, 18, 0.88)),
+    var(--panel);
+  box-shadow:
+    0 0 0 1px rgba(255, 79, 216, 0.12),
+    0 28px 90px rgba(6, 0, 14, 0.76);
+}
+
+.tutorial-header h2 {
+  margin: 0.5rem 0 0;
+  font-size: clamp(2.15rem, 4vw, 4.2rem);
+  line-height: 0.92;
+  text-transform: uppercase;
+  color: #fff2fb;
+  text-shadow:
+    0 0 18px rgba(255, 79, 216, 0.32),
+    0 0 36px rgba(255, 138, 61, 0.16);
+}
+
+.tutorial-header p:last-child {
+  max-width: 44rem;
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+}
+
+.tutorial-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.tutorial-step-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+
+.tutorial-step-nav {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.tutorial-step-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3.35rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 79, 216, 0.18);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(135deg, rgba(152, 93, 255, 0.08), rgba(255, 138, 61, 0.04)),
+    rgba(10, 5, 20, 0.62);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.tutorial-step-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 138, 61, 0.5);
+  color: var(--text);
+}
+
+.tutorial-step-button span {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: #fff7d4;
+  background: rgba(255, 138, 61, 0.16);
+  border: 1px solid rgba(255, 138, 61, 0.3);
+}
+
+.tutorial-step-stage {
+  min-height: 31rem;
+}
+
+.tutorial-step-panel {
+  display: none;
+  min-height: 100%;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid rgba(255, 138, 61, 0.28);
+  border-radius: 1.1rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 84% 8%, rgba(255, 138, 61, 0.14), transparent 12rem),
+    radial-gradient(circle at 0% 100%, rgba(255, 79, 216, 0.12), transparent 14rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015)),
+    rgba(9, 4, 18, 0.74);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+    0 20px 48px rgba(5, 1, 14, 0.36);
+}
+
+.tutorial-step-panel h3 {
+  margin: 0.55rem 0 0;
+  font-size: clamp(1.85rem, 3.2vw, 3.25rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.tutorial-step-panel__summary {
+  max-width: 48rem;
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.tutorial-scanline {
+  height: 0.2rem;
+  margin: 1.1rem 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 79, 216, 0) 0%,
+      rgba(255, 196, 88, 0.82) 28%,
+      rgba(255, 121, 58, 0.94) 50%,
+      rgba(127, 216, 255, 0.58) 74%,
+      rgba(255, 79, 216, 0) 100%
+    );
+  box-shadow:
+    0 0 20px rgba(255, 158, 62, 0.42),
+    0 0 44px rgba(255, 79, 216, 0.2);
+}
+
+.tutorial-point-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tutorial-point-list li {
+  position: relative;
+  padding: 0.72rem 0.8rem 0.72rem 2.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.tutorial-point-list li::before {
+  content: "";
+  position: absolute;
+  left: 0.85rem;
+  top: 1.05rem;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: #ff8a3d;
+  box-shadow: 0 0 14px rgba(255, 138, 61, 0.62);
+}
+
+.tutorial-drill {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(127, 216, 255, 0.22);
+  background:
+    linear-gradient(135deg, rgba(127, 216, 255, 0.1), rgba(152, 93, 255, 0.08)),
+    rgba(6, 10, 28, 0.48);
+}
+
+.tutorial-drill span {
+  display: block;
+  color: #7fd8ff;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tutorial-drill p {
+  margin: 0.3rem 0 0;
+}
+
+.tutorial-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.tutorial-panel-actions label {
+  cursor: pointer;
+}
+
+.tutorial-checklist {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.tutorial-checklist label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  min-height: 4rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 79, 216, 0.16);
+  border-radius: 0.85rem;
+  color: var(--muted);
+  background: rgba(10, 5, 20, 0.56);
+}
+
+.tutorial-checklist input {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.1rem;
+  accent-color: var(--accent);
+}
+
+.tutorial-footer {
+  margin-top: 1rem;
+}
+
+#tutorial-step-run:checked ~ .tutorial-step-nav [for="tutorial-step-run"],
+#tutorial-step-turn:checked ~ .tutorial-step-nav [for="tutorial-step-turn"],
+#tutorial-step-combat:checked ~ .tutorial-step-nav [for="tutorial-step-combat"],
+#tutorial-step-economy:checked ~ .tutorial-step-nav [for="tutorial-step-economy"],
+#tutorial-step-commanders:checked ~ .tutorial-step-nav [for="tutorial-step-commanders"],
+#tutorial-step-advanced:checked ~ .tutorial-step-nav [for="tutorial-step-advanced"] {
+  border-color: rgba(255, 79, 216, 0.72);
+  color: var(--text);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 138, 61, 0.22), transparent 7rem),
+    linear-gradient(135deg, rgba(152, 93, 255, 0.22), rgba(255, 79, 216, 0.15));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.18),
+    0 0 22px rgba(255, 79, 216, 0.12);
+}
+
+#tutorial-step-run:focus-visible ~ .tutorial-step-nav [for="tutorial-step-run"],
+#tutorial-step-turn:focus-visible ~ .tutorial-step-nav [for="tutorial-step-turn"],
+#tutorial-step-combat:focus-visible ~ .tutorial-step-nav [for="tutorial-step-combat"],
+#tutorial-step-economy:focus-visible ~ .tutorial-step-nav [for="tutorial-step-economy"],
+#tutorial-step-commanders:focus-visible ~ .tutorial-step-nav [for="tutorial-step-commanders"],
+#tutorial-step-advanced:focus-visible ~ .tutorial-step-nav [for="tutorial-step-advanced"] {
+  outline: 2px solid rgba(127, 216, 255, 0.78);
+  outline-offset: 2px;
+}
+
+#tutorial-step-run:checked ~ .tutorial-step-stage .tutorial-step-panel--run,
+#tutorial-step-turn:checked ~ .tutorial-step-stage .tutorial-step-panel--turn,
+#tutorial-step-combat:checked ~ .tutorial-step-stage .tutorial-step-panel--combat,
+#tutorial-step-economy:checked ~ .tutorial-step-stage .tutorial-step-panel--economy,
+#tutorial-step-commanders:checked ~ .tutorial-step-stage .tutorial-step-panel--commanders,
+#tutorial-step-advanced:checked ~ .tutorial-step-stage .tutorial-step-panel--advanced {
+  display: block;
+}
+
 .save-slot {
   padding: 1rem 0;
   border-top: 1px solid var(--line);
@@ -837,6 +1135,21 @@ input {
 .option-row--toggle input {
   width: 1.1rem;
   height: 1.1rem;
+}
+
+.option-row--range {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.option-row--range input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.option-row strong {
+  color: var(--text);
+  font-weight: 700;
 }
 
 .battle-shell {
@@ -1983,7 +2296,8 @@ input {
 
 @media (max-width: 1024px) {
   .screen--title,
-  .screen--commander {
+  .screen--commander,
+  .screen--tutorial {
     padding: 1.5rem;
     justify-items: center;
   }
@@ -2019,6 +2333,43 @@ input {
 
   .hero-card {
     width: 100%;
+  }
+
+  .tutorial-panel {
+    width: 100%;
+    max-height: calc(100vh - 3rem);
+    max-height: calc(100dvh - 3rem);
+  }
+
+  .tutorial-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorial-step-nav {
+    display: flex;
+    gap: 0.65rem;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tutorial-step-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tutorial-step-button {
+    flex: 0 0 min(18rem, 76vw);
+    scroll-snap-align: start;
+  }
+
+  .tutorial-step-stage {
+    min-height: 0;
+  }
+
+  .tutorial-checklist {
+    grid-template-columns: 1fr;
   }
 
   .commander-select-panel {
@@ -2228,9 +2579,59 @@ input {
 }
 
 @media (max-width: 760px) {
-  .screen--commander {
+  .screen--commander,
+  .screen--tutorial {
     align-items: stretch;
     padding: 0.65rem;
+  }
+
+  .tutorial-panel {
+    max-height: none;
+    padding: 0.85rem;
+    border-radius: 1rem;
+  }
+
+  .tutorial-header {
+    align-items: flex-start;
+  }
+
+  .tutorial-header h2 {
+    font-size: 2rem;
+  }
+
+  .tutorial-header p:last-child {
+    display: none;
+  }
+
+  .tutorial-step-panel {
+    padding: 0.95rem;
+  }
+
+  .tutorial-step-panel h3 {
+    font-size: 1.8rem;
+  }
+
+  .tutorial-step-panel__summary {
+    font-size: 1rem;
+  }
+
+  .tutorial-point-list li {
+    padding: 0.68rem 0.75rem 0.68rem 1.9rem;
+  }
+
+  .tutorial-point-list li::before {
+    left: 0.75rem;
+  }
+
+  .tutorial-panel-actions,
+  .tutorial-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+
+  .tutorial-footer span {
+    grid-column: 1 / -1;
   }
 
   .commander-select-panel {
@@ -2338,6 +2739,10 @@ input {
     overflow-y: auto;
   }
 
+  .screen--tutorial {
+    padding: 0.5rem;
+  }
+
   .hero-card {
     padding: 1rem;
     border-radius: 1rem;
@@ -2351,6 +2756,21 @@ input {
   .hero-logo__title {
     margin-top: 2.7rem;
     font-size: 2.75rem;
+  }
+
+  .tutorial-step-button {
+    flex-basis: min(15rem, 82vw);
+    min-height: 3rem;
+  }
+
+  .tutorial-step-button span {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .tutorial-panel-actions,
+  .tutorial-footer {
+    grid-template-columns: 1fr;
   }
 
   .battle-topbar {

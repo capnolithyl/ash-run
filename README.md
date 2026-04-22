@@ -6,6 +6,7 @@ Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite 
 
 - Full menu shell with:
   - Title
+  - Interactive tutorial
   - New Run / Continue
   - Save-slot load screen (3 slots)
   - Options
@@ -19,6 +20,7 @@ Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite 
 - Tactical battles with:
   - Grid map rendering
   - 64px SVG unit, terrain, and building sprites with owner-color variants
+  - Battlefield-only camera zoom and pan with mouse or touch gestures
   - Unit selection and next-ready-unit cycling
   - Tile-based movement and path previews
   - Attacks and counterattacks

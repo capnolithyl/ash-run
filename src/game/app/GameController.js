@@ -95,9 +95,14 @@ export class GameController {
 
   async initialize() {
     const loadedMeta = await this.storage.loadMeta();
+    const defaultMeta = createDefaultMetaState();
     this.state.metaState = {
-      ...createDefaultMetaState(),
-      ...loadedMeta
+      ...defaultMeta,
+      ...loadedMeta,
+      options: {
+        ...defaultMeta.options,
+        ...(loadedMeta?.options ?? {})
+      }
     };
     this.state.slots = await this.storage.listSlots();
     this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
@@ -155,6 +160,13 @@ export class GameController {
 
   openContinue() {
     this.state.screen = SCREEN_IDS.LOAD_SLOT;
+    this.state.banner = "";
+    this.resetBattleUi();
+    this.emit();
+  }
+
+  openTutorial() {
+    this.state.screen = SCREEN_IDS.TUTORIAL;
     this.state.banner = "";
     this.resetBattleUi();
     this.emit();
