@@ -338,15 +338,51 @@ export class BattleSystem {
   }
 
   handleTileSelection(x, y) {
-    if (this.state.victory || this.state.turn.activeSide !== TURN_SIDES.PLAYER) {
+    if (this.state.victory) {
       return false;
     }
 
+    const isPlayerTurn = this.state.turn.activeSide === TURN_SIDES.PLAYER;
     const unitAtTile = getUnitAt(this.state, x, y);
     const buildingAtTile = getBuildingAt(this.state, x, y);
     const selectedUnit = getSelectedUnit(this.state);
     const pendingAction = this.state.pendingAction;
     const pendingUnit = pendingAction ? findUnitById(this.state, pendingAction.unitId) : null;
+
+    if (!isPlayerTurn) {
+      if (unitAtTile) {
+        this.setSelection({
+          type: "unit",
+          id: unitAtTile.id,
+          x: unitAtTile.x,
+          y: unitAtTile.y
+        });
+        return true;
+      }
+
+      if (buildingAtTile) {
+        this.setSelection({
+          type: "building",
+          id: buildingAtTile.id,
+          x: buildingAtTile.x,
+          y: buildingAtTile.y
+        });
+        return true;
+      }
+
+      if (getTerrainAt(this.state, x, y)) {
+        this.state.selection = {
+          type: "tile",
+          id: null,
+          x,
+          y
+        };
+        return true;
+      }
+
+      this.clearSelection();
+      return true;
+    }
 
     if (pendingAction && pendingUnit?.owner === TURN_SIDES.PLAYER) {
       if ((pendingAction.mode ?? "menu") === "fire" && unitAtTile?.owner === TURN_SIDES.ENEMY) {

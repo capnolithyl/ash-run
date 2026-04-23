@@ -133,6 +133,44 @@ function buildSelectedTile(state, selectionCoordinates) {
   };
 }
 
+function getFocusCoordinates(state, focus) {
+  if (!focus?.type) {
+    return null;
+  }
+
+  if (focus.type === "tile") {
+    return Number.isInteger(focus.x) && Number.isInteger(focus.y)
+      ? { x: focus.x, y: focus.y }
+      : null;
+  }
+
+  if (focus.type === "unit") {
+    const unit = findUnitById(state, focus.id);
+
+    return unit
+      ? { x: unit.x, y: unit.y }
+      : Number.isInteger(focus.x) && Number.isInteger(focus.y)
+        ? { x: focus.x, y: focus.y }
+        : null;
+  }
+
+  if (focus.type === "building") {
+    const building = state.map.buildings.find((candidate) => candidate.id === focus.id);
+
+    return building
+      ? { x: building.x, y: building.y }
+      : Number.isInteger(focus.x) && Number.isInteger(focus.y)
+        ? { x: focus.x, y: focus.y }
+        : null;
+  }
+
+  return null;
+}
+
+export function buildFocusedTile(state, focus) {
+  return buildSelectedTile(state, getFocusCoordinates(state, focus));
+}
+
 function createPendingActionView(state) {
   const pendingAction = state.pendingAction;
 

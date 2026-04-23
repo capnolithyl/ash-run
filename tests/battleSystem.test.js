@@ -255,6 +255,32 @@ test("atlas power heals half max HP and grants armor through the enemy turn", ()
   assert.equal(getArmorModifier(nextPlayerTurnState, expiredOnNextTurn), 0);
 });
 
+test("enemy turns still allow inspection clicks without opening player actions", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit],
+    activeSide: TURN_SIDES.ENEMY
+  });
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(playerUnit.x, playerUnit.y), true);
+
+  let inspectedState = system.getStateForSave();
+  assert.equal(inspectedState.selection.type, "unit");
+  assert.equal(inspectedState.selection.id, playerUnit.id);
+  assert.equal(inspectedState.pendingAction, null);
+
+  assert.equal(system.handleTileSelection(enemyUnit.x, enemyUnit.y), true);
+
+  inspectedState = system.getStateForSave();
+  assert.equal(inspectedState.selection.type, "unit");
+  assert.equal(inspectedState.selection.id, enemyUnit.id);
+  assert.equal(inspectedState.pendingAction, null);
+});
+
 test("viper boosts infantry and recon attack, then powers infantry movement", () => {
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 1);

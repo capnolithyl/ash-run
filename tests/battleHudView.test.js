@@ -19,7 +19,9 @@ function renderHudForBattleState(battleState) {
       pauseMenuOpen: false,
       confirmAbandon: false,
       fundsGain: null,
-      hoveredTile: null
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
     },
     debugMode: false,
     runStatus: null,
@@ -59,6 +61,8 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
       pauseMenuOpen: false,
       confirmAbandon: false,
       fundsGain: null,
+      playerFocus: null,
+      enemyFocus: null,
       hoveredTile: {
         x: defender.x,
         y: defender.y
@@ -123,6 +127,39 @@ test("battle HUD shows commander funds inside the commander panels without a top
   assert.doesNotMatch(html, /battle-topbar/);
 });
 
+test("battle HUD keeps player and enemy intel in separate sidebars", () => {
+  const playerUnit = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2);
+  const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit]
+  });
+  battleState.selection = { type: "unit", id: enemyUnit.id, x: enemyUnit.x, y: enemyUnit.y };
+  const system = new BattleSystem(battleState);
+
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y },
+      enemyFocus: { type: "unit", id: enemyUnit.id, x: enemyUnit.x, y: enemyUnit.y }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /battle-rail--left[\s\S]*?Player Selection[\s\S]*?Bruiser/);
+  assert.match(html, /battle-rail--right[\s\S]*?Enemy Selection[\s\S]*?Runner/);
+});
+
 test("battle HUD renders transient battle notices", () => {
   const battleState = createTestBattleState();
   const system = new BattleSystem(battleState);
@@ -136,6 +173,8 @@ test("battle HUD renders transient battle notices", () => {
       pauseMenuOpen: false,
       confirmAbandon: false,
       fundsGain: null,
+      playerFocus: null,
+      enemyFocus: null,
       notice: {
         tone: "warning",
         title: "Unit Limit Reached",
@@ -170,6 +209,8 @@ test("battle HUD renders commander power activation overlays", () => {
       pauseMenuOpen: false,
       confirmAbandon: false,
       fundsGain: null,
+      playerFocus: null,
+      enemyFocus: null,
       powerOverlay: {
         side: TURN_SIDES.PLAYER,
         commanderName: "Viper",
@@ -190,29 +231,35 @@ test("battle HUD renders commander power activation overlays", () => {
   assert.match(html, /Viper/);
 });
 
-test("battle HUD includes compact drawer and quick-action controls", () => {
+test("battle HUD includes drawer toggles and footer turn controls", () => {
   const battleState = createTestBattleState();
   const html = renderHudForBattleState(battleState);
 
   assert.match(html, /id="battle-intel-drawer"/);
   assert.match(html, /id="battle-command-drawer"/);
-  assert.match(html, /class="battle-mobile-actions"/);
+  assert.match(html, /class="battle-footer-actions"/);
   assert.match(html, /for="battle-intel-drawer">Intel/);
   assert.match(html, /for="battle-command-drawer">Feed/);
+  assert.match(html, /data-action="pause-battle"/);
+  assert.match(html, /data-action="select-next-unit"/);
+  assert.match(html, /data-action="end-turn"/);
 });
 
-test("battle HUD disables commander power until the player can use it", () => {
+test("battle HUD turns the power meter into the activation control", () => {
   const chargingState = createTestBattleState();
   chargingState.player.charge = getCommanderPowerMax(chargingState.player.commanderId) - 1;
   const chargingButton = getActionButton(renderHudForBattleState(chargingState), "activate-power");
 
   assert.match(chargingButton, /disabled/);
+  assert.match(chargingButton, /Power: Shock Doctrine|Power: Blitz Surge|Power:/);
 
   const readyState = createTestBattleState();
   readyState.player.charge = getCommanderPowerMax(readyState.player.commanderId);
   const readyButton = getActionButton(renderHudForBattleState(readyState), "activate-power");
 
   assert.doesNotMatch(readyButton, /disabled/);
+  assert.match(readyButton, /commander-power-button--charged/);
+  assert.doesNotMatch(renderHudForBattleState(readyState), /Use Commander Power/);
 
   const enemyTurnState = createTestBattleState({
     activeSide: TURN_SIDES.ENEMY
@@ -239,7 +286,9 @@ test("debug pause menu groups tools into accordion sections", () => {
       pauseMenuOpen: true,
       confirmAbandon: false,
       fundsGain: null,
-      hoveredTile: null
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
     },
     metaState: {
       options: {

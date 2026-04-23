@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { SCREEN_IDS } from "../src/game/core/constants.js";
+import { SCREEN_IDS, TURN_SIDES } from "../src/game/core/constants.js";
 import { GameController } from "../src/game/app/GameController.js";
+import { BattleSystem } from "../src/game/simulation/battleSystem.js";
+import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
 test("battle context action ignores duplicate right-click source events", async () => {
   const controller = new GameController();
@@ -46,4 +48,61 @@ test("recruiting at the player unit cap shows a battle notice", async () => {
   assert.equal(controller.getState().battleUi.notice.message, "6/6 units are already deployed.");
 
   controller.resetBattleUi();
+});
+
+test("enemy-turn inspection clicks sync the HUD without persisting a save", async () => {
+  const controller = new GameController();
+  let syncCalls = 0;
+  let persistCalls = 0;
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.battleSnapshot = {
+    levelUpQueue: []
+  };
+  controller.syncBattleState = () => {
+    syncCalls += 1;
+  };
+  controller.persistCurrentRun = async () => {
+    persistCalls += 1;
+  };
+  controller.battleSystem = {
+    handleTileSelection() {
+      return true;
+    },
+    isEnemyTurnActive() {
+      return true;
+    }
+  };
+
+  await controller.handleBattleTileClick(3, 2);
+
+  assert.equal(syncCalls, 1);
+  assert.equal(persistCalls, 0);
+});
+
+test("syncBattleState preserves player focus when enemy focus updates", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit]
+  });
+  const system = new BattleSystem(battleState);
+  const controller = new GameController();
+
+  controller.battleSystem = system;
+
+  assert.equal(system.handleTileSelection(playerUnit.x, playerUnit.y), true);
+  controller.syncBattleState();
+
+  let battleUi = controller.getState().battleUi;
+  assert.equal(battleUi.playerFocus.id, playerUnit.id);
+  assert.equal(battleUi.enemyFocus, null);
+
+  assert.equal(system.handleTileSelection(enemyUnit.x, enemyUnit.y), true);
+  controller.syncBattleState();
+
+  battleUi = controller.getState().battleUi;
+  assert.equal(battleUi.playerFocus.id, playerUnit.id);
+  assert.equal(battleUi.enemyFocus.id, enemyUnit.id);
 });

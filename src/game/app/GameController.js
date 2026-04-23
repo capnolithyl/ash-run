@@ -46,8 +46,51 @@ function createBattleUiState() {
     fundsGain: null,
     notice: null,
     powerOverlay: null,
-    hoveredTile: null
+    hoveredTile: null,
+    playerFocus: null,
+    enemyFocus: null
   };
+}
+
+function cloneFocusSelection(selection) {
+  if (!selection?.type) {
+    return null;
+  }
+
+  return {
+    type: selection.type,
+    id: selection.id ?? null,
+    x: selection.x ?? null,
+    y: selection.y ?? null
+  };
+}
+
+function getFocusSideForSelection(snapshot, selection) {
+  if (!snapshot || !selection?.type) {
+    return null;
+  }
+
+  if (selection.type === "unit") {
+    if (snapshot.player.units.some((unit) => unit.id === selection.id && unit.current.hp > 0)) {
+      return TURN_SIDES.PLAYER;
+    }
+
+    if (snapshot.enemy.units.some((unit) => unit.id === selection.id && unit.current.hp > 0)) {
+      return TURN_SIDES.ENEMY;
+    }
+
+    return null;
+  }
+
+  if (selection.type === "building") {
+    const building = snapshot.map.buildings.find((candidate) => candidate.id === selection.id);
+
+    if (building?.owner === TURN_SIDES.PLAYER || building?.owner === TURN_SIDES.ENEMY) {
+      return building.owner;
+    }
+  }
+
+  return snapshot.turn.activeSide === TURN_SIDES.ENEMY ? TURN_SIDES.ENEMY : TURN_SIDES.PLAYER;
 }
 
 function getCommanderPowerTitle(commander) {
@@ -413,6 +456,11 @@ export class GameController {
     const changed = this.battleSystem.handleTileSelection(x, y);
 
     if (changed) {
+      if (this.battleSystem.isEnemyTurnActive?.()) {
+        this.syncBattleState();
+        return;
+      }
+
       await this.persistCurrentRun();
     }
   }
@@ -884,6 +932,18 @@ export class GameController {
 
   syncBattleState() {
     this.state.battleSnapshot = this.battleSystem?.getSnapshot() ?? null;
+
+    const focusSide = getFocusSideForSelection(
+      this.state.battleSnapshot,
+      this.state.battleSnapshot?.selection
+    );
+
+    if (focusSide === TURN_SIDES.PLAYER) {
+      this.state.battleUi.playerFocus = cloneFocusSelection(this.state.battleSnapshot.selection);
+    } else if (focusSide === TURN_SIDES.ENEMY) {
+      this.state.battleUi.enemyFocus = cloneFocusSelection(this.state.battleSnapshot.selection);
+    }
+
     this.emit();
   }
 

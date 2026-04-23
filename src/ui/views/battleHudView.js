@@ -2,6 +2,7 @@ import { BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../game/core/constants.
 import { getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
+import { buildFocusedTile } from "../../game/simulation/battlePresentation.js";
 import { renderOptionFields } from "./optionFieldsView.js";
 
 function formatCostLabel(cost) {
@@ -64,9 +65,55 @@ function canActivatePlayerPower(battleSnapshot) {
   );
 }
 
-function renderCommanderPanel(commander, sideState, side, fundsGain = null) {
+function isPlayerPowerCharged(battleSnapshot) {
+  if (!battleSnapshot) {
+    return false;
+  }
+
+  return battleSnapshot.player.charge >= getCommanderPowerMax(battleSnapshot.player.commanderId);
+}
+
+function renderCommanderPowerControl(commander, sideState, side, { canActivatePower = false, isCharged = false } = {}) {
   const powerMax = getCommanderPowerMax(sideState.commanderId);
   const powerRatio = Math.min(1, sideState.charge / powerMax);
+
+  if (side !== TURN_SIDES.PLAYER) {
+    return `
+      <div class="meter commander-meter">
+        <span>Power: ${commander.active.name ?? "Power"} | ${Math.floor(sideState.charge)}/${powerMax}</span>
+        <div class="meter__bar">
+          <div style="width:${powerRatio * 100}%"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <button
+      class="commander-power-button ${isCharged ? "commander-power-button--charged" : ""} ${canActivatePower ? "commander-power-button--ready" : ""}"
+      data-action="activate-power"
+      ${canActivatePower ? "" : "disabled"}
+    >
+      <div class="commander-power-button__header">
+        <span>Power: ${commander.active.name ?? "Power"}</span>
+        <strong>${Math.floor(sideState.charge)}/${powerMax}</strong>
+      </div>
+      <div class="meter commander-meter commander-meter--interactive">
+        <div class="meter__bar">
+          <div style="width:${powerRatio * 100}%"></div>
+        </div>
+      </div>
+      <small>${canActivatePower ? "Activate Power" : isCharged ? "Ready Next Turn" : "Charging"}</small>
+    </button>
+  `;
+}
+
+function renderCommanderPanel(
+  commander,
+  sideState,
+  side,
+  { fundsGain = null, canActivatePower = false, isCharged = false } = {}
+) {
   const sideLabel = side === "player" ? "Player Commander" : "Enemy Commander";
   const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
 
@@ -102,12 +149,7 @@ function renderCommanderPanel(commander, sideState, side, fundsGain = null) {
         <span>Power: ${commander.active.name ?? "Power"}</span>
         <p>${commander.active.summary}</p>
       </div>
-      <div class="meter commander-meter">
-        <span>Power ${Math.floor(sideState.charge)}/${powerMax}</span>
-        <div class="meter__bar">
-          <div style="width:${powerRatio * 100}%"></div>
-        </div>
-      </div>
+      ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged })}
     </div>
   `;
 }
@@ -162,15 +204,12 @@ function getActionPromptStyle(battleSnapshot, pendingAction) {
   return `left:${safeLeft}px;top:${safeTop}px;`;
 }
 
-function renderSelectionDetails(battleSnapshot) {
-  const selectedTile = battleSnapshot.presentation?.selectedTile;
-
+function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyBody } = {}) {
   if (!selectedTile) {
     return `
       <div class="card-block">
-        <h3>Selection</h3>
-        <p>Select a unit or production building on the battlefield.</p>
-        <p>Empty tiles can also be clicked to inspect terrain and movement costs.</p>
+        <h3>${emptyTitle ?? title ?? "Selection"}</h3>
+        <p>${emptyBody ?? "Select a unit, building, or tile on the battlefield to inspect it here."}</p>
       </div>
     `;
   }
@@ -181,7 +220,7 @@ function renderSelectionDetails(battleSnapshot) {
   return `
     <div class="card-block">
       <div class="selection-header">
-        <h3>Selection</h3>
+        <h3>${title ?? "Selection"}</h3>
         <span class="selection-chip">Tile ${selectedTile.x + 1},${selectedTile.y + 1}</span>
       </div>
       ${
@@ -233,6 +272,34 @@ function renderSelectionDetails(battleSnapshot) {
       </div>
     </div>
   `;
+}
+
+function getSelectedTileFocusSide(battleSnapshot, selectedTile) {
+  if (!battleSnapshot || !selectedTile) {
+    return null;
+  }
+
+  if (selectedTile.unit?.owner) {
+    return selectedTile.unit.owner;
+  }
+
+  if (selectedTile.building?.owner === TURN_SIDES.PLAYER || selectedTile.building?.owner === TURN_SIDES.ENEMY) {
+    return selectedTile.building.owner;
+  }
+
+  return battleSnapshot.turn.activeSide === TURN_SIDES.ENEMY ? TURN_SIDES.ENEMY : TURN_SIDES.PLAYER;
+}
+
+function getFocusTileForSide(battleSnapshot, battleUi, side) {
+  const selectedTile = battleSnapshot.presentation?.selectedTile;
+  const selectedTileSide = getSelectedTileFocusSide(battleSnapshot, selectedTile);
+
+  if (selectedTile && selectedTileSide === side) {
+    return selectedTile;
+  }
+
+  const focus = side === TURN_SIDES.PLAYER ? battleUi?.playerFocus : battleUi?.enemyFocus;
+  return buildFocusedTile(battleSnapshot, focus);
 }
 
 function getHoveredTargetReference(battleSnapshot, hoveredTile) {
@@ -745,12 +812,16 @@ export function renderBattleHudView(state, options = {}) {
   const enemyCommander = getCommanderById(battleSnapshot.enemy.commanderId);
   const nextUnitEnabled = canSelectNextReadyUnit(battleSnapshot);
   const playerPowerEnabled = canActivatePlayerPower(battleSnapshot);
+  const playerPowerCharged = isPlayerPowerCharged(battleSnapshot);
   const fundsGain = state.battleUi?.fundsGain ?? null;
+  const playerFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.PLAYER);
+  const enemyFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.ENEMY);
+
   return `
     <div class="battle-shell">
       <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
-      <div class="battle-mobile-actions" aria-label="Battle controls">
+      <div class="battle-footer-actions" aria-label="Battle controls">
         <label class="ghost-button ghost-button--small battle-drawer-button" for="battle-intel-drawer">Intel</label>
         <button class="ghost-button ghost-button--small" data-action="pause-battle">Pause</button>
         <button
@@ -760,55 +831,43 @@ export function renderBattleHudView(state, options = {}) {
         >
           Next
         </button>
-        <button
-          class="menu-button menu-button--small menu-button--power"
-          data-action="activate-power"
-          ${playerPowerEnabled ? "" : "disabled"}
-        >
-          Power
-        </button>
-        <button class="ghost-button ghost-button--small" data-action="end-turn">End</button>
+        <button class="ghost-button ghost-button--small" data-action="end-turn">End Turn</button>
         <label class="ghost-button ghost-button--small battle-drawer-button" for="battle-command-drawer">Feed</label>
       </div>
       <aside class="battle-rail battle-rail--left">
         <div class="battle-drawer-header">
-          <span>Battle Intel</span>
+          <span>Player Intel</span>
           <label class="ghost-button ghost-button--small" for="battle-intel-drawer">Close</label>
         </div>
-        ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player", fundsGain)}
-        ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
-        ${renderSelectionDetails(battleSnapshot)}
+        ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player", {
+          fundsGain,
+          canActivatePower: playerPowerEnabled,
+          isCharged: playerPowerCharged
+        })}
+        ${renderSelectionDetails(playerFocusTile, {
+          title: "Player Selection",
+          emptyTitle: "Player Intel",
+          emptyBody: "Select a friendly unit, building, or tile to pin player-side intel here."
+        })}
         ${renderRecruitPanel(battleSnapshot)}
       </aside>
       <aside class="battle-rail battle-rail--right">
         <div class="battle-drawer-header">
-          <span>Command</span>
+          <span>Enemy Intel</span>
           <label class="ghost-button ghost-button--small" for="battle-command-drawer">Close</label>
         </div>
-        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", fundsGain)}
+        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", { fundsGain })}
+        ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
+        ${renderSelectionDetails(enemyFocusTile, {
+          title: "Enemy Selection",
+          emptyTitle: "Enemy Intel",
+          emptyBody: "Enemy scans and hostile unit details will appear here."
+        })}
         <div class="card-block">
           <h3>Command Feed</h3>
           <div class="log-feed">
             ${battleSnapshot.log.map((line) => `<p>${line}</p>`).join("")}
           </div>
-        </div>
-        <div class="battle-actions">
-          <button class="ghost-button ghost-button--small" data-action="pause-battle">Pause</button>
-          <button
-            class="ghost-button ghost-button--small"
-            data-action="select-next-unit"
-            ${nextUnitEnabled ? "" : "disabled"}
-          >
-            Next Unit
-          </button>
-          <button
-            class="menu-button menu-button--small menu-button--power"
-            data-action="activate-power"
-            ${playerPowerEnabled ? "" : "disabled"}
-          >
-            Use Commander Power
-          </button>
-          <button class="ghost-button ghost-button--small" data-action="end-turn">End Turn</button>
         </div>
       </aside>
       ${renderActionPrompt(battleSnapshot)}
