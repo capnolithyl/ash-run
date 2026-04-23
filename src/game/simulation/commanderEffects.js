@@ -1,6 +1,6 @@
-import { COMMANDER_POWER_MAX, TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
+import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 import { shuffle } from "../core/random.js";
-import { getCommanderById } from "../content/commanders.js";
+import { getCommanderById, getCommanderPowerMax } from "../content/commanders.js";
 import { getLivingUnits } from "./selectors.js";
 
 const RECON_UNIT_IDS = new Set(["runner"]);
@@ -11,9 +11,17 @@ function getStatuses(unit, type) {
     .reduce((sum, status) => sum + status.value, 0);
 }
 
+function getStatusTurnsRemaining(status) {
+  return status.turnsRemaining ?? status.turns ?? 0;
+}
+
 function getCommanderForSide(state, side) {
   const commanderId = state[side].commanderId;
   return getCommanderById(commanderId);
+}
+
+export function getCommanderPowerMaxForSide(state, side) {
+  return getCommanderPowerMax(state[side]?.commanderId);
 }
 
 function unitMatchesGroup(unit, group) {
@@ -118,12 +126,12 @@ export function applyChargeFromCombat(state, attackingSide, defendingSide, damag
       : 1;
 
   state[attackingSide].charge = Math.min(
-    COMMANDER_POWER_MAX,
+    getCommanderPowerMaxForSide(state, attackingSide),
     state[attackingSide].charge + damageDealt * 0.5 * dealtMultiplier
   );
 
   state[defendingSide].charge = Math.min(
-    COMMANDER_POWER_MAX,
+    getCommanderPowerMaxForSide(state, defendingSide),
     state[defendingSide].charge + damageTaken
   );
 }
@@ -186,7 +194,7 @@ export function activateCommanderPower(state, side, seed) {
     return { changed: false, seed: nextSeed, notes };
   }
 
-  if (state[side].charge < COMMANDER_POWER_MAX) {
+  if (state[side].charge < getCommanderPowerMaxForSide(state, side)) {
     return { changed: false, seed: nextSeed, notes };
   }
 
@@ -211,9 +219,8 @@ export function activateCommanderPower(state, side, seed) {
       break;
     case "field-repair-push":
       healSideByRatio(state, side, commander.active.healRatio ?? 0.5);
-      applyStatusToSide(state, side, "mobility", commander.active.movement ?? 1);
-      applyStatusToSide(state, side, "attack", commander.active.attack ?? 2);
-      notes.push(`${commander.name} repaired the line and ordered a push.`);
+      applyStatusToSide(state, side, "shield", commander.active.armor ?? 2);
+      notes.push(`${commander.name} overhauled the line and reinforced the hulls.`);
       break;
     case "viper-infantry-push":
       applyStatusToGroup(state, side, commander.active.attackGroup, "attack", commander.active.attack ?? 5);
@@ -253,7 +260,7 @@ export function tickSideStatuses(state, side) {
     unit.statuses = unit.statuses
       .map((status) => ({
         ...status,
-        turnsRemaining: status.turnsRemaining - 1
+        turnsRemaining: getStatusTurnsRemaining(status) - 1
       }))
       .filter((status) => status.turnsRemaining > 0);
   }

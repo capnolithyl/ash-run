@@ -1,11 +1,11 @@
 import {
   BUILDING_KEYS,
-  COMMANDER_POWER_MAX,
   ENEMY_RECRUITMENT_UNIT_LEAD_LIMIT,
   PROTOTYPE_ROSTER_CAP,
   TURN_SIDES
 } from "../core/constants.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
+import { describeBuilding } from "../content/buildings.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { awardExperience } from "./progression.js";
 import { appendLog, pushLevelUpEvents } from "./battleLog.js";
@@ -16,6 +16,7 @@ import { canCaptureBuilding, captureBuildingForUnit } from "./captureRules.js";
 import {
   activateCommanderPower,
   applyChargeFromCombat,
+  getCommanderPowerMaxForSide,
   getIncomeBonus,
   getMovementModifier,
   getRecruitDiscount,
@@ -33,6 +34,7 @@ import {
 import {
   getBestCapturePlan,
   getBestMoveAttackOption,
+  getBestRepairPlan,
   getBestSupportPlan,
   getEnemyRecruitmentLimit,
   getEnemyRecruitmentMapCap,
@@ -115,9 +117,6 @@ export class BattleSystem {
           unit.cooldowns[key] = turns - 1;
         }
       }
-      unit.statuses = (unit.statuses ?? [])
-        .map((status) => ({ ...status, turns: Math.max(0, (status.turns ?? 0) - 1) }))
-        .filter((status) => (status.turns ?? 0) > 0);
       if (unit.unitTypeId === "runner" && unit.transport) {
         unit.transport.canUnloadAfterMove = false;
         unit.transport.hasLockedUnload = false;
@@ -560,9 +559,9 @@ export class BattleSystem {
     if (attacker.unitTypeId === "breaker" && defender.family === "vehicle") {
       const existing = defender.statuses.find((status) => status.type === "armor-break");
       if (existing) {
-        existing.turns = 1;
+        existing.turnsRemaining = 1;
       } else {
-        defender.statuses.push({ type: "armor-break", turns: 1 });
+        defender.statuses.push({ type: "armor-break", turnsRemaining: 1 });
       }
       appendLog(this.state, `${defender.name} armor was broken by ${attacker.name}.`);
     }
@@ -893,6 +892,16 @@ export class BattleSystem {
     return true;
   }
 
+  getPlayerUnitLimitStatus() {
+    const count = getLivingUnits(this.state, TURN_SIDES.PLAYER).length;
+
+    return {
+      count,
+      limit: PROTOTYPE_ROSTER_CAP,
+      isAtLimit: count >= PROTOTYPE_ROSTER_CAP
+    };
+  }
+
   recruitUnit(unitTypeId) {
     const building = getSelectedBuilding(this.state);
     const turnKey = `${this.state.turn.activeSide}-${this.state.turn.number}`;
@@ -1062,7 +1071,10 @@ export class BattleSystem {
       return false;
     }
 
-    this.state[side].charge = Math.max(0, Math.min(COMMANDER_POWER_MAX, Number(charge) || 0));
+    this.state[side].charge = Math.max(
+      0,
+      Math.min(getCommanderPowerMaxForSide(this.state, side), Number(charge) || 0)
+    );
     appendLog(this.state, `[Debug] ${side} commander charge set to ${Math.floor(this.state[side].charge)}.`);
     return true;
   }
@@ -1196,9 +1208,49 @@ export class BattleSystem {
 
       const movementBudget = unit.stats.movement + getMovementModifier(this.state, unit);
       const reachableTiles = getReachableTiles(this.state, unit, movementBudget);
+      const repairPlan = getBestRepairPlan(this.state, unit, reachableTiles);
       const capturePlan = getBestCapturePlan(this.state, unit, reachableTiles);
       const isGrunt = unit.unitTypeId === "grunt";
       const isSecondaryCapturer = ["breaker", "longshot"].includes(unit.unitTypeId);
+
+      if (repairPlan) {
+        const moved = repairPlan.tile.x !== unit.x || repairPlan.tile.y !== unit.y;
+        const movePath = moved
+          ? getMovementPath(this.state, unit, movementBudget, repairPlan.tile.x, repairPlan.tile.y)
+          : [];
+        const moveSegments = Math.max(0, movePath.length - 1);
+
+        if (moved) {
+          unit.x = repairPlan.tile.x;
+          unit.y = repairPlan.tile.y;
+          if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
+            unit.transport.canUnloadAfterMove = true;
+          }
+          this.syncTransportCargoPosition(unit);
+          unit.hasMoved = true;
+          this.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+        } else {
+          unit.hasMoved = true;
+        }
+
+        unit.hasAttacked = true;
+        unit.cooldowns.repairMode = Math.max(
+          unit.cooldowns.repairMode ?? 0,
+          repairPlan.canRepairAfterMove ? (moved ? 2 : 1) : 2
+        );
+        appendLog(
+          this.state,
+          `${unit.name} entered repair mode near ${describeBuilding(repairPlan.building).name}.`
+        );
+
+        return {
+          changed: true,
+          done: this.state.victory || this.state.enemyTurn.pendingUnitIds.length === 0,
+          type: moved ? "move" : "repair",
+          unitId,
+          moveSegments
+        };
+      }
 
       if (isGrunt && capturePlan) {
         const moved = capturePlan.tile.x !== unit.x || capturePlan.tile.y !== unit.y;

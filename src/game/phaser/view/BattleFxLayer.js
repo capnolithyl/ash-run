@@ -69,6 +69,7 @@ export class BattleFxLayer {
 
   playEvents(events, layout, options = {}) {
     const baseDelay = options.baseDelay ?? 0;
+    const skipAttackVisuals = options.skipAttackVisuals === true;
     const attackEvents = events.filter((event) => event.type === "attack");
     const destroyDelaysByUnitId = new Map(
       attackEvents.map((event) => [
@@ -88,9 +89,11 @@ export class BattleFxLayer {
         case "move":
           break;
         case "attack":
-          this.schedule(getScheduledDelay(baseDelay, event.delay ?? 0), () =>
-            this.playAttack(event, layout)
-          );
+          if (!skipAttackVisuals) {
+            this.schedule(getScheduledDelay(baseDelay, event.delay ?? 0), () =>
+              this.playAttack(event, layout)
+            );
+          }
           break;
         case "heal":
         case "resupply":

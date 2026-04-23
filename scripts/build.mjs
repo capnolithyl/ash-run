@@ -43,3 +43,7 @@ await fs.cp(path.resolve(root, "assets/sprites"), path.join(assetsRoot, "sprites
 await fs.cp(path.resolve(root, "assets/audio"), path.join(assetsRoot, "audio"), {
   recursive: true
 });
+
+await fs.cp(path.resolve(root, "assets/img"), path.join(assetsRoot, "img"), {
+  recursive: true
+});

@@ -20,7 +20,7 @@ Range growth is skipped for units that cannot attack at range.
 
 - Survivor snapshots carry level, XP, and rolled stats to next map.
 - Units reduced to 0 HP are permanently removed from the run roster.
-- Roster deployment is capped at 10 units per battle.
+- Roster deployment is capped at 6 units per battle.
 - Returning rosters are redeployed to unique nearby starting tiles so carried units cannot stack on the same spawn.
 
 ## Enemy Map Scaling

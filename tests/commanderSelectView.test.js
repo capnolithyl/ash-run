@@ -23,8 +23,25 @@ test("commander select renders carousel controls and a reachable deployment acti
 
   assert.match(html, /class="commander-slider"/);
   assert.match(html, /data-role="commander-slider"/);
+  assert.match(html, /data-role="commander-slider-track"/);
+  assert.match(html, /data-slider-copy-count="3"/);
+  assert.match(html, /data-slider-home-copy-index="1"/);
   assert.match(html, /data-action="commander-slider-prev"/);
   assert.match(html, /data-action="commander-slider-next"/);
   assert.match(html, /data-role="start-run-button"/);
   assert.match(html, /Begin Deployment/);
+  assert.match(html, /commander-card__info-image/);
+  assert.match(html, /assets\/img\/commanders\/atlas\/Atlas%20-%20Info\.png/);
+  assert.match(html, /assets\/img\/commanders\/sables\/Sables%20-%20Info\.png/);
+  assert.match(html, /aria-label="Previous commander"/);
+  assert.match(html, /aria-label="Next commander"/);
+  assert.match(html, /class="commander-slider__icon" aria-hidden="true">&larr;<\/span>/);
+  assert.match(html, /class="commander-slider__icon" aria-hidden="true">&rarr;<\/span>/);
+  assert.match(html, /commander-card__hover-overlay/);
+  assert.match(html, /Starting Squad/);
+  assert.match(html, /Field Repairs/);
+  assert.match(html, /Blitz Surge/);
+  assert.match(html, /"If it still rolls, it can still win\."/);
+  assert.match(html, /2x Grunt/);
+  assert.match(html, /Bruiser/);
 });

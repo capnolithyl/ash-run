@@ -1,14 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  COMMANDER_POWER_MAX,
   ENEMY_RECRUITMENT_BASE_MAP_CAP,
   TERRAIN_KEYS,
   TURN_SIDES
 } from "../src/game/core/constants.js";
+import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
-import { getAttackModifier, getMovementModifier } from "../src/game/simulation/commanderEffects.js";
+import {
+  getArmorModifier,
+  getAttackModifier,
+  getMovementModifier
+} from "../src/game/simulation/commanderEffects.js";
 import { getReachableTiles, getUnitAt } from "../src/game/simulation/selectors.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
@@ -210,7 +214,7 @@ test("atlas passively restores 1 HP to each unit at the start of the turn", () =
   assert.equal(system.getStateForSave().player.units[0].current.hp, 11);
 });
 
-test("atlas power heals half max HP and grants attack and movement", () => {
+test("atlas power heals half max HP and grants armor through the enemy turn", () => {
   const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
     current: {
       hp: 4
@@ -222,7 +226,7 @@ test("atlas power heals half max HP and grants attack and movement", () => {
     enemyUnits: [enemy]
   });
   battleState.player.commanderId = "atlas";
-  battleState.player.charge = COMMANDER_POWER_MAX;
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
 
   const system = new BattleSystem(battleState);
 
@@ -231,8 +235,24 @@ test("atlas power heals half max HP and grants attack and movement", () => {
   const updatedUnit = system.getStateForSave().player.units[0];
 
   assert.equal(updatedUnit.current.hp, 4 + Math.ceil(unit.stats.maxHealth * 0.5));
-  assert.equal(getAttackModifier(system.getStateForSave(), updatedUnit), 2);
-  assert.equal(getMovementModifier(system.getStateForSave(), updatedUnit), 1);
+  assert.equal(getArmorModifier(system.getStateForSave(), updatedUnit), 2);
+  assert.equal(getAttackModifier(system.getStateForSave(), updatedUnit), 0);
+  assert.equal(getMovementModifier(system.getStateForSave(), updatedUnit), 0);
+
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.startEnemyTurnActions().changed, true);
+
+  const enemyTurnState = system.getStateForSave();
+  const buffedDuringEnemyTurn = enemyTurnState.player.units[0];
+
+  assert.equal(getArmorModifier(enemyTurnState, buffedDuringEnemyTurn), 2);
+
+  assert.equal(system.finalizeEnemyTurn().changed, true);
+
+  const nextPlayerTurnState = system.getStateForSave();
+  const expiredOnNextTurn = nextPlayerTurnState.player.units[0];
+
+  assert.equal(getArmorModifier(nextPlayerTurnState, expiredOnNextTurn), 0);
 });
 
 test("viper boosts infantry and recon attack, then powers infantry movement", () => {
@@ -245,7 +265,7 @@ test("viper boosts infantry and recon attack, then powers infantry movement", ()
     enemyUnits: [enemy]
   });
   battleState.player.commanderId = "viper";
-  battleState.player.charge = COMMANDER_POWER_MAX;
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
 
   assert.equal(getAttackModifier(battleState, grunt), 2);
   assert.equal(getAttackModifier(battleState, runner), 2);
@@ -394,6 +414,91 @@ test("enemy units avoid bad immediate trades instead of attacking blindly", () =
   assert.equal(afterStep.enemyTurn.pendingAttack, null);
   assert.equal(afterStep.player.units[0].current.hp, player.current.hp);
   assert.ok(afterStep.log.some((line) => line.includes("fell back")));
+});
+
+test("wounded enemy units enter repair mode and move toward service buildings", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 3, {
+    current: {
+      hp: 5
+    }
+  });
+  const battleState = createTestBattleState({
+    id: "enemy-repair-mode",
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.map.buildings = [
+    {
+      id: "enemy-repair-sector",
+      type: "sector",
+      owner: TURN_SIDES.ENEMY,
+      x: 6,
+      y: 3
+    }
+  ];
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const afterStep = system.getStateForSave();
+  const updatedEnemy = afterStep.enemy.units[0];
+
+  assert.equal(step.changed, true);
+  assert.equal(step.type, "move");
+  assert.equal(updatedEnemy.x, 6);
+  assert.equal(updatedEnemy.y, 3);
+  assert.equal(updatedEnemy.cooldowns.repairMode, 2);
+  assert.equal(updatedEnemy.hasMoved, true);
+  assert.equal(updatedEnemy.hasAttacked, true);
+  assert.ok(afterStep.log.some((line) => line.includes("entered repair mode")));
+});
+
+test("enemy units already on a service building stay there while repairing", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 4, 3, {
+    current: {
+      hp: 8
+    },
+    cooldowns: {
+      repairMode: 1
+    }
+  });
+  const battleState = createTestBattleState({
+    id: "enemy-repair-hold",
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.map.buildings = [
+    {
+      id: "enemy-repair-sector-hold",
+      type: "sector",
+      owner: TURN_SIDES.ENEMY,
+      x: 4,
+      y: 3
+    }
+  ];
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const updatedEnemy = system.getStateForSave().enemy.units[0];
+
+  assert.equal(step.changed, true);
+  assert.equal(step.type, "repair");
+  assert.equal(updatedEnemy.x, 4);
+  assert.equal(updatedEnemy.y, 3);
+  assert.equal(updatedEnemy.cooldowns.repairMode, 1);
+  assert.equal(updatedEnemy.hasMoved, true);
+  assert.equal(updatedEnemy.hasAttacked, true);
 });
 
 test("enemy units advance into staging range when no attack is available", () => {

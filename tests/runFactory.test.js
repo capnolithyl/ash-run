@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { TURN_SIDES, UNIT_TAGS } from "../src/game/core/constants.js";
+import { PROTOTYPE_ROSTER_CAP, TURN_SIDES, UNIT_TAGS } from "../src/game/core/constants.js";
 import { getBuildingIncomeForSide } from "../src/game/core/economy.js";
 import { MAP_POOL } from "../src/game/content/maps.js";
 import { createBattleStateForRun } from "../src/game/state/runFactory.js";
@@ -50,14 +50,14 @@ test("createBattleStateForRun restores persistent survivors while seeding openin
   assert.equal(deployedVeteran.current.ammo, deployedVeteran.stats.ammoMax);
 });
 
-test("createBattleStateForRun spreads a large carried roster across unique spawn tiles", () => {
+test("createBattleStateForRun caps and spreads a large carried roster across unique spawn tiles", () => {
   const roster = Array.from({ length: 10 }, (_, index) => {
     const unitTypeId = index % 3 === 0 ? "grunt" : index % 3 === 1 ? "runner" : "longshot";
     return createPersistentUnitSnapshot(createUnitFromType(unitTypeId, TURN_SIDES.PLAYER));
   });
   const battleState = createBattleStateForRun(createRunState({ roster }));
 
-  assert.equal(battleState.player.units.length, 10);
+  assert.equal(battleState.player.units.length, PROTOTYPE_ROSTER_CAP);
   assert.equal(uniquePositionCount(battleState.player.units), battleState.player.units.length);
 });
 

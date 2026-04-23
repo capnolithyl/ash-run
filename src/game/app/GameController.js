@@ -2,6 +2,8 @@ import { createEmitter } from "../core/emitter.js";
 import {
   BATTLE_FUNDS_GAIN_ANIMATION_MS,
   BATTLE_MOVE_SETTLE_MS,
+  BATTLE_NOTICE_DISPLAY_MS,
+  BATTLE_POWER_OVERLAY_DISPLAY_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
   SCREEN_IDS,
   SLOT_IDS,
@@ -42,8 +44,17 @@ function createBattleUiState() {
     pauseMenuOpen: false,
     confirmAbandon: false,
     fundsGain: null,
+    notice: null,
+    powerOverlay: null,
     hoveredTile: null
   };
+}
+
+function getCommanderPowerTitle(commander) {
+  const summary = commander?.active?.summary ?? "Commander Power";
+  const [title] = summary.split(":");
+
+  return title?.trim() || "Commander Power";
 }
 
 function delay(ms) {
@@ -64,6 +75,9 @@ export class GameController {
     this.events = createEmitter();
     this.battleSystem = null;
     this.fundsGainSequence = 0;
+    this.battleNoticeSequence = 0;
+    this.battlePowerOverlaySequence = 0;
+    this.battleNoticeTimer = null;
     this.lastBattleContextActionAt = 0;
     this.state = {
       ready: false,
@@ -112,6 +126,11 @@ export class GameController {
   }
 
   resetBattleUi() {
+    if (this.battleNoticeTimer) {
+      clearTimeout(this.battleNoticeTimer);
+      this.battleNoticeTimer = null;
+    }
+
     this.state.battleUi = createBattleUiState();
   }
 
@@ -290,8 +309,69 @@ export class GameController {
     return Boolean(
       this.state.battleUi.pauseMenuOpen ||
         this.state.battleUi.fundsGain ||
+        this.state.battleUi.powerOverlay ||
         this.state.battleSnapshot?.levelUpQueue?.length
     );
+  }
+
+  showBattleNotice({ title, message, tone = "info" }) {
+    if (this.state.screen !== SCREEN_IDS.BATTLE) {
+      return;
+    }
+
+    const notice = {
+      id: `notice-${++this.battleNoticeSequence}`,
+      title,
+      message,
+      tone,
+      createdAt: Date.now(),
+      durationMs: BATTLE_NOTICE_DISPLAY_MS
+    };
+
+    this.state.battleUi.notice = notice;
+    this.emit();
+
+    if (this.battleNoticeTimer) {
+      clearTimeout(this.battleNoticeTimer);
+    }
+
+    this.battleNoticeTimer = setTimeout(() => {
+      this.battleNoticeTimer = null;
+
+      if (this.state.battleUi.notice?.id === notice.id) {
+        this.state.battleUi.notice = null;
+        this.emit();
+      }
+    }, BATTLE_NOTICE_DISPLAY_MS);
+  }
+
+  async playPowerOverlay(side) {
+    const battleState = this.battleSystem?.getStateForSave();
+    const commanderId = battleState?.[side]?.commanderId;
+    const commander = COMMANDERS.find((candidate) => candidate.id === commanderId);
+
+    if (!commander) {
+      this.syncBattleState();
+      return;
+    }
+
+    const overlay = {
+      id: `power-${++this.battlePowerOverlaySequence}`,
+      side,
+      commanderName: commander.name,
+      title: getCommanderPowerTitle(commander),
+      summary: commander.active.summary,
+      accent: commander.accent
+    };
+
+    this.state.battleUi.powerOverlay = overlay;
+    this.syncBattleState();
+    await delay(BATTLE_POWER_OVERLAY_DISPLAY_MS);
+
+    if (this.state.battleUi.powerOverlay?.id === overlay.id) {
+      this.state.battleUi.powerOverlay = null;
+      this.syncBattleState();
+    }
   }
 
   promptAbandonRun() {
@@ -391,6 +471,17 @@ export class GameController {
 
     if (changed) {
       await this.persistCurrentRun();
+      return;
+    }
+
+    const unitLimit = this.battleSystem.getPlayerUnitLimitStatus?.();
+
+    if (unitLimit?.isAtLimit) {
+      this.showBattleNotice({
+        title: "Unit Limit Reached",
+        message: `${unitLimit.count}/${unitLimit.limit} units are already deployed.`,
+        tone: "warning"
+      });
     }
   }
 
@@ -556,12 +647,13 @@ export class GameController {
     }
 
     if (this.state.debugMode) {
-      this.battleSystem.setDebugCharge(TURN_SIDES.PLAYER, 100);
+      this.battleSystem.setDebugCharge(TURN_SIDES.PLAYER, 9999);
     }
 
     const changed = this.battleSystem.activatePower();
 
     if (changed) {
+      await this.playPowerOverlay(TURN_SIDES.PLAYER);
       await this.persistCurrentRun();
     }
   }
@@ -725,6 +817,17 @@ export class GameController {
       }
     } else {
       this.syncBattleState();
+    }
+
+    const enemyPowerUsed = this.battleSystem?.activatePower();
+
+    if (enemyPowerUsed) {
+      await this.playPowerOverlay(TURN_SIDES.ENEMY);
+
+      if (this.state.battleSnapshot?.victory) {
+        await this.persistCurrentRun();
+        return;
+      }
     }
 
     while (this.battleSystem?.hasPendingEnemyTurn()) {

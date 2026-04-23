@@ -69,3 +69,9 @@ Primary weapons use a 2x effective multiplier. Empty-ammo units switch to weaker
 - XP is awarded from actual HP removed, not overkill damage.
 - Kill XP scales with level delta, target value, damage dealt, and the target's HP before the killing blow.
 - Siege Gun can move and attack in the current prototype.
+
+## Enemy Repair Behavior
+
+- Wounded enemy units may enter repair mode instead of falling back aimlessly.
+- Repairing enemies path toward the nearest owned sector or, for vehicles, an unused owned repair station.
+- Units in repair mode spend their action holding on the service tile long enough to receive start-of-turn servicing before rejoining the fight.

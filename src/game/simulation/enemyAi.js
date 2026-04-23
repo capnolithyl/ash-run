@@ -18,6 +18,7 @@ import {
 } from "./combatResolver.js";
 import {
   canUnitAttackTarget,
+  getBuildingAt,
   getLivingUnits,
   getRecruitmentOptions,
   getUnitAt,
@@ -28,6 +29,7 @@ const ANTI_AIR_RECRUITS = new Set(["skyguard", "interceptor"]);
 const ANTI_VEHICLE_RECRUITS = new Set(["breaker", "juggernaut", "siege-gun", "payload"]);
 const ANTI_INFANTRY_RECRUITS = new Set(["longshot", "runner", "bruiser", "gunship", "payload"]);
 const SUPPORT_RECRUITS = new Set(["medic", "mechanic"]);
+const REPAIR_MODE_HEALTH_RATIO = 0.55;
 
 export function getEnemyRecruitmentLimit(state) {
   return (state.difficultyTier ?? 1) <= 2
@@ -55,6 +57,32 @@ function needsService(unit) {
     unit.current.ammo < unit.stats.ammoMax ||
     unit.current.stamina < unit.stats.staminaMax
   );
+}
+
+function canRepairUnitAtBuilding(unit, building) {
+  if (!unit || !building || building.owner !== unit.owner) {
+    return false;
+  }
+
+  if (building.type === BUILDING_KEYS.SECTOR) {
+    return true;
+  }
+
+  return (
+    building.type === BUILDING_KEYS.REPAIR_STATION &&
+    unit.family === UNIT_TAGS.VEHICLE &&
+    building.lastServiceOwner !== unit.owner
+  );
+}
+
+function wantsRepairMode(unit) {
+  if (!unit || unit.transport?.carriedByUnitId || unit.current.hp >= unit.stats.maxHealth) {
+    return false;
+  }
+
+  const healthRatio = unit.stats.maxHealth > 0 ? unit.current.hp / unit.stats.maxHealth : 1;
+
+  return healthRatio <= REPAIR_MODE_HEALTH_RATIO || (unit.cooldowns?.repairMode ?? 0) > 0;
 }
 
 function countUnitsByType(units, unitTypeId) {
@@ -293,6 +321,68 @@ export function getBestCapturePlan(state, unit, reachableTiles) {
           (isCurrentTile ? 80 : 0) +
           distanceImprovement * 4 -
           distanceFromBuilding * 1.5
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.score - left.score)[0] ?? null;
+}
+
+export function getBestRepairPlan(state, unit, reachableTiles) {
+  if (!wantsRepairMode(unit)) {
+    return null;
+  }
+
+  const currentBuilding = getBuildingAt(state, unit.x, unit.y);
+
+  if (canRepairUnitAtBuilding(unit, currentBuilding)) {
+    return {
+      building: currentBuilding,
+      tile: { x: unit.x, y: unit.y },
+      canRepairAfterMove: true,
+      isCurrentTile: true,
+      score: 999
+    };
+  }
+
+  return state.map.buildings
+    .filter((building) => canRepairUnitAtBuilding(unit, building))
+    .map((building) => {
+      const occupant = getUnitAt(state, building.x, building.y);
+      const directTile =
+        (!occupant || occupant.id === unit.id) &&
+        reachableTiles.find((tile) => tile.x === building.x && tile.y === building.y);
+      const bestApproachTile = directTile
+        ? directTile
+        : reachableTiles
+            .map((tile) => ({
+              ...tile,
+              distance: Math.abs(tile.x - building.x) + Math.abs(tile.y - building.y)
+            }))
+            .sort((left, right) => left.distance - right.distance)[0];
+
+      if (!bestApproachTile) {
+        return null;
+      }
+
+      const currentDistance = Math.abs(unit.x - building.x) + Math.abs(unit.y - building.y);
+      const distanceFromBuilding =
+        Math.abs(bestApproachTile.x - building.x) + Math.abs(bestApproachTile.y - building.y);
+      const distanceImprovement = currentDistance - distanceFromBuilding;
+
+      if (!directTile && distanceImprovement <= 0) {
+        return null;
+      }
+
+      return {
+        building,
+        tile: bestApproachTile,
+        canRepairAfterMove: Boolean(directTile),
+        isCurrentTile: false,
+        score:
+          (directTile ? 150 : 0) +
+          (building.type === BUILDING_KEYS.REPAIR_STATION ? 18 : 0) +
+          distanceImprovement * 12 -
+          distanceFromBuilding * 3
       };
     })
     .filter(Boolean)

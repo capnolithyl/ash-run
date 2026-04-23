@@ -1,7 +1,13 @@
 import { BUILDING_KEYS } from "../core/constants.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
-import { GENERATED_UNIT_SPRITE_SHEETS } from "./generated/unitSpriteSheets.js";
+import * as generatedUnitSpriteSheetsModule from "./generated/unitSpriteSheets.js";
+
+const generatedUnitSpriteSheetsFallback = Reflect.get(generatedUnitSpriteSheetsModule, "default");
+const GENERATED_UNIT_SPRITE_SHEETS =
+  generatedUnitSpriteSheetsModule.GENERATED_UNIT_SPRITE_SHEETS ??
+  generatedUnitSpriteSheetsFallback?.GENERATED_UNIT_SPRITE_SHEETS ??
+  {};
 
 const SPRITE_ASSET_ROOT = "./assets/sprites";
 const AUDIO_ASSET_ROOT = "./assets/audio";

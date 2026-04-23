@@ -37,7 +37,7 @@
 - `src/game/state/runFactory.js` assembles runs and battles, delegating roster templates, deployment placement, and enemy scaling to focused state modules.
 - `src/game/simulation/battleSystem.js` is the battle orchestrator: it owns turn flow, player commands, recruitment hooks, and victory checks.
 - `src/game/simulation/combatResolver.js` owns attack range, damage resolution, counter forecasts, XP formulas by combat outcome, and casualty removal.
-- `src/game/simulation/enemyAi.js` owns enemy recruitment scoring, favorable-trade evaluation, capture plans, and fallback/staging movement choices.
+- `src/game/simulation/enemyAi.js` owns enemy recruitment scoring, favorable-trade evaluation, repair mode, capture plans, and fallback/staging movement choices.
 - `src/game/simulation/battlePresentation.js` converts battle state into HUD/render-friendly presentation data without mutating the battle.
 - `src/game/simulation/battleServicing.js`, `captureRules.js`, `battleLog.js`, and `battleUnits.js` hold small shared battle helpers that keep the orchestrator lean.
 - `src/game/simulation/selectors.js`, `commanderEffects.js`, `unitFactory.js`, and `progression.js` own read helpers, commander modifiers, unit creation, and leveling.

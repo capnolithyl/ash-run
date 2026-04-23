@@ -18,6 +18,20 @@ function delay(ms) {
   });
 }
 
+function normalizeLoopedIndex(index, count) {
+  if (count <= 0) {
+    return 0;
+  }
+
+  return ((index % count) + count) % count;
+}
+
+function getVisibleLoopedIndices(startIndex, visibleCount, count) {
+  return Array.from({ length: visibleCount }, (_, offset) =>
+    normalizeLoopedIndex(startIndex + offset, count)
+  );
+}
+
 /**
  * The DOM shell handles all text-heavy UI.
  * Phaser remains focused on the animated background and battlefield itself.
@@ -27,6 +41,8 @@ export class AppShell {
     this.root = root;
     this.controller = controller;
     this.latestState = null;
+    this.commanderSliderTrackIndex = null;
+    this.commanderSliderTransitioning = false;
     this.previousBattleSnapshot = null;
     this.levelUpRevealUntil = 0;
     this.levelUpRevealTimer = null;
@@ -47,6 +63,8 @@ export class AppShell {
     this.root.addEventListener("click", (event) => this.handleClick(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));
     this.root.addEventListener("contextmenu", (event) => this.handleContextMenu(event));
+    this.root.addEventListener("transitionend", (event) => this.handleTransitionEnd(event));
+    window.addEventListener("resize", () => this.handleResize());
 
     this.controller.subscribe((state) => {
       this.latestState = state;
@@ -68,6 +86,8 @@ export class AppShell {
       this.renderCommanderSelect(state);
       return;
     }
+
+    this.resetCommanderSliderState();
 
     switch (state.screen) {
       case SCREEN_IDS.LOAD_SLOT:
@@ -138,6 +158,11 @@ export class AppShell {
     this.activeFundsGainId = null;
     this.battleDrawers.intel = false;
     this.battleDrawers.command = false;
+  }
+
+  resetCommanderSliderState() {
+    this.commanderSliderTrackIndex = null;
+    this.commanderSliderTransitioning = false;
   }
 
   captureBattleDrawerState() {
@@ -361,6 +386,7 @@ export class AppShell {
 
     if (!existingScreen) {
       this.root.innerHTML = renderCommanderSelectView(state);
+      this.syncCommanderSlider(state);
       return;
     }
 
@@ -396,19 +422,176 @@ export class AppShell {
     if (startRunButton) {
       startRunButton.disabled = !state.selectedCommanderId;
     }
+
+    this.syncCommanderSlider(state);
   }
 
   scrollCommanderSlider(direction) {
-    const slider = this.root.querySelector('[data-role="commander-slider"]');
+    const metrics = this.getCommanderSliderMetrics();
 
-    if (!slider) {
+    if (!metrics || !metrics.realCount) {
       return;
     }
 
-    const distance = Math.max(240, slider.clientWidth * 0.88);
-    slider.scrollBy({
-      left: direction * distance,
-      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    if (this.commanderSliderTransitioning) {
+      return;
+    }
+
+    if (!Number.isInteger(this.commanderSliderTrackIndex)) {
+      this.commanderSliderTrackIndex = metrics.homeStartIndex;
+    }
+
+    this.commanderSliderTrackIndex += direction;
+    this.commanderSliderTransitioning = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+      animate: this.commanderSliderTransitioning
+    });
+  }
+
+  handleResize() {
+    if (this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT) {
+      return;
+    }
+
+    this.syncCommanderSlider(this.latestState, { forceCurrentIndex: true, behavior: "auto" });
+  }
+
+  syncCommanderSlider(state, options = {}) {
+    const metrics = this.getCommanderSliderMetrics();
+
+    if (!metrics || !metrics.realCount) {
+      return;
+    }
+
+    const selectedIndex = metrics.realSlides.findIndex(
+      (card) => card.dataset.commanderId === state.selectedCommanderId
+    );
+    const fallbackIndex = selectedIndex >= 0 ? selectedIndex : 0;
+
+    if (!Number.isInteger(this.commanderSliderTrackIndex) || options.forceCurrentIndex) {
+      const normalizedIndex = Number.isInteger(this.commanderSliderTrackIndex)
+        ? normalizeLoopedIndex(this.commanderSliderTrackIndex - metrics.homeStartIndex, metrics.realCount)
+        : fallbackIndex;
+      this.commanderSliderTrackIndex = metrics.homeStartIndex + normalizedIndex;
+      this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+        animate: options.behavior === "smooth"
+      });
+      return;
+    }
+
+    const currentStartIndex = normalizeLoopedIndex(
+      this.commanderSliderTrackIndex - metrics.homeStartIndex,
+      metrics.realCount
+    );
+    const visibleIndices = new Set(
+      getVisibleLoopedIndices(currentStartIndex, metrics.visibleCount, metrics.realCount)
+    );
+
+    if (selectedIndex >= 0 && !visibleIndices.has(selectedIndex)) {
+      this.commanderSliderTrackIndex = metrics.homeStartIndex + selectedIndex;
+      this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+        animate: options.behavior === "smooth"
+      });
+      return;
+    }
+
+    this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+      animate: false
+    });
+  }
+
+  getCommanderSliderVisibleCount(slider) {
+    const styles = window.getComputedStyle(slider);
+    const rawValue = Number.parseInt(styles.getPropertyValue("--commander-visible-count"), 10);
+    return Number.isFinite(rawValue) && rawValue > 0 ? rawValue : 1;
+  }
+
+  getCommanderSliderMetrics() {
+    const viewport = this.root.querySelector('[data-role="commander-slider"]');
+    const track = this.root.querySelector('[data-role="commander-slider-track"]');
+
+    if (!viewport || !track) {
+      return null;
+    }
+
+    const cards = Array.from(track.querySelectorAll("[data-slide-index]"));
+    const copyCount = Number.parseInt(track.dataset.sliderCopyCount ?? "1", 10);
+    const homeCopyIndex = Number.parseInt(track.dataset.sliderHomeCopyIndex ?? "0", 10);
+    const realCount = copyCount > 0 ? Math.floor(cards.length / copyCount) : 0;
+    const homeStartIndex = Math.max(0, homeCopyIndex * realCount);
+    const realSlides = cards.slice(homeStartIndex, homeStartIndex + realCount);
+    const firstCard = cards[0] ?? null;
+    const trackStyles = window.getComputedStyle(track);
+    const columnGap = Number.parseFloat(trackStyles.columnGap || trackStyles.gap || "0");
+    const slideWidth = firstCard?.getBoundingClientRect().width ?? 0;
+
+    return {
+      viewport,
+      track,
+      cards,
+      realSlides,
+      copyCount: Number.isFinite(copyCount) && copyCount > 0 ? copyCount : 1,
+      homeCopyIndex: Number.isFinite(homeCopyIndex) && homeCopyIndex >= 0 ? homeCopyIndex : 0,
+      homeStartIndex,
+      realCount,
+      visibleCount: this.getCommanderSliderVisibleCount(viewport),
+      step: slideWidth + (Number.isFinite(columnGap) ? columnGap : 0)
+    };
+  }
+
+  setCommanderSliderTrackPosition(metrics, trackIndex, { animate }) {
+    if (!metrics.track || !metrics.step) {
+      return;
+    }
+
+    const useInstantPositioning =
+      !animate || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    metrics.track.classList.toggle("commander-slider__track--instant", useInstantPositioning);
+    metrics.track.style.transform = `translate3d(${-trackIndex * metrics.step}px, 0, 0)`;
+
+    if (useInstantPositioning) {
+      void metrics.track.getBoundingClientRect();
+      metrics.track.classList.remove("commander-slider__track--instant");
+      this.commanderSliderTransitioning = false;
+    }
+  }
+
+  handleTransitionEnd(event) {
+    if (this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT) {
+      return;
+    }
+
+    const track = event.target.closest?.('[data-role="commander-slider-track"]');
+
+    if (!track || event.propertyName !== "transform") {
+      return;
+    }
+
+    const metrics = this.getCommanderSliderMetrics();
+
+    if (!metrics || !Number.isInteger(this.commanderSliderTrackIndex)) {
+      this.commanderSliderTransitioning = false;
+      return;
+    }
+
+    const minimumHomeIndex = metrics.homeStartIndex;
+    const maximumHomeIndex = metrics.homeStartIndex + metrics.realCount - 1;
+
+    if (
+      this.commanderSliderTrackIndex >= minimumHomeIndex &&
+      this.commanderSliderTrackIndex <= maximumHomeIndex
+    ) {
+      this.commanderSliderTransitioning = false;
+      return;
+    }
+
+    const normalizedIndex = normalizeLoopedIndex(
+      this.commanderSliderTrackIndex - metrics.homeStartIndex,
+      metrics.realCount
+    );
+    this.commanderSliderTrackIndex = metrics.homeStartIndex + normalizedIndex;
+    this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+      animate: false
     });
   }
 
@@ -527,6 +710,9 @@ export class AppShell {
       case "cancel-support-choice":
         await this.controller.handleBattleContextAction();
         break;
+      case "cancel-unload-choice":
+        await this.controller.handleBattleContextAction();
+        break;
       case "capture-building":
         await this.controller.captureWithSelectedUnit();
         break;
@@ -583,10 +769,10 @@ export class AppShell {
         });
         break;
       case "debug-full-charge-player":
-        await this.controller.debugSetCharge("player", 100);
+        await this.controller.debugSetCharge("player", 9999);
         break;
       case "debug-full-charge-enemy":
-        await this.controller.debugSetCharge("enemy", 100);
+        await this.controller.debugSetCharge("enemy", 9999);
         break;
       case "debug-refresh-player-actions":
         await this.controller.debugRefreshActions("player");

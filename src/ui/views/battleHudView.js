@@ -1,5 +1,6 @@
-import { COMMANDER_POWER_MAX, TURN_SIDES } from "../../game/core/constants.js";
-import { getCommanderById } from "../../game/content/commanders.js";
+import { BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../game/core/constants.js";
+import { getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
+import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 import { renderOptionFields } from "./optionFieldsView.js";
 
@@ -59,33 +60,50 @@ function canActivatePlayerPower(battleSnapshot) {
       !battleSnapshot.victory &&
       battleSnapshot.turn.activeSide === TURN_SIDES.PLAYER &&
       !battleSnapshot.presentation?.pendingAction &&
-      battleSnapshot.player.charge >= COMMANDER_POWER_MAX
+      battleSnapshot.player.charge >= getCommanderPowerMax(battleSnapshot.player.commanderId)
   );
 }
 
-function renderCommanderPanel(commander, sideState, side) {
-  const powerRatio = Math.min(1, sideState.charge / COMMANDER_POWER_MAX);
+function renderCommanderPanel(commander, sideState, side, fundsGain = null) {
+  const powerMax = getCommanderPowerMax(sideState.commanderId);
+  const powerRatio = Math.min(1, sideState.charge / powerMax);
   const sideLabel = side === "player" ? "Player Commander" : "Enemy Commander";
+  const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
 
   return `
     <div class="commander-panel commander-panel--${side}" style="--accent:${commander.accent}">
       <div class="commander-panel__header">
-        <div>
+        <div class="commander-panel__summary">
           <p class="eyebrow">${sideLabel}</p>
           <h2>${commander.name}</h2>
+          ${renderFundsPanel("Funds", sideState.funds, side, `funds-panel--${side} funds-panel--commander`, fundsGain)}
         </div>
-        <span class="commander-panel__sigil">${commander.name.slice(0, 1)}</span>
+        <div class="commander-panel__identity">
+          ${
+            portraitImageUrl
+              ? `
+                <img
+                  class="commander-panel__portrait"
+                  src="${portraitImageUrl}"
+                  alt="${commander.name} portrait"
+                  loading="lazy"
+                  decoding="async"
+                />
+              `
+              : ""
+          }
+        </div>
       </div>
       <div class="commander-ability">
-        <span>Passive</span>
+        <span>Passive: ${commander.passive.name ?? "Passive"}</span>
         <p>${commander.passive.summary}</p>
       </div>
       <div class="commander-ability commander-ability--active">
-        <span>Power</span>
+        <span>Power: ${commander.active.name ?? "Power"}</span>
         <p>${commander.active.summary}</p>
       </div>
       <div class="meter commander-meter">
-        <span>Power ${Math.floor(sideState.charge)}/${COMMANDER_POWER_MAX}</span>
+        <span>Power ${Math.floor(sideState.charge)}/${powerMax}</span>
         <div class="meter__bar">
           <div style="width:${powerRatio * 100}%"></div>
         </div>
@@ -103,7 +121,7 @@ function getBattleLayout(battleSnapshot) {
   const viewportHeight = window.innerHeight;
   const isCompact = viewportWidth <= 1024;
   const isShort = viewportHeight <= 520;
-  const reservedTop = isCompact ? (isShort ? 78 : 126) : 0;
+  const reservedTop = 0;
   const reservedBottom = isCompact ? (isShort ? 72 : viewportWidth <= 560 ? 132 : 96) : 0;
   const availableHeight = Math.max(180, viewportHeight - reservedTop - reservedBottom);
   const maxBoardWidth = viewportWidth * (isCompact ? 0.94 : 0.56);
@@ -286,7 +304,8 @@ function renderActionPrompt(battleSnapshot) {
     !pendingAction ||
     pendingAction.isTargeting ||
     pendingAction.isChoosingTransport ||
-    pendingAction.isChoosingSupport
+    pendingAction.isChoosingSupport ||
+    pendingAction.isUnloading
   ) {
     return "";
   }
@@ -389,6 +408,25 @@ function renderTargetingPrompt(battleSnapshot) {
   `;
 }
 
+function renderUnloadPrompt(battleSnapshot) {
+  const pendingAction = battleSnapshot.presentation?.pendingAction;
+
+  if (!pendingAction?.isUnloading) {
+    return "";
+  }
+
+  return `
+    <div class="battle-targeting-hint">
+      <div class="battle-targeting-hint__copy">
+        <p class="eyebrow">Unload Mode</p>
+        <strong>${pendingAction.unitName} ready to unload</strong>
+        <span>Select a highlighted tile or cancel.</span>
+      </div>
+      <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-unload-choice">Cancel</button>
+    </div>
+  `;
+}
+
 function renderLevelUpOverlay(battleSnapshot) {
   const levelUpEvent = battleSnapshot.levelUpQueue?.[0];
 
@@ -431,6 +469,43 @@ function renderTurnBanner(turnBanner) {
       <div class="turn-banner__card">
         <p class="eyebrow">Turn ${turnBanner.number}</p>
         <h2>${turnBanner.side === "player" ? "Player Turn" : "Enemy Turn"}</h2>
+      </div>
+    </div>
+  `;
+}
+
+function renderBattleNotice(notice) {
+  if (!notice) {
+    return "";
+  }
+
+  const durationMs = Math.max(1, Number(notice.durationMs) || BATTLE_NOTICE_DISPLAY_MS);
+  const createdAt = Number(notice.createdAt) || Date.now();
+  const elapsedMs = Math.max(0, Math.min(durationMs - 1, Date.now() - createdAt));
+  const noticeStyle = `--notice-duration:${durationMs}ms;--notice-delay:-${elapsedMs}ms;`;
+
+  return `
+    <div class="battle-notice battle-notice--${notice.tone ?? "info"}" style="${noticeStyle}" role="status" aria-live="polite">
+      <strong>${notice.title}</strong>
+      <span>${notice.message}</span>
+    </div>
+  `;
+}
+
+function renderPowerOverlay(powerOverlay) {
+  if (!powerOverlay) {
+    return "";
+  }
+
+  const sideLabel = powerOverlay.side === TURN_SIDES.PLAYER ? "Player Power" : "Enemy Power";
+
+  return `
+    <div class="battle-overlay battle-overlay--power battle-overlay--power-${powerOverlay.side}" style="--accent:${powerOverlay.accent}">
+      <div class="overlay-card overlay-card--power">
+        <p class="eyebrow">${sideLabel} Activated</p>
+        <h2>${powerOverlay.title}</h2>
+        <strong>${powerOverlay.commanderName}</strong>
+        <p>${powerOverlay.summary}</p>
       </div>
     </div>
   `;
@@ -700,31 +775,17 @@ export function renderBattleHudView(state, options = {}) {
           <span>Battle Intel</span>
           <label class="ghost-button ghost-button--small" for="battle-intel-drawer">Close</label>
         </div>
-        ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player")}
+        ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player", fundsGain)}
         ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
         ${renderSelectionDetails(battleSnapshot)}
         ${renderRecruitPanel(battleSnapshot)}
       </aside>
-      <div class="battle-topbar">
-        <div>
-          <p class="eyebrow">${battleSnapshot.map.name}</p>
-          <h2>Map ${state.runState.mapIndex + 1}/${state.runState.targetMapCount}</h2>
-        </div>
-        <div class="battle-topbar__funds">
-          ${renderFundsPanel("Player Funds", battleSnapshot.player.funds, "player", "funds-panel--player", fundsGain)}
-          ${renderFundsPanel("Enemy Funds", battleSnapshot.enemy.funds, "enemy", "funds-panel--enemy", fundsGain)}
-        </div>
-        <div class="battle-topbar__meta">
-          <span>Turn ${battleSnapshot.turn.number}</span>
-          <span>${battleSnapshot.turn.activeSide === "player" ? "Player Phase" : "Enemy Phase"}</span>
-        </div>
-      </div>
       <aside class="battle-rail battle-rail--right">
         <div class="battle-drawer-header">
           <span>Command</span>
           <label class="ghost-button ghost-button--small" for="battle-command-drawer">Close</label>
         </div>
-        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy")}
+        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", fundsGain)}
         <div class="card-block">
           <h3>Command Feed</h3>
           <div class="log-feed">
@@ -752,9 +813,12 @@ export function renderBattleHudView(state, options = {}) {
       </aside>
       ${renderActionPrompt(battleSnapshot)}
       ${renderTargetingPrompt(battleSnapshot)}
+      ${renderUnloadPrompt(battleSnapshot)}
       ${renderTransportPrompt(battleSnapshot)}
       ${renderSupportPrompt(battleSnapshot)}
+      ${renderBattleNotice(state.battleUi?.notice)}
       ${renderTurnBanner(turnBanner)}
+      ${renderPowerOverlay(state.battleUi?.powerOverlay)}
       ${suppressLevelUpOverlay ? "" : renderLevelUpOverlay(battleSnapshot)}
       ${renderPauseOverlay(state, battleSnapshot)}
       ${suppressOutcomeOverlay ? "" : renderOutcomeOverlay(state, battleSnapshot)}

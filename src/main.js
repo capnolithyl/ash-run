@@ -11,4 +11,3 @@ new AppShell(uiRoot, controller);
 createGame(gameRoot, controller);
 
 controller.initialize();
-

@@ -1,5 +1,8 @@
 import Phaser from "phaser";
-import { BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
+import {
+  BATTLE_ATTACK_IMPACT_DELAY_MS,
+  BATTLE_MOVE_SEGMENT_DURATION_MS
+} from "../../core/constants.js";
 import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
 
@@ -56,7 +59,15 @@ export class UnitLayer {
   }
 
   clear() {
-    this.entities.forEach((entity) => entity.container.destroy());
+    this.entities.forEach((entity) => {
+      entity.queuedAttack = null;
+      this.stopMoveTween(entity);
+      for (const tween of entity.effectTweens) {
+        tween.stop();
+      }
+      entity.effectTweens = [];
+      entity.container.destroy();
+    });
     this.entities.clear();
     this.cellSize = null;
   }
@@ -127,6 +138,7 @@ export class UnitLayer {
     container.setDepth(28);
 
     return {
+      unitId: unit.id,
       container,
       glow,
       aura,
@@ -143,6 +155,7 @@ export class UnitLayer {
       targetX: 0,
       targetY: 0,
       alphaTarget: 1,
+      queuedAttack: null,
       transportIcon
     };
   }
@@ -170,6 +183,56 @@ export class UnitLayer {
     entity.moveTween = null;
   }
 
+  getMoveTweenRemaining(unitId) {
+    const tween = this.entities.get(unitId)?.moveTween;
+
+    if (!tween) {
+      return 0;
+    }
+
+    if (
+      Number.isFinite(tween.totalDuration) &&
+      tween.totalDuration > 0 &&
+      Number.isFinite(tween.elapsed)
+    ) {
+      return Math.max(0, tween.totalDuration - tween.elapsed);
+    }
+
+    if (
+      Number.isFinite(tween.duration) &&
+      tween.duration > 0 &&
+      Number.isFinite(tween.progress)
+    ) {
+      return Math.max(0, tween.duration * (1 - tween.progress));
+    }
+
+    if (
+      typeof tween.getOverallProgress === "function" &&
+      Number.isFinite(tween.totalDuration) &&
+      tween.totalDuration > 0
+    ) {
+      return Math.max(0, tween.totalDuration * (1 - tween.getOverallProgress()));
+    }
+
+    return BATTLE_MOVE_SEGMENT_DURATION_MS;
+  }
+
+  playQueuedAttack(entity) {
+    const queuedAttack = entity.queuedAttack;
+
+    if (!queuedAttack) {
+      return;
+    }
+
+    entity.queuedAttack = null;
+    this.playAttack(
+      entity.unitId,
+      queuedAttack.directionX,
+      queuedAttack.directionY,
+      queuedAttack.callbacks
+    );
+  }
+
   playPathMovement(entity, layout, path) {
     const worldPoints = path.map((tile) =>
       this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
@@ -191,6 +254,7 @@ export class UnitLayer {
     if (tweens.length === 0) {
       entity.container.setPosition(entity.targetX, entity.targetY);
       entity.moveTween = null;
+      this.playQueuedAttack(entity);
       return;
     }
 
@@ -200,6 +264,7 @@ export class UnitLayer {
       onComplete: () => {
         entity.moveTween = null;
         entity.container.setPosition(entity.targetX, entity.targetY);
+        this.playQueuedAttack(entity);
       }
     });
   }
@@ -247,6 +312,7 @@ export class UnitLayer {
       return;
     }
 
+    entity.queuedAttack = null;
     this.stopMoveTween(entity);
 
     this.stopEffectTweens(entity);
@@ -284,13 +350,23 @@ export class UnitLayer {
     });
   }
 
-  playAttack(unitId, directionX = 0, directionY = 0) {
+  playAttack(unitId, directionX = 0, directionY = 0, callbacks = {}) {
     const entity = this.entities.get(unitId);
 
     if (!entity) {
       return;
     }
 
+    if (entity.moveTween) {
+      entity.queuedAttack = {
+        directionX,
+        directionY,
+        callbacks
+      };
+      return;
+    }
+
+    callbacks.onStart?.();
     this.stopEffectTweens(entity);
 
     const offsetX = Math.sign(directionX) * Math.max(5, (this.cellSize ?? 40) * 0.12);
@@ -329,6 +405,10 @@ export class UnitLayer {
         this.resetEntityEffects(entity);
       }
     }));
+
+    if (callbacks.onImpact) {
+      this.scene.time.delayedCall(BATTLE_ATTACK_IMPACT_DELAY_MS, callbacks.onImpact);
+    }
   }
 
   playDamage(unitId) {
@@ -515,6 +595,7 @@ export class UnitLayer {
             onComplete: () => {
               entity.moveTween = null;
               entity.container.setPosition(entity.targetX, entity.targetY);
+              this.playQueuedAttack(entity);
             }
           });
         }

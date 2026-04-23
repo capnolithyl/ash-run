@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import {
-  BATTLE_ATTACK_IMPACT_DELAY_MS,
+  BATTLE_MOVE_SETTLE_MS,
   BATTLE_TURN_BANNER_SETTLE_MS
 } from "../../core/constants.js";
 import { getMovementPath, getSelectedUnit } from "../../simulation/selectors.js";
@@ -665,8 +665,24 @@ export class BattleScene extends Phaser.Scene {
     );
     this.buildingLayer.render(snapshot, layout);
     this.unitLayer.render(snapshot, layout, movementEvents);
+    const sequencedAnimationEvents = animationEvents.map((event) => {
+      if (event.type !== "attack") {
+        return event;
+      }
 
-    for (const event of animationEvents) {
+      const moveDelay = this.unitLayer.getMoveTweenRemaining(event.attackerId);
+
+      if (moveDelay <= 0) {
+        return event;
+      }
+
+      return {
+        ...event,
+        delay: (event.delay ?? 0) + moveDelay + BATTLE_MOVE_SETTLE_MS
+      };
+    });
+
+    for (const event of sequencedAnimationEvents) {
       if (event.type === "deploy") {
         this.fxLayer.schedule(turnTransitionDelay, () => this.unitLayer.playDeploy(event.unitId));
       }
@@ -681,17 +697,19 @@ export class BattleScene extends Phaser.Scene {
           this.unitLayer.playAttack(
             event.attackerId,
             event.toX - event.fromX,
-            event.toY - event.fromY
+            event.toY - event.fromY,
+            {
+              onStart: () => this.fxLayer.playAttack(event, layout),
+              onImpact: () => this.unitLayer.playDamage(event.targetId)
+            }
           )
-        );
-        this.fxLayer.schedule(attackDelay + BATTLE_ATTACK_IMPACT_DELAY_MS, () =>
-          this.unitLayer.playDamage(event.targetId)
         );
       }
     }
 
-    this.fxLayer.playEvents(animationEvents, layout, {
-      baseDelay: turnTransitionDelay
+    this.fxLayer.playEvents(sequencedAnimationEvents, layout, {
+      baseDelay: turnTransitionDelay,
+      skipAttackVisuals: true
     });
     this.previousSnapshot = structuredClone(snapshot);
   }

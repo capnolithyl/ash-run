@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COMMANDER_POWER_MAX, TURN_SIDES } from "../src/game/core/constants.js";
+import { TURN_SIDES } from "../src/game/core/constants.js";
+import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { renderBattleHudView } from "../src/ui/views/battleHudView.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
@@ -75,15 +76,118 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
   assert.match(html, /Forecast/);
 });
 
-test("battle HUD shows passive and active commander powers without duplicate commander funds", () => {
+test("battle HUD replaces unload command menu with a cancellable unload prompt", () => {
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 2, {
+    hasMoved: true
+  });
+  const infantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  runner.transport.carryingUnitId = infantry.id;
+  infantry.transport.carriedByUnitId = runner.id;
+  const battleState = createTestBattleState({
+    playerUnits: [runner, infantry],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  battleState.selection = { type: "unit", id: runner.id, x: runner.x, y: runner.y };
+  battleState.pendingAction = {
+    type: "move",
+    unitId: runner.id,
+    mode: "unload",
+    fromX: runner.x,
+    fromY: runner.y,
+    fromStamina: runner.current.stamina,
+    toX: runner.x,
+    toY: runner.y
+  };
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /Unload Mode/);
+  assert.match(html, /data-action="cancel-unload-choice"/);
+  assert.doesNotMatch(html, /data-action="wait-unit"/);
+});
+
+test("battle HUD shows commander funds inside the commander panels without a top bar", () => {
   const battleState = createTestBattleState();
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, /Passive/);
-  assert.match(html, /Power/);
-  assert.match(html, /Overrun: infantry and recons gain \+5 attack/);
-  assert.match(html, /Supply Drop: gain 600 funds/);
-  assert.doesNotMatch(html, /commander-funds/);
+  assert.match(html, /Passive: Shock Doctrine/);
+  assert.match(html, /Power: Blitz Surge/);
+  assert.match(html, /Passive: War Budget/);
+  assert.match(html, /Power: Liquidation/);
+  assert.match(html, /Infantry and Runners gain \+2 attack; other units gain -2 attack/);
+  assert.match(html, /Spend all funds\. All units gain \+1 attack per 300 funds spent/);
+  assert.match(html, /assets\/img\/commanders\/viper\/Viper%20-%20Portrait\.png/);
+  assert.match(html, /assets\/img\/commanders\/rook\/Rook%20-%20Portrait\.png/);
+  assert.match(html, /commander-panel--player[\s\S]*?<h2>Viper<\/h2>[\s\S]*?data-funds-panel="player"/);
+  assert.match(html, /commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>[\s\S]*?data-funds-panel="enemy"/);
+  assert.doesNotMatch(html, /commander-panel__sigil/);
+  assert.doesNotMatch(html, /battle-topbar/);
+});
+
+test("battle HUD renders transient battle notices", () => {
+  const battleState = createTestBattleState();
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      notice: {
+        tone: "warning",
+        title: "Unit Limit Reached",
+        message: "6/6 units are already deployed.",
+        createdAt: Date.now() - 600,
+        durationMs: 2100
+      },
+      hoveredTile: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /battle-notice--warning/);
+  assert.match(html, /--notice-duration:2100ms/);
+  assert.match(html, /--notice-delay:-\d+ms/);
+  assert.match(html, /Unit Limit Reached/);
+  assert.match(html, /6\/6 units are already deployed/);
+});
+
+test("battle HUD renders commander power activation overlays", () => {
+  const battleState = createTestBattleState();
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      powerOverlay: {
+        side: TURN_SIDES.PLAYER,
+        commanderName: "Viper",
+        title: "Blitz Surge",
+        summary: "Infantry and Runners gain +3 attack; Infantry also gain +2 movement for 1 turn.",
+        accent: "#ec775e"
+      },
+      hoveredTile: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /battle-overlay--power-player/);
+  assert.match(html, /Player Power Activated/);
+  assert.match(html, /Blitz Surge/);
+  assert.match(html, /Viper/);
 });
 
 test("battle HUD includes compact drawer and quick-action controls", () => {
@@ -99,13 +203,13 @@ test("battle HUD includes compact drawer and quick-action controls", () => {
 
 test("battle HUD disables commander power until the player can use it", () => {
   const chargingState = createTestBattleState();
-  chargingState.player.charge = COMMANDER_POWER_MAX - 1;
+  chargingState.player.charge = getCommanderPowerMax(chargingState.player.commanderId) - 1;
   const chargingButton = getActionButton(renderHudForBattleState(chargingState), "activate-power");
 
   assert.match(chargingButton, /disabled/);
 
   const readyState = createTestBattleState();
-  readyState.player.charge = COMMANDER_POWER_MAX;
+  readyState.player.charge = getCommanderPowerMax(readyState.player.commanderId);
   const readyButton = getActionButton(renderHudForBattleState(readyState), "activate-power");
 
   assert.doesNotMatch(readyButton, /disabled/);
@@ -113,7 +217,7 @@ test("battle HUD disables commander power until the player can use it", () => {
   const enemyTurnState = createTestBattleState({
     activeSide: TURN_SIDES.ENEMY
   });
-  enemyTurnState.player.charge = COMMANDER_POWER_MAX;
+  enemyTurnState.player.charge = getCommanderPowerMax(enemyTurnState.player.commanderId);
   const enemyTurnButton = getActionButton(renderHudForBattleState(enemyTurnState), "activate-power");
 
   assert.match(enemyTurnButton, /disabled/);

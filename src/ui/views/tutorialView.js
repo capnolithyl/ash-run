@@ -73,7 +73,7 @@ const TUTORIAL_STEPS = [
     points: [
       "Runners can carry one infantry unit and unload it onto a legal adjacent tile.",
       "Medics support adjacent infantry; mechanics support adjacent vehicles and then go on cooldown.",
-      "Enemy recruitment is capped, but the enemy still captures, stages, and hunts favorable trades."
+      "Enemy recruitment is capped, but the enemy still captures, repairs, stages, and hunts favorable trades."
     ],
     drill: "Protect high-level survivors, use new recruits as tactical answers, and avoid feeding the enemy clean counters."
   }
