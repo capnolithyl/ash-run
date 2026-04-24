@@ -229,8 +229,9 @@ export function createSkirmishBattleState({
 }) {
   const mapDefinition = structuredClone(getMapById(mapId) ?? MAP_POOL[0]);
   const incomeByType = createIncomeTable(fundsPerBuilding);
-  const playerUnits = placeFreshUnits(
-    buildEnemyRoster(playerCommanderId, 1).map((unit) => ({ ...unit, owner: TURN_SIDES.PLAYER })),
+  const playerUnits = deployPersistentRoster(
+    buildPersistentStarterRoster(playerCommanderId),
+    TURN_SIDES.PLAYER,
     mapDefinition,
     mapDefinition.playerSpawns
   );

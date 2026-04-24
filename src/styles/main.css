@@ -610,14 +610,14 @@ input {
   box-shadow: 0 0 24px rgba(255, 79, 216, 0.12);
 }
 
-.menu-button.is-controller-focused,
-.ghost-button.is-controller-focused,
-.slot-card.is-controller-focused,
-.commander-card.is-controller-focused,
-.recruit-card.is-controller-focused,
-.battle-command-prompt__action.is-controller-focused,
-.commander-power-button.is-controller-focused,
-label.is-controller-focused {
+#ui-root[data-input-mode="controller"] .menu-button.is-controller-focused,
+#ui-root[data-input-mode="controller"] .ghost-button.is-controller-focused,
+#ui-root[data-input-mode="controller"] .slot-card.is-controller-focused,
+#ui-root[data-input-mode="controller"] .commander-card.is-controller-focused,
+#ui-root[data-input-mode="controller"] .recruit-card.is-controller-focused,
+#ui-root[data-input-mode="controller"] .battle-command-prompt__action.is-controller-focused,
+#ui-root[data-input-mode="controller"] .commander-power-button.is-controller-focused,
+#ui-root[data-input-mode="controller"] label.is-controller-focused {
   transform: translateY(-1px);
   border-color: rgba(121, 240, 255, 0.82);
   box-shadow:
@@ -879,28 +879,51 @@ label.is-controller-focused {
 .skirmish-commander-pickers {
   margin-top: 1.2rem;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
+}
+
+.skirmish-commander-group {
+  min-width: 0;
 }
 
 .skirmish-commander-group h3 {
-  margin: 0 0 0.65rem;
+  margin: 0;
 }
 
-.skirmish-commander-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.8rem;
+.skirmish-panel .commander-slider--skirmish {
+  --commander-visible-count: 5;
+  --commander-slider-gap: 0.8rem;
+  grid-template-columns: 2.65rem minmax(0, 1fr) 2.65rem;
+  gap: 0.65rem;
+  margin-top: 0.6rem;
 }
 
-.skirmish-commander-grid .commander-card {
-  min-height: 11.5rem;
+.skirmish-panel .commander-slider--skirmish .commander-grid {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.skirmish-panel .commander-slider--skirmish .commander-slider__control {
+  min-width: 2.65rem;
+  min-height: 2.65rem;
+}
+
+.skirmish-panel .commander-slider--skirmish .commander-slider__icon {
+  font-size: 1rem;
+}
+
+.skirmish-panel .commander-slider--skirmish .commander-card {
+  min-height: clamp(15.5rem, 28vh, 19rem);
+  scroll-snap-align: start;
 }
 
 .skirmish-map-layout {
   margin-top: 1rem;
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(14rem, 0.55fr) minmax(0, 1.45fr);
   gap: 1rem;
 }
 
@@ -984,9 +1007,9 @@ label.is-controller-focused {
 .skirmish-map-grid {
   display: grid;
   grid-template-columns: repeat(var(--map-columns), minmax(0, 1fr));
-  grid-auto-rows: minmax(0.95rem, 1fr);
+  grid-auto-rows: minmax(1.05rem, 1fr);
   aspect-ratio: var(--map-columns) / var(--map-rows);
-  max-height: 15rem;
+  max-height: 22rem;
   overflow: hidden;
   padding: 0.7rem;
   border-radius: 0.6rem;
@@ -1053,8 +1076,27 @@ label.is-controller-focused {
 }
 
 .skirmish-map-legend {
-  margin: 0.65rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.85rem;
+  margin: 0.85rem 0 0;
+}
+
+.skirmish-map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.35rem;
   color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.skirmish-map-legend-item .skirmish-map-tile {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 1.15rem;
+  border-radius: 0.22rem;
+  font-size: 0.58rem;
 }
 
 .skirmish-economy-row {
@@ -1331,6 +1373,7 @@ label.is-controller-focused {
 .commander-card:hover .commander-card__hover-overlay,
 .commander-card:focus-visible .commander-card__hover-overlay {
   opacity: 1;
+  pointer-events: auto;
   transform: translateY(0);
 }
 
@@ -1692,18 +1735,20 @@ label.is-controller-focused {
 .battle-footer-actions {
   position: absolute;
   left: 50%;
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  bottom: max(0.85rem, env(safe-area-inset-bottom));
   z-index: 8;
-  display: inline-flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(6.4rem, 1fr) minmax(8.8rem, 1.35fr) minmax(7.2rem, 1fr);
+  grid-template-areas: "pause next end";
   gap: 0.55rem;
   transform: translateX(-50%);
-  padding: 0.55rem;
+  padding: 0.75rem 0.8rem 0.8rem;
   border: 1px solid rgba(255, 138, 61, 0.24);
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   background:
-    radial-gradient(circle at 8% 0%, rgba(255, 79, 216, 0.16), transparent 10rem),
-    radial-gradient(circle at 92% 0%, rgba(255, 138, 61, 0.13), transparent 10rem),
+    radial-gradient(circle at 12% 0%, rgba(255, 79, 216, 0.18), transparent 10rem),
+    radial-gradient(circle at 88% 0%, rgba(255, 138, 61, 0.16), transparent 10rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
     rgba(12, 5, 24, 0.92);
   box-shadow:
     0 0 0 1px rgba(255, 79, 216, 0.08),
@@ -1711,32 +1756,94 @@ label.is-controller-focused {
   backdrop-filter: blur(16px);
 }
 
-.battle-footer-actions .ghost-button,
-.battle-footer-actions .menu-button,
-.battle-footer-actions .battle-drawer-button {
+.battle-footer-actions::before {
+  content: "";
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 0.42rem;
+  height: 0.16rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 79, 216, 0),
+    rgba(255, 210, 125, 0.84),
+    rgba(255, 79, 216, 0)
+  );
+  box-shadow: 0 0 18px rgba(255, 159, 79, 0.26);
+  pointer-events: none;
+}
+
+.battle-footer-actions .battle-footer-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 2.65rem;
-  padding: 0.65rem 0.95rem;
-  border-radius: 0.85rem;
-  font-size: 0.82rem;
-  letter-spacing: 0.05em;
+  min-height: 3rem;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
   line-height: 1;
   white-space: nowrap;
+  text-transform: uppercase;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 10px 24px rgba(5, 1, 14, 0.32);
+}
+
+.battle-footer-actions .battle-footer-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 42%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.battle-footer-button--pause {
+  grid-area: pause;
+}
+
+.battle-footer-button--next {
+  grid-area: next;
+  min-height: 3.45rem;
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 230, 196, 0.08),
+    0 16px 28px rgba(8, 2, 18, 0.4),
+    0 0 28px rgba(121, 94, 255, 0.16);
+}
+
+.battle-footer-button--end-turn {
+  grid-area: end;
+}
+
+.battle-footer-button--intel {
+  grid-area: intel;
+}
+
+.battle-footer-button--feed {
+  grid-area: feed;
 }
 
 .battle-drawer-button {
   text-align: center;
   cursor: var(--cursor-action);
+  user-select: none;
+}
+
+.battle-footer-actions .battle-drawer-button {
   display: none;
 }
 
 .battle-rail {
   position: absolute;
   top: 1.25rem;
-  bottom: 5.65rem;
+  bottom: 6.8rem;
   width: 19rem;
   padding: 1rem;
   border-radius: 1.25rem;
@@ -3310,6 +3417,18 @@ label.is-controller-focused {
     grid-template-columns: 1fr;
   }
 
+  .skirmish-panel .commander-slider--skirmish {
+    --commander-visible-count: 3;
+  }
+
+  .skirmish-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .skirmish-map-list {
+    max-height: 12rem;
+  }
+
   .commander-select-panel {
     width: 100%;
     max-height: calc(100vh - 3rem);
@@ -3365,12 +3484,16 @@ label.is-controller-focused {
     bottom: max(0.65rem, env(safe-area-inset-bottom));
     z-index: 8;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "intel next feed"
+      "pause next end";
     gap: 0.45rem;
-    padding: 0.5rem;
+    padding: 0.55rem;
+    min-width: 0;
     transform: none;
     border: 1px solid rgba(255, 138, 61, 0.24);
-    border-radius: 1rem;
+    border-radius: 1.1rem;
     background:
       radial-gradient(circle at 8% 0%, rgba(255, 79, 216, 0.16), transparent 10rem),
       radial-gradient(circle at 92% 0%, rgba(255, 138, 61, 0.13), transparent 10rem),
@@ -3381,25 +3504,27 @@ label.is-controller-focused {
     backdrop-filter: blur(16px);
   }
 
-  .battle-footer-actions .ghost-button,
-  .battle-footer-actions .menu-button,
-  .battle-footer-actions .battle-drawer-button {
+  .battle-footer-actions .battle-footer-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 0;
-    min-height: 2.45rem;
-    padding: 0.55rem 0.35rem;
+    min-height: 2.65rem;
+    padding: 0.58rem 0.45rem;
     border-radius: 0.75rem;
     font-size: 0.76rem;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     line-height: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .battle-drawer-button {
+  .battle-footer-actions .battle-footer-button--next {
+    min-height: 5.75rem;
+  }
+
+  .battle-footer-actions .battle-drawer-button {
     display: inline-flex;
   }
 
@@ -3456,7 +3581,7 @@ label.is-controller-focused {
     position: absolute;
     left: 0.75rem;
     right: 0.75rem;
-    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 4.9rem);
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 6.65rem);
     z-index: 9;
     transform: none;
     margin: 0;
@@ -3640,6 +3765,14 @@ label.is-controller-focused {
   [data-role="start-run-button"] {
     width: 100%;
   }
+
+  .skirmish-panel .commander-slider--skirmish {
+    --commander-visible-count: 2;
+  }
+
+  .skirmish-economy-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 560px) {
@@ -3649,6 +3782,10 @@ label.is-controller-focused {
 
   .battle-overlay--pause {
     padding: 0.5rem;
+  }
+
+  .skirmish-panel .commander-slider--skirmish {
+    --commander-visible-count: 1;
   }
 
   .overlay-card--pause {
@@ -3715,10 +3852,21 @@ label.is-controller-focused {
 
   .battle-footer-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .battle-footer-actions .battle-footer-button {
+    min-height: 2.4rem;
+    padding: 0.5rem 0.32rem;
+    font-size: 0.72rem;
+  }
+
+  .battle-footer-actions .battle-footer-button--next {
+    min-height: 5.2rem;
   }
 
   .battle-command-prompt {
-    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 7.8rem);
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 6.95rem);
   }
 
   .battle-command-prompt__menu {
@@ -3775,18 +3923,19 @@ label.is-controller-focused {
 
 @media (max-height: 520px) and (max-width: 1024px) {
   .battle-footer-actions {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
     padding: 0.4rem;
   }
 
-  .battle-footer-actions .ghost-button,
-  .battle-footer-actions .menu-button,
-  .battle-footer-actions .battle-drawer-button {
+  .battle-footer-actions .battle-footer-button {
     min-height: 2.1rem;
     padding: 0.45rem 0.3rem;
   }
 
+  .battle-footer-actions .battle-footer-button--next {
+    min-height: 4.5rem;
+  }
+
   .battle-command-prompt {
-    bottom: calc(max(0.55rem, env(safe-area-inset-bottom)) + 3.7rem);
+    bottom: calc(max(0.55rem, env(safe-area-inset-bottom)) + 5.5rem);
   }
 }

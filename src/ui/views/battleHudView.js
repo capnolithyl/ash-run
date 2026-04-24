@@ -1,4 +1,5 @@
 import { BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../game/core/constants.js";
+import { getBattlefieldLayout } from "../../game/core/battlefieldLayout.js";
 import { getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
@@ -159,28 +160,12 @@ function getBattleLayout(battleSnapshot) {
     return null;
   }
 
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const isCompact = viewportWidth <= 1024;
-  const isShort = viewportHeight <= 520;
-  const reservedTop = 0;
-  const reservedBottom = isCompact ? (isShort ? 72 : viewportWidth <= 560 ? 132 : 96) : 0;
-  const availableHeight = Math.max(180, viewportHeight - reservedTop - reservedBottom);
-  const maxBoardWidth = viewportWidth * (isCompact ? 0.94 : 0.56);
-  const maxBoardHeight = isCompact ? availableHeight : viewportHeight * 0.72;
-  const cellSize = Math.floor(
-    Math.min(maxBoardWidth / battleSnapshot.map.width, maxBoardHeight / battleSnapshot.map.height)
-  );
-  const boardWidth = battleSnapshot.map.width * cellSize;
-  const boardHeight = battleSnapshot.map.height * cellSize;
-
-  return {
-    cellSize,
-    originX: Math.round((viewportWidth - boardWidth) / 2),
-    originY: isCompact
-      ? Math.round(reservedTop + Math.max(0, (availableHeight - boardHeight) / 2))
-      : Math.round((viewportHeight - boardHeight) / 2)
-  };
+  return getBattlefieldLayout({
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+    mapWidth: battleSnapshot.map.width,
+    mapHeight: battleSnapshot.map.height
+  });
 }
 
 function getActionPromptStyle(battleSnapshot, pendingAction) {
@@ -822,17 +807,37 @@ export function renderBattleHudView(state, options = {}) {
       <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
       <div class="battle-footer-actions" aria-label="Battle controls">
-        <label class="ghost-button ghost-button--small battle-drawer-button" for="battle-intel-drawer">Intel</label>
-        <button class="ghost-button ghost-button--small" data-action="pause-battle">Pause</button>
+        <label
+          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--intel battle-drawer-button"
+          for="battle-intel-drawer"
+        >
+          Intel
+        </label>
         <button
-          class="ghost-button ghost-button--small"
+          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--pause"
+          data-action="pause-battle"
+        >
+          Pause
+        </button>
+        <button
+          class="menu-button menu-button--small battle-footer-button battle-footer-button--next"
           data-action="select-next-unit"
           ${nextUnitEnabled ? "" : "disabled"}
         >
           Next
         </button>
-        <button class="ghost-button ghost-button--small" data-action="end-turn">End Turn</button>
-        <label class="ghost-button ghost-button--small battle-drawer-button" for="battle-command-drawer">Feed</label>
+        <button
+          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--end-turn"
+          data-action="end-turn"
+        >
+          End Turn
+        </button>
+        <label
+          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--feed battle-drawer-button"
+          for="battle-command-drawer"
+        >
+          Feed
+        </label>
       </div>
       <aside class="battle-rail battle-rail--left">
         <div class="battle-drawer-header">

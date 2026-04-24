@@ -111,7 +111,9 @@ test("startSkirmish opens an unsaved battle with configured economy", async () =
   const controller = new GameController();
 
   controller.state.metaState.unlockedCommanderIds = ["atlas", "viper"];
+  assert.equal(controller.getState().skirmishSetup.step, "commanders");
   controller.updateSkirmishSetup({
+    step: "map",
     playerCommanderId: "atlas",
     enemyCommanderId: "viper",
     mapId: "ashline-crossing",
@@ -124,7 +126,30 @@ test("startSkirmish opens an unsaved battle with configured economy", async () =
   const state = controller.getState();
   assert.equal(state.screen, SCREEN_IDS.BATTLE);
   assert.equal(state.runState, null);
+  assert.equal(state.skirmishSetup.step, "map");
   assert.equal(state.battleSnapshot.player.commanderId, "atlas");
   assert.equal(state.battleSnapshot.enemy.commanderId, "viper");
   assert.equal(state.battleSnapshot.economy.incomeByType.sector, 250);
+});
+
+test("skirmish battle tile clicks sync selection without a run save", async () => {
+  const controller = new GameController();
+
+  controller.state.metaState.unlockedCommanderIds = ["atlas", "viper"];
+  controller.updateSkirmishSetup({
+    step: "map",
+    playerCommanderId: "atlas",
+    enemyCommanderId: "viper",
+    mapId: "ashline-crossing"
+  });
+
+  await controller.startSkirmish();
+
+  const playerUnit = controller.getState().battleSnapshot.player.units[0];
+  await controller.handleBattleTileClick(playerUnit.x, playerUnit.y);
+
+  const state = controller.getState();
+  assert.equal(state.runState, null);
+  assert.equal(state.battleSnapshot.selection.type, "unit");
+  assert.equal(state.battleSnapshot.selection.id, playerUnit.id);
 });

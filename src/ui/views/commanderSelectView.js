@@ -7,7 +7,7 @@ import { formatRelativeTimestamp, titleCaseSlot } from "../formatters.js";
 const COMMANDER_SLIDER_COPY_COUNT = 3;
 const COMMANDER_SLIDER_HOME_COPY_INDEX = Math.floor(COMMANDER_SLIDER_COPY_COUNT / 2);
 
-function getCommanderSliderEntries() {
+export function getCommanderSliderEntries() {
   return Array.from({ length: COMMANDER_SLIDER_COPY_COUNT }, (_, copyIndex) =>
     COMMANDERS.map((commander, realIndex) => ({
       commander,

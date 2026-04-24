@@ -3,6 +3,7 @@ import {
   BATTLE_MOVE_SETTLE_MS,
   BATTLE_TURN_BANNER_SETTLE_MS
 } from "../../core/constants.js";
+import { getBattlefieldLayout } from "../../core/battlefieldLayout.js";
 import { getMovementPath, getSelectedUnit } from "../../simulation/selectors.js";
 import { preloadSpriteAssets } from "../assets.js";
 import { deriveBattleAnimationEvents } from "../view/battleAnimationEvents.js";
@@ -599,26 +600,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   getBoardLayout(snapshot) {
-    const isCompact = this.scale.width <= 1024;
-    const isShort = this.scale.height <= 520;
-    const reservedTop = isCompact ? (isShort ? 78 : 126) : 0;
-    const reservedBottom = isCompact ? (isShort ? 72 : this.scale.width <= 560 ? 132 : 96) : 0;
-    const availableHeight = Math.max(180, this.scale.height - reservedTop - reservedBottom);
-    const maxBoardWidth = this.scale.width * (isCompact ? 0.94 : 0.56);
-    const maxBoardHeight = isCompact ? availableHeight : this.scale.height * 0.72;
-    const cellSize = Math.floor(
-      Math.min(maxBoardWidth / snapshot.map.width, maxBoardHeight / snapshot.map.height)
-    );
-    const boardWidth = snapshot.map.width * cellSize;
-    const boardHeight = snapshot.map.height * cellSize;
-
-    return {
-      cellSize,
-      originX: Math.round((this.scale.width - boardWidth) / 2),
-      originY: isCompact
-        ? Math.round(reservedTop + Math.max(0, (availableHeight - boardHeight) / 2))
-        : Math.round((this.scale.height - boardHeight) / 2)
-    };
+    return getBattlefieldLayout({
+      viewportWidth: this.scale.width,
+      viewportHeight: this.scale.height,
+      mapWidth: snapshot.map.width,
+      mapHeight: snapshot.map.height
+    });
   }
 
   renderBattle() {
@@ -814,7 +801,7 @@ export class BattleScene extends Phaser.Scene {
 
     return Boolean(
       document.querySelector(
-        "#ui-root .is-controller-focused, #ui-root .battle-command-prompt, #ui-root .battle-overlay"
+        "#ui-root[data-input-mode='controller'] .is-controller-focused, #ui-root[data-input-mode='controller'] .battle-command-prompt, #ui-root[data-input-mode='controller'] .battle-overlay"
       )
     );
   }

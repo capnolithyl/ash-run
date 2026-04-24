@@ -61,6 +61,7 @@ function createDefaultSkirmishSetupState(unlockedCommanderIds = []) {
     COMMANDERS.find((commander) => commander.id !== defaultCommanderId)?.id ?? defaultCommanderId;
 
   return {
+    step: "commanders",
     playerCommanderId: defaultCommanderId,
     enemyCommanderId: defaultEnemyCommanderId,
     mapId: "ashline-crossing",
@@ -250,6 +251,10 @@ export class GameController {
 
   openSkirmish() {
     this.state.screen = SCREEN_IDS.SKIRMISH_SETUP;
+    this.state.skirmishSetup = {
+      ...this.state.skirmishSetup,
+      step: "commanders"
+    };
     this.state.banner = "";
     this.state.debugMode = false;
     this.resetBattleUi();
@@ -300,6 +305,7 @@ export class GameController {
     };
     this.state.skirmishSetup = {
       ...next,
+      step: next.step === "map" ? "map" : "commanders",
       startingFunds: Math.max(0, Number(next.startingFunds ?? 0)),
       fundsPerBuilding: Math.max(0, Number(next.fundsPerBuilding ?? 0))
     };
@@ -841,6 +847,7 @@ export class GameController {
 
   async persistCurrentRun() {
     if (!this.battleSystem || !this.state.runState) {
+      this.syncBattleState();
       return;
     }
 

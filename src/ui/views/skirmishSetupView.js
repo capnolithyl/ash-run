@@ -1,6 +1,5 @@
 import { MAP_POOL } from "../../game/content/maps.js";
-import { COMMANDERS } from "../../game/content/commanders.js";
-import { renderCommanderCardBody } from "./commanderSelectView.js";
+import { getCommanderSliderEntries, renderCommanderCardBody } from "./commanderSelectView.js";
 
 const TERRAIN_PREVIEW_KEYS = {
   plain: ".",
@@ -104,39 +103,150 @@ function renderEconomyControl(field, value) {
   `;
 }
 
-function renderCommanderPicker(state, side, title, commanders, selectedId) {
+function renderCommanderPicker(state, side, title, selectedId) {
   const action = side === "player" ? "select-skirmish-player-commander" : "select-skirmish-enemy-commander";
+  const commanderSliderEntries = getCommanderSliderEntries();
 
   return `
     <section class="skirmish-commander-group">
       <h3>${title}</h3>
-      <div class="skirmish-commander-grid">
-        ${commanders
-          .map((commander) => {
-            const selected = selectedId === commander.id ? "commander-card--selected" : "";
-            const unlocked =
-              side === "enemy" || state.metaState.unlockedCommanderIds.includes(commander.id);
+      <div class="commander-slider commander-slider--skirmish">
+        <button
+          class="ghost-button ghost-button--small commander-slider__control commander-slider__control--prev"
+          data-action="scroll-skirmish-commanders"
+          data-skirmish-side="${side}"
+          data-skirmish-direction="-1"
+          aria-label="Previous ${title.toLowerCase()} choices"
+        >
+          <span class="commander-slider__icon" aria-hidden="true">&larr;</span>
+        </button>
+        <div
+          class="commander-grid"
+          data-role="skirmish-commander-slider"
+          data-skirmish-side="${side}"
+        >
+          <div class="commander-slider__track">
+            ${commanderSliderEntries
+              .map(({ commander, realIndex, copyIndex }) => {
+              const selected = selectedId === commander.id ? "commander-card--selected" : "";
+              const unlocked =
+                side === "enemy" || state.metaState.unlockedCommanderIds.includes(commander.id);
 
-            return `
-              <button
-                class="commander-card ${selected} ${unlocked ? "" : "commander-card--locked"}"
-                style="--accent:${commander.accent}"
-                data-action="${action}"
-                data-commander-id="${commander.id}"
-                ${unlocked ? "" : "disabled"}
-              >
-                ${renderCommanderCardBody(commander, unlocked)}
-              </button>
-            `;
-          })
-          .join("")}
+              return `
+                <button
+                  class="commander-card ${selected} ${unlocked ? "" : "commander-card--locked"}"
+                  style="--accent:${commander.accent}"
+                  data-action="${action}"
+                  data-commander-id="${commander.id}"
+                  data-slide-index="${realIndex}"
+                  data-copy-index="${copyIndex}"
+                  aria-disabled="${unlocked ? "false" : "true"}"
+                  ${unlocked ? "" : 'tabindex="-1"'}
+                >
+                  ${renderCommanderCardBody(commander, unlocked)}
+                </button>
+              `;
+            })
+            .join("")}
+          </div>
+        </div>
+        <button
+          class="ghost-button ghost-button--small commander-slider__control commander-slider__control--next"
+          data-action="scroll-skirmish-commanders"
+          data-skirmish-side="${side}"
+          data-skirmish-direction="1"
+          aria-label="Next ${title.toLowerCase()} choices"
+        >
+          <span class="commander-slider__icon" aria-hidden="true">&rarr;</span>
+        </button>
       </div>
     </section>
   `;
 }
 
+function renderMapLegend() {
+  return `
+    <div class="skirmish-map-legend" aria-label="Map preview legend">
+      <span class="skirmish-map-legend-item">
+        <span class="skirmish-map-tile skirmish-map-tile--player" aria-hidden="true">P</span>
+        <span>Player building</span>
+      </span>
+      <span class="skirmish-map-legend-item">
+        <span class="skirmish-map-tile skirmish-map-tile--enemy" aria-hidden="true">E</span>
+        <span>Enemy building</span>
+      </span>
+      <span class="skirmish-map-legend-item">
+        <span class="skirmish-map-tile skirmish-map-tile--neutral" aria-hidden="true">N</span>
+        <span>Neutral building</span>
+      </span>
+    </div>
+  `;
+}
+
+function renderSkirmishCommandersStep(state) {
+  return `
+    <div class="skirmish-commander-pickers">
+      ${renderCommanderPicker(state, "player", "Your Commander", state.skirmishSetup.playerCommanderId)}
+      ${renderCommanderPicker(state, "enemy", "Enemy Commander", state.skirmishSetup.enemyCommanderId)}
+    </div>
+
+    <div class="panel-footer">
+      <div class="footer-meta">
+        <span>Choose both commanders before setting the battlefield.</span>
+      </div>
+      <button class="menu-button" data-action="skirmish-next-step">
+        Choose Map
+      </button>
+    </div>
+  `;
+}
+
+function renderSkirmishMapStep(state, selectedMap) {
+  return `
+    <div class="skirmish-map-layout">
+      <div class="skirmish-map-list" role="listbox" aria-label="Skirmish map list">
+        ${MAP_POOL.map((mapDefinition) => {
+          const isSelected = mapDefinition.id === state.skirmishSetup.mapId;
+          const selected = isSelected ? "skirmish-map-option--active" : "";
+          return `
+            <button
+              class="skirmish-map-option ${selected}"
+              data-action="select-skirmish-map"
+              data-map-id="${mapDefinition.id}"
+              role="option"
+              aria-selected="${isSelected ? "true" : "false"}"
+            >
+              <span>${mapDefinition.name}</span>
+              <small>${mapDefinition.width}x${mapDefinition.height}</small>
+            </button>
+          `;
+        }).join("")}
+      </div>
+      <div class="skirmish-map-preview">
+        <p class="eyebrow">Map Preview</p>
+        <h3>${selectedMap.name}</h3>
+        ${renderMapPreview(selectedMap)}
+        ${renderMapLegend()}
+      </div>
+    </div>
+
+    <div class="skirmish-economy-row">
+      ${renderEconomyControl("startingFunds", state.skirmishSetup.startingFunds)}
+      ${renderEconomyControl("fundsPerBuilding", state.skirmishSetup.fundsPerBuilding)}
+    </div>
+
+    <div class="panel-footer">
+      <button class="ghost-button" data-action="skirmish-previous-step">Back To Commanders</button>
+      <button class="menu-button" data-action="start-skirmish">
+        Launch Skirmish
+      </button>
+    </div>
+  `;
+}
+
 export function renderSkirmishSetupView(state) {
   const selectedMap = MAP_POOL.find((mapDefinition) => mapDefinition.id === state.skirmishSetup.mapId) ?? MAP_POOL[0];
+  const step = state.skirmishSetup.step === "map" ? "map" : "commanders";
 
   return `
     <div class="screen screen--commander" data-screen-id="skirmish-setup">
@@ -154,57 +264,13 @@ export function renderSkirmishSetupView(state) {
         <div class="panel-header panel-header--commander">
           <div class="commander-select-heading">
             <p class="eyebrow">Skirmish</p>
-            <h2>Build A One-Off Battle</h2>
-            <p>Pick commanders, map, and economy settings.</p>
+            <h2>${step === "map" ? "Choose The Battlefield" : "Choose Commanders"}</h2>
+            <p>${step === "map" ? "Pick a map and tune the economy." : "Pick your commander and the AI opponent."}</p>
           </div>
           <button class="ghost-button" data-action="back-to-title">Back</button>
         </div>
 
-        <div class="skirmish-commander-pickers">
-          ${renderCommanderPicker(state, "player", "Your Commander", COMMANDERS, state.skirmishSetup.playerCommanderId)}
-          ${renderCommanderPicker(state, "enemy", "Enemy Commander", COMMANDERS, state.skirmishSetup.enemyCommanderId)}
-        </div>
-
-        <div class="skirmish-map-layout">
-          <div class="skirmish-map-list" role="listbox" aria-label="Skirmish map list">
-            ${MAP_POOL.map((mapDefinition) => {
-              const isSelected = mapDefinition.id === state.skirmishSetup.mapId;
-              const selected = isSelected ? "skirmish-map-option--active" : "";
-              return `
-                <button
-                  class="skirmish-map-option ${selected}"
-                  data-action="select-skirmish-map"
-                  data-map-id="${mapDefinition.id}"
-                  role="option"
-                  aria-selected="${isSelected ? "true" : "false"}"
-                >
-                  <span>${mapDefinition.name}</span>
-                  <small>${mapDefinition.width}x${mapDefinition.height}</small>
-                </button>
-              `;
-            }).join("")}
-          </div>
-          <div class="skirmish-map-preview">
-            <p class="eyebrow">Map Preview</p>
-            <h3>${selectedMap.name}</h3>
-            ${renderMapPreview(selectedMap)}
-            <p class="skirmish-map-legend">P/E/N = player/enemy/neutral buildings.</p>
-          </div>
-        </div>
-
-        <div class="skirmish-economy-row">
-          ${renderEconomyControl("startingFunds", state.skirmishSetup.startingFunds)}
-          ${renderEconomyControl("fundsPerBuilding", state.skirmishSetup.fundsPerBuilding)}
-        </div>
-
-        <div class="panel-footer">
-          <div class="footer-meta">
-            <span>Skirmish battles do not affect run progression.</span>
-          </div>
-          <button class="menu-button" data-action="start-skirmish">
-            Launch Skirmish
-          </button>
-        </div>
+        ${step === "map" ? renderSkirmishMapStep(state, selectedMap) : renderSkirmishCommandersStep(state)}
       </section>
     </div>
   `;

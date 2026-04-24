@@ -86,10 +86,12 @@ export class AppShell {
       command: false
     };
     this.controllerFocusElement = null;
+    this.inputMode = "mouse";
     this.gamepadButtonState = new Map();
     this.gamepadMoveDirection = null;
     this.gamepadNextMoveAt = 0;
     this.gamepadPollFrame = null;
+    this.root.dataset.inputMode = this.inputMode;
 
     this.root.addEventListener("click", (event) => this.handleClick(event));
     this.root.addEventListener("input", (event) => this.handleInput(event));
@@ -502,6 +504,8 @@ export class AppShell {
   }
 
   handlePointerDown(event) {
+    this.useMouseInputMode(event);
+
     if (this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT) {
       return;
     }
@@ -527,6 +531,8 @@ export class AppShell {
   }
 
   handlePointerMove(event) {
+    this.useMouseInputMode(event);
+
     const swipeState = this.commanderSliderSwipeState;
 
     if (!swipeState || swipeState.pointerId !== event.pointerId || swipeState.swiped) {
@@ -565,6 +571,27 @@ export class AppShell {
     }
   }
 
+  useMouseInputMode(event) {
+    if (event?.pointerType && event.pointerType !== "mouse") {
+      return;
+    }
+
+    this.setInputMode("mouse");
+  }
+
+  setInputMode(mode) {
+    if (this.inputMode === mode) {
+      return;
+    }
+
+    this.inputMode = mode;
+    this.root.dataset.inputMode = mode;
+
+    if (mode !== "controller") {
+      this.clearControllerFocus();
+    }
+  }
+
   handleDragStart(event) {
     if (event.target?.closest?.('[data-role="commander-slider"]')) {
       event.preventDefault();
@@ -593,31 +620,37 @@ export class AppShell {
     }
 
     if (this.consumeGamepadButtonPress(gamepad, GAMEPAD_BUTTONS.START)) {
+      this.setInputMode("controller");
       this.handleGamepadStart();
       return;
     }
 
     if (this.consumeGamepadButtonPress(gamepad, GAMEPAD_BUTTONS.B)) {
+      this.setInputMode("controller");
       this.handleGamepadBack();
       return;
     }
 
     if (this.consumeGamepadButtonPress(gamepad, GAMEPAD_BUTTONS.Y)) {
+      this.setInputMode("controller");
       this.handleGamepadUtility();
       return;
     }
 
     if (this.consumeGamepadButtonPress(gamepad, GAMEPAD_BUTTONS.A)) {
+      this.setInputMode("controller");
       this.activateControllerFocus();
       return;
     }
 
     if (this.consumeGamepadButtonPress(gamepad, GAMEPAD_BUTTONS.LB)) {
+      this.setInputMode("controller");
       this.moveControllerFocusByStep(-1);
       return;
     }
 
     if (this.consumeGamepadButtonPress(gamepad, GAMEPAD_BUTTONS.RB)) {
+      this.setInputMode("controller");
       this.moveControllerFocusByStep(1);
       return;
     }
@@ -639,6 +672,7 @@ export class AppShell {
       return;
     }
 
+    this.setInputMode("controller");
     this.moveControllerFocus(moveDirection);
     this.gamepadMoveDirection = moveDirection;
     this.gamepadNextMoveAt =
@@ -702,6 +736,11 @@ export class AppShell {
   }
 
   syncControllerFocusAfterRender() {
+    if (this.inputMode !== "controller") {
+      this.clearControllerFocus();
+      return;
+    }
+
     if (!this.controllerFocusElement) {
       this.focusPreferredBattleControl();
       this.focusDefaultMenuControl();
@@ -810,6 +849,13 @@ export class AppShell {
 
     if (sliderViewport) {
       const viewportRect = sliderViewport.getBoundingClientRect();
+      return rect.right > viewportRect.left && rect.left < viewportRect.right;
+    }
+
+    const skirmishCommanderViewport = element.closest('[data-role="skirmish-commander-slider"]');
+
+    if (skirmishCommanderViewport) {
+      const viewportRect = skirmishCommanderViewport.getBoundingClientRect();
       return rect.right > viewportRect.left && rect.left < viewportRect.right;
     }
 
@@ -1270,6 +1316,12 @@ export class AppShell {
       case "commander-slider-next":
         this.scrollCommanderSlider(1);
         break;
+      case "scroll-skirmish-commanders":
+        this.scrollSkirmishCommanderPicker(
+          trigger.dataset.skirmishSide,
+          Number(trigger.dataset.skirmishDirection)
+        );
+        break;
       case "select-slot":
         this.controller.selectSlot(slotId);
         break;
@@ -1277,6 +1329,9 @@ export class AppShell {
         await this.controller.startNewRun();
         break;
       case "select-skirmish-player-commander":
+        if (trigger.getAttribute("aria-disabled") === "true") {
+          return;
+        }
         this.controller.updateSkirmishSetup({ playerCommanderId: commanderId });
         break;
       case "select-skirmish-enemy-commander":
@@ -1284,6 +1339,12 @@ export class AppShell {
         break;
       case "select-skirmish-map":
         this.controller.updateSkirmishSetup({ mapId: trigger.dataset.mapId });
+        break;
+      case "skirmish-next-step":
+        this.controller.updateSkirmishSetup({ step: "map" });
+        break;
+      case "skirmish-previous-step":
+        this.controller.updateSkirmishSetup({ step: "commanders" });
         break;
       case "start-skirmish":
         await this.controller.startSkirmish();
@@ -1432,5 +1493,30 @@ export class AppShell {
     if (output) {
       output.textContent = event.target.value;
     }
+  }
+
+  scrollSkirmishCommanderPicker(side, direction) {
+    if (!side || !direction) {
+      return;
+    }
+
+    const viewport = this.root.querySelector(
+      `[data-role="skirmish-commander-slider"][data-skirmish-side="${side}"]`
+    );
+
+    if (!viewport) {
+      return;
+    }
+
+    const card = viewport.querySelector(".commander-card");
+    const styles = window.getComputedStyle(viewport.querySelector(".commander-slider__track") ?? viewport);
+    const gap = Number.parseFloat(styles.columnGap || styles.gap || "0") || 0;
+    const cardWidth = card?.getBoundingClientRect().width ?? viewport.clientWidth;
+    const scrollAmount = Math.max(cardWidth + gap, viewport.clientWidth * 0.85);
+
+    viewport.scrollBy({
+      left: scrollAmount * Math.sign(direction),
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    });
   }
 }
