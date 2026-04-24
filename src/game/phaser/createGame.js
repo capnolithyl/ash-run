@@ -24,6 +24,9 @@ export function createGame(parent, controller) {
         bootedGame.registry.set("controller", controller);
       }
     },
+    input: {
+      gamepad: true
+    },
     scale: {
       mode: Phaser.Scale.RESIZE,
       width: parent.clientWidth,

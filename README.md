@@ -21,6 +21,7 @@ Ash Run '84 is a Phaser + Electron prototype for a turn-based tactics roguelite 
   - Grid map rendering
   - 64px SVG unit, terrain, and building sprites with owner-color variants
   - Battlefield-only camera zoom and pan with mouse or touch gestures
+  - Gamepad/controller support in battle (D-pad/left stick cursor, A confirm, B cancel, Start pause, LB/RB next unit)
   - Unit selection and next-ready-unit cycling
   - Tile-based movement and path previews
   - Attacks and counterattacks

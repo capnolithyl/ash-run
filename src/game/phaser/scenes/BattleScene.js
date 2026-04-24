@@ -127,6 +127,11 @@ export class BattleScene extends Phaser.Scene {
     this.cameraZoomTween = null;
     this.cameraTargetZoom = 1;
     this.suppressTouchClickUntil = 0;
+    this.gamepadCursorTile = null;
+    this.gamepadMoveDirection = null;
+    this.gamepadNextMoveAt = 0;
+    this.gamepadButtonState = new Map();
+    this.gamepadActionBusy = false;
   }
 
   preload() {
@@ -171,6 +176,10 @@ export class BattleScene extends Phaser.Scene {
       }
 
       this.controller.openPauseMenu();
+    });
+
+    this.input.gamepad?.on?.("connected", () => {
+      this.seedGamepadCursorFromState();
     });
 
     this.input.on("wheel", (pointer, _gameObjects, _deltaX, deltaY) => {
@@ -712,5 +721,193 @@ export class BattleScene extends Phaser.Scene {
       skipAttackVisuals: true
     });
     this.previousSnapshot = structuredClone(snapshot);
+  }
+
+  update(time) {
+    this.pollGamepadInput(time);
+  }
+
+  pollGamepadInput(time) {
+    const gamepad = this.getPrimaryGamepad();
+
+    if (!gamepad || !this.controller) {
+      return;
+    }
+
+    if (!isBattleScreen(this.latestState)) {
+      this.gamepadButtonState.clear();
+      return;
+    }
+
+    const pauseMenuOpen = this.latestState?.battleUi?.pauseMenuOpen === true;
+
+    if (this.consumeGamepadButtonPress(gamepad, 9)) {
+      if (pauseMenuOpen) {
+        this.controller.closePauseMenu();
+      } else {
+        this.controller.openPauseMenu();
+      }
+      return;
+    }
+
+    if (pauseMenuOpen) {
+      if (this.consumeGamepadButtonPress(gamepad, 1)) {
+        this.controller.closePauseMenu();
+      }
+      return;
+    }
+
+    if (this.consumeGamepadButtonPress(gamepad, 5) || this.consumeGamepadButtonPress(gamepad, 4)) {
+      this.runGamepadAction(() => this.controller.selectNextReadyUnit());
+    }
+
+    if (this.consumeGamepadButtonPress(gamepad, 1)) {
+      this.runGamepadAction(() => this.controller.handleBattleContextAction());
+    }
+
+    if (this.consumeGamepadButtonPress(gamepad, 0)) {
+      const tile = this.getGamepadCursorTile();
+
+      if (tile) {
+        this.runGamepadAction(() => this.controller.handleBattleTileClick(tile.x, tile.y));
+      }
+    }
+
+    const moveDirection = this.getGamepadMoveDirection(gamepad);
+
+    if (!moveDirection) {
+      this.gamepadMoveDirection = null;
+      this.gamepadNextMoveAt = 0;
+      return;
+    }
+
+    const directionChanged =
+      !this.gamepadMoveDirection ||
+      this.gamepadMoveDirection.x !== moveDirection.x ||
+      this.gamepadMoveDirection.y !== moveDirection.y;
+
+    if (!directionChanged && time < this.gamepadNextMoveAt) {
+      return;
+    }
+
+    this.moveGamepadCursor(moveDirection.x, moveDirection.y);
+    this.gamepadMoveDirection = moveDirection;
+    this.gamepadNextMoveAt = time + (directionChanged ? 220 : 110);
+  }
+
+  getPrimaryGamepad() {
+    const gamepads = this.input.gamepad?.gamepads ?? [];
+    return gamepads.find((gamepad) => gamepad?.connected) ?? null;
+  }
+
+  consumeGamepadButtonPress(gamepad, buttonIndex) {
+    const pressed = Boolean(gamepad?.buttons?.[buttonIndex]?.pressed);
+    const previous = this.gamepadButtonState.get(buttonIndex) === true;
+    this.gamepadButtonState.set(buttonIndex, pressed);
+    return pressed && !previous;
+  }
+
+  getGamepadMoveDirection(gamepad) {
+    const axisX = Number(gamepad?.axes?.[0]?.getValue?.() ?? 0);
+    const axisY = Number(gamepad?.axes?.[1]?.getValue?.() ?? 0);
+    const threshold = 0.5;
+    const dpadLeft = Boolean(gamepad?.buttons?.[14]?.pressed);
+    const dpadRight = Boolean(gamepad?.buttons?.[15]?.pressed);
+    const dpadUp = Boolean(gamepad?.buttons?.[12]?.pressed);
+    const dpadDown = Boolean(gamepad?.buttons?.[13]?.pressed);
+    const horizontal = dpadLeft ? -1 : dpadRight ? 1 : axisX <= -threshold ? -1 : axisX >= threshold ? 1 : 0;
+    const vertical = dpadUp ? -1 : dpadDown ? 1 : axisY <= -threshold ? -1 : axisY >= threshold ? 1 : 0;
+
+    if (!horizontal && !vertical) {
+      return null;
+    }
+
+    if (Math.abs(axisX) > Math.abs(axisY) && horizontal) {
+      return { x: horizontal, y: 0 };
+    }
+
+    if (Math.abs(axisY) > Math.abs(axisX) && vertical) {
+      return { x: 0, y: vertical };
+    }
+
+    if (horizontal) {
+      return { x: horizontal, y: 0 };
+    }
+
+    return { x: 0, y: vertical };
+  }
+
+  seedGamepadCursorFromState() {
+    if (!isBattleScreen(this.latestState)) {
+      this.gamepadCursorTile = null;
+      return;
+    }
+
+    const selectedTile = this.latestState.battleSnapshot?.presentation?.selectedTile;
+
+    this.gamepadCursorTile = selectedTile
+      ? { x: selectedTile.x, y: selectedTile.y }
+      : this.gamepadCursorTile;
+  }
+
+  getGamepadCursorTile() {
+    if (!isBattleScreen(this.latestState)) {
+      return null;
+    }
+
+    const snapshot = this.latestState.battleSnapshot;
+
+    if (!this.gamepadCursorTile) {
+      this.seedGamepadCursorFromState();
+    }
+
+    if (!this.gamepadCursorTile) {
+      this.gamepadCursorTile = { x: 0, y: 0 };
+    }
+
+    this.gamepadCursorTile = {
+      x: Phaser.Math.Clamp(this.gamepadCursorTile.x, 0, snapshot.map.width - 1),
+      y: Phaser.Math.Clamp(this.gamepadCursorTile.y, 0, snapshot.map.height - 1)
+    };
+
+    return this.gamepadCursorTile;
+  }
+
+  moveGamepadCursor(deltaX, deltaY) {
+    const tile = this.getGamepadCursorTile();
+
+    if (!tile) {
+      return;
+    }
+
+    const snapshot = this.latestState.battleSnapshot;
+    const nextTile = {
+      x: Phaser.Math.Clamp(tile.x + deltaX, 0, snapshot.map.width - 1),
+      y: Phaser.Math.Clamp(tile.y + deltaY, 0, snapshot.map.height - 1)
+    };
+
+    if (nextTile.x === tile.x && nextTile.y === tile.y) {
+      return;
+    }
+
+    this.gamepadCursorTile = nextTile;
+    this.hoveredTile = nextTile;
+
+    if (this.controller.setBattleHoverTile) {
+      this.controller.setBattleHoverTile(nextTile);
+    } else {
+      this.renderBattle();
+    }
+  }
+
+  runGamepadAction(action) {
+    if (this.gamepadActionBusy) {
+      return;
+    }
+
+    this.gamepadActionBusy = true;
+    Promise.resolve(action()).finally(() => {
+      this.gamepadActionBusy = false;
+    });
   }
 }
