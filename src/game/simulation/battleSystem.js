@@ -1477,7 +1477,8 @@ export class BattleSystem {
 
   collectIncome(side) {
     const commanderBonus = getIncomeBonus(this.state, side);
-    const buildingIncome = getBuildingIncomeForSide(this.state.map.buildings, side);
+    const incomeByType = this.state.economy?.incomeByType;
+    const buildingIncome = getBuildingIncomeForSide(this.state.map.buildings, side, incomeByType);
     const previousFunds = this.state[side].funds;
     const amount = buildingIncome + commanderBonus;
 

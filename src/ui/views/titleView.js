@@ -24,6 +24,7 @@ export function renderTitleView(state) {
         </div>
         <div class="menu-stack">
           <button class="menu-button" data-action="open-new-run">New Run</button>
+          <button class="menu-button" data-action="open-skirmish">Skirmish</button>
           <button class="menu-button" data-action="open-tutorial">Tutorial</button>
           <button class="menu-button" data-action="open-debug-run">Debug Mode</button>
           <button

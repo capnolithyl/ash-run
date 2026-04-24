@@ -31,7 +31,7 @@ function getCommanderStarterSquad(commanderId) {
   }));
 }
 
-function renderCommanderCardBody(commander, unlocked) {
+export function renderCommanderCardBody(commander, unlocked) {
   const infoImageUrl = getCommanderInfoImageUrl(commander.id);
   const starterSquad = getCommanderStarterSquad(commander.id);
   const passiveName = commander.passive.name ?? "Passive";

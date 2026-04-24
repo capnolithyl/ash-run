@@ -1,4 +1,5 @@
 import {
+  ENEMY_STARTING_FUNDS,
   PLAYER_STARTING_FUNDS,
   PROTOTYPE_ROSTER_CAP,
   PROTOTYPE_RUN_GOAL,
@@ -117,6 +118,18 @@ function pickEnemyCommander(seed, commanderId) {
   return pickOne(seed, candidates).value.id;
 }
 
+function createIncomeTable(fundsPerBuilding) {
+  return {
+    sector: fundsPerBuilding,
+    command: fundsPerBuilding,
+    barracks: fundsPerBuilding,
+    "motor-pool": fundsPerBuilding,
+    airfield: fundsPerBuilding,
+    hospital: fundsPerBuilding,
+    "repair-station": fundsPerBuilding
+  };
+}
+
 export function createNewRunState({ slotId, commanderId }) {
   const seed = stringToSeed(`${commanderId}-${slotId}-${Date.now()}`);
   const targetMapCount = PROTOTYPE_RUN_GOAL;
@@ -203,6 +216,68 @@ export function createBattleStateForRun(runState) {
     enemyTurn: null,
     levelUpQueue: [],
     log: openingLog,
+    victory: null
+  };
+}
+
+export function createSkirmishBattleState({
+  mapId,
+  playerCommanderId,
+  enemyCommanderId,
+  startingFunds,
+  fundsPerBuilding
+}) {
+  const mapDefinition = structuredClone(getMapById(mapId) ?? MAP_POOL[0]);
+  const incomeByType = createIncomeTable(fundsPerBuilding);
+  const playerUnits = placeFreshUnits(
+    buildEnemyRoster(playerCommanderId, 1).map((unit) => ({ ...unit, owner: TURN_SIDES.PLAYER })),
+    mapDefinition,
+    mapDefinition.playerSpawns
+  );
+  const enemyUnits = createEnemyBattleRoster(
+    { mapIndex: 0 },
+    mapDefinition,
+    enemyCommanderId
+  );
+
+  return {
+    id: createId("battle"),
+    seed: stringToSeed(`skirmish-${mapDefinition.id}-${playerCommanderId}-${enemyCommanderId}`),
+    difficultyTier: 1,
+    map: mapDefinition,
+    turn: {
+      number: 1,
+      activeSide: TURN_SIDES.PLAYER
+    },
+    player: {
+      commanderId: playerCommanderId,
+      funds:
+        startingFunds + getBuildingIncomeForSide(mapDefinition.buildings, TURN_SIDES.PLAYER, incomeByType),
+      charge: 0,
+      recruitDiscount: 0,
+      units: playerUnits
+    },
+    enemy: {
+      commanderId: enemyCommanderId,
+      funds: ENEMY_STARTING_FUNDS + startingFunds,
+      charge: 0,
+      recruitDiscount: 0,
+      recruitsBuiltThisMap: 0,
+      units: enemyUnits
+    },
+    economy: {
+      incomeByType
+    },
+    selection: {
+      type: null,
+      id: null,
+      x: null,
+      y: null
+    },
+    pendingAction: null,
+    enemyTurn: null,
+    levelUpQueue: [],
+    log: [`Skirmish: ${mapDefinition.name}`],
     victory: null
   };
 }

@@ -106,3 +106,25 @@ test("syncBattleState preserves player focus when enemy focus updates", () => {
   assert.equal(battleUi.playerFocus.id, playerUnit.id);
   assert.equal(battleUi.enemyFocus.id, enemyUnit.id);
 });
+
+test("startSkirmish opens an unsaved battle with configured economy", async () => {
+  const controller = new GameController();
+
+  controller.state.metaState.unlockedCommanderIds = ["atlas", "viper"];
+  controller.updateSkirmishSetup({
+    playerCommanderId: "atlas",
+    enemyCommanderId: "viper",
+    mapId: "ashline-crossing",
+    startingFunds: 2000,
+    fundsPerBuilding: 250
+  });
+
+  await controller.startSkirmish();
+
+  const state = controller.getState();
+  assert.equal(state.screen, SCREEN_IDS.BATTLE);
+  assert.equal(state.runState, null);
+  assert.equal(state.battleSnapshot.player.commanderId, "atlas");
+  assert.equal(state.battleSnapshot.enemy.commanderId, "viper");
+  assert.equal(state.battleSnapshot.economy.incomeByType.sector, 250);
+});

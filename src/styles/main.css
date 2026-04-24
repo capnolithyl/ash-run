@@ -819,6 +819,95 @@ input {
   margin-top: 0.45rem;
 }
 
+.skirmish-panel .panel-footer {
+  margin-top: 1.1rem;
+}
+
+.skirmish-commander-pickers {
+  margin-top: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.skirmish-commander-group h3 {
+  margin: 0 0 0.65rem;
+}
+
+.skirmish-commander-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.skirmish-commander-grid .commander-card {
+  min-height: 11.5rem;
+}
+
+.skirmish-map-layout {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 1rem;
+}
+
+.skirmish-map-list {
+  max-height: 21rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.65rem;
+  padding-right: 0.2rem;
+}
+
+.skirmish-map-preview {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(7, 3, 16, 0.65);
+}
+
+.skirmish-map-preview h3 {
+  margin: 0.45rem 0 0.7rem;
+}
+
+.skirmish-map-preview pre {
+  margin: 0;
+  max-height: 15rem;
+  overflow: auto;
+  padding: 0.8rem;
+  border-radius: 0.6rem;
+  background: rgba(0, 0, 0, 0.36);
+  color: #efecff;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.skirmish-map-legend {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+}
+
+.skirmish-economy-row {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.skirmish-economy-row label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.skirmish-economy-row input {
+  width: 100%;
+  padding: 0.66rem 0.75rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(7, 3, 16, 0.74);
+  color: var(--text);
+}
+
 .commander-card::before {
   content: "";
   position: absolute;

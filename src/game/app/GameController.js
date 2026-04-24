@@ -6,6 +6,8 @@ import {
   BATTLE_POWER_OVERLAY_DISPLAY_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
   SCREEN_IDS,
+  SKIRMISH_DEFAULT_FUNDS_PER_BUILDING,
+  SKIRMISH_DEFAULT_STARTING_FUNDS,
   SLOT_IDS,
   TURN_SIDES,
   getBattleMoveDuration
@@ -16,6 +18,7 @@ import { BattleSystem } from "../simulation/battleSystem.js";
 import {
   applyBattleVictoryToRun,
   createBattleStateForRun,
+  createSkirmishBattleState,
   createNewRunState,
   createSlotRecord,
   isRunComplete
@@ -49,6 +52,20 @@ function createBattleUiState() {
     hoveredTile: null,
     playerFocus: null,
     enemyFocus: null
+  };
+}
+
+function createDefaultSkirmishSetupState(unlockedCommanderIds = []) {
+  const defaultCommanderId = unlockedCommanderIds[0] ?? COMMANDERS[0]?.id ?? null;
+  const defaultEnemyCommanderId =
+    COMMANDERS.find((commander) => commander.id !== defaultCommanderId)?.id ?? defaultCommanderId;
+
+  return {
+    playerCommanderId: defaultCommanderId,
+    enemyCommanderId: defaultEnemyCommanderId,
+    mapId: "ashline-crossing",
+    startingFunds: SKIRMISH_DEFAULT_STARTING_FUNDS,
+    fundsPerBuilding: SKIRMISH_DEFAULT_FUNDS_PER_BUILDING
   };
 }
 
@@ -134,7 +151,8 @@ export class GameController {
       selectedSlotId: SLOT_IDS[0],
       banner: "",
       runStatus: null,
-      battleUi: createBattleUiState()
+      battleUi: createBattleUiState(),
+      skirmishSetup: createDefaultSkirmishSetupState()
     };
   }
 
@@ -164,6 +182,9 @@ export class GameController {
     this.state.slots = await this.storage.listSlots();
     this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
     this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);
+    this.state.skirmishSetup = createDefaultSkirmishSetupState(
+      this.state.metaState.unlockedCommanderIds
+    );
     this.state.ready = true;
     this.emit();
   }
@@ -227,6 +248,14 @@ export class GameController {
     this.emit();
   }
 
+  openSkirmish() {
+    this.state.screen = SCREEN_IDS.SKIRMISH_SETUP;
+    this.state.banner = "";
+    this.state.debugMode = false;
+    this.resetBattleUi();
+    this.emit();
+  }
+
   openTutorial() {
     this.state.screen = SCREEN_IDS.TUTORIAL;
     this.state.banner = "";
@@ -262,6 +291,50 @@ export class GameController {
   selectSlot(slotId) {
     this.state.selectedSlotId = slotId;
     this.emit();
+  }
+
+  updateSkirmishSetup(patch) {
+    const next = {
+      ...this.state.skirmishSetup,
+      ...patch
+    };
+    this.state.skirmishSetup = {
+      ...next,
+      startingFunds: Math.max(0, Number(next.startingFunds ?? 0)),
+      fundsPerBuilding: Math.max(0, Number(next.fundsPerBuilding ?? 0))
+    };
+    this.emit();
+  }
+
+  async startSkirmish() {
+    const {
+      mapId,
+      playerCommanderId,
+      enemyCommanderId,
+      startingFunds,
+      fundsPerBuilding
+    } = this.state.skirmishSetup;
+
+    if (!playerCommanderId || !enemyCommanderId || !mapId) {
+      return;
+    }
+
+    const battleState = createSkirmishBattleState({
+      mapId,
+      playerCommanderId,
+      enemyCommanderId,
+      startingFunds,
+      fundsPerBuilding
+    });
+
+    this.battleSystem = new BattleSystem(battleState);
+    this.state.runState = null;
+    this.state.runStatus = null;
+    this.state.debugMode = false;
+    this.state.banner = "Skirmish mode active: this battle does not save run progress.";
+    this.state.screen = SCREEN_IDS.BATTLE;
+    this.resetBattleUi();
+    this.syncBattleState();
   }
 
   async startNewRun() {

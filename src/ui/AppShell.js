@@ -9,6 +9,7 @@ import { renderCommanderSelectView } from "./views/commanderSelectView.js";
 import { titleCaseSlot } from "./formatters.js";
 import { renderOptionsView } from "./views/optionsView.js";
 import { renderSaveSlotView } from "./views/saveSlotView.js";
+import { renderSkirmishSetupView } from "./views/skirmishSetupView.js";
 import { renderTitleView } from "./views/titleView.js";
 import { renderTutorialView } from "./views/tutorialView.js";
 
@@ -99,6 +100,11 @@ export class AppShell {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderOptionsView(state);
+        return;
+      case SCREEN_IDS.SKIRMISH_SETUP:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
+        this.root.innerHTML = renderSkirmishSetupView(state);
         return;
       case SCREEN_IDS.TUTORIAL:
         this.resetBattleUiTimers();
@@ -623,6 +629,9 @@ export class AppShell {
       case "open-continue":
         this.controller.openContinue();
         break;
+      case "open-skirmish":
+        this.controller.openSkirmish();
+        break;
       case "open-tutorial":
         this.controller.openTutorial();
         break;
@@ -676,6 +685,18 @@ export class AppShell {
         break;
       case "start-run":
         await this.controller.startNewRun();
+        break;
+      case "select-skirmish-player-commander":
+        this.controller.updateSkirmishSetup({ playerCommanderId: commanderId });
+        break;
+      case "select-skirmish-enemy-commander":
+        this.controller.updateSkirmishSetup({ enemyCommanderId: commanderId });
+        break;
+      case "select-skirmish-map":
+        this.controller.updateSkirmishSetup({ mapId: trigger.dataset.mapId });
+        break;
+      case "start-skirmish":
+        await this.controller.startSkirmish();
         break;
       case "load-slot":
         await this.controller.loadSlot(slotId);
@@ -786,6 +807,15 @@ export class AppShell {
   }
 
   async handleChange(event) {
+    const skirmishField = event.target.dataset.skirmishField;
+
+    if (skirmishField) {
+      await this.controller.updateSkirmishSetup({
+        [skirmishField]: Number(event.target.value)
+      });
+      return;
+    }
+
     const optionKey = event.target.dataset.option;
 
     if (!optionKey) {
