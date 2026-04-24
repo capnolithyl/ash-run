@@ -38,6 +38,8 @@ test("commander select renders carousel controls and a reachable deployment acti
   assert.match(html, /class="commander-slider__icon" aria-hidden="true">&larr;<\/span>/);
   assert.match(html, /class="commander-slider__icon" aria-hidden="true">&rarr;<\/span>/);
   assert.match(html, /commander-card__hover-overlay/);
+  assert.match(html, /aria-disabled="true"/);
+  assert.match(html, /tabindex="-1"/);
   assert.match(html, /Starting Squad/);
   assert.match(html, /Field Repairs/);
   assert.match(html, /Blitz Surge/);

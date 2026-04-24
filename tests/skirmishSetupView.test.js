@@ -23,7 +23,13 @@ test("skirmish setup renders commander picks, map list, preview, and economy con
   assert.match(html, /data-action="select-skirmish-enemy-commander"/);
   assert.match(html, /Map Preview/);
   assert.match(html, /data-action="select-skirmish-map"/);
+  assert.match(html, /class="skirmish-map-option skirmish-map-option--active"/);
+  assert.match(html, /class="skirmish-map-grid"/);
+  assert.match(html, /class="skirmish-map-tile skirmish-map-tile--/);
+  assert.doesNotMatch(html, /Â|â|Ã/);
   assert.match(html, /data-skirmish-field="startingFunds"/);
   assert.match(html, /data-skirmish-field="fundsPerBuilding"/);
+  assert.match(html, /type="range"/);
+  assert.match(html, /data-skirmish-output="startingFunds">1200/);
   assert.match(html, /data-action="start-skirmish"/);
 });

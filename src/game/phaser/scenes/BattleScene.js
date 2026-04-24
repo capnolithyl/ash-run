@@ -739,6 +739,13 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
+    if (this.shouldDeferGamepadToDom()) {
+      this.syncGamepadButtonState(gamepad);
+      this.gamepadMoveDirection = null;
+      this.gamepadNextMoveAt = 0;
+      return;
+    }
+
     const pauseMenuOpen = this.latestState?.battleUi?.pauseMenuOpen === true;
 
     if (this.consumeGamepadButtonPress(gamepad, 9)) {
@@ -800,11 +807,29 @@ export class BattleScene extends Phaser.Scene {
     return gamepads.find((gamepad) => gamepad?.connected) ?? null;
   }
 
+  shouldDeferGamepadToDom() {
+    if (typeof document === "undefined") {
+      return false;
+    }
+
+    return Boolean(
+      document.querySelector(
+        "#ui-root .is-controller-focused, #ui-root .battle-command-prompt, #ui-root .battle-overlay"
+      )
+    );
+  }
+
   consumeGamepadButtonPress(gamepad, buttonIndex) {
     const pressed = Boolean(gamepad?.buttons?.[buttonIndex]?.pressed);
     const previous = this.gamepadButtonState.get(buttonIndex) === true;
     this.gamepadButtonState.set(buttonIndex, pressed);
     return pressed && !previous;
+  }
+
+  syncGamepadButtonState(gamepad) {
+    for (const buttonIndex of [0, 1, 4, 5, 9]) {
+      this.gamepadButtonState.set(buttonIndex, Boolean(gamepad?.buttons?.[buttonIndex]?.pressed));
+    }
   }
 
   getGamepadMoveDirection(gamepad) {

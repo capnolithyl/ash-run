@@ -106,3 +106,10 @@ Set `ASH_RUN_84_DEV_PORT` before `yarn dev` when port `5173` is already taken.
 - Rewards/meta loop exists as structure, but content depth is intentionally light.
 - Audio is not implemented yet, so the options menu only exposes live visual/gameplay toggles.
 - Visuals use first-pass SVG sprites and code-rendered effects; final art, animation, and audio polish are still future work.
+
+## Steam Release Planning
+
+The project has initial Electron packaging support, but it is **not fully Steam-release ready yet**.
+
+- See `docs/planning/steam-release.md` for a concrete readiness checklist and an achievement-integration approach.
+

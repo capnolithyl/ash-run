@@ -3,13 +3,44 @@ import { COMMANDERS } from "../../game/content/commanders.js";
 import { renderCommanderCardBody } from "./commanderSelectView.js";
 
 const TERRAIN_PREVIEW_KEYS = {
-  plain: "·",
-  road: "═",
-  forest: "▦",
-  mountain: "▲",
+  plain: ".",
+  road: "=",
+  forest: "F",
+  mountain: "^",
   water: "~",
-  ridge: "▮"
+  ridge: "#"
 };
+
+const ECONOMY_CONTROLS = {
+  startingFunds: {
+    label: "Starting Funds",
+    min: 0,
+    max: 5000,
+    step: 100
+  },
+  fundsPerBuilding: {
+    label: "Funds Per Building",
+    min: 0,
+    max: 500,
+    step: 50
+  }
+};
+
+function getBuildingPreviewOwner(building) {
+  if (building?.owner === "player") {
+    return "player";
+  }
+
+  if (building?.owner === "enemy") {
+    return "enemy";
+  }
+
+  if (building?.owner === "neutral") {
+    return "neutral";
+  }
+
+  return null;
+}
 
 function renderMapPreview(mapDefinition) {
   if (!mapDefinition) {
@@ -20,29 +51,57 @@ function renderMapPreview(mapDefinition) {
     mapDefinition.buildings.map((building) => [`${building.x},${building.y}`, building])
   );
 
-  return mapDefinition.tiles
+  const tiles = mapDefinition.tiles
     .map((row, y) =>
       row
         .map((tileKey, x) => {
           const building = buildingLookup.get(`${x},${y}`);
+          const owner = getBuildingPreviewOwner(building);
+          const terrainKey = TERRAIN_PREVIEW_KEYS[tileKey] ? tileKey : "plain";
+          const marker = owner ? owner[0].toUpperCase() : TERRAIN_PREVIEW_KEYS[tileKey] ?? ".";
 
-          if (building?.owner === "player") {
-            return "P";
-          }
-
-          if (building?.owner === "enemy") {
-            return "E";
-          }
-
-          if (building?.owner === "neutral") {
-            return "N";
-          }
-
-          return TERRAIN_PREVIEW_KEYS[tileKey] ?? "·";
+          return `
+            <span
+              class="skirmish-map-tile skirmish-map-tile--${terrainKey} ${owner ? `skirmish-map-tile--${owner}` : ""}"
+              aria-label="${owner ? `${owner} building` : tileKey}"
+            >${marker}</span>
+          `;
         })
         .join("")
     )
-    .join("\n");
+    .join("");
+
+  return `
+    <div
+      class="skirmish-map-grid"
+      style="--map-columns:${mapDefinition.width}; --map-rows:${mapDefinition.height};"
+      role="img"
+      aria-label="${mapDefinition.name} layout preview"
+    >
+      ${tiles}
+    </div>
+  `;
+}
+
+function renderEconomyControl(field, value) {
+  const control = ECONOMY_CONTROLS[field];
+
+  return `
+    <label class="skirmish-economy-control">
+      <span class="skirmish-economy-control__header">
+        <span>${control.label}</span>
+        <strong data-skirmish-output="${field}">${value}</strong>
+      </span>
+      <input
+        type="range"
+        min="${control.min}"
+        max="${control.max}"
+        step="${control.step}"
+        data-skirmish-field="${field}"
+        value="${value}"
+      />
+    </label>
+  `;
 }
 
 function renderCommanderPicker(state, side, title, commanders, selectedId) {
@@ -109,11 +168,18 @@ export function renderSkirmishSetupView(state) {
         <div class="skirmish-map-layout">
           <div class="skirmish-map-list" role="listbox" aria-label="Skirmish map list">
             ${MAP_POOL.map((mapDefinition) => {
-              const selected = mapDefinition.id === state.skirmishSetup.mapId ? "slot-card--active" : "";
+              const isSelected = mapDefinition.id === state.skirmishSetup.mapId;
+              const selected = isSelected ? "skirmish-map-option--active" : "";
               return `
-                <button class="slot-card ${selected}" data-action="select-skirmish-map" data-map-id="${mapDefinition.id}">
+                <button
+                  class="skirmish-map-option ${selected}"
+                  data-action="select-skirmish-map"
+                  data-map-id="${mapDefinition.id}"
+                  role="option"
+                  aria-selected="${isSelected ? "true" : "false"}"
+                >
                   <span>${mapDefinition.name}</span>
-                  <small>${mapDefinition.width}×${mapDefinition.height}</small>
+                  <small>${mapDefinition.width}x${mapDefinition.height}</small>
                 </button>
               `;
             }).join("")}
@@ -121,32 +187,14 @@ export function renderSkirmishSetupView(state) {
           <div class="skirmish-map-preview">
             <p class="eyebrow">Map Preview</p>
             <h3>${selectedMap.name}</h3>
-            <pre>${renderMapPreview(selectedMap)}</pre>
+            ${renderMapPreview(selectedMap)}
             <p class="skirmish-map-legend">P/E/N = player/enemy/neutral buildings.</p>
           </div>
         </div>
 
         <div class="skirmish-economy-row">
-          <label>
-            <span>Starting Funds</span>
-            <input
-              type="number"
-              min="0"
-              step="100"
-              data-skirmish-field="startingFunds"
-              value="${state.skirmishSetup.startingFunds}"
-            />
-          </label>
-          <label>
-            <span>Funds Per Building</span>
-            <input
-              type="number"
-              min="0"
-              step="50"
-              data-skirmish-field="fundsPerBuilding"
-              value="${state.skirmishSetup.fundsPerBuilding}"
-            />
-          </label>
+          ${renderEconomyControl("startingFunds", state.skirmishSetup.startingFunds)}
+          ${renderEconomyControl("fundsPerBuilding", state.skirmishSetup.fundsPerBuilding)}
         </div>
 
         <div class="panel-footer">

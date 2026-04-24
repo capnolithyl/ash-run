@@ -177,8 +177,9 @@ export function renderCommanderSelectView(state) {
                     data-commander-id="${commander.id}"
                     data-slide-index="${realIndex}"
                     data-copy-index="${copyIndex}"
+                    aria-disabled="${unlocked ? "false" : "true"}"
                     aria-label="${commander.name}, ${commander.title}, ${unlocked ? "ready" : "locked"}"
-                    ${unlocked ? "" : "disabled"}
+                    ${unlocked ? "" : 'tabindex="-1"'}
                   >
                     ${renderCommanderCardBody(commander, unlocked)}
                   </button>
