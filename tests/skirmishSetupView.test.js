@@ -29,8 +29,10 @@ test("skirmish setup renders commander selection as the first step", () => {
   assert.match(html, /data-action="select-skirmish-enemy-commander"/);
   assert.match(html, /data-action="scroll-skirmish-commanders"/);
   assert.match(html, /commander-slider--skirmish/);
-  assert.match(html, /data-role="skirmish-commander-slider"/);
-  assert.match(html, /class="commander-slider__track"/);
+  assert.match(html, /data-role="commander-slider"/);
+  assert.match(html, /data-commander-slider-id="skirmish-player"/);
+  assert.match(html, /data-role="commander-slider-track"/);
+  assert.match(html, /data-slider-copy-count="3"/);
   assert.match(html, /data-action="skirmish-next-step"/);
   assert.doesNotMatch(html, /Map Preview/);
 });

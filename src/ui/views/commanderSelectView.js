@@ -158,10 +158,12 @@ export function renderCommanderSelectView(state) {
           <div
             class="commander-grid"
             data-role="commander-slider"
+            data-commander-slider-id="new-run"
           >
             <div
               class="commander-slider__track"
               data-role="commander-slider-track"
+              data-commander-slider-id="new-run"
               data-slider-copy-count="${COMMANDER_SLIDER_COPY_COUNT}"
               data-slider-home-copy-index="${COMMANDER_SLIDER_HOME_COPY_INDEX}"
             >

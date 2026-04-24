@@ -65,6 +65,7 @@ export class AppShell {
     this.root = root;
     this.controller = controller;
     this.latestState = null;
+    this.commanderSliderStates = new Map();
     this.commanderSliderTrackIndex = null;
     this.commanderSliderTransitioning = false;
     this.commanderSliderSwipeState = null;
@@ -148,6 +149,7 @@ export class AppShell {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderSkirmishSetupView(state);
+        this.syncCommanderSliders(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.TUTORIAL:
@@ -214,6 +216,7 @@ export class AppShell {
   }
 
   resetCommanderSliderState() {
+    this.commanderSliderStates.clear();
     this.commanderSliderTrackIndex = null;
     this.commanderSliderTransitioning = false;
     this.commanderSliderSwipeState = null;
@@ -482,33 +485,34 @@ export class AppShell {
   }
 
   scrollCommanderSlider(direction) {
-    const metrics = this.getCommanderSliderMetrics();
+    this.scrollCommanderSliderById("new-run", direction);
+  }
+
+  scrollCommanderSliderById(sliderId, direction) {
+    const metrics = this.getCommanderSliderMetrics(sliderId);
+    const sliderState = this.getCommanderSliderState(metrics?.id);
 
     if (!metrics || !metrics.realCount) {
       return;
     }
 
-    if (this.commanderSliderTransitioning) {
+    if (sliderState.transitioning) {
       return;
     }
 
-    if (!Number.isInteger(this.commanderSliderTrackIndex)) {
-      this.commanderSliderTrackIndex = metrics.homeStartIndex;
+    if (!Number.isInteger(sliderState.trackIndex)) {
+      sliderState.trackIndex = metrics.homeStartIndex;
     }
 
-    this.commanderSliderTrackIndex += direction;
-    this.commanderSliderTransitioning = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
-      animate: this.commanderSliderTransitioning
+    sliderState.trackIndex += direction;
+    sliderState.transitioning = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    this.setCommanderSliderTrackPosition(metrics, sliderState.trackIndex, {
+      animate: sliderState.transitioning
     });
   }
 
   handlePointerDown(event) {
     this.useMouseInputMode(event);
-
-    if (this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT) {
-      return;
-    }
 
     if (event.button !== 0) {
       return;
@@ -521,13 +525,13 @@ export class AppShell {
     }
 
     this.commanderSliderSwipeState = {
+      slider,
+      sliderId: this.getCommanderSliderId(slider),
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       swiped: false
     };
-
-    slider.setPointerCapture?.(event.pointerId);
   }
 
   handlePointerMove(event) {
@@ -547,7 +551,8 @@ export class AppShell {
     }
 
     swipeState.swiped = true;
-    this.scrollCommanderSlider(deltaX > 0 ? -1 : 1);
+    swipeState.slider?.setPointerCapture?.(event.pointerId);
+    this.scrollCommanderSliderById(swipeState.sliderId, deltaX > 0 ? -1 : 1);
     if (event.cancelable) {
       event.preventDefault();
     }
@@ -555,6 +560,7 @@ export class AppShell {
 
   handlePointerUp(event) {
     if (this.commanderSliderSwipeState?.pointerId === event.pointerId) {
+      this.releaseCommanderSliderPointerCapture(this.commanderSliderSwipeState, event.pointerId);
       if (this.commanderSliderSwipeState.swiped) {
         this.commanderSliderSuppressClick = true;
         window.setTimeout(() => {
@@ -567,8 +573,17 @@ export class AppShell {
 
   handlePointerCancel(event) {
     if (this.commanderSliderSwipeState?.pointerId === event.pointerId) {
+      this.releaseCommanderSliderPointerCapture(this.commanderSliderSwipeState, event.pointerId);
       this.commanderSliderSwipeState = null;
     }
+  }
+
+  releaseCommanderSliderPointerCapture(swipeState, pointerId) {
+    if (!swipeState?.slider?.hasPointerCapture?.(pointerId)) {
+      return;
+    }
+
+    swipeState.slider.releasePointerCapture?.(pointerId);
   }
 
   useMouseInputMode(event) {
@@ -599,11 +614,14 @@ export class AppShell {
   }
 
   handleResize() {
-    if (this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT) {
+    if (
+      this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT &&
+      this.latestState?.screen !== SCREEN_IDS.SKIRMISH_SETUP
+    ) {
       return;
     }
 
-    this.syncCommanderSlider(this.latestState, { forceCurrentIndex: true, behavior: "auto" });
+    this.syncCommanderSliders(this.latestState, { forceCurrentIndex: true, behavior: "auto" });
   }
 
   pollGamepadInput(time) {
@@ -852,13 +870,6 @@ export class AppShell {
       return rect.right > viewportRect.left && rect.left < viewportRect.right;
     }
 
-    const skirmishCommanderViewport = element.closest('[data-role="skirmish-commander-slider"]');
-
-    if (skirmishCommanderViewport) {
-      const viewportRect = skirmishCommanderViewport.getBoundingClientRect();
-      return rect.right > viewportRect.left && rect.left < viewportRect.right;
-    }
-
     return true;
   }
 
@@ -1088,30 +1099,42 @@ export class AppShell {
   }
 
   syncCommanderSlider(state, options = {}) {
-    const metrics = this.getCommanderSliderMetrics();
+    this.syncCommanderSliderById("new-run", state, options);
+  }
+
+  syncCommanderSliders(state, options = {}) {
+    for (const viewport of this.root.querySelectorAll('[data-role="commander-slider"]')) {
+      this.syncCommanderSliderById(this.getCommanderSliderId(viewport), state, options);
+    }
+  }
+
+  syncCommanderSliderById(sliderId, state, options = {}) {
+    const metrics = this.getCommanderSliderMetrics(sliderId);
+    const sliderState = this.getCommanderSliderState(metrics?.id);
 
     if (!metrics || !metrics.realCount) {
       return;
     }
 
+    const selectedCommanderId = this.getSelectedCommanderIdForSlider(metrics.id, state);
     const selectedIndex = metrics.realSlides.findIndex(
-      (card) => card.dataset.commanderId === state.selectedCommanderId
+      (card) => card.dataset.commanderId === selectedCommanderId
     );
     const fallbackIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
-    if (!Number.isInteger(this.commanderSliderTrackIndex) || options.forceCurrentIndex) {
-      const normalizedIndex = Number.isInteger(this.commanderSliderTrackIndex)
-        ? normalizeLoopedIndex(this.commanderSliderTrackIndex - metrics.homeStartIndex, metrics.realCount)
+    if (!Number.isInteger(sliderState.trackIndex) || options.forceCurrentIndex) {
+      const normalizedIndex = Number.isInteger(sliderState.trackIndex)
+        ? normalizeLoopedIndex(sliderState.trackIndex - metrics.homeStartIndex, metrics.realCount)
         : fallbackIndex;
-      this.commanderSliderTrackIndex = metrics.homeStartIndex + normalizedIndex;
-      this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+      sliderState.trackIndex = metrics.homeStartIndex + normalizedIndex;
+      this.setCommanderSliderTrackPosition(metrics, sliderState.trackIndex, {
         animate: options.behavior === "smooth"
       });
       return;
     }
 
     const currentStartIndex = normalizeLoopedIndex(
-      this.commanderSliderTrackIndex - metrics.homeStartIndex,
+      sliderState.trackIndex - metrics.homeStartIndex,
       metrics.realCount
     );
     const visibleIndices = new Set(
@@ -1119,16 +1142,43 @@ export class AppShell {
     );
 
     if (selectedIndex >= 0 && !visibleIndices.has(selectedIndex)) {
-      this.commanderSliderTrackIndex = metrics.homeStartIndex + selectedIndex;
-      this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+      sliderState.trackIndex = metrics.homeStartIndex + selectedIndex;
+      this.setCommanderSliderTrackPosition(metrics, sliderState.trackIndex, {
         animate: options.behavior === "smooth"
       });
       return;
     }
 
-    this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+    this.setCommanderSliderTrackPosition(metrics, sliderState.trackIndex, {
       animate: false
     });
+  }
+
+  getSelectedCommanderIdForSlider(sliderId, state) {
+    if (sliderId === "skirmish-player") {
+      return state.skirmishSetup?.playerCommanderId;
+    }
+
+    if (sliderId === "skirmish-enemy") {
+      return state.skirmishSetup?.enemyCommanderId;
+    }
+
+    return state.selectedCommanderId;
+  }
+
+  getCommanderSliderState(sliderId = "new-run") {
+    if (!this.commanderSliderStates.has(sliderId)) {
+      this.commanderSliderStates.set(sliderId, {
+        trackIndex: null,
+        transitioning: false
+      });
+    }
+
+    return this.commanderSliderStates.get(sliderId);
+  }
+
+  getCommanderSliderId(element) {
+    return element?.dataset?.commanderSliderId || "new-run";
   }
 
   getCommanderSliderVisibleCount(slider) {
@@ -1137,9 +1187,13 @@ export class AppShell {
     return Number.isFinite(rawValue) && rawValue > 0 ? rawValue : 1;
   }
 
-  getCommanderSliderMetrics() {
-    const viewport = this.root.querySelector('[data-role="commander-slider"]');
-    const track = this.root.querySelector('[data-role="commander-slider-track"]');
+  getCommanderSliderMetrics(sliderId = "new-run") {
+    const viewport = Array.from(this.root.querySelectorAll('[data-role="commander-slider"]')).find(
+      (candidate) => this.getCommanderSliderId(candidate) === sliderId
+    );
+    const track = Array.from(this.root.querySelectorAll('[data-role="commander-slider-track"]')).find(
+      (candidate) => this.getCommanderSliderId(candidate) === sliderId
+    );
 
     if (!viewport || !track) {
       return null;
@@ -1157,6 +1211,7 @@ export class AppShell {
     const slideWidth = firstCard?.getBoundingClientRect().width ?? 0;
 
     return {
+      id: sliderId,
       viewport,
       track,
       cards,
@@ -1183,12 +1238,15 @@ export class AppShell {
     if (useInstantPositioning) {
       void metrics.track.getBoundingClientRect();
       metrics.track.classList.remove("commander-slider__track--instant");
-      this.commanderSliderTransitioning = false;
+      this.getCommanderSliderState(metrics.id).transitioning = false;
     }
   }
 
   handleTransitionEnd(event) {
-    if (this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT) {
+    if (
+      this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT &&
+      this.latestState?.screen !== SCREEN_IDS.SKIRMISH_SETUP
+    ) {
       return;
     }
 
@@ -1198,10 +1256,13 @@ export class AppShell {
       return;
     }
 
-    const metrics = this.getCommanderSliderMetrics();
+    const metrics = this.getCommanderSliderMetrics(this.getCommanderSliderId(track));
+    const sliderState = this.getCommanderSliderState(metrics?.id);
 
-    if (!metrics || !Number.isInteger(this.commanderSliderTrackIndex)) {
-      this.commanderSliderTransitioning = false;
+    if (!metrics || !Number.isInteger(sliderState.trackIndex)) {
+      if (metrics) {
+        sliderState.transitioning = false;
+      }
       return;
     }
 
@@ -1209,19 +1270,19 @@ export class AppShell {
     const maximumHomeIndex = metrics.homeStartIndex + metrics.realCount - 1;
 
     if (
-      this.commanderSliderTrackIndex >= minimumHomeIndex &&
-      this.commanderSliderTrackIndex <= maximumHomeIndex
+      sliderState.trackIndex >= minimumHomeIndex &&
+      sliderState.trackIndex <= maximumHomeIndex
     ) {
-      this.commanderSliderTransitioning = false;
+      sliderState.transitioning = false;
       return;
     }
 
     const normalizedIndex = normalizeLoopedIndex(
-      this.commanderSliderTrackIndex - metrics.homeStartIndex,
+      sliderState.trackIndex - metrics.homeStartIndex,
       metrics.realCount
     );
-    this.commanderSliderTrackIndex = metrics.homeStartIndex + normalizedIndex;
-    this.setCommanderSliderTrackPosition(metrics, this.commanderSliderTrackIndex, {
+    sliderState.trackIndex = metrics.homeStartIndex + normalizedIndex;
+    this.setCommanderSliderTrackPosition(metrics, sliderState.trackIndex, {
       animate: false
     });
   }
@@ -1317,8 +1378,8 @@ export class AppShell {
         this.scrollCommanderSlider(1);
         break;
       case "scroll-skirmish-commanders":
-        this.scrollSkirmishCommanderPicker(
-          trigger.dataset.skirmishSide,
+        this.scrollCommanderSliderById(
+          trigger.dataset.commanderSliderId,
           Number(trigger.dataset.skirmishDirection)
         );
         break;
@@ -1329,12 +1390,28 @@ export class AppShell {
         await this.controller.startNewRun();
         break;
       case "select-skirmish-player-commander":
+        if (
+          this.commanderSliderSuppressClick &&
+          trigger.closest('[data-role="commander-slider"]')
+        ) {
+          this.commanderSliderSuppressClick = false;
+          event.preventDefault();
+          return;
+        }
         if (trigger.getAttribute("aria-disabled") === "true") {
           return;
         }
         this.controller.updateSkirmishSetup({ playerCommanderId: commanderId });
         break;
       case "select-skirmish-enemy-commander":
+        if (
+          this.commanderSliderSuppressClick &&
+          trigger.closest('[data-role="commander-slider"]')
+        ) {
+          this.commanderSliderSuppressClick = false;
+          event.preventDefault();
+          return;
+        }
         this.controller.updateSkirmishSetup({ enemyCommanderId: commanderId });
         break;
       case "select-skirmish-map":
@@ -1495,28 +1572,4 @@ export class AppShell {
     }
   }
 
-  scrollSkirmishCommanderPicker(side, direction) {
-    if (!side || !direction) {
-      return;
-    }
-
-    const viewport = this.root.querySelector(
-      `[data-role="skirmish-commander-slider"][data-skirmish-side="${side}"]`
-    );
-
-    if (!viewport) {
-      return;
-    }
-
-    const card = viewport.querySelector(".commander-card");
-    const styles = window.getComputedStyle(viewport.querySelector(".commander-slider__track") ?? viewport);
-    const gap = Number.parseFloat(styles.columnGap || styles.gap || "0") || 0;
-    const cardWidth = card?.getBoundingClientRect().width ?? viewport.clientWidth;
-    const scrollAmount = Math.max(cardWidth + gap, viewport.clientWidth * 0.85);
-
-    viewport.scrollBy({
-      left: scrollAmount * Math.sign(direction),
-      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-    });
-  }
 }

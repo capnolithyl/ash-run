@@ -106,6 +106,7 @@ function renderEconomyControl(field, value) {
 function renderCommanderPicker(state, side, title, selectedId) {
   const action = side === "player" ? "select-skirmish-player-commander" : "select-skirmish-enemy-commander";
   const commanderSliderEntries = getCommanderSliderEntries();
+  const sliderId = `skirmish-${side}`;
 
   return `
     <section class="skirmish-commander-group">
@@ -115,6 +116,7 @@ function renderCommanderPicker(state, side, title, selectedId) {
           class="ghost-button ghost-button--small commander-slider__control commander-slider__control--prev"
           data-action="scroll-skirmish-commanders"
           data-skirmish-side="${side}"
+          data-commander-slider-id="${sliderId}"
           data-skirmish-direction="-1"
           aria-label="Previous ${title.toLowerCase()} choices"
         >
@@ -122,10 +124,17 @@ function renderCommanderPicker(state, side, title, selectedId) {
         </button>
         <div
           class="commander-grid"
-          data-role="skirmish-commander-slider"
+          data-role="commander-slider"
           data-skirmish-side="${side}"
+          data-commander-slider-id="${sliderId}"
         >
-          <div class="commander-slider__track">
+          <div
+            class="commander-slider__track"
+            data-role="commander-slider-track"
+            data-commander-slider-id="${sliderId}"
+            data-slider-copy-count="3"
+            data-slider-home-copy-index="1"
+          >
             ${commanderSliderEntries
               .map(({ commander, realIndex, copyIndex }) => {
               const selected = selectedId === commander.id ? "commander-card--selected" : "";
@@ -154,6 +163,7 @@ function renderCommanderPicker(state, side, title, selectedId) {
           class="ghost-button ghost-button--small commander-slider__control commander-slider__control--next"
           data-action="scroll-skirmish-commanders"
           data-skirmish-side="${side}"
+          data-commander-slider-id="${sliderId}"
           data-skirmish-direction="1"
           aria-label="Next ${title.toLowerCase()} choices"
         >

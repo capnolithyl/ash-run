@@ -17,36 +17,45 @@ export function renderTitleView(state) {
         <div class="title-scene__mountains title-scene__mountains--near"></div>
         <div class="title-scene__grid"></div>
       </div>
-      <section class="hero-card">
+      <section class="title-menu-shell" aria-labelledby="title-screen-heading">
         <div class="hero-logo" aria-label="Ash Run '84 logo">
           <div class="hero-logo__sun" aria-hidden="true"></div>
-          <h1 class="hero-logo__title">ASH RUN '84</h1>
+          <h1 class="hero-logo__title" id="title-screen-heading">ASH RUN '84</h1>
         </div>
-        <div class="menu-stack">
-          <button class="menu-button" data-action="open-new-run">New Run</button>
-          <button class="menu-button" data-action="open-skirmish">Skirmish</button>
-          <button class="menu-button" data-action="open-tutorial">Tutorial</button>
-          <button class="menu-button" data-action="open-debug-run">Debug Mode</button>
+        <nav class="title-mode-cluster" aria-label="Main menu">
+          <button class="menu-button hex-button hex-button--primary hex-button--new-run" data-action="open-new-run">
+            <span>New Run</span>
+          </button>
           <button
-            class="menu-button"
+            class="menu-button hex-button hex-button--continue"
             data-action="open-continue"
             ${hasContinue ? "" : "disabled"}
           >
-            Continue
+            <span>Continue</span>
           </button>
-          <button class="menu-button" data-action="open-options">Options</button>
-          <button class="menu-button menu-button--danger" data-action="quit-game">
-            Return To Windows
+          <button class="menu-button hex-button hex-button--skirmish" data-action="open-skirmish">
+            <span>Skirmish</span>
           </button>
-        </div>
+          <button class="menu-button hex-button hex-button--tutorial" data-action="open-tutorial">
+            <span>Tutorial</span>
+          </button>
+          <button class="menu-button hex-button hex-button--debug" data-action="open-debug-run">
+            <span>Debug</span>
+          </button>
+        </nav>
         <div class="title-run-stats">
           <p class="eyebrow">LTC Records</p>
           <p><strong>Latest Clear:</strong> ${formatTurnCount(latestClearTurnCount)}</p>
           <p><strong>Best Clear:</strong> ${formatTurnCount(bestClearTurnCount)}</p>
         </div>
-        <p class="footer-note">
-          Prototype goal: clear 10 maps in a row. Locked commanders remain in the enemy pool until unlocked.
-        </p>
+        <nav class="title-bottom-bar" aria-label="Game utilities">
+          <button class="menu-button hex-button hex-button--utility" data-action="open-options">
+            <span>Options</span>
+          </button>
+          <button class="menu-button hex-button hex-button--utility hex-button--danger" data-action="quit-game">
+            <span>Exit</span>
+          </button>
+        </nav>
       </section>
     </div>
   `;
