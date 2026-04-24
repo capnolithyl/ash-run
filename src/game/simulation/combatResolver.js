@@ -3,6 +3,7 @@ import { randomInt } from "../core/random.js";
 import {
   getArmorModifier,
   getAttackModifier,
+  getLuckModifier,
   getRangeModifier
 } from "./commanderEffects.js";
 import { getXpThreshold } from "./progression.js";
@@ -45,6 +46,21 @@ function getBuildingArmorBonus(state, unit) {
   return 3;
 }
 
+function getArmorBreakMultiplier(unit) {
+  return unit.statuses?.some((status) => status.type === "armor-break") ? 0.5 : 1;
+}
+
+export function getDefenderArmor(state, defender) {
+  const baseArmor = Math.floor(defender.stats.armor * getArmorBreakMultiplier(defender));
+
+  return (
+    baseArmor +
+    getArmorModifier(state, defender) +
+    getTerrainArmorBonus(state, defender) +
+    getBuildingArmorBonus(state, defender)
+  );
+}
+
 export function getElevationRangeBonus(state, unit) {
   if (unit.unitTypeId !== "longshot") {
     return 0;
@@ -82,17 +98,11 @@ export function getTargetsForUnit(state, unit) {
 
 export function getDamageResult(state, attacker, defender, attackProfile = getUnitAttackProfile(attacker)) {
   const attackerAttack = attackProfile.attack + getAttackModifier(state, attacker);
-  const armorBreakStatus = defender.statuses?.find((status) => status.type === "armor-break");
-  const armorMultiplier = armorBreakStatus ? 0.5 : 1;
-  const defenderArmor =
-    Math.floor(defender.stats.armor * armorMultiplier) +
-    getArmorModifier(state, defender) +
-    getTerrainArmorBonus(state, defender) +
-    getBuildingArmorBonus(state, defender);
+  const defenderArmor = getDefenderArmor(state, defender);
   const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
 
-  const attackRoll = randomInt(state.seed, 0, attacker.stats.luck);
+  const attackRoll = randomInt(state.seed, 0, Math.max(0, attacker.stats.luck + getLuckModifier(state, attacker)));
   state.seed = attackRoll.seed;
 
   const baseAttack = isEffective
@@ -132,12 +142,12 @@ function getDamageRange(
   attackProfile = getUnitAttackProfile(attacker)
 ) {
   const attackerAttack = attackProfile.attack + getAttackModifier(state, attacker);
-  const defenderArmor = defender.stats.armor + getArmorModifier(state, defender);
+  const defenderArmor = getDefenderArmor(state, defender);
   const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
   const normalizedHpMin = Math.max(0, Math.min(hpMin, hpMax));
   const normalizedHpMax = Math.max(0, Math.max(hpMin, hpMax));
   const luckMin = 0;
-  const luckMax = Math.max(0, attacker.stats.luck);
+  const luckMax = Math.max(0, attacker.stats.luck + getLuckModifier(state, attacker));
 
   return {
     min: getDamageAmount(

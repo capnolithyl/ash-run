@@ -35,7 +35,11 @@
 
 - `src/game/content` owns static gameplay data: maps, terrain, buildings, commanders, and unit catalog entries.
 - `src/game/state/runFactory.js` assembles runs and battles, delegating roster templates, deployment placement, and enemy scaling to focused state modules.
-- `src/game/simulation/battleSystem.js` is the battle orchestrator: it owns turn flow, player commands, recruitment hooks, and victory checks.
+- `src/game/simulation/battleSystem.js` is the battle facade: it owns battle state, snapshots, selection helpers, and stable public method names while delegating rules to focused modules.
+- `src/game/simulation/playerActions.js` owns player-facing commands such as movement, attacks, capture, support, transport prompts, recruitment, and commander activation.
+- `src/game/simulation/turnFlow.js` owns turn lifecycle, income, action refresh, temporary status expiration, enemy turn stepping, enemy end-turn recruitment, and victory checks.
+- `src/game/simulation/transportRules.js` owns Runner load/unload validation and cargo position rules.
+- `src/game/simulation/debugActions.js` owns debug-only spawning, stat patching, charge, and action refresh tools.
 - `src/game/simulation/combatResolver.js` owns attack range, damage resolution, counter forecasts, XP formulas by combat outcome, and casualty removal.
 - `src/game/simulation/enemyAi.js` owns enemy recruitment scoring, favorable-trade evaluation, repair mode, capture plans, and fallback/staging movement choices.
 - `src/game/simulation/battlePresentation.js` converts battle state into HUD/render-friendly presentation data without mutating the battle.

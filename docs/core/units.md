@@ -1,6 +1,6 @@
 # Units
 
-Ash Run '84 currently defines 14 recruitable unit types across 3 families.
+Ash Run '84 currently defines 14 unit types across 3 families. Carrier data remains in the catalog, but Carrier is disabled from recruitment until it has a real battlefield role.
 
 ## Infantry (Barracks)
 
@@ -23,14 +23,13 @@ Ash Run '84 currently defines 14 recruitable unit types across 3 families.
 - Gunship
 - Payload
 - Interceptor
-- Carrier
 
 ## Support and Transport Notes
 
 - Medic services adjacent infantry, restoring 50% max HP plus full ammo and stamina, then enters a 2-turn support cooldown.
 - Mechanic services adjacent vehicles with the same restoration profile, then enters a 3-turn support cooldown.
 - Runner can carry one infantry unit and unload it onto a legal adjacent tile.
-- Carrier is currently a non-attacking air unit; deeper airlift or support behavior is future content.
+- Carrier is currently a non-attacking air unit kept as future content and is not offered by airfields.
 
 ## Notes
 

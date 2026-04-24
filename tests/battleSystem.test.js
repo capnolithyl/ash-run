@@ -1,19 +1,28 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  BUILDING_KEYS,
   ENEMY_RECRUITMENT_BASE_MAP_CAP,
   TERRAIN_KEYS,
   TURN_SIDES
 } from "../src/game/core/constants.js";
-import { getCommanderPowerMax } from "../src/game/content/commanders.js";
+import { COMMANDERS, getCommanderPowerMax } from "../src/game/content/commanders.js";
+import { BUILDING_RECRUITMENT } from "../src/game/content/unitCatalog.js";
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
+import { serviceUnitsOnSectors } from "../src/game/simulation/battleServicing.js";
 import {
+  canResupplyUnit,
+  getExperienceModifier,
   getArmorModifier,
   getAttackModifier,
-  getMovementModifier
+  getLuckModifier,
+  getMovementModifier,
+  getRangeModifier
 } from "../src/game/simulation/commanderEffects.js";
+import { getAttackForecast, getDefenderArmor } from "../src/game/simulation/combatResolver.js";
 import { getReachableTiles, getUnitAt } from "../src/game/simulation/selectors.js";
+import { canLoadUnit } from "../src/game/simulation/transportRules.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
 test("selectNextReadyUnit cycles through player units that have not moved", () => {
@@ -295,7 +304,7 @@ test("viper boosts infantry and recon attack, then powers infantry movement", ()
 
   assert.equal(getAttackModifier(battleState, grunt), 2);
   assert.equal(getAttackModifier(battleState, runner), 2);
-  assert.equal(getAttackModifier(battleState, bruiser), 0);
+  assert.equal(getAttackModifier(battleState, bruiser), -2);
 
   const system = new BattleSystem(battleState);
 
@@ -306,11 +315,461 @@ test("viper boosts infantry and recon attack, then powers infantry movement", ()
   const updatedRunner = afterPower.player.units.find((unit) => unit.id === runner.id);
   const updatedBruiser = afterPower.player.units.find((unit) => unit.id === bruiser.id);
 
-  assert.equal(getAttackModifier(afterPower, updatedGrunt), 7);
-  assert.equal(getAttackModifier(afterPower, updatedRunner), 7);
-  assert.equal(getAttackModifier(afterPower, updatedBruiser), 0);
+  assert.equal(getAttackModifier(afterPower, updatedGrunt), 5);
+  assert.equal(getAttackModifier(afterPower, updatedRunner), 5);
+  assert.equal(getAttackModifier(afterPower, updatedBruiser), -2);
   assert.equal(getMovementModifier(afterPower, updatedGrunt), 2);
   assert.equal(getMovementModifier(afterPower, updatedRunner), 0);
+});
+
+test("unimplemented commanders use explicit future effect names without old generic mechanics", () => {
+  const staleTypes = new Set([
+    "charge-dealt",
+    "team-resupply",
+    "team-mobility",
+    "team-heal",
+    "move-tag",
+    "range-tag",
+    "recruit-discount",
+    "team-shield",
+    "team-assault",
+    "orbital-strike",
+    "supply-drop"
+  ]);
+
+  for (const commander of COMMANDERS.filter((candidate) => !["atlas", "viper", "rook"].includes(candidate.id))) {
+    assert.equal(staleTypes.has(commander.passive.type), false, commander.id);
+    assert.equal(staleTypes.has(commander.active.type), false, commander.id);
+  }
+});
+
+test("unimplemented commander hooks are inert until their mechanics are built", () => {
+  const unit = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 4);
+  const futureCommanderIds = ["echo", "blaze", "knox", "falcon", "graves", "nova", "sable"];
+
+  for (const commanderId of futureCommanderIds) {
+    const battleState = createTestBattleState({
+      playerUnits: [structuredClone(unit)],
+      enemyUnits: [structuredClone(enemy)]
+    });
+    battleState.player.commanderId = commanderId;
+    const testedUnit = battleState.player.units[0];
+
+    assert.equal(getAttackModifier(battleState, testedUnit), 0, commanderId);
+    assert.equal(getArmorModifier(battleState, testedUnit), 0, commanderId);
+    assert.equal(getMovementModifier(battleState, testedUnit), 0, commanderId);
+    assert.equal(getRangeModifier(battleState, testedUnit), 0, commanderId);
+    assert.equal(getLuckModifier(battleState, testedUnit), 0, commanderId);
+    assert.equal(getExperienceModifier(battleState, testedUnit), 0, commanderId);
+  }
+});
+
+test("rook gains war budget income and cannot resupply from sector service", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      hp: 1,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.player.commanderId = "rook";
+  const sector = battleState.map.buildings.find(
+    (building) => building.type === BUILDING_KEYS.SECTOR && building.owner === TURN_SIDES.PLAYER
+  );
+  unit.x = sector.x;
+  unit.y = sector.y;
+
+  const system = new BattleSystem(battleState);
+  const result = system.finalizeEnemyTurn();
+  const healedUnit = system.getStateForSave().player.units[0];
+
+  assert.equal(result.incomeGain.commanderBonus, 200);
+  assert.equal(canResupplyUnit(system.getStateForSave(), healedUnit), false);
+  assert.equal(healedUnit.current.hp, 1 + Math.ceil(unit.stats.maxHealth / 3));
+  assert.equal(healedUnit.current.ammo, 0);
+  assert.equal(healedUnit.current.stamina, healedUnit.stats.staminaMax);
+
+  const directServiceState = system.getStateForSave();
+  const directServiceUnit = directServiceState.player.units[0];
+  directServiceUnit.current.hp = 1;
+  directServiceUnit.current.ammo = 0;
+  directServiceUnit.current.stamina = 0;
+  serviceUnitsOnSectors(directServiceState, TURN_SIDES.PLAYER);
+  assert.equal(directServiceUnit.current.ammo, 0);
+  assert.equal(directServiceUnit.current.stamina, 0);
+});
+
+test("rook liquidation spends funds, grants current-turn attack, and expires on end turn", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.player.commanderId = "rook";
+  battleState.player.funds = 950;
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+
+  const afterPower = system.getStateForSave();
+  const poweredUnit = afterPower.player.units[0];
+
+  assert.equal(afterPower.player.funds, 0);
+  assert.equal(getAttackModifier(afterPower, poweredUnit), 3);
+
+  assert.equal(system.endTurn(), true);
+
+  const afterEndTurn = system.getStateForSave();
+
+  assert.equal(getAttackModifier(afterEndTurn, afterEndTurn.player.units[0]), 0);
+});
+
+test("damage forecast matches actual damage with terrain armor", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1);
+  attacker.stats.luck = 0;
+  defender.stats.luck = 0;
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender],
+    seed: 1
+  });
+  battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.MOUNTAIN;
+
+  const forecast = getAttackForecast(battleState, attacker, defender);
+  const system = new BattleSystem(battleState);
+  const startingHp = defender.current.hp;
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  const afterAttack = system.getStateForSave();
+  const damagedDefender = afterAttack.enemy.units.find((unit) => unit.id === defender.id);
+  const actualDamage = startingHp - damagedDefender.current.hp;
+
+  assert.equal(forecast.dealt.min, actualDamage);
+  assert.equal(forecast.dealt.max, actualDamage);
+});
+
+test("damage forecast matches actual damage with building and status armor", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1, {
+    statuses: [{ type: "shield", value: 2, turnsRemaining: 1 }]
+  });
+  attacker.stats.luck = 0;
+  defender.stats.luck = 0;
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender],
+    seed: 2
+  });
+  battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.ROAD;
+  battleState.map.buildings.push({
+    id: "enemy-test-sector",
+    type: BUILDING_KEYS.SECTOR,
+    owner: TURN_SIDES.ENEMY,
+    x: defender.x,
+    y: defender.y
+  });
+
+  const forecast = getAttackForecast(battleState, attacker, defender);
+  const system = new BattleSystem(battleState);
+  const startingHp = defender.current.hp;
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  const afterAttack = system.getStateForSave();
+  const damagedDefender = afterAttack.enemy.units.find((unit) => unit.id === defender.id);
+  const actualDamage = startingHp - damagedDefender.current.hp;
+
+  assert.equal(forecast.dealt.min, actualDamage);
+  assert.equal(forecast.dealt.max, actualDamage);
+});
+
+test("movement stamina is a one-token cost regardless of path length", () => {
+  const unit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      stamina: 6
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(5, 3), true);
+
+  const movedUnit = system.getStateForSave().player.units[0];
+
+  assert.equal(movedUnit.current.stamina, 5);
+});
+
+test("carrier stays in data but is not recruitable from airfields", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4)]
+  });
+  battleState.player.funds = 5000;
+  const airfield = {
+    id: "player-test-airfield",
+    type: BUILDING_KEYS.AIRFIELD,
+    owner: TURN_SIDES.PLAYER,
+    x: 3,
+    y: 1
+  };
+  battleState.map.buildings.push(airfield);
+  battleState.selection = { type: "building", id: airfield.id, x: airfield.x, y: airfield.y };
+
+  const system = new BattleSystem(battleState);
+  const airfieldOptions = system.getSnapshot().presentation.recruitOptions.map((option) => option.id);
+
+  assert.equal(BUILDING_RECRUITMENT.airfield.includes("carrier"), false);
+  assert.equal(airfieldOptions.includes("carrier"), false);
+  assert.equal(system.recruitUnit("carrier"), false);
+});
+
+test("repair stations service vehicles once per owner and ignore infantry", () => {
+  const vehicle = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const infantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 1, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [vehicle, infantry],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.player.commanderId = "atlas";
+  const repairStation = {
+    id: "player-test-repair-station",
+    type: BUILDING_KEYS.REPAIR_STATION,
+    owner: TURN_SIDES.PLAYER,
+    x: 3,
+    y: 2
+  };
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) => building.x !== repairStation.x || building.y !== repairStation.y
+  );
+  battleState.map.buildings.push(repairStation);
+  vehicle.x = repairStation.x;
+  vehicle.y = repairStation.y;
+  infantry.x = repairStation.x + 1;
+  infantry.y = repairStation.y;
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.finalizeEnemyTurn().changed, true);
+
+  let afterService = system.getStateForSave();
+  let servicedVehicle = afterService.player.units.find((unit) => unit.id === vehicle.id);
+  let ignoredInfantry = afterService.player.units.find((unit) => unit.id === infantry.id);
+
+  assert.equal(servicedVehicle.current.hp, servicedVehicle.stats.maxHealth);
+  assert.equal(servicedVehicle.current.ammo, servicedVehicle.stats.ammoMax);
+  assert.equal(servicedVehicle.current.stamina, servicedVehicle.stats.staminaMax);
+  assert.equal(ignoredInfantry.current.ammo, 0);
+  assert.equal(afterService.map.buildings.find((building) => building.id === repairStation.id).lastServiceOwner, TURN_SIDES.PLAYER);
+
+  servicedVehicle.current.hp = 4;
+  servicedVehicle.current.ammo = 0;
+  servicedVehicle.current.stamina = 0;
+
+  const secondSystem = new BattleSystem(afterService);
+  assert.equal(secondSystem.endTurn(), true);
+  assert.equal(secondSystem.startEnemyTurnActions().changed, true);
+  assert.equal(secondSystem.finalizeEnemyTurn().changed, true);
+
+  afterService = secondSystem.getStateForSave();
+  servicedVehicle = afterService.player.units.find((unit) => unit.id === vehicle.id);
+
+  assert.equal(servicedVehicle.current.hp, 4 + 1);
+  assert.equal(servicedVehicle.current.ammo, 0);
+  assert.equal(servicedVehicle.current.stamina, servicedVehicle.stats.staminaMax);
+});
+
+test("hospitals restore infantry once per owner and do not service vehicles", () => {
+  const playerInfantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      hp: 3,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemyInfantry = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4, {
+    current: {
+      hp: 3,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const vehicle = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 1, {
+    current: {
+      hp: 4,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [playerInfantry, vehicle],
+    enemyUnits: [enemyInfantry]
+  });
+  battleState.player.commanderId = "atlas";
+  battleState.enemy.commanderId = "atlas";
+  const hospital = battleState.map.buildings.find((building) => building.type === BUILDING_KEYS.HOSPITAL);
+  hospital.owner = TURN_SIDES.ENEMY;
+  playerInfantry.x = hospital.x;
+  playerInfantry.y = hospital.y;
+  battleState.pendingAction = {
+    type: "move",
+    unitId: playerInfantry.id,
+    mode: "menu"
+  };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.captureWithPendingUnit(), true);
+
+  let afterCapture = system.getStateForSave();
+  let restoredPlayer = afterCapture.player.units.find((unit) => unit.id === playerInfantry.id);
+
+  assert.equal(restoredPlayer.current.hp, restoredPlayer.stats.maxHealth);
+  assert.equal(restoredPlayer.current.ammo, restoredPlayer.stats.ammoMax);
+  assert.equal(restoredPlayer.current.stamina, restoredPlayer.stats.staminaMax);
+
+  restoredPlayer.x = hospital.x + 1;
+  const enemyCaptor = afterCapture.enemy.units.find((unit) => unit.id === enemyInfantry.id);
+  enemyCaptor.x = hospital.x;
+  enemyCaptor.y = hospital.y;
+  afterCapture.pendingAction = {
+    type: "move",
+    unitId: enemyInfantry.id,
+    mode: "menu"
+  };
+  afterCapture.turn.activeSide = TURN_SIDES.ENEMY;
+
+  const enemyCaptureSystem = new BattleSystem(afterCapture);
+  assert.equal(enemyCaptureSystem.captureWithPendingUnit(), true);
+
+  const afterEnemyCapture = enemyCaptureSystem.getStateForSave();
+  const recapturePlayer = afterEnemyCapture.player.units.find((unit) => unit.id === playerInfantry.id);
+  recapturePlayer.current.hp = 5;
+  recapturePlayer.current.ammo = 0;
+  recapturePlayer.current.stamina = 0;
+  recapturePlayer.x = hospital.x;
+  recapturePlayer.y = hospital.y;
+  afterEnemyCapture.pendingAction = {
+    type: "move",
+    unitId: playerInfantry.id,
+    mode: "menu"
+  };
+  afterEnemyCapture.turn.activeSide = TURN_SIDES.PLAYER;
+
+  const recaptureSystem = new BattleSystem(afterEnemyCapture);
+  assert.equal(recaptureSystem.captureWithPendingUnit(), true);
+
+  const afterRecapture = recaptureSystem.getStateForSave();
+  restoredPlayer = afterRecapture.player.units.find((unit) => unit.id === playerInfantry.id);
+
+  assert.equal(restoredPlayer.current.hp, restoredPlayer.stats.maxHealth);
+  assert.equal(restoredPlayer.current.ammo, restoredPlayer.stats.ammoMax);
+  assert.equal(restoredPlayer.current.stamina, restoredPlayer.stats.staminaMax);
+
+  const vehicleState = createTestBattleState({
+    playerUnits: [vehicle],
+    enemyUnits: [enemyInfantry]
+  });
+  const vehicleHospital = vehicleState.map.buildings.find((building) => building.type === BUILDING_KEYS.HOSPITAL);
+  vehicleHospital.owner = TURN_SIDES.ENEMY;
+  vehicle.x = vehicleHospital.x;
+  vehicle.y = vehicleHospital.y;
+  vehicleState.pendingAction = {
+    type: "move",
+    unitId: vehicle.id,
+    mode: "menu"
+  };
+
+  const vehicleSystem = new BattleSystem(vehicleState);
+
+  assert.equal(vehicleSystem.canCaptureWithPendingUnit(), false);
+});
+
+test("breaker armor break lasts one turn and only halves base armor", () => {
+  const breaker = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 1, 1);
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
+  breaker.stats.attack = 1;
+  breaker.stats.maxHealth = 50;
+  breaker.current.hp = 50;
+  breaker.stats.luck = 0;
+  bruiser.stats.luck = 0;
+  const battleState = createTestBattleState({
+    playerUnits: [breaker],
+    enemyUnits: [bruiser],
+    seed: 3
+  });
+  battleState.map.tiles[bruiser.y][bruiser.x] = TERRAIN_KEYS.FOREST;
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) => building.x !== bruiser.x || building.y !== bruiser.y
+  );
+  battleState.map.buildings.push({
+    id: "enemy-armor-sector",
+    type: BUILDING_KEYS.SECTOR,
+    owner: TURN_SIDES.ENEMY,
+    x: bruiser.x,
+    y: bruiser.y
+  });
+
+  assert.equal(getDefenderArmor(battleState, bruiser), bruiser.stats.armor + 2 + 3);
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.attackTarget(breaker.id, bruiser.id), true);
+
+  const afterBreak = system.getStateForSave();
+  const brokenBruiser = afterBreak.enemy.units[0];
+
+  assert.equal(brokenBruiser.statuses.some((status) => status.type === "armor-break"), true);
+  assert.equal(getDefenderArmor(afterBreak, brokenBruiser), Math.floor(bruiser.stats.armor * 0.5) + 2 + 3);
+
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.startEnemyTurnActions().changed, true);
+
+  const afterTick = system.getStateForSave().enemy.units[0];
+
+  assert.equal(afterTick.statuses.some((status) => status.type === "armor-break"), false);
+});
+
+test("runner transport rules reject non-infantry cargo", () => {
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 2);
+  const infantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3);
+  const vehicle = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 3, 2);
+
+  assert.equal(canLoadUnit(infantry, runner), true);
+  assert.equal(canLoadUnit(vehicle, runner), false);
 });
 
 test("right-click context action clears the current selection", () => {
@@ -562,8 +1021,12 @@ test("enemy units advance into staging range when no attack is available", () =>
 
 test("enemy units choose a favorable target when one is available", () => {
   const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 4, 3);
-  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 6, 3);
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 7, 3);
   const enemy = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 5, 3);
+  enemy.stats.attack = 18;
+  enemy.stats.luck = 0;
+  runner.stats.luck = 0;
+  bruiser.stats.luck = 0;
   const battleState = createTestBattleState({
     id: "enemy-good-trade",
     playerUnits: [runner, bruiser],
@@ -579,9 +1042,10 @@ test("enemy units choose a favorable target when one is available", () => {
   const system = new BattleSystem(battleState);
   const step = system.processEnemyTurnStep();
   const afterStep = system.getStateForSave();
+  const runnerAfterAttack = afterStep.player.units.find((unit) => unit.id === runner.id);
 
   assert.equal(step.type, "attack");
-  assert.ok(afterStep.player.units.find((unit) => unit.id === runner.id).current.hp < runner.current.hp);
+  assert.ok(!runnerAfterAttack || runnerAfterAttack.current.hp < runner.current.hp);
   assert.equal(afterStep.player.units.find((unit) => unit.id === bruiser.id).current.hp, bruiser.current.hp);
 });
 
@@ -1117,6 +1581,7 @@ test("enemy medics use support on damaged adjacent infantry", () => {
     enemyUnits: [medic, wounded],
     activeSide: TURN_SIDES.ENEMY
   });
+  battleState.enemy.commanderId = "atlas";
   battleState.enemyTurn = {
     pendingAttack: null,
     pendingUnitIds: [medic.id]
