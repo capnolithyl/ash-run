@@ -9,7 +9,8 @@ Commander copy has been updated in the data layer and commander-select overlay f
 - The quotes, passive names, active names, and brief text below match the current design brief.
 - Not every mechanic described below is implemented in simulation yet.
 - Commander mechanics will be updated one by one in later passes.
-- Atlas now matches his current passive and active design in simulation.
+- Atlas, Viper, and Rook now match their current passive and active designs in simulation.
+- Echo, Blaze, Knox, Falcon, Graves, Nova, and Sable use explicit future effect IDs that are safe no-ops until their mechanics are implemented.
 
 ## Starting Availability
 
@@ -59,7 +60,7 @@ Charge behavior in the current prototype:
 - **Rook** - *The Inheritor*
   - Quote: "A clean ledger wins dirtier wars."
   - Passive: **War Budget** - +200 funds per turn; cannot resupply units.
-  - Active: **Liquidation** - Spend all funds. All units gain +1 attack per 300 funds spent.
+  - Active: **Liquidation** - Spend all funds. All units gain +1 attack per 300 funds spent for the current turn.
   - Starting squad: 2x Grunt, Bruiser
 
 - **Echo** - *The Control Freak*

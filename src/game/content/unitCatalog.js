@@ -233,5 +233,5 @@ export const UNIT_CATALOG = {
 export const BUILDING_RECRUITMENT = {
   barracks: ["grunt", "breaker", "longshot", "medic", "mechanic"],
   "motor-pool": ["runner", "bruiser", "juggernaut", "siege-gun", "skyguard"],
-  airfield: ["gunship", "payload", "interceptor", "carrier"]
+  airfield: ["gunship", "payload", "interceptor"]
 };

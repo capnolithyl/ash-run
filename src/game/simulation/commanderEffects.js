@@ -1,9 +1,18 @@
-import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
-import { shuffle } from "../core/random.js";
+import { UNIT_TAGS } from "../core/constants.js";
 import { getCommanderById, getCommanderPowerMax } from "../content/commanders.js";
 import { getLivingUnits } from "./selectors.js";
 
 const RECON_UNIT_IDS = new Set(["runner"]);
+
+const UNIMPLEMENTED_ACTIVE_EFFECT_TYPES = new Set([
+  "echo-disruption",
+  "blaze-ignition",
+  "knox-fortress-protocol",
+  "falcon-reinforcements",
+  "graves-execution-window",
+  "nova-overload",
+  "sable-lucky-seven"
+]);
 
 function getStatuses(unit, type) {
   return unit.statuses
@@ -16,7 +25,7 @@ function getStatusTurnsRemaining(status) {
 }
 
 function getCommanderForSide(state, side) {
-  const commanderId = state[side].commanderId;
+  const commanderId = state[side]?.commanderId;
   return getCommanderById(commanderId);
 }
 
@@ -37,97 +46,141 @@ function unitMatchesGroup(unit, group) {
   }
 }
 
+function getViperShockDoctrineModifier(unit, passive) {
+  return unitMatchesGroup(unit, passive.group)
+    ? passive.value
+    : passive.penalty ?? -passive.value;
+}
+
+const attackModifierHandlers = {
+  "viper-shock-doctrine": (_state, unit, passive) => getViperShockDoctrineModifier(unit, passive),
+  "echo-slipstream": () => 0,
+  "blaze-scorched-earth": () => 0,
+  "falcon-air-superiority": () => 0,
+  "graves-kill-confirm": () => 0,
+  "nova-full-magazine": () => 0,
+  "sable-loaded-dice": () => 0
+};
+
+const armorModifierHandlers = {
+  "knox-shield-wall": () => 0,
+  "falcon-air-superiority": () => 0
+};
+
+const movementModifierHandlers = {
+  "echo-slipstream": () => 0
+};
+
+const rangeModifierHandlers = {
+  "nova-full-magazine": () => 0
+};
+
+const luckModifierHandlers = {
+  "sable-loaded-dice": () => 0
+};
+
+const incomeModifierHandlers = {
+  "rook-war-budget": (_state, _side, passive) => passive.value
+};
+
+const experienceModifierHandlers = {
+  "graves-kill-confirm": () => 0
+};
+
+const resupplyPermissionHandlers = {
+  "rook-war-budget": () => false
+};
+
 export function getAttackModifier(state, unit) {
   const commander = getCommanderForSide(state, unit.owner);
-  let bonus = getStatuses(unit, "attack");
+  const passiveHandler = commander ? attackModifierHandlers[commander.passive.type] : null;
 
-  if (!commander) {
-    return bonus;
-  }
-
-  if (commander.passive.type === "attack-tag" && unit.family === commander.passive.tag) {
-    bonus += commander.passive.value;
-  }
-
-  if (commander.passive.type === "attack-group" && unitMatchesGroup(unit, commander.passive.group)) {
-    bonus += commander.passive.value;
-  }
-
-  if (commander.passive.type === "attack-all") {
-    bonus += commander.passive.value;
-  }
-
-  return bonus;
+  return getStatuses(unit, "attack") + (passiveHandler ? passiveHandler(state, unit, commander.passive) : 0);
 }
 
 export function getArmorModifier(state, unit) {
   const commander = getCommanderForSide(state, unit.owner);
-  let bonus = getStatuses(unit, "shield");
+  const passiveHandler = commander ? armorModifierHandlers[commander.passive.type] : null;
 
-  if (!commander) {
-    return bonus;
-  }
-
-  if (commander.passive.type === "armor-tag" && unit.family === commander.passive.tag) {
-    bonus += commander.passive.value;
-  }
-
-  if (commander.passive.type === "armor-all") {
-    bonus += commander.passive.value;
-  }
-
-  return bonus;
+  return getStatuses(unit, "shield") + (passiveHandler ? passiveHandler(state, unit, commander.passive) : 0);
 }
 
 export function getMovementModifier(state, unit) {
   const commander = getCommanderForSide(state, unit.owner);
-  let bonus = getStatuses(unit, "mobility");
+  const passiveHandler = commander ? movementModifierHandlers[commander.passive.type] : null;
 
-  if (!commander) {
-    return bonus;
-  }
-
-  if (commander.passive.type === "move-tag" && unit.family === commander.passive.tag) {
-    bonus += commander.passive.value;
-  }
-
-  return bonus;
+  return getStatuses(unit, "mobility") + (passiveHandler ? passiveHandler(state, unit, commander.passive) : 0);
 }
 
 export function getRangeModifier(state, unit) {
   const commander = getCommanderForSide(state, unit.owner);
+  const passiveHandler = commander ? rangeModifierHandlers[commander.passive.type] : null;
 
-  if (!commander) {
-    return 0;
-  }
+  return passiveHandler ? passiveHandler(state, unit, commander.passive) : 0;
+}
 
-  if (commander.passive.type === "range-tag" && unit.family === commander.passive.tag) {
-    return commander.passive.value;
-  }
+export function getLuckModifier(state, unit) {
+  const commander = getCommanderForSide(state, unit.owner);
+  const passiveHandler = commander ? luckModifierHandlers[commander.passive.type] : null;
 
-  return 0;
+  return getStatuses(unit, "luck") + (passiveHandler ? passiveHandler(state, unit, commander.passive) : 0);
 }
 
 export function getIncomeBonus(state, side) {
   const commander = getCommanderForSide(state, side);
-  return commander?.passive.type === "income-bonus" ? commander.passive.value : 0;
+  const passiveHandler = commander ? incomeModifierHandlers[commander.passive.type] : null;
+
+  return passiveHandler ? passiveHandler(state, side, commander.passive) : 0;
 }
 
-export function getRecruitDiscount(state, side) {
-  const commander = getCommanderForSide(state, side);
-  return commander?.passive.type === "recruit-discount" ? commander.passive.value : 0;
+export function getExperienceModifier(state, unit) {
+  const commander = getCommanderForSide(state, unit.owner);
+  const passiveHandler = commander ? experienceModifierHandlers[commander.passive.type] : null;
+
+  return passiveHandler ? passiveHandler(state, unit, commander.passive) : 0;
+}
+
+export function getRecruitDiscount() {
+  return 0;
+}
+
+export function canResupplyUnit(state, unit) {
+  if (!unit) {
+    return false;
+  }
+
+  const commander = getCommanderForSide(state, unit.owner);
+  const passiveHandler = commander ? resupplyPermissionHandlers[commander.passive.type] : null;
+
+  return passiveHandler ? passiveHandler(state, unit, commander.passive) : true;
+}
+
+export function canReceiveService(_state, unit) {
+  return Boolean(unit);
+}
+
+function resupplyUnit(state, unit) {
+  if (!canResupplyUnit(state, unit)) {
+    return false;
+  }
+
+  const previousAmmo = unit.current.ammo;
+  const previousStamina = unit.current.stamina;
+
+  unit.current.ammo = unit.stats.ammoMax;
+  unit.current.stamina = unit.stats.staminaMax;
+
+  return unit.current.ammo !== previousAmmo || unit.current.stamina !== previousStamina;
+}
+
+export function resupplyUnitIfAllowed(state, unit) {
+  return resupplyUnit(state, unit);
 }
 
 export function applyChargeFromCombat(state, attackingSide, defendingSide, damageDealt, damageTaken) {
-  const attackerCommander = getCommanderForSide(state, attackingSide);
-  const dealtMultiplier =
-    attackerCommander?.passive.type === "charge-dealt"
-      ? attackerCommander.passive.multiplier
-      : 1;
-
   state[attackingSide].charge = Math.min(
     getCommanderPowerMaxForSide(state, attackingSide),
-    state[attackingSide].charge + damageDealt * 0.5 * dealtMultiplier
+    state[attackingSide].charge + damageDealt * 0.5
   );
 
   state[defendingSide].charge = Math.min(
@@ -136,12 +189,13 @@ export function applyChargeFromCombat(state, attackingSide, defendingSide, damag
   );
 }
 
-function applyStatusToSide(state, side, statusType, value) {
+function applyStatusToSide(state, side, statusType, value, options = {}) {
   for (const unit of getLivingUnits(state, side)) {
     unit.statuses.push({
       type: statusType,
       value,
-      turnsRemaining: 1
+      turnsRemaining: options.turnsRemaining ?? 1,
+      currentTurnOnly: options.currentTurnOnly ?? false
     });
   }
 }
@@ -173,86 +227,71 @@ function healSideByRatio(state, side, ratio) {
   }
 }
 
-function resupplySide(state, side) {
-  for (const unit of getLivingUnits(state, side)) {
-    unit.current.ammo = unit.stats.ammoMax;
-    unit.current.stamina = unit.stats.staminaMax;
-  }
+function applyAtlasOverhaul(state, side, commander, notes) {
+  healSideByRatio(state, side, commander.active.healRatio ?? 0.5);
+  applyStatusToSide(state, side, "shield", commander.active.armor ?? 2);
+  notes.push(`${commander.name} overhauled the line and reinforced the hulls.`);
 }
 
-/**
- * Commander powers intentionally stay generic in the prototype so balance work
- * can happen in data instead of scene code.
- */
+function applyViperBlitzSurge(state, side, commander, notes) {
+  applyStatusToGroup(state, side, commander.active.attackGroup, "attack", commander.active.attack ?? 3);
+  applyStatusToGroup(state, side, commander.active.movementGroup, "mobility", commander.active.movement ?? 2);
+  notes.push(`${commander.name} sent infantry and runners forward.`);
+}
+
+function applyRookLiquidation(state, side, commander, notes) {
+  const fundsSpent = state[side].funds;
+  const attackBonus = Math.floor(fundsSpent / (commander.active.fundsPerAttack ?? 300));
+
+  state[side].funds = 0;
+
+  if (attackBonus > 0) {
+    applyStatusToSide(state, side, "attack", attackBonus, { currentTurnOnly: true });
+  }
+
+  notes.push(`${commander.name} liquidated ${fundsSpent} funds for +${attackBonus} attack this turn.`);
+}
+
+function applyUnimplementedPower(_state, _side, commander, notes) {
+  notes.push(`${commander.name}'s ${commander.active.name} has no effect yet.`);
+}
+
+const activeHandlers = {
+  "atlas-overhaul": applyAtlasOverhaul,
+  "viper-blitz-surge": applyViperBlitzSurge,
+  "rook-liquidation": applyRookLiquidation,
+  ...Object.fromEntries([...UNIMPLEMENTED_ACTIVE_EFFECT_TYPES].map((type) => [type, applyUnimplementedPower]))
+};
+
 export function activateCommanderPower(state, side, seed) {
   const commander = getCommanderForSide(state, side);
-  const enemySide = side === TURN_SIDES.PLAYER ? TURN_SIDES.ENEMY : TURN_SIDES.PLAYER;
-  let nextSeed = seed;
   const notes = [];
 
   if (!commander) {
-    return { changed: false, seed: nextSeed, notes };
+    return { changed: false, seed, notes };
   }
 
   if (state[side].charge < getCommanderPowerMaxForSide(state, side)) {
-    return { changed: false, seed: nextSeed, notes };
+    return { changed: false, seed, notes };
+  }
+
+  const handler = activeHandlers[commander.active.type];
+
+  if (!handler) {
+    notes.push(`${commander.name}'s ${commander.active.name} has an unknown effect type.`);
+    return { changed: false, seed, notes };
   }
 
   state[side].charge = 0;
+  handler(state, side, commander, notes);
 
-  switch (commander.active.type) {
-    case "team-shield":
-      applyStatusToSide(state, side, "shield", 3);
-      notes.push(`${commander.name} deployed a defensive screen.`);
-      break;
-    case "team-assault":
-      applyStatusToSide(state, side, "attack", 3);
-      notes.push(`${commander.name} ordered an all-out push.`);
-      break;
-    case "team-mobility":
-      applyStatusToSide(state, side, "mobility", 2);
-      notes.push(`${commander.name} opened rapid lanes.`);
-      break;
-    case "team-heal":
-      healSide(state, side, 8);
-      notes.push(`${commander.name} stabilized the front line.`);
-      break;
-    case "field-repair-push":
-      healSideByRatio(state, side, commander.active.healRatio ?? 0.5);
-      applyStatusToSide(state, side, "shield", commander.active.armor ?? 2);
-      notes.push(`${commander.name} overhauled the line and reinforced the hulls.`);
-      break;
-    case "viper-infantry-push":
-      applyStatusToGroup(state, side, commander.active.attackGroup, "attack", commander.active.attack ?? 5);
-      applyStatusToGroup(state, side, commander.active.movementGroup, "mobility", commander.active.movement ?? 2);
-      notes.push(`${commander.name} sent infantry and recons forward.`);
-      break;
-    case "team-resupply":
-      resupplySide(state, side);
-      notes.push(`${commander.name} topped off ammo and stamina.`);
-      break;
-    case "supply-drop":
-      state[side].funds += 600;
-      resupplySide(state, side);
-      notes.push(`${commander.name} called in a supply drop.`);
-      break;
-    case "orbital-strike": {
-      const randomizedTargets = shuffle(nextSeed, getLivingUnits(state, enemySide));
-      nextSeed = randomizedTargets.seed;
-      const targets = randomizedTargets.value.slice(0, 4);
+  return { changed: true, seed, notes };
+}
 
-      for (const target of targets) {
-        target.current.hp = Math.max(0, target.current.hp - 7);
-      }
-
-      notes.push(`${commander.name} lit up the enemy column from above.`);
-      break;
-    }
-    default:
-      break;
+export function expireCurrentTurnStatuses(state, side) {
+  for (const unit of getLivingUnits(state, side)) {
+    unit.statuses = unit.statuses.filter((status) => !status.currentTurnOnly);
   }
-
-  return { changed: true, seed: nextSeed, notes };
 }
 
 export function tickSideStatuses(state, side) {
@@ -267,7 +306,7 @@ export function tickSideStatuses(state, side) {
 
   const commander = getCommanderForSide(state, side);
 
-  if (commander?.passive.type === "turn-heal") {
+  if (commander?.passive.type === "atlas-field-repairs") {
     healSide(state, side, commander.passive.value);
   }
 }
