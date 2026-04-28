@@ -27,15 +27,13 @@ export function pushLevelUpEvents(state, unit, levelUps) {
       unitName: unit.name,
       previousLevel: levelUp.previousLevel,
       newLevel: levelUp.newLevel,
-      statGains: [
-        {
-          stat: levelUp.stat,
-          label: STAT_LABELS[levelUp.stat] ?? levelUp.stat,
-          delta: levelUp.increment,
-          previousValue: levelUp.previousValue,
-          nextValue: levelUp.nextValue
-        }
-      ]
+      statGains: levelUp.statGains.map((gain) => ({
+        stat: gain.stat,
+        label: STAT_LABELS[gain.stat] ?? gain.stat,
+        delta: gain.increment,
+        previousValue: gain.previousValue,
+        nextValue: gain.nextValue
+      }))
     });
   }
 }

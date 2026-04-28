@@ -124,3 +124,41 @@ test("map pool uses varied layouts, sizes, and service buildings", () => {
     );
   }
 });
+
+test("map pool keeps forests and mountains tactically relevant across the rotation", () => {
+  let forestTiles = 0;
+  let mountainTiles = 0;
+  let totalTiles = 0;
+
+  for (const map of MAP_POOL) {
+    let mapForestTiles = 0;
+    let mapMountainTiles = 0;
+
+    for (const row of map.tiles) {
+      for (const tile of row) {
+        totalTiles += 1;
+
+        if (tile === TERRAIN_KEYS.FOREST) {
+          forestTiles += 1;
+          mapForestTiles += 1;
+        } else if (tile === TERRAIN_KEYS.MOUNTAIN) {
+          mountainTiles += 1;
+          mapMountainTiles += 1;
+        }
+      }
+    }
+
+    const tacticalTerrain = mapForestTiles + mapMountainTiles;
+    const minimumTacticalTiles = Math.max(8, Math.floor(map.width * map.height * 0.04));
+
+    assert.ok(mapForestTiles > 0, `${map.id} should include at least one forest tile`);
+    assert.ok(mapMountainTiles > 0, `${map.id} should include at least one mountain tile`);
+    assert.ok(
+      tacticalTerrain >= minimumTacticalTiles,
+      `${map.id} should include enough forests/mountains to create flanking cover`
+    );
+  }
+
+  assert.ok(forestTiles / totalTiles >= 0.05, "map pool should use forests for meaningful cover lanes");
+  assert.ok(mountainTiles / totalTiles >= 0.015, "map pool should use mountains for elevation pressure");
+});

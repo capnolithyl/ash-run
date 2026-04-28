@@ -8,15 +8,27 @@
 - Family matchups matter: infantry punching into vehicles earns extra XP, while vehicles or aircraft farming softer targets earns less.
 - Kills add a flat bonus on top of the damage XP calculation.
 - XP threshold grows by level as `90 + 30 * (level - 1)`.
-- On level-up, one stat increases from a weighted random table.
+- On level-up, each eligible stat rolls independently for growth, so one level can increase multiple stats.
+- If every growth roll misses, the game forces at least one stat gain by making a fallback weighted pick.
 
-## Current Stat Growth Weights
+## Current Stat Growth Chances
+
+- Attack: 50%
+- Armor: 50%
+- Max Health: 50%
+- Movement: 10%
+- Max Range: 5%
+- Stamina Max: 25%
+- Ammo Max: 20%
+- Luck: 20%
+
+Fallback weighting still favors the old tiers:
 
 - High weight: Attack, Armor, Max Health
 - Medium weight: Stamina Max, Ammo Max, Luck
 - Low weight: Movement, Max Range
 
-Range growth is skipped for units that cannot attack at range.
+Range growth is skipped for units that cannot attack at range, both on the normal rolls and on the fallback pick.
 
 ## Persistence + Permadeath
 

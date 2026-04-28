@@ -5,7 +5,6 @@ import { getLivingUnits } from "./selectors.js";
 const RECON_UNIT_IDS = new Set(["runner"]);
 
 const UNIMPLEMENTED_ACTIVE_EFFECT_TYPES = new Set([
-  "echo-disruption",
   "blaze-ignition",
   "knox-fortress-protocol",
   "falcon-reinforcements",
@@ -29,8 +28,21 @@ function getCommanderForSide(state, side) {
   return getCommanderById(commanderId);
 }
 
+function getOpposingSide(side) {
+  return side === "player" ? "enemy" : "player";
+}
+
 export function getCommanderPowerMaxForSide(state, side) {
   return getCommanderPowerMax(state[side]?.commanderId);
+}
+
+export function canSlipstreamAfterAttack(state, unit) {
+  if (!unit) {
+    return false;
+  }
+
+  const commander = getCommanderForSide(state, unit.owner);
+  return commander?.passive.type === "echo-slipstream";
 }
 
 function unitMatchesGroup(unit, group) {
@@ -195,12 +207,13 @@ function applyStatusToSide(state, side, statusType, value, options = {}) {
       type: statusType,
       value,
       turnsRemaining: options.turnsRemaining ?? 1,
-      currentTurnOnly: options.currentTurnOnly ?? false
+      currentTurnOnly: options.currentTurnOnly ?? false,
+      tickSide: options.tickSide ?? side
     });
   }
 }
 
-function applyStatusToGroup(state, side, group, statusType, value) {
+function applyStatusToGroup(state, side, group, statusType, value, options = {}) {
   for (const unit of getLivingUnits(state, side)) {
     if (!unitMatchesGroup(unit, group)) {
       continue;
@@ -209,7 +222,8 @@ function applyStatusToGroup(state, side, group, statusType, value) {
     unit.statuses.push({
       type: statusType,
       value,
-      turnsRemaining: 1
+      turnsRemaining: options.turnsRemaining ?? 1,
+      tickSide: options.tickSide ?? side
     });
   }
 }
@@ -239,6 +253,17 @@ function applyViperBlitzSurge(state, side, commander, notes) {
   notes.push(`${commander.name} sent infantry and runners forward.`);
 }
 
+function applyEchoDisruption(state, side, commander, notes) {
+  applyStatusToSide(
+    state,
+    getOpposingSide(side),
+    "mobility",
+    -(commander.active.movementPenalty ?? 1),
+    { tickSide: side }
+  );
+  notes.push(`${commander.name} disrupted enemy movement patterns.`);
+}
+
 function applyRookLiquidation(state, side, commander, notes) {
   const fundsSpent = state[side].funds;
   const attackBonus = Math.floor(fundsSpent / (commander.active.fundsPerAttack ?? 300));
@@ -259,6 +284,7 @@ function applyUnimplementedPower(_state, _side, commander, notes) {
 const activeHandlers = {
   "atlas-overhaul": applyAtlasOverhaul,
   "viper-blitz-surge": applyViperBlitzSurge,
+  "echo-disruption": applyEchoDisruption,
   "rook-liquidation": applyRookLiquidation,
   ...Object.fromEntries([...UNIMPLEMENTED_ACTIVE_EFFECT_TYPES].map((type) => [type, applyUnimplementedPower]))
 };
@@ -295,13 +321,23 @@ export function expireCurrentTurnStatuses(state, side) {
 }
 
 export function tickSideStatuses(state, side) {
-  for (const unit of getLivingUnits(state, side)) {
-    unit.statuses = unit.statuses
-      .map((status) => ({
-        ...status,
-        turnsRemaining: getStatusTurnsRemaining(status) - 1
-      }))
-      .filter((status) => status.turnsRemaining > 0);
+  for (const owner of ["player", "enemy"]) {
+    for (const unit of getLivingUnits(state, owner)) {
+      unit.statuses = unit.statuses
+        .map((status) => {
+          const tickSide = status.tickSide ?? unit.owner;
+
+          if (tickSide !== side) {
+            return status;
+          }
+
+          return {
+            ...status,
+            turnsRemaining: getStatusTurnsRemaining(status) - 1
+          };
+        })
+        .filter((status) => getStatusTurnsRemaining(status) > 0);
+    }
   }
 
   const commander = getCommanderForSide(state, side);

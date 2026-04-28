@@ -10,6 +10,7 @@ import { serviceUnitsOnSectors } from "./battleServicing.js";
 import { findUnitById } from "./battleUnits.js";
 import { captureBuildingForUnit } from "./captureRules.js";
 import {
+  canSlipstreamAfterAttack,
   expireCurrentTurnStatuses,
   getIncomeBonus,
   getMovementModifier,
@@ -132,6 +133,41 @@ function moveEnemyUnit(system, unit, tile, movementBudget) {
   };
 }
 
+function performEnemySlipstreamMove(system, unitId) {
+  const unit = findUnitById(system.state, unitId);
+
+  if (!unit || !canSlipstreamAfterAttack(system.state, unit) || unit.transport?.carriedByUnitId) {
+    return null;
+  }
+
+  const reachableTiles = getReachableTiles(system.state, unit, 1)
+    .filter((tile) => tile.x !== unit.x || tile.y !== unit.y);
+
+  if (reachableTiles.length === 0) {
+    return null;
+  }
+
+  const fallbackTile = pickFallbackMovementTile(system.state, unit, reachableTiles);
+
+  if (!fallbackTile || (fallbackTile.x === unit.x && fallbackTile.y === unit.y)) {
+    return null;
+  }
+
+  const movePath = getMovementPath(system.state, unit, 1, fallbackTile.x, fallbackTile.y);
+  const moveSegments = Math.max(0, movePath.length - 1);
+  unit.x = fallbackTile.x;
+  unit.y = fallbackTile.y;
+  if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
+    system.syncTransportCargoPosition(unit);
+  }
+  appendLog(system.state, `${unit.name} slipped into a new position after attacking.`);
+
+  return {
+    moved: true,
+    moveSegments
+  };
+}
+
 function resolveEnemyCapturePlan(system, unit, capturePlan, movementBudget) {
   const movement = moveEnemyUnit(system, unit, capturePlan.tile, movementBudget);
 
@@ -168,11 +204,13 @@ export function processEnemyTurnStep(system) {
     const changed = system.attackTarget(queuedAttack.attackerId, queuedAttack.targetId);
 
     if (changed) {
+      const slipstreamMove = performEnemySlipstreamMove(system, queuedAttack.attackerId);
       return {
         changed: true,
         done: system.state.victory || !hasPendingEnemyTurn(system),
-        type: "attack",
-        unitId: queuedAttack.attackerId
+        type: slipstreamMove ? "move" : "attack",
+        unitId: queuedAttack.attackerId,
+        moveSegments: slipstreamMove?.moveSegments
       };
     }
   }
@@ -255,11 +293,13 @@ export function processEnemyTurnStep(system) {
 
     if (immediateAttack) {
       system.attackTarget(unit.id, immediateAttack.target.id);
+      const slipstreamMove = performEnemySlipstreamMove(system, unit.id);
       return {
         changed: true,
         done: system.state.victory || system.state.enemyTurn.pendingUnitIds.length === 0,
-        type: "attack",
-        unitId
+        type: slipstreamMove ? "move" : "attack",
+        unitId,
+        moveSegments: slipstreamMove?.moveSegments
       };
     }
 

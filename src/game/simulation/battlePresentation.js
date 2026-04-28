@@ -3,6 +3,7 @@ import { describeBuilding } from "../content/buildings.js";
 import {
   getArmorModifier,
   getAttackModifier,
+  canResupplyUnit,
   getMovementModifier,
   getRangeModifier
 } from "./commanderEffects.js";
@@ -35,11 +36,13 @@ function getLivingUnitsForSide(state, side) {
   return getLivingUnits(state, side).filter((unit) => !unit.transport?.carriedByUnitId);
 }
 
-function getSupportNeedScore(unit) {
+function getSupportNeedScore(state, unit) {
+  const canResupply = canResupplyUnit(state, unit);
+
   return (
     Math.max(0, unit.stats.maxHealth - unit.current.hp) * 2 +
-    Math.max(0, unit.stats.ammoMax - unit.current.ammo) * 3 +
-    Math.max(0, unit.stats.staminaMax - unit.current.stamina) * 2
+    (canResupply ? Math.max(0, unit.stats.ammoMax - unit.current.ammo) * 3 : 0) +
+    (canResupply ? Math.max(0, unit.stats.staminaMax - unit.current.stamina) * 2 : 0)
   );
 }
 
@@ -197,10 +200,12 @@ function createPendingActionView(state) {
     : null;
   const validUnloadTiles = getValidUnloadTiles(state, unit, carriedUnit);
   const unloadPreviewTiles = mode === "unload" ? validUnloadTiles : [];
+  const isSlipstream = mode === "slipstream";
   const supportTargetFamily = unit.unitTypeId === "medic" ? "infantry" : unit.unitTypeId === "mechanic" ? "vehicle" : null;
   const canSupport =
     Boolean(supportTargetFamily) &&
-    (unit.cooldowns?.support ?? 0) <= 0;
+    (unit.cooldowns?.support ?? 0) <= 0 &&
+    !isSlipstream;
   const supportTargets = canSupport
     ? getLivingUnitsForSide(state, unit.owner)
         .filter((candidate) => {
@@ -211,12 +216,12 @@ function createPendingActionView(state) {
         })
         .map((target) => ({
           target,
-          needScore: getSupportNeedScore(target)
+          needScore: getSupportNeedScore(state, target)
         }))
         .filter((option) => option.needScore > 0)
         .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id))
     : [];
-  const adjacentRunners = unit.family === "infantry"
+  const adjacentRunners = !isSlipstream && unit.family === "infantry"
     ? getLivingUnitsForSide(state, unit.owner)
         .filter((candidate) =>
           candidate.unitTypeId === "runner" &&
@@ -243,12 +248,13 @@ function createPendingActionView(state) {
     ...pendingAction,
     mode,
     unitName: unit.name,
-    canCapture: canCaptureBuilding(unit, building),
-    canFire: attackableUnitIds.length > 0,
+    canCapture: !isSlipstream && canCaptureBuilding(unit, building),
+    canFire: !isSlipstream && attackableUnitIds.length > 0,
     canSupport: supportTargets.length > 0,
     supportCooldown: unit.cooldowns?.support ?? 0,
     canEnterTransport,
     canUnloadTransport,
+    isSlipstream,
     isTargeting: mode === "fire",
     isChoosingTransport: mode === "transport",
     isChoosingSupport: mode === "support",
@@ -269,8 +275,9 @@ export function buildBattlePresentation(snapshot) {
 
   if (selectedUnit) {
     const attackProfile = getUnitAttackProfile(selectedUnit);
+    const isSlipstream = pendingAction?.unitId === selectedUnit.id && pendingAction?.isSlipstream;
     const movementBudget =
-      selectedUnit.stats.movement + getMovementModifier(snapshot, selectedUnit);
+      isSlipstream ? 1 : selectedUnit.stats.movement + getMovementModifier(snapshot, selectedUnit);
     const rangeCap = getAttackRangeCap(snapshot, selectedUnit, attackProfile);
     const attackableUnitIds = getAttackableUnitIds(snapshot, selectedUnit);
     const shouldRevealAttackTargets =
@@ -278,9 +285,11 @@ export function buildBattlePresentation(snapshot) {
       pendingAction.unitId !== selectedUnit.id ||
       pendingAction.isTargeting;
     const movePreviewTiles =
-      pendingAction?.unitId === selectedUnit.id
+      pendingAction?.unitId === selectedUnit.id && !isSlipstream
         ? []
-        : getReachableTiles(snapshot, selectedUnit, movementBudget);
+        : getReachableTiles(snapshot, selectedUnit, movementBudget).filter(
+            (tile) => !isSlipstream || tile.x !== selectedUnit.x || tile.y !== selectedUnit.y
+          );
     const attackPreviewTiles =
       attackProfile && rangeCap > 0 && shouldRevealAttackTargets
         ? getTilesInRange(
@@ -309,8 +318,10 @@ export function buildBattlePresentation(snapshot) {
       reachableTiles:
         selectedUnit.owner === TURN_SIDES.PLAYER &&
         snapshot.turn.activeSide === TURN_SIDES.PLAYER &&
-        pendingAction?.unitId !== selectedUnit.id &&
-        !selectedUnit.hasMoved
+        (
+          isSlipstream ||
+          (pendingAction?.unitId !== selectedUnit.id && !selectedUnit.hasMoved)
+        )
           ? movePreviewTiles
           : [],
       attackableUnitIds:

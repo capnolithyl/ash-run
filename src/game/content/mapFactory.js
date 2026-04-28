@@ -108,58 +108,62 @@ function createSeededRandom(seedText) {
   };
 }
 
+function shuffleWithRandom(items, random) {
+  const copy = [...items];
+
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+
+  return copy;
+}
+
 function addTerrainVariation(grid, spec) {
   const random = createSeededRandom(spec.id);
   const totalTiles = grid.length * grid[0].length;
-  const extraForestPatches = Math.max(2, Math.floor(totalTiles / 72));
-  const extraRidgePatches = Math.max(2, Math.floor(totalTiles / 104));
-  const extraMountainPatches = Math.max(1, Math.floor(totalTiles / 130));
-  const attempts = extraForestPatches + extraRidgePatches + extraMountainPatches + 12;
+  const extraForestPatches = Math.max(4, Math.floor(totalTiles / 60));
+  const extraMountainPatches = Math.max(3, Math.floor(totalTiles / 90));
+  const extraRidgePatches = Math.max(1, Math.floor(totalTiles / 180));
+  const patchPlan = shuffleWithRandom(
+    [
+      ...Array.from({ length: extraForestPatches }, () => ({
+        terrain: TERRAIN_KEYS.FOREST,
+        maxWidth: 3,
+        maxHeight: 3
+      })),
+      ...Array.from({ length: extraMountainPatches }, () => ({
+        terrain: TERRAIN_KEYS.MOUNTAIN,
+        maxWidth: 3,
+        maxHeight: 2
+      })),
+      ...Array.from({ length: extraRidgePatches }, () => ({
+        terrain: TERRAIN_KEYS.RIDGE,
+        maxWidth: 2,
+        maxHeight: 2
+      }))
+    ],
+    random
+  );
 
-  let forestsPlaced = 0;
-  let ridgesPlaced = 0;
-  let mountainsPlaced = 0;
-
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const width = 1 + Math.floor(random() * 3);
-    const height = 1 + Math.floor(random() * 2);
+  for (const patch of patchPlan) {
+    const width = 1 + Math.floor(random() * patch.maxWidth);
+    const height = 1 + Math.floor(random() * patch.maxHeight);
     const x = 1 + Math.floor(random() * Math.max(1, grid[0].length - width - 2));
     const y = Math.floor(random() * Math.max(1, grid.length - height));
-    const terrain =
-      forestsPlaced < extraForestPatches
-        ? TERRAIN_KEYS.FOREST
-        : mountainsPlaced < extraMountainPatches
-          ? TERRAIN_KEYS.MOUNTAIN
-          : TERRAIN_KEYS.RIDGE;
-
-    if (terrain === TERRAIN_KEYS.RIDGE && ridgesPlaced >= extraRidgePatches) {
-      continue;
-    }
-
-    if (terrain === TERRAIN_KEYS.MOUNTAIN && mountainsPlaced >= extraMountainPatches) {
-      continue;
-    }
-
-    if (terrain === TERRAIN_KEYS.FOREST && forestsPlaced >= extraForestPatches) {
-      continue;
-    }
 
     for (let row = y; row < y + height; row += 1) {
       for (let column = x; column < x + width; column += 1) {
-        if (grid[row][column] === TERRAIN_KEYS.ROAD || column <= 1 || column >= grid[0].length - 2) {
+        if (
+          grid[row][column] !== TERRAIN_KEYS.PLAIN ||
+          column <= 1 ||
+          column >= grid[0].length - 2
+        ) {
           continue;
         }
 
-        grid[row][column] = terrain;
+        grid[row][column] = patch.terrain;
       }
-    }
-
-    if (terrain === TERRAIN_KEYS.FOREST) {
-      forestsPlaced += 1;
-    } else if (terrain === TERRAIN_KEYS.MOUNTAIN) {
-      mountainsPlaced += 1;
-    } else {
-      ridgesPlaced += 1;
     }
   }
 }

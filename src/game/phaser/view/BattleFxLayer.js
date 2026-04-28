@@ -283,22 +283,40 @@ export class BattleFxLayer {
     const height = Math.max(12, layout.cellSize * 0.24);
     const background = this.scene.add.graphics();
     const fill = this.scene.add.graphics();
-    const label = this.scene.add
-      .text(0, -height - 8, `+${event.gained} XP`, {
+    const title = this.scene.add
+      .text(0, -height - 12, "EXP", {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
-        fontSize: `${Math.max(13, Math.floor(layout.cellSize * 0.18))}px`,
+        fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.15))}px`,
+        letterSpacing: 1.2,
+        color: "#ffd76b"
+      })
+      .setOrigin(0.5);
+    const value = this.scene.add
+      .text(0, height + 10, "", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: `${Math.max(12, Math.floor(layout.cellSize * 0.16))}px`,
         color: "#fff7dd"
       })
       .setOrigin(0.5);
-    label.setShadow(0, 0, "#ffd76b", 16, false, true);
+    value.setShadow(0, 0, "#ffd76b", 12, false, true);
 
     background.fillStyle(0x10061b, 0.94);
     background.fillRoundedRect(-width / 2, -height / 2, width, height, height / 2);
     background.lineStyle(2, 0xffd76b, 0.75);
     background.strokeRoundedRect(-width / 2, -height / 2, width, height, height / 2);
-    container.add([background, fill, label]);
+    container.add([background, fill, title, value]);
 
     const progress = { segmentIndex: 0, value: 0 };
+    const updateValueLabel = () => {
+      const segment = event.segments[Math.min(progress.segmentIndex, event.segments.length - 1)];
+
+      if (!segment) {
+        return;
+      }
+
+      value.setText(`Lv ${segment.level} ${Math.round(progress.value)}/${segment.threshold}`);
+    };
+
     const drawFill = () => {
       fill.clear();
 
@@ -315,6 +333,7 @@ export class BattleFxLayer {
       fill.fillRoundedRect(-width / 2 + 3, -height / 2 + 3, fillWidth, height - 6, (height - 6) / 2);
       fill.fillStyle(0xffd76b, 0.55);
       fill.fillRoundedRect(-width / 2 + 3, -height / 2 + 3, Math.max(0, fillWidth * 0.54), height - 6, (height - 6) / 2);
+      updateValueLabel();
     };
 
     const playSegment = (segmentIndex) => {
@@ -347,15 +366,7 @@ export class BattleFxLayer {
         },
         onComplete: () => {
           if (segment.toExperience >= segment.threshold && segmentIndex < event.segments.length - 1) {
-            this.scene.tweens.add({
-              targets: container,
-              scaleX: 1.06,
-              scaleY: 1.06,
-              duration: 120,
-              yoyo: true,
-              ease: "Sine.InOut",
-              onComplete: () => playSegment(segmentIndex + 1)
-            });
+            this.scene.time.delayedCall(120, () => playSegment(segmentIndex + 1));
             return;
           }
 

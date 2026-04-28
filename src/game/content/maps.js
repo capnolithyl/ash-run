@@ -84,7 +84,8 @@ export const MAP_POOL = [
     riverColumns: [6],
     roadGaps: [6],
     neutralBuildings: [{ id: "cold-sector-a", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 6, y: 2 }],
-    forests: [{ x: 9, y: 2, width: 2, height: 2 }]
+    forests: [{ x: 9, y: 2, width: 2, height: 2 }, { x: 2, y: 7, width: 2, height: 2 }],
+    mountains: [{ x: 4, y: 8, width: 2, height: 1 }]
   }),
   createBattlefield({
     id: "noonfire-basin",
@@ -161,6 +162,8 @@ export const MAP_POOL = [
     height: 14,
     layout: "corner",
     ridges: [{ x: 3, y: 4, width: 3, height: 1 }, { x: 8, y: 5, width: 3, height: 1 }],
+    forests: [{ x: 4, y: 1, width: 2, height: 2 }, { x: 15, y: 8, width: 2, height: 2 }],
+    mountains: [{ x: 11, y: 2, width: 2, height: 2 }],
     neutralBuildings: [{ id: "echo-sector-a", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 6, y: 4 }]
   }),
   createBattlefield({

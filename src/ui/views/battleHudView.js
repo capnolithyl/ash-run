@@ -647,7 +647,7 @@ function renderActionPrompt(battleSnapshot) {
     <div class="battle-command-prompt" style="${getActionPromptStyle(battleSnapshot, pendingAction)}">
       <div class="battle-command-prompt__card">
         <div class="battle-command-prompt__header">
-          <p class="eyebrow">Unit Orders</p>
+          <p class="eyebrow">${pendingAction.isSlipstream ? "Slipstream" : "Unit Orders"}</p>
           <strong>${pendingAction.unitName}</strong>
         </div>
         <div class="battle-command-prompt__menu">
@@ -677,7 +677,11 @@ function renderActionPrompt(battleSnapshot) {
               : ""
           }
           <button class="battle-command-prompt__action" data-action="wait-unit">Wait</button>
-          <button class="battle-command-prompt__action battle-command-prompt__action--subtle" data-action="redo-move">Redo</button>
+          ${
+            pendingAction.isSlipstream
+              ? ""
+              : '<button class="battle-command-prompt__action battle-command-prompt__action--subtle" data-action="redo-move">Redo</button>'
+          }
         </div>
       </div>
     </div>

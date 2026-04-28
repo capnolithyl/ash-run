@@ -327,6 +327,107 @@ test("viper boosts infantry and recon attack, then powers infantry movement", ()
   assert.equal(getMovementModifier(afterPower, updatedRunner), 0);
 });
 
+test("echo power reduces enemy movement through the enemy turn", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [player],
+    enemyUnits: [enemy]
+  });
+  battleState.player.commanderId = "echo";
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+
+  let updatedEnemy = system.getStateForSave().enemy.units[0];
+  assert.equal(getMovementModifier(system.getStateForSave(), updatedEnemy), -1);
+
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.startEnemyTurnActions().changed, true);
+
+  updatedEnemy = system.getStateForSave().enemy.units[0];
+  assert.equal(getMovementModifier(system.getStateForSave(), updatedEnemy), -1);
+
+  assert.equal(system.finalizeEnemyTurn().changed, true);
+
+  updatedEnemy = system.getStateForSave().enemy.units[0];
+  assert.equal(getMovementModifier(system.getStateForSave(), updatedEnemy), 0);
+});
+
+test("echo units can reposition 1 tile after attacking", () => {
+  const attacker = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1, {
+    current: {
+      hp: 6
+    }
+  });
+  const distantEnemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 6);
+  const battleState = createTestBattleState({
+    width: 8,
+    height: 8,
+    playerUnits: [attacker],
+    enemyUnits: [defender, distantEnemy]
+  });
+  battleState.player.commanderId = "echo";
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  let afterAttack = system.getStateForSave();
+  const attackSnapshot = system.getSnapshot();
+  let updatedAttacker = afterAttack.player.units.find((unit) => unit.id === attacker.id);
+
+  assert.equal(afterAttack.pendingAction.mode, "slipstream");
+  assert.equal(afterAttack.selection.id, attacker.id);
+  assert.equal(updatedAttacker.hasAttacked, true);
+  assert.ok(attackSnapshot.presentation.reachableTiles.length > 0);
+
+  const slipstreamTile = attackSnapshot.presentation.reachableTiles[0];
+
+  assert.equal(system.handleTileSelection(slipstreamTile.x, slipstreamTile.y), true);
+
+  const afterSlipstream = system.getStateForSave();
+  updatedAttacker = afterSlipstream.player.units.find((unit) => unit.id === attacker.id);
+
+  assert.equal(updatedAttacker.x, slipstreamTile.x);
+  assert.equal(updatedAttacker.y, slipstreamTile.y);
+  assert.equal(updatedAttacker.hasAttacked, true);
+  assert.equal(afterSlipstream.pendingAction, null);
+});
+
+test("enemy echo units reposition after attacking when a slipstream tile is available", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 0, {
+    current: {
+      hp: 1
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 0, 0);
+  const battleState = createTestBattleState({
+    width: 6,
+    height: 6,
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 7
+  });
+  battleState.enemy.commanderId = "echo";
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const updatedEnemy = system.getStateForSave().enemy.units.find((unit) => unit.id === enemy.id);
+
+  assert.equal(step.type, "move");
+  assert.notEqual(`${updatedEnemy.x},${updatedEnemy.y}`, `${enemy.x},${enemy.y}`);
+  assert.equal(updatedEnemy.hasAttacked, true);
+});
+
 test("unimplemented commanders use explicit future effect names without old generic mechanics", () => {
   const staleTypes = new Set([
     "charge-dealt",
@@ -342,7 +443,7 @@ test("unimplemented commanders use explicit future effect names without old gene
     "supply-drop"
   ]);
 
-  for (const commander of COMMANDERS.filter((candidate) => !["atlas", "viper", "rook"].includes(candidate.id))) {
+  for (const commander of COMMANDERS.filter((candidate) => !["atlas", "viper", "rook", "echo"].includes(candidate.id))) {
     assert.equal(staleTypes.has(commander.passive.type), false, commander.id);
     assert.equal(staleTypes.has(commander.active.type), false, commander.id);
   }
@@ -351,7 +452,7 @@ test("unimplemented commanders use explicit future effect names without old gene
 test("unimplemented commander hooks are inert until their mechanics are built", () => {
   const unit = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 4);
-  const futureCommanderIds = ["echo", "blaze", "knox", "falcon", "graves", "nova", "sable"];
+  const futureCommanderIds = ["blaze", "knox", "falcon", "graves", "nova", "sable"];
 
   for (const commanderId of futureCommanderIds) {
     const battleState = createTestBattleState({

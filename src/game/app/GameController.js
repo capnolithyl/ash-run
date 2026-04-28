@@ -124,6 +124,39 @@ function delay(ms) {
   });
 }
 
+function getFundsGainFromSnapshots(previousSnapshot, nextSnapshot) {
+  if (
+    !previousSnapshot ||
+    !nextSnapshot ||
+    previousSnapshot.id !== nextSnapshot.id ||
+    previousSnapshot.map?.id !== nextSnapshot.map?.id
+  ) {
+    return null;
+  }
+
+  for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
+    const previousFunds = Number(previousSnapshot[side]?.funds);
+    const nextFunds = Number(nextSnapshot[side]?.funds);
+
+    if (!Number.isFinite(previousFunds) || !Number.isFinite(nextFunds)) {
+      continue;
+    }
+
+    const amount = nextFunds - previousFunds;
+
+    if (amount > 0) {
+      return {
+        side,
+        amount,
+        previousFunds,
+        nextFunds
+      };
+    }
+  }
+
+  return null;
+}
+
 const BATTLE_CONTEXT_ACTION_DEDUPE_MS = 180;
 
 /**
@@ -1011,7 +1044,16 @@ export class GameController {
   }
 
   syncBattleState({ allowEnemyFocusDuringEnemyTurn = false } = {}) {
-    this.state.battleSnapshot = this.battleSystem?.getSnapshot() ?? null;
+    const previousSnapshot = this.state.battleSnapshot;
+    const nextSnapshot = this.battleSystem?.getSnapshot() ?? null;
+    const autoFundsGain =
+      this.state.battleUi.fundsGain ? null : getFundsGainFromSnapshots(previousSnapshot, nextSnapshot);
+
+    if (autoFundsGain) {
+      this.prepareFundsGain(autoFundsGain, { pending: true });
+    }
+
+    this.state.battleSnapshot = nextSnapshot;
 
     const focusSide = getFocusSideForSelection(
       this.state.battleSnapshot,
@@ -1031,6 +1073,16 @@ export class GameController {
     }
 
     this.emit();
+
+    if (autoFundsGain) {
+      const fundsGainId = this.state.battleUi.fundsGain?.id;
+
+      if (fundsGainId) {
+        queueMicrotask(() => {
+          void this.playPreparedFundsGain(fundsGainId);
+        });
+      }
+    }
   }
 
   async debugSpawnUnit({ owner, unitTypeId, x, y, stats }) {

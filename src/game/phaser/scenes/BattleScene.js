@@ -53,14 +53,17 @@ function getMidpointBetweenPoints(left, right) {
 function getHoveredMovementPath(snapshot, hoveredTile) {
   const presentation = snapshot.presentation ?? {};
   const selectedUnit = getSelectedUnit(snapshot);
+  const isSlipstream =
+    presentation.pendingAction?.unitId === selectedUnit?.id &&
+    presentation.pendingAction?.isSlipstream;
 
   if (
     !hoveredTile ||
     !selectedUnit ||
     selectedUnit.owner !== "player" ||
     snapshot.turn.activeSide !== "player" ||
-    selectedUnit.hasMoved ||
-    presentation.pendingAction?.unitId === selectedUnit.id
+    (!isSlipstream && selectedUnit.hasMoved) ||
+    (presentation.pendingAction?.unitId === selectedUnit.id && !isSlipstream)
   ) {
     return [];
   }

@@ -88,6 +88,7 @@ export const COMMANDERS = [
     active: {
       name: "Disruption",
       type: "echo-disruption",
+      movementPenalty: 1,
       summary: "All enemy units get -1 movement for 1 turn.",
     },
   },

@@ -8,6 +8,7 @@ import { canCaptureBuilding, captureBuildingForUnit } from "./captureRules.js";
 import {
   activateCommanderPower,
   applyChargeFromCombat,
+  canSlipstreamAfterAttack,
   canResupplyUnit,
   getMovementModifier
 } from "./commanderEffects.js";
@@ -45,6 +46,40 @@ function getSupportNeedScore(state, target) {
   const missingStamina = canResupply ? target.stats.staminaMax - target.current.stamina : 0;
 
   return missingHp * 2 + missingAmmo * 3 + missingStamina * 2;
+}
+
+function getSlipstreamTiles(state, unit) {
+  return getReachableTiles(state, unit, 1).filter((tile) => tile.x !== unit.x || tile.y !== unit.y);
+}
+
+function prepareSlipstreamReposition(system, attacker) {
+  if (!canSlipstreamAfterAttack(system.state, attacker) || attacker.transport?.carriedByUnitId) {
+    return false;
+  }
+
+  const slipstreamTiles = getSlipstreamTiles(system.state, attacker);
+
+  if (slipstreamTiles.length === 0) {
+    return false;
+  }
+
+  system.state.pendingAction = {
+    type: "slipstream",
+    unitId: attacker.id,
+    mode: "slipstream",
+    fromX: attacker.x,
+    fromY: attacker.y,
+    fromStamina: attacker.current.stamina,
+    toX: attacker.x,
+    toY: attacker.y
+  };
+  system.state.selection = {
+    type: "unit",
+    id: attacker.id,
+    x: attacker.x,
+    y: attacker.y
+  };
+  return true;
 }
 
 export function getSupportTargetsForUnit(system, unit, { requireNeed = true } = {}) {
@@ -149,6 +184,25 @@ export function handleTileSelection(system, x, y) {
   }
 
   if (pendingAction && pendingUnit?.owner === TURN_SIDES.PLAYER) {
+    if ((pendingAction.mode ?? "menu") === "slipstream") {
+      const canMoveToTile = getSlipstreamTiles(system.state, pendingUnit)
+        .some((tile) => tile.x === x && tile.y === y);
+
+      if (!canMoveToTile) {
+        return false;
+      }
+
+      pendingUnit.x = x;
+      pendingUnit.y = y;
+      if (pendingUnit.unitTypeId === "runner" && pendingUnit.transport?.carryingUnitId) {
+        system.syncTransportCargoPosition(pendingUnit);
+      }
+      appendLog(system.state, `${pendingUnit.name} slipped into a new position.`);
+      system.clearPendingAction();
+      system.clearSelection();
+      return true;
+    }
+
     if ((pendingAction.mode ?? "menu") === "fire" && unitAtTile?.owner === TURN_SIDES.ENEMY) {
       const changed = attackTarget(system, pendingUnit.id, unitAtTile.id);
 
@@ -275,6 +329,12 @@ export function handleContextAction(system) {
   const pendingUnit = pendingAction ? findUnitById(system.state, pendingAction.unitId) : null;
 
   if (pendingAction && pendingUnit?.owner === TURN_SIDES.PLAYER) {
+    if ((pendingAction.mode ?? "menu") === "slipstream") {
+      system.clearPendingAction();
+      system.clearSelection();
+      return true;
+    }
+
     if ((pendingAction.mode ?? "menu") === "fire") {
       return cancelPendingAttack(system);
     }
@@ -461,8 +521,18 @@ export function attackTarget(system, attackerId, defenderId) {
   }
 
   removeDeadUnits(system.state);
-  system.clearPendingAction();
-  system.clearSelection();
+  const updatedAttacker = findUnitById(system.state, attacker.id);
+  const preparedSlipstream =
+    updatedAttacker &&
+    updatedAttacker.owner === TURN_SIDES.PLAYER &&
+    system.state.turn.activeSide === TURN_SIDES.PLAYER &&
+    prepareSlipstreamReposition(system, updatedAttacker);
+
+  if (!preparedSlipstream) {
+    system.clearPendingAction();
+    system.clearSelection();
+  }
+
   system.updateVictoryState();
   return true;
 }

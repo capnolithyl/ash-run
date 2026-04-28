@@ -1,24 +1,52 @@
-import { pickOne } from "../core/random.js";
+import { pickOne, randomInt } from "../core/random.js";
 
-const LEVEL_UP_WEIGHTS = [
-  { stat: "attack", weight: 4, increment: 1 },
-  { stat: "armor", weight: 4, increment: 1 },
-  { stat: "maxHealth", weight: 4, increment: 2 },
-  { stat: "movement", weight: 1, increment: 1 },
-  { stat: "maxRange", weight: 1, increment: 1 },
-  { stat: "staminaMax", weight: 2, increment: 1 },
-  { stat: "ammoMax", weight: 2, increment: 1 },
-  { stat: "luck", weight: 2, increment: 1 }
+const LEVEL_UP_GROWTHS = [
+  { stat: "attack", chance: 50, weight: 4, increment: 1 },
+  { stat: "armor", chance: 50, weight: 4, increment: 1 },
+  { stat: "maxHealth", chance: 50, weight: 4, increment: 2 },
+  { stat: "movement", chance: 10, weight: 1, increment: 1 },
+  { stat: "maxRange", chance: 5, weight: 1, increment: 1 },
+  { stat: "staminaMax", chance: 25, weight: 2, increment: 1 },
+  { stat: "ammoMax", chance: 20, weight: 2, increment: 1 },
+  { stat: "luck", chance: 20, weight: 2, increment: 1 }
 ];
 
-function buildWeightedStats(unit) {
-  return LEVEL_UP_WEIGHTS.flatMap((entry) => {
-    if (entry.stat === "maxRange" && unit.stats.maxRange === 0) {
-      return [];
-    }
+function isGrowthEligible(unit, entry) {
+  return !(entry.stat === "maxRange" && unit.stats.maxRange === 0);
+}
 
-    return Array.from({ length: entry.weight }, () => entry);
-  });
+function getEligibleGrowths(unit) {
+  return LEVEL_UP_GROWTHS.filter((entry) => isGrowthEligible(unit, entry));
+}
+
+function buildWeightedStats(unit) {
+  return getEligibleGrowths(unit).flatMap((entry) =>
+    Array.from({ length: entry.weight }, () => entry)
+  );
+}
+
+function applyGrowth(unit, entry) {
+  const previousValue = unit.stats[entry.stat];
+  unit.stats[entry.stat] += entry.increment;
+
+  if (entry.stat === "maxHealth") {
+    unit.current.hp += entry.increment;
+  }
+
+  if (entry.stat === "staminaMax") {
+    unit.current.stamina += entry.increment;
+  }
+
+  if (entry.stat === "ammoMax") {
+    unit.current.ammo += entry.increment;
+  }
+
+  return {
+    stat: entry.stat,
+    increment: entry.increment,
+    previousValue,
+    nextValue: unit.stats[entry.stat]
+  };
 }
 
 export function getXpThreshold(level) {
@@ -52,33 +80,33 @@ export function awardExperience(unit, amount, seed) {
     const previousLevel = nextUnit.level;
     nextUnit.level += 1;
 
-    const weightedStats = buildWeightedStats(nextUnit);
-    const roll = pickOne(nextSeed, weightedStats);
-    nextSeed = roll.seed;
+    const statGains = [];
 
-    const previousValue = nextUnit.stats[roll.value.stat];
-    nextUnit.stats[roll.value.stat] += roll.value.increment;
+    for (const entry of getEligibleGrowths(nextUnit)) {
+      const roll = randomInt(nextSeed, 1, 100);
+      nextSeed = roll.seed;
 
-    if (roll.value.stat === "maxHealth") {
-      nextUnit.current.hp += roll.value.increment;
+      if (roll.value <= entry.chance) {
+        statGains.push(applyGrowth(nextUnit, entry));
+      }
     }
 
-    if (roll.value.stat === "staminaMax") {
-      nextUnit.current.stamina += roll.value.increment;
-    }
+    let usedFallback = false;
 
-    if (roll.value.stat === "ammoMax") {
-      nextUnit.current.ammo += roll.value.increment;
+    if (statGains.length === 0) {
+      const weightedStats = buildWeightedStats(nextUnit);
+      const fallbackRoll = pickOne(nextSeed, weightedStats);
+      nextSeed = fallbackRoll.seed;
+      statGains.push(applyGrowth(nextUnit, fallbackRoll.value));
+      usedFallback = true;
     }
 
     notes.push(`${nextUnit.name} reached level ${nextUnit.level}.`);
     levelUps.push({
       previousLevel,
       newLevel: nextUnit.level,
-      stat: roll.value.stat,
-      increment: roll.value.increment,
-      previousValue,
-      nextValue: nextUnit.stats[roll.value.stat]
+      usedFallback,
+      statGains
     });
   }
 

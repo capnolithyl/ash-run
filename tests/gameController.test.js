@@ -133,6 +133,39 @@ test("syncBattleState ignores enemy auto-selection during enemy turns unless exp
   assert.equal(battleUi.enemyFocus.id, enemyUnit.id);
 });
 
+test("syncBattleState auto-detects post-action funds gains outside turn-start flow", async () => {
+  const controller = new GameController();
+  const previousState = createTestBattleState({ id: "funds-gain-check" });
+  const nextState = structuredClone(previousState);
+  nextState.player.funds += 100;
+  let snapshot = previousState;
+  let playedFundsGainId = null;
+
+  controller.battleSystem = {
+    getSnapshot() {
+      return structuredClone(snapshot);
+    }
+  };
+  controller.playPreparedFundsGain = async (fundsGainId) => {
+    playedFundsGainId = fundsGainId;
+  };
+
+  controller.syncBattleState();
+  snapshot = nextState;
+  controller.syncBattleState();
+
+  const battleUi = controller.getState().battleUi;
+  assert.equal(battleUi.fundsGain?.side, TURN_SIDES.PLAYER);
+  assert.equal(battleUi.fundsGain?.amount, 100);
+  assert.equal(battleUi.fundsGain?.from, 900);
+  assert.equal(battleUi.fundsGain?.to, 1000);
+  assert.equal(battleUi.fundsGain?.pending, true);
+
+  await Promise.resolve();
+
+  assert.equal(playedFundsGainId, battleUi.fundsGain?.id);
+});
+
 test("startSkirmish opens an unsaved battle with configured economy", async () => {
   const controller = new GameController();
 
