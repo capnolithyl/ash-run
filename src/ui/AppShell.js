@@ -1645,6 +1645,12 @@ export class AppShell {
           experience: this.getDebugNumberField("unit-experience", NaN)
         });
         break;
+      case "debug-apply-commanders":
+        await this.controller.debugSetCommanders({
+          playerCommanderId: this.getDebugField("player-commander", "atlas"),
+          enemyCommanderId: this.getDebugField("enemy-commander", "viper")
+        });
+        break;
       case "debug-full-charge-player":
         await this.controller.debugSetCharge("player", 9999);
         break;

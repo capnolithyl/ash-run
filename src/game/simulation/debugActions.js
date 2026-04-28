@@ -1,7 +1,8 @@
 import { TURN_SIDES } from "../core/constants.js";
+import { getCommanderById } from "../content/commanders.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { appendLog } from "./battleLog.js";
-import { getCommanderPowerMaxForSide } from "./commanderEffects.js";
+import { getCommanderPowerMaxForSide, getRecruitDiscount } from "./commanderEffects.js";
 import { getLivingUnits, getSelectedUnit, getTerrainAt, getUnitAt } from "./selectors.js";
 import { createUnitFromType } from "./unitFactory.js";
 
@@ -116,6 +117,39 @@ export function applyDebugStatsToSelectedUnit(system, debugPatch) {
 
   appendLog(system.state, `[Debug] Updated stats for ${selectedUnit.name}.`);
   system.updateVictoryState();
+  return true;
+}
+
+export function setDebugCommanders(system, commanderAssignments) {
+  let changed = false;
+  const updatedSides = [];
+
+  for (const [side, commanderId] of Object.entries(commanderAssignments ?? {})) {
+    if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(side)) {
+      continue;
+    }
+
+    const commander = getCommanderById(commanderId);
+
+    if (!commander || system.state[side].commanderId === commander.id) {
+      continue;
+    }
+
+    system.state[side].commanderId = commander.id;
+    system.state[side].charge = Math.max(
+      0,
+      Math.min(getCommanderPowerMaxForSide(system.state, side), Number(system.state[side].charge) || 0)
+    );
+    system.state[side].recruitDiscount = getRecruitDiscount(system.state, side);
+    changed = true;
+    updatedSides.push(`${side}: ${commander.name}`);
+  }
+
+  if (!changed) {
+    return false;
+  }
+
+  appendLog(system.state, `[Debug] Commander override updated (${updatedSides.join(", ")}).`);
   return true;
 }
 

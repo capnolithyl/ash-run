@@ -418,9 +418,12 @@ test("debug pause menu groups tools into accordion sections", () => {
   assert.match(html, /<strong>Debug Toolkit<\/strong>/);
   assert.match(html, /class="debug-section" open/);
   assert.match(html, /<strong>Spawn Unit<\/strong>/);
+  assert.match(html, /<strong>Commander Overrides<\/strong>/);
   assert.match(html, /<strong>Battle Shortcuts<\/strong>/);
   assert.match(html, /<strong>Selected Unit Overrides<\/strong>/);
   assert.match(html, /data-debug-field="spawn-owner"/);
+  assert.match(html, /data-debug-field="player-commander"/);
+  assert.match(html, /data-debug-field="enemy-commander"/);
   assert.match(html, /data-debug-field="unit-hp"/);
 });
 
@@ -466,4 +469,42 @@ test("debug spawn fields start with the selected unit type defaults", () => {
     html,
     new RegExp(`data-debug-field="spawn-max-ammo" type="number" value="${defaultUnit.ammoMax}"`)
   );
+});
+
+test("debug commander overrides reflect the current battle commanders", () => {
+  const battleState = createTestBattleState();
+  battleState.player.commanderId = "atlas";
+  battleState.enemy.commanderId = "sable";
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: true,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: true,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /Atlas vs Sable/);
+  assert.match(html, /data-debug-field="player-commander"[\s\S]*value="atlas" selected/);
+  assert.match(html, /data-debug-field="enemy-commander"[\s\S]*value="sable" selected/);
+  assert.match(html, /data-action="debug-apply-commanders"/);
 });

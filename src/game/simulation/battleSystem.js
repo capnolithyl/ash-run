@@ -201,6 +201,10 @@ export class BattleSystem {
     return debugActions.applyDebugStatsToSelectedUnit(this, debugPatch);
   }
 
+  setDebugCommanders(commanderAssignments) {
+    return debugActions.setDebugCommanders(this, commanderAssignments);
+  }
+
   setDebugCharge(side, charge) {
     return debugActions.setDebugCharge(this, side, charge);
   }

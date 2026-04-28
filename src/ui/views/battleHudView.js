@@ -1,6 +1,6 @@
 import { BATTLE_NOTICE_DISPLAY_MS, BUILDING_KEYS, TERRAIN_KEYS, TURN_SIDES } from "../../game/core/constants.js";
 import { getBattlefieldLayout } from "../../game/core/battlefieldLayout.js";
-import { getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
+import { COMMANDERS, getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 import { getArmorModifier } from "../../game/simulation/commanderEffects.js";
@@ -896,6 +896,9 @@ function renderDebugControls(state, battleSnapshot) {
   const selectedTile = battleSnapshot.presentation?.selectedTile;
   const selectedUnit = selectedTile?.unit;
   const defaultSpawnUnit = UNIT_CATALOG.grunt ?? Object.values(UNIT_CATALOG)[0];
+  const commanderOptions = COMMANDERS.map(
+    (commander) => `<option value="${commander.id}">${commander.name}</option>`
+  ).join("");
   const unitOptions = Object.values(UNIT_CATALOG)
     .map(
       (unit) => `<option
@@ -953,6 +956,39 @@ function renderDebugControls(state, battleSnapshot) {
         </div>
         <div class="debug-actions">
           <button class="menu-button menu-button--small" data-action="debug-spawn-unit">Spawn Unit</button>
+        </div>
+      </details>
+      <details class="debug-section">
+        <summary>
+          <span>
+            <strong>Commander Overrides</strong>
+            <small>${getCommanderById(battleSnapshot.player.commanderId)?.name ?? "Player"} vs ${
+              getCommanderById(battleSnapshot.enemy.commanderId)?.name ?? "Enemy"
+            }</small>
+          </span>
+        </summary>
+        <div class="debug-grid">
+          <label>Player Commander
+            <select data-debug-field="player-commander">
+              ${commanderOptions.replace(
+                `value="${battleSnapshot.player.commanderId}"`,
+                `value="${battleSnapshot.player.commanderId}" selected`
+              )}
+            </select>
+          </label>
+          <label>Enemy Commander
+            <select data-debug-field="enemy-commander">
+              ${commanderOptions.replace(
+                `value="${battleSnapshot.enemy.commanderId}"`,
+                `value="${battleSnapshot.enemy.commanderId}" selected`
+              )}
+            </select>
+          </label>
+        </div>
+        <div class="debug-actions">
+          <button class="menu-button menu-button--small" data-action="debug-apply-commanders">
+            Apply Commanders
+          </button>
         </div>
       </details>
       <details class="debug-section">

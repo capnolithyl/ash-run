@@ -10,7 +10,7 @@ import {
 } from "../core/constants.js";
 import { randomInt } from "../core/random.js";
 import { canCaptureBuilding } from "./captureRules.js";
-import { getMovementModifier } from "./commanderEffects.js";
+import { canResupplyUnit, getMovementModifier } from "./commanderEffects.js";
 import {
   getAttackForecast,
   getAttackRangeCap,
@@ -51,12 +51,23 @@ function countUnitsByFamily(units, family) {
   return units.filter((unit) => unit.family === family).length;
 }
 
-function needsService(unit) {
+function needsService(state, unit) {
+  const canResupply = canResupplyUnit(state, unit);
+
   return (
     unit.current.hp < unit.stats.maxHealth ||
-    unit.current.ammo < unit.stats.ammoMax ||
-    unit.current.stamina < unit.stats.staminaMax
+    (canResupply && unit.current.ammo < unit.stats.ammoMax) ||
+    (canResupply && unit.current.stamina < unit.stats.staminaMax)
   );
+}
+
+function getSupportNeedScore(state, target) {
+  const canResupply = canResupplyUnit(state, target);
+  const missingHp = target.stats.maxHealth - target.current.hp;
+  const missingAmmo = canResupply ? target.stats.ammoMax - target.current.ammo : 0;
+  const missingStamina = canResupply ? target.stats.staminaMax - target.current.stamina : 0;
+
+  return missingHp * 2 + missingAmmo * 3 + missingStamina * 2;
 }
 
 function canRepairUnitAtBuilding(unit, building) {
@@ -123,7 +134,7 @@ function scoreEnemyRecruitmentOption(state, option) {
     const targetFamily = option.id === "medic" ? UNIT_TAGS.INFANTRY : UNIT_TAGS.VEHICLE;
     const hasRelevantAlly = countUnitsByFamily(enemyUnits, targetFamily) > 0;
     const hasRelevantNeed = enemyUnits.some(
-      (unit) => unit.family === targetFamily && needsService(unit)
+      (unit) => unit.family === targetFamily && needsService(state, unit)
     );
     const existingSupport = countUnitsByType(enemyUnits, option.id);
 
@@ -255,7 +266,7 @@ export function getBestSupportPlan(state, unit) {
         candidate.id === unit.id ||
         candidate.family !== targetFamily ||
         candidate.transport?.carriedByUnitId ||
-        !needsService(candidate)
+        !needsService(state, candidate)
       ) {
         return false;
       }
@@ -263,17 +274,9 @@ export function getBestSupportPlan(state, unit) {
       return Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1;
     })
     .map((target) => {
-      const missingHp = target.stats.maxHealth - target.current.hp;
-      const missingAmmo = target.stats.ammoMax - target.current.ammo;
-      const missingStamina = target.stats.staminaMax - target.current.stamina;
-
       return {
         target,
-        score:
-          missingHp * 2 +
-          missingAmmo * 3 +
-          missingStamina * 2 +
-          Math.max(1, target.cost / 200)
+        score: getSupportNeedScore(state, target) + Math.max(1, target.cost / 200)
       };
     })
     .sort((left, right) => right.score - left.score)[0] ?? null;

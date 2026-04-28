@@ -179,3 +179,22 @@ test("skirmish battle tile clicks sync selection without a run save", async () =
   assert.equal(state.battleSnapshot.selection.type, "unit");
   assert.equal(state.battleSnapshot.selection.id, playerUnit.id);
 });
+
+test("sandbox commander overrides update both battle sides without saving a run", async () => {
+  const controller = new GameController();
+  const system = new BattleSystem(createTestBattleState());
+
+  controller.battleSystem = system;
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.debugMode = true;
+
+  await controller.debugSetCommanders({
+    playerCommanderId: "atlas",
+    enemyCommanderId: "sable"
+  });
+
+  const state = controller.getState();
+  assert.equal(state.runState, null);
+  assert.equal(state.battleSnapshot.player.commanderId, "atlas");
+  assert.equal(state.battleSnapshot.enemy.commanderId, "sable");
+});

@@ -439,6 +439,63 @@ test("rook liquidation spends funds, grants current-turn attack, and expires on 
   assert.equal(getAttackModifier(afterEndTurn, afterEndTurn.player.units[0]), 0);
 });
 
+test("rook units are not support targets when only ammo and stamina are missing", () => {
+  const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 3, 3);
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3, {
+    current: {
+      hp: 18,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [medic, grunt],
+    enemyUnits: [enemy]
+  });
+  battleState.player.commanderId = "rook";
+
+  const system = new BattleSystem(battleState);
+
+  assert.deepEqual(system.getSupportTargetsForUnit(medic), []);
+});
+
+test("rook support abilities can still heal HP without restoring ammo or stamina", () => {
+  const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 3, 3);
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [medic, grunt],
+    enemyUnits: [enemy]
+  });
+  battleState.player.commanderId = "rook";
+  battleState.selection = { type: "unit", id: medic.id, x: medic.x, y: medic.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(medic.x, medic.y), true);
+  assert.equal(system.useSupportAbilityWithPendingUnit(grunt.id), true);
+
+  const afterSupport = system.getStateForSave();
+  const updatedMedic = afterSupport.player.units.find((unit) => unit.id === medic.id);
+  const updatedGrunt = afterSupport.player.units.find((unit) => unit.id === grunt.id);
+
+  assert.ok(updatedGrunt.current.hp > grunt.current.hp);
+  assert.equal(updatedGrunt.current.ammo, 0);
+  assert.equal(updatedGrunt.current.stamina, 0);
+  assert.equal(updatedMedic.cooldowns.support, 2);
+});
+
 test("damage forecast matches actual damage with terrain armor", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1);

@@ -1057,6 +1057,21 @@ export class GameController {
     }
   }
 
+  async debugSetCommanders({ playerCommanderId, enemyCommanderId }) {
+    if (!this.battleSystem || !this.state.debugMode) {
+      return;
+    }
+
+    const changed = this.battleSystem.setDebugCommanders({
+      [TURN_SIDES.PLAYER]: playerCommanderId,
+      [TURN_SIDES.ENEMY]: enemyCommanderId
+    });
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  }
+
   async debugSetCharge(side, charge) {
     if (!this.battleSystem || !this.state.debugMode) {
       return;

@@ -8,6 +8,7 @@ import { canCaptureBuilding, captureBuildingForUnit } from "./captureRules.js";
 import {
   activateCommanderPower,
   applyChargeFromCombat,
+  canResupplyUnit,
   getMovementModifier
 } from "./commanderEffects.js";
 import {
@@ -37,6 +38,15 @@ export function getSupportTargetForUnit(system, unit, { requireNeed = false } = 
   return getSupportTargetsForUnit(system, unit, { requireNeed })[0]?.target ?? null;
 }
 
+function getSupportNeedScore(state, target) {
+  const missingHp = target.stats.maxHealth - target.current.hp;
+  const canResupply = canResupplyUnit(state, target);
+  const missingAmmo = canResupply ? target.stats.ammoMax - target.current.ammo : 0;
+  const missingStamina = canResupply ? target.stats.staminaMax - target.current.stamina : 0;
+
+  return missingHp * 2 + missingAmmo * 3 + missingStamina * 2;
+}
+
 export function getSupportTargetsForUnit(system, unit, { requireNeed = true } = {}) {
   const targetFamily =
     unit?.unitTypeId === "medic"
@@ -62,13 +72,9 @@ export function getSupportTargetsForUnit(system, unit, { requireNeed = true } = 
       return Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1;
     })
     .map((target) => {
-      const missingHp = target.stats.maxHealth - target.current.hp;
-      const missingAmmo = target.stats.ammoMax - target.current.ammo;
-      const missingStamina = target.stats.staminaMax - target.current.stamina;
-
       return {
         target,
-        needScore: missingHp * 2 + missingAmmo * 3 + missingStamina * 2
+        needScore: getSupportNeedScore(system.state, target)
       };
     })
     .filter((option) => !requireNeed || option.needScore > 0)
@@ -80,9 +86,14 @@ export function applySupportAbility(system, unit, target) {
     return false;
   }
 
-  restoreUnitServiceResources(system.state, target, {
+  const result = restoreUnitServiceResources(system.state, target, {
     healAmount: Math.ceil(target.stats.maxHealth * 0.5)
   });
+
+  if (!result.changed) {
+    return false;
+  }
+
   unit.cooldowns.support = unit.unitTypeId === "medic" ? 2 : 3;
   unit.hasMoved = true;
   unit.hasAttacked = true;
