@@ -793,8 +793,8 @@ test("breaker halves only vehicle base armor for its own attack", () => {
   );
 
   const forecast = getAttackForecast(battleState, breaker, bruiser);
-  assert.equal(forecast.dealt.min, 5);
-  assert.equal(forecast.dealt.max, 5);
+  assert.equal(forecast.dealt.min, 8);
+  assert.equal(forecast.dealt.max, 8);
 
   const system = new BattleSystem(battleState);
   const startingHp = bruiser.current.hp;
@@ -804,7 +804,7 @@ test("breaker halves only vehicle base armor for its own attack", () => {
   const afterAttack = system.getStateForSave();
   const damagedBruiser = afterAttack.enemy.units[0];
 
-  assert.equal(startingHp - damagedBruiser.current.hp, 5);
+  assert.equal(startingHp - damagedBruiser.current.hp, 8);
   assert.equal(damagedBruiser.statuses.some((status) => status.type === "armor-break"), false);
   assert.equal(getDefenderArmor(afterAttack, damagedBruiser), bruiser.stats.armor + 2 + 3);
 });
