@@ -5,48 +5,60 @@
 Current combat damage is based on:
 
 1. Attacker base attack plus commander/status modifiers.
-2. Effectiveness bonus from the active weapon profile.
-3. Luck roll from `0` through the attacker's luck value.
-4. HP scaling by attacker health ratio.
+2. Flat effectiveness bonus when the attacker has the right matchup.
+3. HP scaling by attacker health ratio.
+4. Luck roll from `0` through the attacker's luck value.
 5. Defender armor plus commander/status, terrain, and building armor modifiers.
 
-Minimum final damage is 1.
+Minimum final damage is 0.
 
 ## Exact Damage Formula
 
 Given attacker **A** and defender **D**:
 
 1. `attack = activeWeapon.attack + attackModifier(A)`
-2. `armor = D.stats.armor + armorModifier(D) + terrainArmor(D) + buildingArmor(D)`
-3. `effectiveMultiplier = A.effectiveAgainstTags includes D.family ? weapon.effectiveMultiplier : 1`
-4. `hpRatio = max(0, A.current.hp / A.stats.maxHealth)`
-5. `roll = randomInt(0, A.stats.luck)` inclusive
-6. `scaledAttack = round(((attack * effectiveMultiplier) + roll) * hpRatio)`
-7. `damage = max(1, scaledAttack - armor)`
+2. `effectiveBonus = A.effectiveAgainstTags includes D.family ? 6 : 0`
+3. `baseArmor = D.stats.armor`
+4. `if A is Breaker and D is a vehicle, baseArmor = floor(baseArmor / 2)`
+5. `armor = baseArmor + armorModifier(D) + terrainArmor(D) + buildingArmor(D)`
+6. `hpRatio = max(0, A.current.hp / A.stats.maxHealth)`
+7. `roll = randomInt(0, A.stats.luck)` inclusive
+8. `scaledAttack = round((attack + effectiveBonus) * hpRatio)`
+9. `damage = max(0, scaledAttack + roll - armor)`
 
-Primary weapons use a 2x effective multiplier. Empty-ammo units switch to weaker secondary fire with 55% base attack, 1 range, no ammo cost, and a smaller 1.25x effective multiplier. Low-health attackers deal less damage through `hpRatio`.
+Player mental model:
+
+- Attack
+- Scale by HP
+- Add luck
+- Subtract defense
+
+Primary weapons still use full listed attack and consume ammo. Empty-ammo units switch to weaker secondary fire with 55% base attack, 1 range, and no ammo cost. Effectiveness is always a flat `+6`; there are no hidden multipliers in the current model.
 
 ## Counterattacks
 
 - Defenders can counter if the attacker is in legal range and the defender has either primary ammo or secondary fire.
 - Counter damage uses the same core formula.
+- Counterattacks naturally weaken when the defender has already lost HP because they use the defender's post-hit `hpRatio`.
 
 ## Ammo / Stamina
 
 - Primary attacks consume ammo.
 - Empty-ammo units can still make weak secondary attacks.
-- Movement consumes stamina by path cost.
+- Movement range is gated by terrain/path cost, but any completed reposition currently spends 1 stamina.
 - Sector servicing and some commander powers can resupply both.
 
 ## Effectiveness
+
+Current effectiveness tags:
 
 | Unit        | Effective Against                       |
 | ----------- | --------------------------------------- |
 | Longshots   | All Infantry                            |
 | Breakers    | All Vehicles                            |
 | Runners     | All Infantry                            |
-| Bruiser     | All Infantry                            |
-| Juggernaut  | All Infantry and Vehicles               |
+| Bruisers    | All Infantry                            |
+| Juggernauts | All Infantry and Vehicles               |
 | Medics      | No special effectiveness                |
 | Mechanics   | No special effectiveness                |
 | Siege Gun   | All Vehicles                            |
@@ -55,6 +67,8 @@ Primary weapons use a 2x effective multiplier. Empty-ammo units switch to weaker
 | Payload     | All Infantry and Vehicles               |
 | Interceptor | All Air Units                           |
 | Carrier     | Cannot attack                           |
+
+Breaker is the only special case beyond the shared `+6` rule: against vehicles, it also halves the defender's base armor before terrain/building/status cover is added.
 
 ## Support Actions
 

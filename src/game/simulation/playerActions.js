@@ -349,15 +349,6 @@ export function attackTarget(system, attackerId, defenderId) {
   }
 
   const defenderHpBefore = defender.current.hp;
-  if (attacker.unitTypeId === "breaker" && defender.family === UNIT_TAGS.VEHICLE) {
-    const existing = defender.statuses.find((status) => status.type === "armor-break");
-    if (existing) {
-      existing.turnsRemaining = 1;
-    } else {
-      defender.statuses.push({ type: "armor-break", turnsRemaining: 1 });
-    }
-    appendLog(system.state, `${defender.name} armor was broken by ${attacker.name}.`);
-  }
   const primaryStrike = getDamageResult(system.state, attacker, defender, attackProfile);
   defender.current.hp = Math.max(0, defender.current.hp - primaryStrike.damage);
   const primaryDamageDealt = defenderHpBefore - defender.current.hp;

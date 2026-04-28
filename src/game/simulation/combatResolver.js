@@ -15,6 +15,8 @@ import {
   getUnitAttackProfile
 } from "./selectors.js";
 
+const EFFECTIVE_ATTACK_BONUS = 6;
+
 function getTerrainArmorBonus(state, unit) {
   if (unit.family === UNIT_TAGS.AIR) {
     return 0;
@@ -46,12 +48,16 @@ function getBuildingArmorBonus(state, unit) {
   return 3;
 }
 
-function getArmorBreakMultiplier(unit) {
-  return unit.statuses?.some((status) => status.type === "armor-break") ? 0.5 : 1;
+function getArmorBreakMultiplier(attacker, defender) {
+  return attacker?.unitTypeId === "breaker" && defender.family === UNIT_TAGS.VEHICLE ? 0.5 : 1;
 }
 
-export function getDefenderArmor(state, defender) {
-  const baseArmor = Math.floor(defender.stats.armor * getArmorBreakMultiplier(defender));
+function getEffectivenessBonus(attacker, defender) {
+  return attacker.effectiveAgainstTags.includes(defender.family) ? EFFECTIVE_ATTACK_BONUS : 0;
+}
+
+export function getDefenderArmor(state, defender, attacker = null) {
+  const baseArmor = Math.floor(defender.stats.armor * getArmorBreakMultiplier(attacker, defender));
 
   return (
     baseArmor +
@@ -98,39 +104,27 @@ export function getTargetsForUnit(state, unit) {
 
 export function getDamageResult(state, attacker, defender, attackProfile = getUnitAttackProfile(attacker)) {
   const attackerAttack = attackProfile.attack + getAttackModifier(state, attacker);
-  const defenderArmor = getDefenderArmor(state, defender);
-  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
+  const defenderArmor = getDefenderArmor(state, defender, attacker);
+  const effectivenessBonus = getEffectivenessBonus(attacker, defender);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
 
   const attackRoll = randomInt(state.seed, 0, Math.max(0, attacker.stats.luck + getLuckModifier(state, attacker)));
   state.seed = attackRoll.seed;
 
-  const baseAttack = isEffective
-    ? attackerAttack * attackProfile.effectiveMultiplier
-    : attackerAttack;
-  const scaledAttack = Math.round((baseAttack + attackRoll.value) * healthRatio);
-  const damage = Math.max(1, scaledAttack - defenderArmor);
+  const scaledAttack = Math.round((attackerAttack + effectivenessBonus) * healthRatio);
+  const damage = Math.max(0, scaledAttack + attackRoll.value - defenderArmor);
 
   return {
     damage,
-    isEffective,
+    isEffective: effectivenessBonus > 0,
     weaponType: attackProfile.type
   };
 }
 
-function getDamageAmount(
-  attackerAttack,
-  defenderArmor,
-  isEffective,
-  effectiveMultiplier,
-  hp,
-  maxHealth,
-  luckRoll
-) {
+function getDamageAmount(attackerAttack, defenderArmor, effectivenessBonus, hp, maxHealth, luckRoll) {
   const healthRatio = Math.max(0, hp / maxHealth);
-  const baseAttack = isEffective ? attackerAttack * effectiveMultiplier : attackerAttack;
-  const scaledAttack = Math.round((baseAttack + luckRoll) * healthRatio);
-  return Math.max(1, scaledAttack - defenderArmor);
+  const scaledAttack = Math.round((attackerAttack + effectivenessBonus) * healthRatio);
+  return Math.max(0, scaledAttack + luckRoll - defenderArmor);
 }
 
 function getDamageRange(
@@ -142,8 +136,8 @@ function getDamageRange(
   attackProfile = getUnitAttackProfile(attacker)
 ) {
   const attackerAttack = attackProfile.attack + getAttackModifier(state, attacker);
-  const defenderArmor = getDefenderArmor(state, defender);
-  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
+  const defenderArmor = getDefenderArmor(state, defender, attacker);
+  const effectivenessBonus = getEffectivenessBonus(attacker, defender);
   const normalizedHpMin = Math.max(0, Math.min(hpMin, hpMax));
   const normalizedHpMax = Math.max(0, Math.max(hpMin, hpMax));
   const luckMin = 0;
@@ -153,8 +147,7 @@ function getDamageRange(
     min: getDamageAmount(
       attackerAttack,
       defenderArmor,
-      isEffective,
-      attackProfile.effectiveMultiplier,
+      effectivenessBonus,
       normalizedHpMin,
       attacker.stats.maxHealth,
       luckMin
@@ -162,13 +155,12 @@ function getDamageRange(
     max: getDamageAmount(
       attackerAttack,
       defenderArmor,
-      isEffective,
-      attackProfile.effectiveMultiplier,
+      effectivenessBonus,
       normalizedHpMax,
       attacker.stats.maxHealth,
       luckMax
     ),
-    isEffective
+    isEffective: effectivenessBonus > 0
   };
 }
 

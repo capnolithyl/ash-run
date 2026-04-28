@@ -495,6 +495,45 @@ test("damage forecast matches actual damage with building and status armor", () 
   assert.equal(forecast.dealt.max, actualDamage);
 });
 
+test("combat can deal zero damage when defense fully absorbs the hit", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
+  attacker.stats.luck = 0;
+  defender.stats.luck = 0;
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender],
+    seed: 3
+  });
+  battleState.player.commanderId = "rook";
+  battleState.enemy.commanderId = "rook";
+  battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.FOREST;
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) => building.x !== defender.x || building.y !== defender.y
+  );
+  battleState.map.buildings.push({
+    id: "enemy-zero-damage-sector",
+    type: BUILDING_KEYS.SECTOR,
+    owner: TURN_SIDES.ENEMY,
+    x: defender.x,
+    y: defender.y
+  });
+
+  const forecast = getAttackForecast(battleState, attacker, defender);
+  const system = new BattleSystem(battleState);
+  const startingHp = defender.current.hp;
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  const afterAttack = system.getStateForSave();
+  const damagedDefender = afterAttack.enemy.units.find((unit) => unit.id === defender.id);
+  const actualDamage = startingHp - damagedDefender.current.hp;
+
+  assert.equal(forecast.dealt.min, 0);
+  assert.equal(forecast.dealt.max, 0);
+  assert.equal(actualDamage, 0);
+});
+
 test("movement stamina is a one-token cost regardless of path length", () => {
   const unit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
     current: {
@@ -718,19 +757,18 @@ test("hospitals restore infantry once per owner and do not service vehicles", ()
   assert.equal(vehicleSystem.canCaptureWithPendingUnit(), false);
 });
 
-test("breaker armor break lasts one turn and only halves base armor", () => {
+test("breaker halves only vehicle base armor for its own attack", () => {
   const breaker = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 1, 1);
   const bruiser = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
-  breaker.stats.attack = 1;
-  breaker.stats.maxHealth = 50;
-  breaker.current.hp = 50;
   breaker.stats.luck = 0;
   bruiser.stats.luck = 0;
   const battleState = createTestBattleState({
     playerUnits: [breaker],
     enemyUnits: [bruiser],
-    seed: 3
+    seed: 4
   });
+  battleState.player.commanderId = "rook";
+  battleState.enemy.commanderId = "rook";
   battleState.map.tiles[bruiser.y][bruiser.x] = TERRAIN_KEYS.FOREST;
   battleState.map.buildings = battleState.map.buildings.filter(
     (building) => building.x !== bruiser.x || building.y !== bruiser.y
@@ -744,23 +782,26 @@ test("breaker armor break lasts one turn and only halves base armor", () => {
   });
 
   assert.equal(getDefenderArmor(battleState, bruiser), bruiser.stats.armor + 2 + 3);
+  assert.equal(
+    getDefenderArmor(battleState, bruiser, breaker),
+    Math.floor(bruiser.stats.armor * 0.5) + 2 + 3
+  );
+
+  const forecast = getAttackForecast(battleState, breaker, bruiser);
+  assert.equal(forecast.dealt.min, 5);
+  assert.equal(forecast.dealt.max, 5);
 
   const system = new BattleSystem(battleState);
+  const startingHp = bruiser.current.hp;
 
   assert.equal(system.attackTarget(breaker.id, bruiser.id), true);
 
-  const afterBreak = system.getStateForSave();
-  const brokenBruiser = afterBreak.enemy.units[0];
+  const afterAttack = system.getStateForSave();
+  const damagedBruiser = afterAttack.enemy.units[0];
 
-  assert.equal(brokenBruiser.statuses.some((status) => status.type === "armor-break"), true);
-  assert.equal(getDefenderArmor(afterBreak, brokenBruiser), Math.floor(bruiser.stats.armor * 0.5) + 2 + 3);
-
-  assert.equal(system.endTurn(), true);
-  assert.equal(system.startEnemyTurnActions().changed, true);
-
-  const afterTick = system.getStateForSave().enemy.units[0];
-
-  assert.equal(afterTick.statuses.some((status) => status.type === "armor-break"), false);
+  assert.equal(startingHp - damagedBruiser.current.hp, 5);
+  assert.equal(damagedBruiser.statuses.some((status) => status.type === "armor-break"), false);
+  assert.equal(getDefenderArmor(afterAttack, damagedBruiser), bruiser.stats.armor + 2 + 3);
 });
 
 test("runner transport rules reject non-infantry cargo", () => {
@@ -1192,7 +1233,7 @@ test("enemy recruitment happens at end of turn after units vacate production bui
     (building) => building.owner === TURN_SIDES.ENEMY && building.type === "barracks"
   );
   const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, production.x, production.y);
-  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, production.y);
+  const player = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 1, production.y);
 
   battleState.player.units = [player];
   battleState.enemy.units = [enemy];

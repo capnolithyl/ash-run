@@ -6,15 +6,14 @@ import { createUnitFromType } from "../src/game/simulation/unitFactory.js";
 function expectedDamage({ seed, attacker, defender, attackModifier = 0, armorModifier = 0 }) {
   const attackRoll = randomInt(seed, 0, attacker.stats.luck);
   const attackerAttack = attacker.stats.attack + attackModifier;
+  const effectivenessBonus = attacker.effectiveAgainstTags.includes(defender.family) ? 6 : 0;
   const armorBreak = attacker.unitTypeId === "breaker" && defender.family === "vehicle" ? 0.5 : 1;
   const defenderArmor = Math.floor(defender.stats.armor * armorBreak) + armorModifier;
-  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
-  const baseAttack = isEffective ? attackerAttack * 2 : attackerAttack;
-  const scaledAttack = Math.round((baseAttack + attackRoll.value) * healthRatio);
-  const damage = Math.max(1, scaledAttack - defenderArmor);
+  const scaledAttack = Math.round((attackerAttack + effectivenessBonus) * healthRatio);
+  const damage = Math.max(0, scaledAttack + attackRoll.value - defenderArmor);
 
-  return { damage, isEffective, roll: attackRoll.value, nextSeed: attackRoll.seed };
+  return { damage, isEffective: effectivenessBonus > 0, roll: attackRoll.value, nextSeed: attackRoll.seed };
 }
 
 function makeState(seed, attacker, defender) {
@@ -76,7 +75,7 @@ runCase("base attack", {
   attackerHp: 18
 });
 
-runCase("effective + hp scaling + min-1 clamp", {
+runCase("effective + hp scaling + zero floor", {
   seed: 777,
   attackerType: "breaker",
   defenderType: "juggernaut",

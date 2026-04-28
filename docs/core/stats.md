@@ -24,5 +24,5 @@ Runtime unit state also tracks:
 ## Notes
 
 - `minRange/maxRange` controls direct-fire vs indirect-fire behavior.
-- `luck` contributes a random additive attack roll.
+- `luck` contributes a random additive roll after HP scaling and before defense is subtracted.
 - `staminaMax` and `ammoMax` are resupply-sensitive resources.

@@ -30,8 +30,9 @@ const TUTORIAL_STEPS = [
     eyebrow: "03 / Combat",
     title: "Ranges, armor, ammo, and matchups decide trades.",
     summary:
-      "Damage uses attack, effectiveness, luck, HP scaling, armor, and terrain or building cover. Low-HP attackers hit softer.",
+      "Damage follows a clean order: attack, HP scaling, luck, then defense. Low-HP attackers and wounded counterattacks naturally hit softer.",
     points: [
+      "Effective attacks add a flat +6 attack before HP scaling instead of using hidden multipliers.",
       "Primary weapons hit harder; empty-ammo units fall back to weaker secondary fire.",
       "Defenders counter only when the attacker is in their legal range.",
       "Infantry, vehicles, and air units each have counters, so inspect before committing."

@@ -2,9 +2,7 @@ import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import { BUILDING_RECRUITMENT, UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 
-const PRIMARY_EFFECTIVE_MULTIPLIER = 2;
 const SECONDARY_ATTACK_RATIO = 0.55;
-const SECONDARY_EFFECTIVE_MULTIPLIER = 1.25;
 
 function tileKey(x, y) {
   return `${x},${y}`;
@@ -43,8 +41,7 @@ export function getUnitAttackProfile(unit) {
       attack: unit.stats.attack,
       minRange: unit.stats.minRange,
       maxRange: unit.stats.maxRange,
-      consumesAmmo: true,
-      effectiveMultiplier: PRIMARY_EFFECTIVE_MULTIPLIER
+      consumesAmmo: true
     };
   }
 
@@ -53,8 +50,7 @@ export function getUnitAttackProfile(unit) {
     attack: Math.max(1, Math.floor(unit.stats.attack * SECONDARY_ATTACK_RATIO)),
     minRange: 1,
     maxRange: 1,
-    consumesAmmo: false,
-    effectiveMultiplier: SECONDARY_EFFECTIVE_MULTIPLIER
+    consumesAmmo: false
   };
 }
 

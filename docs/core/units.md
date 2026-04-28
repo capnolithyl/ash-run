@@ -4,25 +4,31 @@ Ash Run '84 currently defines 14 unit types across 3 families. Carrier data rema
 
 ## Infantry (Barracks)
 
-- Grunt
-- Breaker
-- Longshot
-- Medic
-- Mechanic
+| Unit     | HP  | Attack | Armor | Luck |
+| -------- | --- | ------ | ----- | ---- |
+| Grunt    | 18  | 10     | 1     | 2    |
+| Medic    | 18  | 10     | 1     | 2    |
+| Mechanic | 18  | 10     | 1     | 2    |
+| Breaker  | 16  | 9      | 1     | 3    |
+| Longshot | 14  | 11     | 0     | 3    |
 
 ## Vehicles (Motor Pool)
 
-- Runner
-- Bruiser
-- Juggernaut
-- Siege Gun
-- Skyguard
+| Unit       | HP  | Attack | Armor | Luck |
+| ---------- | --- | ------ | ----- | ---- |
+| Runner     | 20  | 13     | 6     | 2    |
+| Bruiser    | 24  | 15     | 10    | 1    |
+| Juggernaut | 28  | 19     | 15    | 1    |
+| Siege Gun  | 18  | 18     | 4     | 1    |
+| Skyguard   | 18  | 16     | 8     | 2    |
 
 ## Air (Airfield)
 
-- Gunship
-- Payload
-- Interceptor
+| Unit        | HP  | Attack | Armor | Luck |
+| ----------- | --- | ------ | ----- | ---- |
+| Gunship     | 18  | 13     | 5     | 3    |
+| Payload     | 20  | 19     | 4     | 2    |
+| Interceptor | 16  | 15     | 4     | 3    |
 
 ## Support and Transport Notes
 
@@ -33,5 +39,6 @@ Ash Run '84 currently defines 14 unit types across 3 families. Carrier data rema
 
 ## Notes
 
-- Unit data includes costs, family tags, ranges, and effectiveness tags.
+- Unit data also includes costs, movement, ranges, ammo, stamina, and effectiveness tags.
+- Carrier remains future content and keeps its separate non-combat stat line outside these balance tables.
 - Medics and mechanics count as infantry for recruitment, movement, targeting, and commander/tag interactions.

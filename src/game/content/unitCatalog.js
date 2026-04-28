@@ -10,7 +10,7 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.INFANTRY,
     cost: 100,
     maxHealth: 18,
-    attack: 7,
+    attack: 10,
     armor: 1,
     movement: 4,
     minRange: 1,
@@ -18,7 +18,7 @@ export const UNIT_CATALOG = {
     staminaMax: 4,
     ammoMax: 7,
     luck: 2,
-    effectiveAgainstTags: []
+    effectiveAgainstTags: [],
   },
   breaker: {
     id: "breaker",
@@ -26,7 +26,7 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.INFANTRY,
     cost: 250,
     maxHealth: 16,
-    attack: 6,
+    attack: 9,
     armor: 1,
     movement: 4,
     minRange: 1,
@@ -34,7 +34,7 @@ export const UNIT_CATALOG = {
     staminaMax: 4,
     ammoMax: 5,
     luck: 3,
-    effectiveAgainstTags: [UNIT_TAGS.VEHICLE]
+    effectiveAgainstTags: [UNIT_TAGS.VEHICLE],
   },
   longshot: {
     id: "longshot",
@@ -42,15 +42,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.INFANTRY,
     cost: 300,
     maxHealth: 14,
-    attack: 6,
+    attack: 11,
     armor: 0,
     movement: 3,
     minRange: 2,
     maxRange: 3,
     staminaMax: 3,
     ammoMax: 6,
-    luck: 4,
-    effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
+    luck: 3,
+    effectiveAgainstTags: [UNIT_TAGS.INFANTRY],
   },
   runner: {
     id: "runner",
@@ -58,15 +58,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.VEHICLE,
     cost: 400,
     maxHealth: 20,
-    attack: 8,
-    armor: 3,
+    attack: 13,
+    armor: 6,
     movement: 6,
     minRange: 1,
     maxRange: 1,
     staminaMax: 6,
     ammoMax: 7,
     luck: 2,
-    effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
+    effectiveAgainstTags: [UNIT_TAGS.INFANTRY],
   },
   bruiser: {
     id: "bruiser",
@@ -74,15 +74,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.VEHICLE,
     cost: 700,
     maxHealth: 24,
-    attack: 9,
-    armor: 5,
+    attack: 15,
+    armor: 10,
     movement: 5,
     minRange: 1,
     maxRange: 1,
     staminaMax: 5,
     ammoMax: 6,
     luck: 1,
-    effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
+    effectiveAgainstTags: [UNIT_TAGS.INFANTRY],
   },
   juggernaut: {
     id: "juggernaut",
@@ -90,15 +90,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.VEHICLE,
     cost: 2000,
     maxHealth: 28,
-    attack: 10,
-    armor: 7,
+    attack: 19,
+    armor: 15,
     movement: 4,
     minRange: 1,
     maxRange: 1,
     staminaMax: 4,
     ammoMax: 6,
     luck: 1,
-    effectiveAgainstTags: [UNIT_TAGS.INFANTRY, UNIT_TAGS.VEHICLE]
+    effectiveAgainstTags: [UNIT_TAGS.INFANTRY, UNIT_TAGS.VEHICLE],
   },
   medic: {
     id: "medic",
@@ -106,7 +106,7 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.INFANTRY,
     cost: 500,
     maxHealth: 18,
-    attack: 7,
+    attack: 10,
     armor: 1,
     movement: 4,
     minRange: 1,
@@ -114,7 +114,7 @@ export const UNIT_CATALOG = {
     staminaMax: 4,
     ammoMax: 7,
     luck: 2,
-    effectiveAgainstTags: []
+    effectiveAgainstTags: [],
   },
   mechanic: {
     id: "mechanic",
@@ -122,7 +122,7 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.INFANTRY,
     cost: 600,
     maxHealth: 18,
-    attack: 7,
+    attack: 10,
     armor: 1,
     movement: 4,
     minRange: 1,
@@ -130,7 +130,7 @@ export const UNIT_CATALOG = {
     staminaMax: 4,
     ammoMax: 7,
     luck: 2,
-    effectiveAgainstTags: []
+    effectiveAgainstTags: [],
   },
   "siege-gun": {
     id: "siege-gun",
@@ -138,15 +138,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.VEHICLE,
     cost: 600,
     maxHealth: 18,
-    attack: 11,
-    armor: 3,
+    attack: 18,
+    armor: 4,
     movement: 3,
     minRange: 2,
     maxRange: 3,
     staminaMax: 3,
     ammoMax: 6,
     luck: 1,
-    effectiveAgainstTags: [UNIT_TAGS.VEHICLE]
+    effectiveAgainstTags: [UNIT_TAGS.VEHICLE],
   },
   skyguard: {
     id: "skyguard",
@@ -154,15 +154,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.VEHICLE,
     cost: 500,
     maxHealth: 18,
-    attack: 8,
-    armor: 4,
+    attack: 16,
+    armor: 8,
     movement: 5,
     minRange: 1,
     maxRange: 2,
     staminaMax: 5,
     ammoMax: 6,
     luck: 2,
-    effectiveAgainstTags: [UNIT_TAGS.AIR]
+    effectiveAgainstTags: [UNIT_TAGS.AIR],
   },
   gunship: {
     id: "gunship",
@@ -170,15 +170,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.AIR,
     cost: 900,
     maxHealth: 18,
-    attack: 9,
-    armor: 1,
+    attack: 13,
+    armor: 5,
     movement: 7,
     minRange: 1,
     maxRange: 1,
     staminaMax: 7,
     ammoMax: 7,
     luck: 3,
-    effectiveAgainstTags: [UNIT_TAGS.INFANTRY]
+    effectiveAgainstTags: [UNIT_TAGS.INFANTRY],
   },
   payload: {
     id: "payload",
@@ -186,15 +186,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.AIR,
     cost: 2200,
     maxHealth: 20,
-    attack: 11,
-    armor: 1,
+    attack: 19,
+    armor: 4,
     movement: 6,
     minRange: 1,
     maxRange: 2,
     staminaMax: 6,
     ammoMax: 6,
     luck: 2,
-    effectiveAgainstTags: [UNIT_TAGS.INFANTRY, UNIT_TAGS.VEHICLE]
+    effectiveAgainstTags: [UNIT_TAGS.INFANTRY, UNIT_TAGS.VEHICLE],
   },
   interceptor: {
     id: "interceptor",
@@ -202,15 +202,15 @@ export const UNIT_CATALOG = {
     family: UNIT_TAGS.AIR,
     cost: 2000,
     maxHealth: 16,
-    attack: 10,
-    armor: 1,
+    attack: 15,
+    armor: 4,
     movement: 8,
     minRange: 1,
     maxRange: 1,
     staminaMax: 8,
     ammoMax: 7,
     luck: 3,
-    effectiveAgainstTags: [UNIT_TAGS.AIR]
+    effectiveAgainstTags: [UNIT_TAGS.AIR],
   },
   carrier: {
     id: "carrier",
@@ -226,12 +226,12 @@ export const UNIT_CATALOG = {
     staminaMax: 5,
     ammoMax: 0,
     luck: 0,
-    effectiveAgainstTags: []
-  }
+    effectiveAgainstTags: [],
+  },
 };
 
 export const BUILDING_RECRUITMENT = {
   barracks: ["grunt", "breaker", "longshot", "medic", "mechanic"],
   "motor-pool": ["runner", "bruiser", "juggernaut", "siege-gun", "skyguard"],
-  airfield: ["gunship", "payload", "interceptor"]
+  airfield: ["gunship", "payload", "interceptor"],
 };
