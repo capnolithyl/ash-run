@@ -7,26 +7,26 @@ Ash Run '84 currently defines 14 unit types across 3 families. Carrier data rema
 | Unit     | HP  | Attack | Armor | Luck |
 | -------- | --- | ------ | ----- | ---- |
 | Grunt    | 18  | 10     | 1     | 2    |
-| Medic    | 18  | 10     | 1     | 2    |
-| Mechanic | 18  | 10     | 1     | 2    |
-| Breaker  | 16  | 9      | 1     | 3    |
-| Longshot | 14  | 11     | 0     | 3    |
+| Medic    | 19  | 7      | 4     | 2    |
+| Mechanic | 21  | 8      | 3     | 2    |
+| Breaker  | 16  | 10     | 2     | 3    |
+| Longshot | 14  | 10     | 0     | 3    |
 
 ## Vehicles (Motor Pool)
 
 | Unit       | HP  | Attack | Armor | Luck |
 | ---------- | --- | ------ | ----- | ---- |
-| Runner     | 20  | 13     | 6     | 2    |
-| Bruiser    | 24  | 15     | 10    | 1    |
-| Juggernaut | 28  | 19     | 15    | 1    |
-| Siege Gun  | 18  | 18     | 4     | 1    |
-| Skyguard   | 18  | 16     | 8     | 2    |
+| Runner     | 20  | 11     | 5     | 2    |
+| Bruiser    | 24  | 14     | 7     | 1    |
+| Juggernaut | 28  | 17     | 12    | 1    |
+| Siege Gun  | 20  | 16     | 4     | 1    |
+| Skyguard   | 18  | 15     | 6     | 2    |
 
 ## Air (Airfield)
 
 | Unit        | HP  | Attack | Armor | Luck |
 | ----------- | --- | ------ | ----- | ---- |
-| Gunship     | 18  | 13     | 5     | 3    |
+| Gunship     | 18  | 13     | 2     | 3    |
 | Payload     | 20  | 19     | 4     | 2    |
 | Interceptor | 16  | 15     | 4     | 3    |
 
