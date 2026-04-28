@@ -237,7 +237,7 @@ export class GameController {
     this.state.screen = SCREEN_IDS.BATTLE;
     this.state.runStatus = null;
     this.state.debugMode = true;
-    this.state.banner = "Debug mode active: saves are disabled.";
+    this.state.banner = "Sandbox active: saves are disabled.";
     this.resetBattleUi();
     this.syncBattleState();
   }

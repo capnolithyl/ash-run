@@ -453,20 +453,6 @@ input {
   border-color: var(--line-strong);
 }
 
-.title-menu-shell {
-  position: relative;
-  z-index: 10;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: clamp(0.8rem, 2vh, 1.25rem);
-  width: min(58rem, 100%);
-  min-height: min(44rem, calc(100vh - 3rem));
-  min-height: min(44rem, calc(100dvh - 3rem));
-  padding: clamp(0.4rem, 2vw, 1.5rem);
-  animation: rise-in 540ms ease;
-}
-
 .hero-logo {
   position: relative;
   margin-bottom: 2rem;
@@ -480,17 +466,6 @@ input {
   background:
     linear-gradient(180deg, rgba(6, 10, 28, 0.82), rgba(7, 8, 22, 0.44)),
     radial-gradient(circle at 50% 85%, rgba(255, 79, 216, 0.32), transparent 42%);
-}
-
-.title-menu-shell .hero-logo {
-  width: min(34rem, 88vw);
-  min-height: 10.5rem;
-  margin-bottom: 0;
-  padding: 1.25rem 1rem 2rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow: visible;
 }
 
 .hero-logo::before {
@@ -577,140 +552,140 @@ input {
     0 0 28px rgba(87, 227, 255, 0.35);
 }
 
-.title-mode-cluster {
+.title-card {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(48rem, 100%);
+  padding: 2rem 2rem 1.6rem;
+}
+
+.title-card .hero-logo {
+  width: min(30rem, 100%);
+  margin-bottom: 0.25rem;
+}
+
+.title-orbit {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(7.2rem, 10.4rem));
-  grid-template-rows: repeat(3, minmax(5.7rem, 8.2rem));
+  grid-template-columns: repeat(3, minmax(7rem, 10rem));
+  grid-template-rows: repeat(3, minmax(3.5rem, auto));
   grid-template-areas:
     ". continue ."
     "skirmish newrun debug"
     ". tutorial .";
   place-items: center;
-  gap: clamp(0.15rem, 1vw, 0.7rem);
-  width: min(100%, 36rem);
-  margin-top: clamp(-1.8rem, -2vh, -0.7rem);
-  perspective: 48rem;
+  column-gap: 0.85rem;
+  row-gap: 0.95rem;
+  width: min(100%, 33rem);
+  margin-top: -0.2rem;
+  padding: 1.2rem 0 0.4rem;
 }
 
-.title-mode-cluster::before {
+.title-orbit::before {
   content: "";
   position: absolute;
-  inset: 15% 13%;
+  inset: 14% 18%;
   z-index: -1;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 79, 216, 0.28), transparent 52%),
-    linear-gradient(90deg, transparent 0 14%, rgba(255, 79, 216, 0.22) 14% 17%, transparent 17% 83%, rgba(121, 240, 255, 0.18) 83% 86%, transparent 86%),
-    linear-gradient(0deg, transparent 0 16%, rgba(255, 138, 61, 0.16) 16% 19%, transparent 19% 81%, rgba(255, 79, 216, 0.18) 81% 84%, transparent 84%);
-  filter: blur(0.3rem);
-  opacity: 0.78;
-  transform: rotate(-8deg);
+    radial-gradient(circle at 50% 50%, rgba(255, 79, 216, 0.2), transparent 58%),
+    linear-gradient(90deg, transparent 0 28%, rgba(255, 79, 216, 0.18) 28% 31%, transparent 31% 69%, rgba(121, 240, 255, 0.14) 69% 72%, transparent 72%),
+    linear-gradient(0deg, transparent 0 32%, rgba(255, 138, 61, 0.15) 32% 35%, transparent 35% 65%, rgba(255, 79, 216, 0.15) 65% 68%, transparent 68%);
+  filter: blur(0.2rem);
+  opacity: 0.86;
 }
 
-.hex-button {
-  --hex-glow: rgba(255, 79, 216, 0.35);
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: clamp(7.2rem, 13vw, 10.4rem);
-  min-width: 0;
-  aspect-ratio: 1.12;
-  padding: 1rem;
-  border: 0;
-  border-radius: 0;
-  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
-  background:
-    linear-gradient(160deg, rgba(255, 79, 216, 0.3), rgba(9, 3, 22, 0.72) 48%, rgba(121, 240, 255, 0.18)),
-    rgba(14, 5, 31, 0.82);
+.title-orbit::after {
+  content: "";
+  position: absolute;
+  inset: 24% 28%;
+  z-index: -1;
+  border: 1px solid rgba(255, 138, 61, 0.18);
+  border-radius: 999px;
   box-shadow:
-    0 1.15rem 2.6rem rgba(4, 0, 14, 0.48),
-    0 0 1.4rem var(--hex-glow);
+    0 0 0 1px rgba(255, 79, 216, 0.1),
+    0 0 2.2rem rgba(255, 79, 216, 0.12);
+}
+
+.title-orbit__button {
+  position: relative;
+  min-width: 9.5rem;
+  min-height: 3.6rem;
+  padding-inline: 1.25rem;
+  background:
+    radial-gradient(circle at top center, rgba(255, 255, 255, 0.1), transparent 55%),
+    linear-gradient(135deg, rgba(255, 79, 216, 0.22), rgba(255, 138, 61, 0.26));
+  box-shadow:
+    0 0.85rem 2rem rgba(4, 0, 14, 0.3),
+    0 0 1.2rem rgba(255, 79, 216, 0.08);
   text-align: center;
-  isolation: isolate;
-  transform: translateY(0) rotateX(0deg);
-  animation: hex-float 4.8s ease-in-out infinite;
+  animation: title-button-bob 5.2s ease-in-out infinite;
 }
 
-.hex-button::before,
-.hex-button::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  clip-path: inherit;
-  pointer-events: none;
+.title-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-width: 0;
 }
 
-.hex-button::before {
-  z-index: -1;
-  background:
-    linear-gradient(135deg, rgba(255, 242, 212, 0.42), transparent 22%),
-    linear-gradient(90deg, rgba(255, 79, 216, 0.94), rgba(121, 240, 255, 0.72), rgba(255, 138, 61, 0.78));
+.title-button__icon {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  color: rgba(255, 245, 223, 0.95);
+  filter: drop-shadow(0 0 0.45rem rgba(255, 79, 216, 0.35));
 }
 
-.hex-button::after {
-  inset: 0.17rem;
-  z-index: -1;
-  background:
-    radial-gradient(circle at 50% 18%, rgba(255, 242, 212, 0.12), transparent 34%),
-    linear-gradient(155deg, rgba(42, 13, 84, 0.92), rgba(9, 3, 24, 0.92) 54%, rgba(22, 58, 88, 0.5));
+.title-button__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.hex-button span {
-  position: relative;
-  z-index: 1;
-  max-width: 6.8rem;
-  color: #fff8ff;
-  font-size: 0.95rem;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-shadow:
-    0 0 0.45rem rgba(255, 79, 216, 0.95),
-    0 0.16rem 0.45rem rgba(3, 0, 12, 0.88);
+.title-button__label {
+  min-width: 0;
 }
 
-.hex-button--primary {
-  --hex-glow: rgba(255, 79, 216, 0.68);
-  width: clamp(10rem, 18vw, 14rem);
-  background:
-    radial-gradient(circle at 50% 36%, rgba(255, 242, 212, 0.16), transparent 29%),
-    linear-gradient(160deg, rgba(255, 79, 216, 0.58), rgba(58, 13, 105, 0.72) 46%, rgba(255, 138, 61, 0.32)),
-    rgba(17, 4, 38, 0.9);
-  box-shadow:
-    0 1.4rem 3.6rem rgba(4, 0, 14, 0.58),
-    0 0 2.1rem rgba(255, 79, 216, 0.58),
-    0 0 3.6rem rgba(121, 240, 255, 0.2);
-}
-
-.hex-button--primary span {
-  max-width: 8rem;
-  font-size: 1.35rem;
-}
-
-.hex-button--new-run {
+.title-orbit__button--new-run {
   grid-area: newrun;
+  min-width: 12.5rem;
+  min-height: 4.35rem;
+  font-size: 1.06rem;
+  box-shadow:
+    0 1.25rem 2.5rem rgba(4, 0, 14, 0.38),
+    0 0 2rem rgba(255, 79, 216, 0.18);
+  animation-delay: -0.6s;
+}
+
+.title-orbit__button--new-run .title-button__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.title-orbit__button--continue {
+  grid-area: continue;
+  transform: translateY(0.15rem);
+  animation-delay: -1.5s;
+}
+
+.title-orbit__button--skirmish {
+  grid-area: skirmish;
+  justify-self: end;
+  animation-delay: -2.2s;
+}
+
+.title-orbit__button--tutorial {
+  grid-area: tutorial;
+  transform: translateY(-0.1rem);
   animation-delay: -0.9s;
 }
 
-.hex-button--continue {
-  grid-area: continue;
-  animation-delay: -2s;
-}
-
-.hex-button--skirmish {
-  grid-area: skirmish;
-  animation-delay: -1.2s;
-}
-
-.hex-button--tutorial {
-  grid-area: tutorial;
-  animation-delay: -3.2s;
-}
-
-.hex-button--debug {
+.title-orbit__button--sandbox {
   grid-area: debug;
-  animation-delay: -2.7s;
+  justify-self: start;
+  animation-delay: -3s;
 }
 
 .title-bottom-bar {
@@ -724,17 +699,16 @@ input {
   background: rgba(8, 3, 20, 0.42);
   box-shadow: 0 1rem 3rem rgba(3, 0, 10, 0.34);
   backdrop-filter: blur(10px);
+  margin-top: 0.2rem;
 }
 
-.hex-button--utility {
-  width: clamp(4.4rem, 7vw, 5.4rem);
-  padding: 0.52rem;
-  animation-duration: 5.6s;
+.title-bottom-bar__button {
+  min-width: 10rem;
 }
 
-.hex-button--utility span {
-  max-width: 4rem;
-  font-size: 0.72rem;
+.title-bottom-bar__button .title-button__icon {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .footer-note,
@@ -840,30 +814,9 @@ input {
   background: linear-gradient(135deg, rgba(255, 91, 143, 0.32), rgba(255, 79, 216, 0.14));
 }
 
-.hex-button:hover,
-.hex-button:focus-visible,
-#ui-root[data-input-mode="controller"] .hex-button.is-controller-focused {
-  transform: translateY(-0.45rem) rotateX(5deg);
-  border-color: transparent;
-  box-shadow:
-    0 1.75rem 3.2rem rgba(4, 0, 14, 0.56),
-    0 0 2.2rem rgba(255, 79, 216, 0.62),
-    0 0 3.6rem rgba(121, 240, 255, 0.28);
-}
-
-.hex-button:disabled,
-.hex-button:disabled:hover {
-  opacity: 0.42;
-  filter: grayscale(0.35);
-  transform: none;
-  animation-play-state: paused;
-}
-
-.hex-button--danger {
-  --hex-glow: rgba(255, 91, 143, 0.42);
-  background:
-    linear-gradient(160deg, rgba(255, 91, 143, 0.34), rgba(9, 3, 22, 0.72) 48%, rgba(255, 138, 61, 0.16)),
-    rgba(14, 5, 31, 0.82);
+.title-orbit__button:disabled,
+.title-orbit__button:disabled:hover {
+  animation: none;
 }
 
 .ghost-button {
@@ -3141,14 +3094,14 @@ input {
   }
 }
 
-@keyframes hex-float {
+@keyframes title-button-bob {
   0%,
   100% {
     translate: 0 0;
   }
 
   50% {
-    translate: 0 -0.32rem;
+    translate: 0 -0.2rem;
   }
 }
 
@@ -3399,7 +3352,7 @@ input {
   .title-scene__haze,
   .title-scene__mountains,
   .title-scene__grid,
-  .hex-button,
+  .title-orbit__button,
   .funds-panel--gaining strong,
   .funds-panel__gain,
   .battle-notice,
@@ -3480,6 +3433,10 @@ input {
     border-radius: 1.25rem;
   }
 
+  .title-card {
+    gap: 0.8rem;
+  }
+
   .hero-logo {
     min-height: 10.25rem;
     margin-bottom: 1rem;
@@ -3495,12 +3452,23 @@ input {
     font-size: clamp(2.8rem, 7vw, 4.8rem);
   }
 
-  .menu-stack {
-    gap: 0.58rem;
+  .title-orbit {
+    width: min(100%, 30rem);
+    row-gap: 0.72rem;
   }
 
   .menu-button {
     padding: 0.72rem 1rem;
+  }
+
+  .title-orbit__button {
+    min-width: 8.7rem;
+    min-height: 3.15rem;
+  }
+
+  .title-orbit__button--new-run {
+    min-width: 11.25rem;
+    min-height: 3.9rem;
   }
 
   .title-run-stats {
@@ -3545,12 +3513,26 @@ input {
     font-size: clamp(2rem, 6.5vw, 3.4rem);
   }
 
-  .menu-stack {
-    gap: 0.42rem;
+  .title-orbit {
+    width: min(100%, 27rem);
+    row-gap: 0.55rem;
+    margin-top: -0.35rem;
   }
 
   .menu-button {
     padding: 0.52rem 0.8rem;
+  }
+
+  .title-orbit__button {
+    min-width: 7.7rem;
+    min-height: 2.85rem;
+    font-size: 0.84rem;
+  }
+
+  .title-orbit__button--new-run {
+    min-width: 9.7rem;
+    min-height: 3.35rem;
+    font-size: 0.94rem;
   }
 
   .title-run-stats,
@@ -4165,58 +4147,72 @@ input {
     padding: 0.75rem;
   }
 
-  .title-menu-shell {
+  .title-card {
     width: 100%;
     min-height: calc(100vh - 1.5rem);
     min-height: calc(100dvh - 1.5rem);
     gap: 0.5rem;
-    padding: 0;
+    padding: 1rem 0.9rem 0.9rem;
   }
 
-  .title-menu-shell .hero-logo {
-    width: min(23rem, 92vw);
+  .title-card .hero-logo {
+    width: min(23rem, 100%);
     min-height: 7.6rem;
     padding: 0.5rem 0.75rem 1rem;
   }
 
-  .title-menu-shell .hero-logo::before {
+  .title-card .hero-logo::before {
     bottom: 0.75rem;
   }
 
-  .title-menu-shell .hero-logo__sun {
+  .title-card .hero-logo__sun {
     width: min(9rem, 58%);
   }
 
-  .title-menu-shell .hero-logo__title {
+  .title-card .hero-logo__title {
     margin-top: 1.65rem;
     font-size: 2.85rem;
   }
 
-  .title-mode-cluster {
-    grid-template-columns: repeat(3, minmax(5.2rem, 7rem));
-    grid-template-rows: repeat(3, minmax(4.2rem, 5.65rem));
+  .title-orbit {
+    grid-template-columns: repeat(3, minmax(5.2rem, 1fr));
+    grid-template-rows: repeat(3, minmax(2.85rem, auto));
     width: min(22.5rem, 100%);
-    gap: 0.05rem;
-    margin-top: -1.25rem;
+    column-gap: 0.35rem;
+    row-gap: 0.45rem;
+    margin-top: -0.25rem;
+    padding-top: 0.85rem;
   }
 
-  .hex-button {
-    width: min(6.6rem, 28vw);
-    padding: 0.6rem;
+  .title-orbit::after {
+    inset: 26% 22%;
   }
 
-  .hex-button span {
-    max-width: 4.8rem;
-    font-size: 0.72rem;
+  .title-orbit__button {
+    min-width: 0;
+    width: 100%;
+    min-height: 2.8rem;
+    padding-inline: 0.55rem;
+    font-size: 0.74rem;
   }
 
-  .hex-button--primary {
-    width: min(9rem, 36vw);
+  .title-button__content {
+    gap: 0.42rem;
   }
 
-  .hex-button--primary span {
-    max-width: 5.4rem;
+  .title-button__icon {
+    width: 0.82rem;
+    height: 0.82rem;
+  }
+
+  .title-orbit__button--new-run {
+    min-height: 3.25rem;
     font-size: 0.95rem;
+  }
+
+  .title-orbit__button--new-run .title-button__icon {
+    width: 0.95rem;
+    height: 0.95rem;
   }
 
   .title-run-stats {
@@ -4230,40 +4226,47 @@ input {
     padding: 0.3rem 0.45rem;
   }
 
-  .hex-button--utility {
-    width: min(4.35rem, 18vw);
-    padding: 0.35rem;
-  }
-
-  .hex-button--utility span {
-    max-width: 3.2rem;
-    font-size: 0.58rem;
+  .title-bottom-bar__button {
+    min-width: 0;
+    padding-inline: 0.8rem;
+    font-size: 0.72rem;
   }
 }
 
 @media (max-width: 420px), (max-height: 560px) {
-  .title-menu-shell .hero-logo {
+  .title-card .hero-logo {
     min-height: 6.4rem;
   }
 
-  .title-menu-shell .hero-logo__title {
+  .title-card .hero-logo__title {
     margin-top: 1.35rem;
     font-size: 2.25rem;
   }
 
-  .title-mode-cluster {
+  .title-orbit {
     grid-template-columns: repeat(3, minmax(4.5rem, 5.7rem));
-    grid-template-rows: repeat(3, minmax(3.6rem, 4.6rem));
+    grid-template-rows: repeat(3, minmax(2.6rem, auto));
     width: min(18rem, 100%);
-    margin-top: -1.05rem;
+    margin-top: -0.1rem;
   }
 
-  .hex-button {
-    width: min(5.6rem, 27vw);
+  .title-orbit__button {
+    min-height: 2.45rem;
+    font-size: 0.68rem;
   }
 
-  .hex-button--primary {
-    width: min(7.3rem, 35vw);
+  .title-button__content {
+    gap: 0.35rem;
+  }
+
+  .title-button__icon {
+    width: 0.74rem;
+    height: 0.74rem;
+  }
+
+  .title-orbit__button--new-run {
+    min-height: 2.95rem;
+    font-size: 0.84rem;
   }
 
   .title-run-stats {

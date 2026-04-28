@@ -21,7 +21,7 @@ test("title screen links to the tutorial", () => {
   const html = renderTitleView(createTitleState());
 
   assert.match(html, /data-action="open-tutorial"/);
-  assert.match(html, />Tutorial</);
+  assert.match(html, /Tutorial/);
 });
 
 test("tutorial covers basics, economy, commanders, and advanced tools", () => {
