@@ -596,8 +596,23 @@ function renderDebugControls(state, battleSnapshot) {
 
   const selectedTile = battleSnapshot.presentation?.selectedTile;
   const selectedUnit = selectedTile?.unit;
+  const defaultSpawnUnit = UNIT_CATALOG.grunt ?? Object.values(UNIT_CATALOG)[0];
   const unitOptions = Object.values(UNIT_CATALOG)
-    .map((unit) => `<option value="${unit.id}">${unit.name}</option>`)
+    .map(
+      (unit) => `<option
+        value="${unit.id}"
+        data-stat-attack="${unit.attack}"
+        data-stat-armor="${unit.armor}"
+        data-stat-max-health="${unit.maxHealth}"
+        data-stat-movement="${unit.movement}"
+        data-stat-min-range="${unit.minRange}"
+        data-stat-max-range="${unit.maxRange}"
+        data-stat-max-stamina="${unit.staminaMax}"
+        data-stat-max-ammo="${unit.ammoMax}"
+        data-stat-luck="${unit.luck}"
+        ${unit.id === defaultSpawnUnit?.id ? "selected" : ""}
+      >${unit.name}</option>`
+    )
     .join("");
   const spawnX = selectedTile?.x ?? 0;
   const spawnY = selectedTile?.y ?? 0;
@@ -627,15 +642,15 @@ function renderDebugControls(state, battleSnapshot) {
           <label>Y
             <input data-debug-field="spawn-y" type="number" value="${spawnY}" min="0" max="${battleSnapshot.map.height - 1}" />
           </label>
-          <label>ATK <input data-debug-field="spawn-attack" type="number" placeholder="default" /></label>
-          <label>ARM <input data-debug-field="spawn-armor" type="number" placeholder="default" /></label>
-          <label>Max HP <input data-debug-field="spawn-max-health" type="number" placeholder="default" /></label>
-          <label>MOV <input data-debug-field="spawn-movement" type="number" placeholder="default" /></label>
-          <label>Min RNG <input data-debug-field="spawn-min-range" type="number" placeholder="default" /></label>
-          <label>Max RNG <input data-debug-field="spawn-max-range" type="number" placeholder="default" /></label>
-          <label>Max STA <input data-debug-field="spawn-max-stamina" type="number" placeholder="default" /></label>
-          <label>Max Ammo <input data-debug-field="spawn-max-ammo" type="number" placeholder="default" /></label>
-          <label>Luck <input data-debug-field="spawn-luck" type="number" placeholder="default" /></label>
+          <label>ATK <input data-debug-field="spawn-attack" type="number" value="${defaultSpawnUnit?.attack ?? ""}" /></label>
+          <label>ARM <input data-debug-field="spawn-armor" type="number" value="${defaultSpawnUnit?.armor ?? ""}" /></label>
+          <label>Max HP <input data-debug-field="spawn-max-health" type="number" value="${defaultSpawnUnit?.maxHealth ?? ""}" /></label>
+          <label>MOV <input data-debug-field="spawn-movement" type="number" value="${defaultSpawnUnit?.movement ?? ""}" /></label>
+          <label>Min RNG <input data-debug-field="spawn-min-range" type="number" value="${defaultSpawnUnit?.minRange ?? ""}" /></label>
+          <label>Max RNG <input data-debug-field="spawn-max-range" type="number" value="${defaultSpawnUnit?.maxRange ?? ""}" /></label>
+          <label>Max STA <input data-debug-field="spawn-max-stamina" type="number" value="${defaultSpawnUnit?.staminaMax ?? ""}" /></label>
+          <label>Max Ammo <input data-debug-field="spawn-max-ammo" type="number" value="${defaultSpawnUnit?.ammoMax ?? ""}" /></label>
+          <label>Luck <input data-debug-field="spawn-luck" type="number" value="${defaultSpawnUnit?.luck ?? ""}" /></label>
         </div>
         <div class="debug-actions">
           <button class="menu-button menu-button--small" data-action="debug-spawn-unit">Spawn Unit</button>

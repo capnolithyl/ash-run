@@ -33,6 +33,18 @@ function getVisibleLoopedIndices(startIndex, visibleCount, count) {
   );
 }
 
+const DEBUG_SPAWN_STAT_DATASETS = [
+  ["spawn-attack", "statAttack"],
+  ["spawn-armor", "statArmor"],
+  ["spawn-max-health", "statMaxHealth"],
+  ["spawn-movement", "statMovement"],
+  ["spawn-min-range", "statMinRange"],
+  ["spawn-max-range", "statMaxRange"],
+  ["spawn-max-stamina", "statMaxStamina"],
+  ["spawn-max-ammo", "statMaxAmmo"],
+  ["spawn-luck", "statLuck"]
+];
+
 const COMMANDER_SWIPE_THRESHOLD_PX = 44;
 const COMMANDER_SWIPE_DIRECTION_RATIO = 1.2;
 const GAMEPAD_BUTTONS = {
@@ -123,6 +135,23 @@ export class AppShell {
     return Number.isFinite(parsed) ? parsed : fallback;
   }
 
+  syncDebugSpawnStatFields() {
+    const unitTypeSelect = this.root.querySelector('[data-debug-field="spawn-unit-type"]');
+    const selectedOption = unitTypeSelect?.selectedOptions?.[0];
+
+    if (!selectedOption) {
+      return;
+    }
+
+    for (const [field, datasetKey] of DEBUG_SPAWN_STAT_DATASETS) {
+      const input = this.root.querySelector(`[data-debug-field="${field}"]`);
+
+      if (input) {
+        input.value = selectedOption.dataset[datasetKey] ?? "";
+      }
+    }
+  }
+
   render(state) {
     if (state.screen === SCREEN_IDS.COMMANDER_SELECT) {
       this.renderCommanderSelect(state);
@@ -168,6 +197,7 @@ export class AppShell {
           suppressOutcomeOverlay,
           turnBanner
         });
+        this.syncDebugSpawnStatFields();
         this.applyBattleDrawerState();
         this.animateFundsGain(state);
         this.previousBattleSnapshot = state.battleSnapshot;
@@ -1541,6 +1571,11 @@ export class AppShell {
       await this.controller.updateSkirmishSetup({
         [skirmishField]: Number(event.target.value)
       });
+      return;
+    }
+
+    if (event.target.dataset.debugField === "spawn-unit-type") {
+      this.syncDebugSpawnStatFields();
       return;
     }
 

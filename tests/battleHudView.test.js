@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { TURN_SIDES } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
+import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { renderBattleHudView } from "../src/ui/views/battleHudView.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
@@ -314,4 +315,48 @@ test("debug pause menu groups tools into accordion sections", () => {
   assert.match(html, /<strong>Selected Unit Overrides<\/strong>/);
   assert.match(html, /data-debug-field="spawn-owner"/);
   assert.match(html, /data-debug-field="unit-hp"/);
+});
+
+test("debug spawn fields start with the selected unit type defaults", () => {
+  const defaultUnit = UNIT_CATALOG.grunt;
+  const battleState = createTestBattleState();
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: true,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: true,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, new RegExp(`data-stat-attack="${defaultUnit.attack}"`));
+  assert.match(html, /value="grunt"[\s\S]*selected/);
+  assert.match(html, new RegExp(`data-debug-field="spawn-attack" type="number" value="${defaultUnit.attack}"`));
+  assert.match(
+    html,
+    new RegExp(`data-debug-field="spawn-max-health" type="number" value="${defaultUnit.maxHealth}"`)
+  );
+  assert.match(
+    html,
+    new RegExp(`data-debug-field="spawn-max-ammo" type="number" value="${defaultUnit.ammoMax}"`)
+  );
 });
