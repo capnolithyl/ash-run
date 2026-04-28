@@ -236,10 +236,14 @@ function renderHealthBar(unit) {
 }
 
 function renderUnitStatGrid(unit) {
+  const armorLabel = unit.terrainArmorBonus > 0
+    ? `${unit.armor} (+${unit.terrainArmorBonus})`
+    : `${unit.armor}`;
+
   return `
     <div class="selection-stat-grid">
       ${renderStatCell("attack", "ATK", unit.attack)}
-      ${renderStatCell("armor", "ARM", unit.armor)}
+      ${renderStatCell("armor", "ARM", armorLabel)}
       ${renderStatCell("movement", "MOV", unit.movement)}
       ${renderStatCell("range", "RNG", formatRangeLabel(unit.minRange, unit.maxRange))}
       ${renderStatCell("ammo", "AMMO", `${unit.ammo}/${unit.ammoMax}`)}
@@ -600,6 +604,7 @@ function renderTargetReference(battleSnapshot, hoveredTile) {
     maxHealth: target.stats.maxHealth,
     attack: target.stats.attack,
     armor: target.stats.armor,
+    terrainArmorBonus: 0,
     movement: target.stats.movement,
     minRange: target.stats.minRange,
     maxRange: target.stats.maxRange,

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { TURN_SIDES } from "../src/game/core/constants.js";
+import { TERRAIN_KEYS, TURN_SIDES } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
@@ -80,9 +80,23 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
   assert.match(html, /selection-level-badge[^>]*>1<\/span>/);
   assert.match(html, /selection-health__value">20\/20<\/span>/);
   assert.match(html, /selection-stat-grid/);
+  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>1<\/strong>/);
   assert.match(html, /AMMO/);
   assert.match(html, /STA/);
   assert.match(html, /Forecast/);
+});
+
+test("battle HUD shows terrain armor bonuses next to the armor stat", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit]
+  });
+  battleState.map.tiles[playerUnit.y][playerUnit.x] = TERRAIN_KEYS.FOREST;
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>1 \(\+2\)<\/strong>/);
 });
 
 test("battle HUD replaces unload command menu with a cancellable unload prompt", () => {
