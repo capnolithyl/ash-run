@@ -40,7 +40,7 @@
 - `src/game/simulation/turnFlow.js` owns turn lifecycle, income, action refresh, temporary status expiration, enemy turn stepping, enemy end-turn recruitment, and victory checks.
 - `src/game/simulation/transportRules.js` owns Runner load/unload validation and cargo position rules.
 - `src/game/simulation/debugActions.js` owns debug-only spawning, stat patching, charge, and action refresh tools.
-- `src/game/simulation/combatResolver.js` owns attack range, damage resolution, counter forecasts, XP formulas by combat outcome, and casualty removal.
+- `src/game/simulation/combatResolver.js` owns attack range, damage resolution, target restrictions, counter forecasts, combat-XP formulas, and casualty removal.
 - `src/game/simulation/enemyAi.js` owns enemy recruitment scoring, favorable-trade evaluation, repair mode, capture plans, and fallback/staging movement choices.
 - `src/game/simulation/battlePresentation.js` converts battle state into HUD/render-friendly presentation data without mutating the battle.
 - `src/game/simulation/battleServicing.js`, `captureRules.js`, `battleLog.js`, and `battleUnits.js` hold small shared battle helpers that keep the orchestrator lean.

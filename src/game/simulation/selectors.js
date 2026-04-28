@@ -293,7 +293,7 @@ export function canUnitAttackTarget(attacker, target) {
   }
 
   if (attacker.unitTypeId === "gunship") {
-    return target.unitTypeId !== "interceptor";
+    return !isAirTarget;
   }
 
   if (attacker.unitTypeId === "payload") {

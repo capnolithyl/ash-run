@@ -20,8 +20,13 @@ import {
   getMovementModifier,
   getRangeModifier
 } from "../src/game/simulation/commanderEffects.js";
-import { getAttackForecast, getDefenderArmor } from "../src/game/simulation/combatResolver.js";
-import { getReachableTiles, getUnitAt } from "../src/game/simulation/selectors.js";
+import {
+  getAttackForecast,
+  getCombatExperience,
+  getDefenderArmor
+} from "../src/game/simulation/combatResolver.js";
+import { getXpThreshold } from "../src/game/simulation/progression.js";
+import { canUnitAttackTarget, getReachableTiles, getUnitAt } from "../src/game/simulation/selectors.js";
 import { canLoadUnit } from "../src/game/simulation/transportRules.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
@@ -1196,32 +1201,62 @@ test("enemy start actions wait for the controller to release the turn banner", (
   assert.equal(afterStartActions.log.some((line) => line.startsWith("Enemy deployed ")), false);
 });
 
-test("kill XP scales with actual damage and target value", () => {
-  const runKillScenario = (defenderType, defenderHp) => {
-    const attacker = createPlacedUnit("juggernaut", TURN_SIDES.PLAYER, 2, 2, {
-      level: 10
-    });
-    attacker.stats.attack = 60;
-    const defender = createPlacedUnit(defenderType, TURN_SIDES.ENEMY, 3, 2, {
-      current: {
-        hp: defenderHp
-      }
-    });
-    const battleState = createTestBattleState({
-      playerUnits: [attacker],
-      enemyUnits: [defender]
-    });
-    const system = new BattleSystem(battleState);
+test("combat XP uses target max-health percent, level delta, and family matchups", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, { level: 1 });
+  const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 2, 1, { level: 1 });
+  const veteranRunner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 2, 1, { level: 5 });
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 1, 1, { level: 1 });
+  const enemyGrunt = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1, { level: 1 });
+  const veteranJuggernaut = createPlacedUnit("juggernaut", TURN_SIDES.PLAYER, 1, 1, { level: 10 });
 
-    assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  assert.equal(getCombatExperience(grunt, runner, 4, false), 18);
+  assert.equal(getCombatExperience(grunt, veteranRunner, 4, false), 32);
+  assert.equal(getCombatExperience(bruiser, enemyGrunt, 4, false), 10);
+  assert.equal(
+    getCombatExperience(veteranJuggernaut, enemyGrunt, enemyGrunt.stats.maxHealth, true),
+    24
+  );
+});
 
-    return system.getStateForSave().player.units[0].experience;
-  };
+test("xp thresholds follow the new 90 plus 30-per-level curve", () => {
+  assert.equal(getXpThreshold(1), 90);
+  assert.equal(getXpThreshold(2), 120);
+  assert.equal(getXpThreshold(3), 150);
+  assert.equal(getXpThreshold(4), 180);
+});
 
-  const lowHpGruntXp = runKillScenario("grunt", 1);
-  const fullHpBruiserXp = runKillScenario("bruiser", 24);
+test("only dedicated anti-air units can attack aircraft", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const skyguard = createPlacedUnit("skyguard", TURN_SIDES.PLAYER, 1, 1);
+  const interceptor = createPlacedUnit("interceptor", TURN_SIDES.PLAYER, 1, 1);
+  const gunship = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
+  const payload = createPlacedUnit("payload", TURN_SIDES.PLAYER, 1, 1);
+  const enemyGunship = createPlacedUnit("gunship", TURN_SIDES.ENEMY, 2, 1);
 
-  assert.ok(fullHpBruiserXp > lowHpGruntXp + 50);
+  assert.equal(canUnitAttackTarget(grunt, enemyGunship), false);
+  assert.equal(canUnitAttackTarget(gunship, enemyGunship), false);
+  assert.equal(canUnitAttackTarget(payload, enemyGunship), false);
+  assert.equal(canUnitAttackTarget(skyguard, enemyGunship), true);
+  assert.equal(canUnitAttackTarget(interceptor, enemyGunship), true);
+});
+
+test("units only gain combat XP when they actually deal damage", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("longshot", TURN_SIDES.ENEMY, 2, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  const afterAttack = system.getStateForSave();
+  const updatedAttacker = afterAttack.player.units[0];
+  const updatedDefender = afterAttack.enemy.units[0];
+
+  assert.ok(updatedAttacker.experience > 0);
+  assert.equal(updatedDefender.experience, 0);
 });
 
 test("enemy recruitment happens at end of turn after units vacate production buildings", () => {

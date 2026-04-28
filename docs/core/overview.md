@@ -7,6 +7,8 @@ Ash Run '84 is a single-player turn-based tactics roguelite built around a hybri
 
 This lets each map feel like a classic tactics economy while still preserving roguelite continuity through unit XP, levels, and stat growth.
 
+XP progression is tuned around impactful trades rather than raw damage totals: chunking a target for a large share of its max HP matters most, higher-level enemies pay out better, and infantry punching into heavier targets is rewarded more than bullying weak ones.
+
 ## Current Pillars
 
 - Grid-based tactical combat with movement, fire, and counterfire

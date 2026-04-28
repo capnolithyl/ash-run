@@ -80,9 +80,26 @@ Breaker is the only special case beyond the shared `+6` rule: against vehicles, 
 ## Combat Outcomes
 
 - Units at 0 HP are removed.
-- XP is awarded from actual HP removed, not overkill damage.
-- Kill XP scales with level delta, target value, damage dealt, and the target's HP before the killing blow.
+- Combat XP is only awarded to units that actually deal damage, including counterattacks.
+- Damage XP is based on `damageDealt / defender.stats.maxHealth`, scaled from a 60 XP full-bar baseline.
+- Level difference matters through a clamped multiplier: `1 + (defender.level - attacker.level) * 0.25`, limited to `0.4` through `1.8`.
+- Family matchups also scale XP:
+  - Infantry -> Infantry `x1.0`
+  - Infantry -> Vehicle `x1.5`
+  - Vehicle -> Infantry `x0.75`
+  - Vehicle -> Vehicle `x1.0`
+  - Vehicle -> Air `x1.25`
+  - Air -> Infantry `x0.75`
+  - Air -> Vehicle `x0.9`
+  - Air -> Air `x1.0`
+- Kills add a flat 20 XP bonus before the same level and matchup multipliers are applied.
+- Zero-damage attacks grant 0 XP, and any damaging hit grants at least 2 XP after rounding.
 - Siege Gun can move and attack in the current prototype.
+
+## Air Targeting
+
+- Aircraft are only threatened by dedicated anti-air units right now: Skyguard and Interceptor.
+- Gunship and Payload attack ground targets only.
 
 ## Enemy Repair Behavior
 

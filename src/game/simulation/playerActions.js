@@ -13,10 +13,8 @@ import {
 import {
   getAttackRangeCap,
   getAttackableUnitIds,
+  getCombatExperience,
   getDamageResult,
-  getDefenseExperience,
-  getKillExperience,
-  getNonKillExperience,
   removeDeadUnits
 } from "./combatResolver.js";
 import {
@@ -377,9 +375,7 @@ export function attackTarget(system, attackerId, defenderId) {
     primaryDamageDealt,
     primaryDamageDealt
   );
-  const defenderDefenseXp = defender.current.hp > 0 ? getDefenseExperience(primaryDamageDealt, attacker) : 0;
   let defenderCounterXp = 0;
-  let attackerDefenseXp = 0;
   const defenderProfile = getUnitAttackProfile(defender);
 
   if (defender.current.hp > 0 && defenderProfile) {
@@ -412,24 +408,24 @@ export function attackTarget(system, attackerId, defenderId) {
         counterDamageDealt,
         counterDamageDealt
       );
-      defenderCounterXp =
+      defenderCounterXp = getCombatExperience(
+        defender,
+        attacker,
+        counterDamageDealt,
         attacker.current.hp <= 0
-          ? getKillExperience(defender, attacker, counterDamageDealt, attackerHpBefore)
-          : getNonKillExperience(counterDamageDealt, attacker);
-
-      if (attacker.current.hp > 0) {
-        attackerDefenseXp = getDefenseExperience(counterDamageDealt, defender);
-      }
+      );
     }
   }
 
-  const attackerXpGain =
+  const attackerXpGain = getCombatExperience(
+    attacker,
+    defender,
+    primaryDamageDealt,
     defender.current.hp <= 0
-      ? getKillExperience(attacker, defender, primaryDamageDealt, defenderHpBefore)
-      : getNonKillExperience(primaryDamageDealt, defender);
+  );
   const attackerAfterXp = awardExperience(
     attacker,
-    attackerXpGain + attackerDefenseXp,
+    attackerXpGain,
     system.state.seed
   );
   system.state.seed = attackerAfterXp.seed;
@@ -437,10 +433,10 @@ export function attackTarget(system, attackerId, defenderId) {
   attackerAfterXp.notes.forEach((note) => appendLog(system.state, note));
   pushLevelUpEvents(system.state, attacker, attackerAfterXp.levelUps);
 
-  if (defender.current.hp > 0 && defenderDefenseXp + defenderCounterXp > 0) {
+  if (defender.current.hp > 0 && defenderCounterXp > 0) {
     const defenderAfterXp = awardExperience(
       defender,
-      defenderDefenseXp + defenderCounterXp,
+      defenderCounterXp,
       system.state.seed
     );
     system.state.seed = defenderAfterXp.seed;

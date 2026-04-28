@@ -22,7 +22,7 @@ function buildWeightedStats(unit) {
 }
 
 export function getXpThreshold(level) {
-  return 80 + (level - 1) * 35;
+  return 90 + (level - 1) * 30;
 }
 
 export function getLevelProgress(unit) {

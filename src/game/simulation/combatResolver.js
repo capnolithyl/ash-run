@@ -6,7 +6,6 @@ import {
   getLuckModifier,
   getRangeModifier
 } from "./commanderEffects.js";
-import { getXpThreshold } from "./progression.js";
 import {
   canUnitAttackTarget,
   getBuildingAt,
@@ -236,38 +235,59 @@ export function removeDeadUnits(state) {
   }
 }
 
-function getTargetValueMultiplier(unit) {
-  return Math.max(0.75, Math.min(2.4, unit.cost / 550));
+function clamp(value, minimum, maximum) {
+  return Math.max(minimum, Math.min(maximum, value));
 }
 
-export function getNonKillExperience(damage, target) {
-  if (damage <= 0) {
+export function getMatchupXpMultiplier(attackerFamily, defenderFamily) {
+  if (attackerFamily === UNIT_TAGS.INFANTRY) {
+    if (defenderFamily === UNIT_TAGS.VEHICLE) {
+      return 1.5;
+    }
+
+    return 1;
+  }
+
+  if (attackerFamily === UNIT_TAGS.VEHICLE) {
+    if (defenderFamily === UNIT_TAGS.INFANTRY) {
+      return 0.75;
+    }
+
+    if (defenderFamily === UNIT_TAGS.AIR) {
+      return 1.25;
+    }
+
+    return 1;
+  }
+
+  if (attackerFamily === UNIT_TAGS.AIR) {
+    if (defenderFamily === UNIT_TAGS.INFANTRY) {
+      return 0.75;
+    }
+
+    if (defenderFamily === UNIT_TAGS.VEHICLE) {
+      return 0.9;
+    }
+
+    return 1;
+  }
+
+  return 1;
+}
+
+export function getCombatExperience(attacker, defender, damageDealt, killed = false) {
+  if (damageDealt <= 0) {
     return 0;
   }
 
-  const valueMultiplier = getTargetValueMultiplier(target);
-  return Math.max(6, Math.round(damage * (1.8 + valueMultiplier)));
-}
+  const damageRatio = clamp(damageDealt / defender.stats.maxHealth, 0, 1);
+  const baseXp = damageRatio * 60;
+  const levelMultiplier = clamp(1 + (defender.level - attacker.level) * 0.25, 0.4, 1.8);
+  const matchupMultiplier = getMatchupXpMultiplier(attacker.family, defender.family);
+  const damageXp = baseXp * levelMultiplier * matchupMultiplier;
+  const killXp = killed ? 20 * levelMultiplier * matchupMultiplier : 0;
 
-export function getDefenseExperience(damage, attacker) {
-  if (damage <= 0) {
-    return 0;
-  }
-
-  const attackerValue = getTargetValueMultiplier(attacker);
-  return Math.max(4, Math.round(damage * (1.1 + attackerValue * 0.45)));
-}
-
-export function getKillExperience(attacker, defender, damageDealt, defenderHpBefore) {
-  const levelDelta = defender.level - attacker.level;
-  const threshold = getXpThreshold(attacker.level);
-  const levelMultiplier = Math.max(0.45, 1 + levelDelta * 0.25);
-  const valueMultiplier = getTargetValueMultiplier(defender);
-  const hpBeforeRatio = Math.max(0.05, Math.min(1, defenderHpBefore / defender.stats.maxHealth));
-  const damageExperience = getNonKillExperience(damageDealt, defender);
-  const killBonus = threshold * (0.16 + valueMultiplier * 0.12) * hpBeforeRatio * levelMultiplier;
-
-  return Math.max(damageExperience + 4, Math.round(damageExperience + killBonus));
+  return Math.max(2, Math.round(damageXp + killXp));
 }
 
 export function getAttackableUnitIds(state, unit) {

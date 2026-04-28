@@ -3,9 +3,11 @@
 ## Unit Leveling
 
 - Units gain XP through battle actions.
-- Combat XP is based on actual HP removed, target cost/value, and level difference.
-- Kill bonuses are larger for healthy or valuable targets and smaller for low-HP cleanup kills.
-- XP threshold grows by level (`80 + 35 * (level-1)`).
+- Combat XP is driven by percent damage dealt to the target's max HP, not raw damage amount or unit cost.
+- Higher-level targets award more XP, lower-level targets award less, with the level-difference multiplier clamped between `0.4` and `1.8`.
+- Family matchups matter: infantry punching into vehicles earns extra XP, while vehicles or aircraft farming softer targets earns less.
+- Kills add a flat bonus on top of the damage XP calculation.
+- XP threshold grows by level as `90 + 30 * (level - 1)`.
 - On level-up, one stat increases from a weighted random table.
 
 ## Current Stat Growth Weights

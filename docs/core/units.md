@@ -36,6 +36,7 @@ Ash Run '84 currently defines 14 unit types across 3 families. Carrier data rema
 - Mechanic services adjacent vehicles with the same restoration profile, then enters a 3-turn support cooldown.
 - Runner can carry one infantry unit and unload it onto a legal adjacent tile.
 - Carrier is currently a non-attacking air unit kept as future content and is not offered by airfields.
+- Skyguard and Interceptor are the dedicated anti-air units; Gunship and Payload attack ground targets only.
 
 ## Notes
 
