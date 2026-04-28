@@ -277,7 +277,6 @@ export class BattleFxLayer {
       this.scene.add.container(point.x, point.y - layout.cellSize * 0.64)
     );
     container.setDepth(46);
-    container.setAlpha(0);
 
     const width = Math.max(72, layout.cellSize * 1.9);
     const height = Math.max(12, layout.cellSize * 0.24);
@@ -375,17 +374,24 @@ export class BattleFxLayer {
       });
     };
 
-    container.setScale(0.92);
-    this.scene.tweens.add({
-      targets: container,
-      alpha: 1,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 180,
-      ease: "Sine.Out"
-    });
+    const firstSegment = event.segments[0];
 
-    playSegment(0);
+    if (!firstSegment) {
+      container.destroy();
+      return;
+    }
+
+    progress.segmentIndex = 0;
+    progress.value = firstSegment.fromExperience;
+    drawFill();
+
+    this.scene.time.delayedCall(180, () => {
+      if (!container.active) {
+        return;
+      }
+
+      playSegment(0);
+    });
   }
 
   playCapture(event, layout) {

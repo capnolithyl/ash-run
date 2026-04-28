@@ -399,12 +399,15 @@ test("echo units can reposition 1 tile after attacking", () => {
 });
 
 test("enemy echo units reposition after attacking when a slipstream tile is available", () => {
-  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 0, {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3, {
     current: {
-      hp: 1
+      hp: 18
     }
   });
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 0, 0);
+  player.stats.luck = 0;
+  const enemy = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 5, 3);
+  enemy.stats.attack = 8;
+  enemy.stats.luck = 0;
   const battleState = createTestBattleState({
     width: 6,
     height: 6,
@@ -413,6 +416,13 @@ test("enemy echo units reposition after attacking when a slipstream tile is avai
     activeSide: TURN_SIDES.ENEMY,
     seed: 7
   });
+  battleState.map.tiles = Array.from({ length: 6 }, () =>
+    Array.from({ length: 6 }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.map.buildings = [
+    { id: "player-command-echo-test", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 0, y: 5 },
+    { id: "enemy-command-echo-test", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 5, y: 0 }
+  ];
   battleState.enemy.commanderId = "echo";
   battleState.enemyTurn = {
     pendingAttack: null,
@@ -420,10 +430,25 @@ test("enemy echo units reposition after attacking when a slipstream tile is avai
   };
 
   const system = new BattleSystem(battleState);
-  const step = system.processEnemyTurnStep();
+  const attackStep = system.processEnemyTurnStep();
+  const afterAttack = system.getStateForSave();
+
+  assert.equal(attackStep.type, "attack");
+  assert.ok(afterAttack.enemyTurn.pendingSlipstream);
+  assert.equal(
+    afterAttack.enemy.units.find((unit) => unit.id === enemy.id).hasAttacked,
+    true
+  );
+  assert.ok(
+    !afterAttack.player.units.find((unit) => unit.id === player.id) ||
+      afterAttack.player.units.find((unit) => unit.id === player.id).current.hp < player.current.hp
+  );
+
+  const moveStep = system.processEnemyTurnStep();
   const updatedEnemy = system.getStateForSave().enemy.units.find((unit) => unit.id === enemy.id);
 
-  assert.equal(step.type, "move");
+  assert.equal(moveStep.type, "move");
+  assert.equal(system.getStateForSave().enemyTurn.pendingSlipstream, null);
   assert.notEqual(`${updatedEnemy.x},${updatedEnemy.y}`, `${enemy.x},${enemy.y}`);
   assert.equal(updatedEnemy.hasAttacked, true);
 });

@@ -1,7 +1,6 @@
 import { createEmitter } from "../core/emitter.js";
 import {
   BATTLE_FUNDS_GAIN_ANIMATION_MS,
-  BATTLE_MOVE_SETTLE_MS,
   BATTLE_NOTICE_DISPLAY_MS,
   BATTLE_POWER_OVERLAY_DISPLAY_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
@@ -9,10 +8,10 @@ import {
   SKIRMISH_DEFAULT_FUNDS_PER_BUILDING,
   SKIRMISH_DEFAULT_STARTING_FUNDS,
   SLOT_IDS,
-  TURN_SIDES,
-  getBattleMoveDuration
+  TURN_SIDES
 } from "../core/constants.js";
 import { COMMANDERS } from "../content/commanders.js";
+import { getBattleSnapshotTransitionDurationMs } from "../phaser/view/battleAnimationEvents.js";
 import { StorageRepository } from "../services/StorageRepository.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
 import {
@@ -996,6 +995,7 @@ export class GameController {
         await delay(100);
       }
 
+      const previousSnapshot = this.state.battleSnapshot;
       const step = this.battleSystem.processEnemyTurnStep();
       this.syncBattleState();
 
@@ -1007,10 +1007,10 @@ export class GameController {
         await delay(100);
       }
 
-      const stepDelay =
-        step.type === "move"
-          ? getBattleMoveDuration(step.moveSegments ?? 0) + BATTLE_MOVE_SETTLE_MS
-          : 760;
+      const stepDelay = getBattleSnapshotTransitionDurationMs(
+        previousSnapshot,
+        this.state.battleSnapshot
+      );
       await delay(stepDelay);
     }
 

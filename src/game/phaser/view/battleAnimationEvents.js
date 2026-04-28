@@ -1,4 +1,10 @@
-import { BATTLE_ATTACK_STAGGER_MS } from "../../core/constants.js";
+import {
+  BATTLE_ATTACK_IMPACT_DELAY_MS,
+  BATTLE_ATTACK_STAGGER_MS,
+  BATTLE_ATTACK_WINDOW_MS,
+  BATTLE_MOVE_SETTLE_MS,
+  getBattleMoveDuration
+} from "../../core/constants.js";
 import { getXpThreshold } from "../../simulation/progression.js";
 import { getMovementPath } from "../../simulation/selectors.js";
 import { getMovementModifier } from "../../simulation/commanderEffects.js";
@@ -85,6 +91,78 @@ function buildExperienceSegments(previousUnit, nextUnit) {
   });
 
   return segments;
+}
+
+function getExperienceEventDuration(event) {
+  const segments = event.segments ?? [];
+
+  if (segments.length === 0) {
+    return 0;
+  }
+
+  let duration = 0;
+
+  segments.forEach((segment, index) => {
+    duration += segment.toExperience >= segment.threshold ? 440 : 620;
+
+    if (segment.toExperience >= segment.threshold && index < segments.length - 1) {
+      duration += 120;
+    }
+  });
+
+  return duration + 120 + 280;
+}
+
+export function getBattleAnimationDurationMs(events) {
+  if (!events?.length) {
+    return 0;
+  }
+
+  const attackEvents = events.filter((event) => event.type === "attack");
+  const destroyDelaysByUnitId = new Map(
+    attackEvents.map((event) => [
+      event.targetId,
+      (event.delay ?? 0) + BATTLE_ATTACK_IMPACT_DELAY_MS
+    ])
+  );
+  const combatDelay = attackEvents.length
+    ? Math.max(...attackEvents.map((event) => event.delay ?? 0)) + BATTLE_ATTACK_WINDOW_MS
+    : 0;
+
+  return events.reduce((maxDuration, event) => {
+    switch (event.type) {
+      case "move": {
+        if (event.teleport) {
+          return maxDuration;
+        }
+
+        const moveSegments = Math.max(0, (event.path?.length ?? 1) - 1);
+        return Math.max(
+          maxDuration,
+          getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS
+        );
+      }
+      case "attack":
+        return Math.max(maxDuration, (event.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS);
+      case "heal":
+      case "resupply":
+        return Math.max(maxDuration, 560);
+      case "experience":
+        return Math.max(maxDuration, combatDelay + getExperienceEventDuration(event));
+      case "capture":
+        return Math.max(maxDuration, 520);
+      case "deploy":
+        return Math.max(maxDuration, 420);
+      case "destroy":
+        return Math.max(maxDuration, (destroyDelaysByUnitId.get(event.unitId) ?? 0) + 340);
+      default:
+        return maxDuration;
+    }
+  }, 0);
+}
+
+export function getBattleSnapshotTransitionDurationMs(previousSnapshot, nextSnapshot) {
+  return getBattleAnimationDurationMs(deriveBattleAnimationEvents(previousSnapshot, nextSnapshot));
 }
 
 export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {

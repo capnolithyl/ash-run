@@ -15,6 +15,9 @@ export class BattleSystem {
     if (this.state.enemyTurn && !("pendingAttack" in this.state.enemyTurn)) {
       this.state.enemyTurn.pendingAttack = null;
     }
+    if (this.state.enemyTurn && !("pendingSlipstream" in this.state.enemyTurn)) {
+      this.state.enemyTurn.pendingSlipstream = null;
+    }
     if (this.state.enemyTurn && !("started" in this.state.enemyTurn)) {
       this.state.enemyTurn.started = true;
     }

@@ -59,8 +59,6 @@ const GAMEPAD_REPEAT_INITIAL_MS = 220;
 const GAMEPAD_REPEAT_MS = 120;
 const GAMEPAD_AXIS_THRESHOLD = 0.5;
 const BATTLE_HP_METER_ANIMATION_MS = 380;
-const BATTLE_XP_METER_ANIMATION_MS = 620;
-
 export function shouldTriggerCommanderSwipe(deltaX, deltaY) {
   const horizontalDistance = Math.abs(deltaX);
   const verticalDistance = Math.abs(deltaY);
@@ -526,15 +524,6 @@ export class AppShell {
         });
       }
 
-      const xpFill = card.parentElement?.querySelector?.('.selection-section--xp [data-meter-fill="xp"]');
-      const nextXp = Number(xpFill?.dataset.meterValue);
-
-      if (Number.isFinite(previousMeter.xp) && Number.isFinite(nextXp) && nextXp > previousMeter.xp) {
-        this.animateBattleMeterFill(xpFill, previousMeter.xp, nextXp, {
-          duration: BATTLE_XP_METER_ANIMATION_MS,
-          emphasisClass: "is-animating-gain"
-        });
-      }
     }
   }
 

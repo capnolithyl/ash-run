@@ -69,6 +69,7 @@ export function endTurn(system) {
     system.state.enemyTurn = {
       started: false,
       pendingAttack: null,
+      pendingSlipstream: null,
       pendingUnitIds: []
     };
     system.updateVictoryState();
@@ -105,7 +106,9 @@ export function startEnemyTurnActions(system) {
 
 export function hasPendingEnemyTurn(system) {
   return Boolean(
-    system.state.enemyTurn?.pendingAttack || system.state.enemyTurn?.pendingUnitIds?.length
+    system.state.enemyTurn?.pendingAttack ||
+      system.state.enemyTurn?.pendingSlipstream ||
+      system.state.enemyTurn?.pendingUnitIds?.length
   );
 }
 
@@ -133,7 +136,7 @@ function moveEnemyUnit(system, unit, tile, movementBudget) {
   };
 }
 
-function performEnemySlipstreamMove(system, unitId) {
+function queueEnemySlipstreamMove(system, unitId) {
   const unit = findUnitById(system.state, unitId);
 
   if (!unit || !canSlipstreamAfterAttack(system.state, unit) || unit.transport?.carriedByUnitId) {
@@ -155,16 +158,49 @@ function performEnemySlipstreamMove(system, unitId) {
 
   const movePath = getMovementPath(system.state, unit, 1, fallbackTile.x, fallbackTile.y);
   const moveSegments = Math.max(0, movePath.length - 1);
-  unit.x = fallbackTile.x;
-  unit.y = fallbackTile.y;
+
+  system.state.enemyTurn.pendingSlipstream = {
+    unitId,
+    x: fallbackTile.x,
+    y: fallbackTile.y,
+    moveSegments
+  };
+
+  return system.state.enemyTurn.pendingSlipstream;
+}
+
+function performQueuedEnemySlipstreamMove(system) {
+  const queuedSlipstream = system.state.enemyTurn?.pendingSlipstream;
+
+  if (!queuedSlipstream) {
+    return null;
+  }
+
+  system.state.enemyTurn.pendingSlipstream = null;
+  const unit = findUnitById(system.state, queuedSlipstream.unitId);
+
+  if (!unit || !canSlipstreamAfterAttack(system.state, unit) || unit.transport?.carriedByUnitId) {
+    return null;
+  }
+
+  if (unit.x === queuedSlipstream.x && unit.y === queuedSlipstream.y) {
+    return null;
+  }
+
+  unit.x = queuedSlipstream.x;
+  unit.y = queuedSlipstream.y;
+  unit.hasMoved = true;
   if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
     system.syncTransportCargoPosition(unit);
   }
   appendLog(system.state, `${unit.name} slipped into a new position after attacking.`);
 
   return {
-    moved: true,
-    moveSegments
+    changed: true,
+    done: system.state.victory || !hasPendingEnemyTurn(system),
+    type: "move",
+    unitId: queuedSlipstream.unitId,
+    moveSegments: queuedSlipstream.moveSegments
   };
 }
 
@@ -204,14 +240,21 @@ export function processEnemyTurnStep(system) {
     const changed = system.attackTarget(queuedAttack.attackerId, queuedAttack.targetId);
 
     if (changed) {
-      const slipstreamMove = performEnemySlipstreamMove(system, queuedAttack.attackerId);
+      queueEnemySlipstreamMove(system, queuedAttack.attackerId);
       return {
         changed: true,
         done: system.state.victory || !hasPendingEnemyTurn(system),
-        type: slipstreamMove ? "move" : "attack",
-        unitId: queuedAttack.attackerId,
-        moveSegments: slipstreamMove?.moveSegments
+        type: "attack",
+        unitId: queuedAttack.attackerId
       };
+    }
+  }
+
+  if (system.state.enemyTurn.pendingSlipstream) {
+    const slipstreamStep = performQueuedEnemySlipstreamMove(system);
+
+    if (slipstreamStep) {
+      return slipstreamStep;
     }
   }
 
@@ -293,13 +336,12 @@ export function processEnemyTurnStep(system) {
 
     if (immediateAttack) {
       system.attackTarget(unit.id, immediateAttack.target.id);
-      const slipstreamMove = performEnemySlipstreamMove(system, unit.id);
+      queueEnemySlipstreamMove(system, unit.id);
       return {
         changed: true,
-        done: system.state.victory || system.state.enemyTurn.pendingUnitIds.length === 0,
-        type: slipstreamMove ? "move" : "attack",
-        unitId,
-        moveSegments: slipstreamMove?.moveSegments
+        done: system.state.victory || !hasPendingEnemyTurn(system),
+        type: "attack",
+        unitId
       };
     }
 
