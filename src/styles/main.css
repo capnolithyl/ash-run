@@ -2266,6 +2266,10 @@ input {
   box-shadow: 0 0 14px rgba(255, 138, 61, 0.28);
 }
 
+.meter__bar > div.is-animating-gain {
+  animation: selection-meter-gain 620ms ease-out;
+}
+
 .log-feed {
   display: grid;
   gap: 0.5rem;
@@ -2386,12 +2390,193 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .selection-section {
   margin-top: 0.9rem;
   padding-top: 0.9rem;
   border-top: 1px solid rgba(255, 79, 216, 0.12);
+}
+
+.selection-unit-heading__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.selection-unit-heading__title strong {
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+.selection-level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 209, 102, 0.36);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), transparent 50%),
+    linear-gradient(135deg, rgba(255, 79, 216, 0.22), rgba(255, 138, 61, 0.18)),
+    rgba(255, 255, 255, 0.05);
+  color: #fff6df;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 18px rgba(255, 138, 61, 0.08);
+}
+
+.selection-health {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+
+.selection-health__label,
+.selection-stat__label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.selection-health__bar {
+  position: relative;
+  min-height: 1.35rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.selection-health__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #ff5f6d, #ff8a3d 58%, #ffd06a);
+  box-shadow: 0 0 18px rgba(255, 138, 61, 0.22);
+}
+
+.selection-health__fill.is-animating-loss {
+  animation: selection-health-damage 380ms ease-out;
+}
+
+.selection-health__fill.is-animating-gain {
+  animation: selection-meter-gain 420ms ease-out;
+}
+
+.selection-health__value {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.35rem;
+  padding: 0 0.6rem;
+  color: #fff8eb;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 10px rgba(5, 2, 14, 0.65);
+}
+
+.selection-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.selection-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.58rem 0.68rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    rgba(10, 5, 20, 0.58);
+}
+
+.selection-stat__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.selection-stat strong {
+  color: #fff6e3;
+  font-size: 0.95rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.selection-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.selection-icon svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+}
+
+.selection-icon--stat {
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(255, 209, 102, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffd06a;
+}
+
+.selection-feature {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.selection-icon--feature {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 209, 102, 0.2);
+  background:
+    linear-gradient(135deg, rgba(255, 79, 216, 0.14), rgba(255, 138, 61, 0.16)),
+    rgba(255, 255, 255, 0.04);
+  color: #fff2bf;
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.03);
+}
+
+.selection-icon--feature svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.selection-feature__body {
+  min-width: 0;
+}
+
+.selection-feature__body strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.selection-feature__body p {
+  margin: 0.3rem 0 0;
 }
 
 .selection-section--terrain strong {
@@ -2435,6 +2620,40 @@ input {
 .selection-chip--neutral {
   border-color: rgba(255, 209, 102, 0.42);
   background: rgba(255, 209, 102, 0.12);
+}
+
+@keyframes selection-health-damage {
+  0% {
+    filter: saturate(1) brightness(1);
+    box-shadow: 0 0 18px rgba(255, 138, 61, 0.22);
+  }
+  30% {
+    filter: saturate(1.25) brightness(1.15);
+    box-shadow:
+      0 0 24px rgba(255, 95, 109, 0.46),
+      0 0 34px rgba(255, 138, 61, 0.32);
+  }
+  100% {
+    filter: saturate(1) brightness(1);
+    box-shadow: 0 0 18px rgba(255, 138, 61, 0.22);
+  }
+}
+
+@keyframes selection-meter-gain {
+  0% {
+    filter: brightness(1);
+    box-shadow: 0 0 14px rgba(255, 138, 61, 0.28);
+  }
+  35% {
+    filter: brightness(1.2);
+    box-shadow:
+      0 0 18px rgba(255, 209, 102, 0.45),
+      0 0 30px rgba(255, 79, 216, 0.24);
+  }
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 0 14px rgba(255, 138, 61, 0.28);
+  }
 }
 
 .recruit-card {

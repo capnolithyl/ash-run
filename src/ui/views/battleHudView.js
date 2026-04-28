@@ -1,4 +1,4 @@
-import { BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../game/core/constants.js";
+import { BATTLE_NOTICE_DISPLAY_MS, BUILDING_KEYS, TERRAIN_KEYS, TURN_SIDES } from "../../game/core/constants.js";
 import { getBattlefieldLayout } from "../../game/core/battlefieldLayout.js";
 import { getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
@@ -10,7 +10,289 @@ function formatCostLabel(cost) {
   return cost >= 99 ? "Blocked" : `${cost}`;
 }
 
+function formatRangeLabel(minimumRange, maximumRange) {
+  return minimumRange === maximumRange
+    ? `${maximumRange}`
+    : `${minimumRange}-${maximumRange}`;
+}
+
+function getMeterWidthPercent(current, maximum) {
+  if (!Number.isFinite(current) || !Number.isFinite(maximum) || maximum <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, (current / maximum) * 100));
+}
+
+function renderSelectionIcon(iconName) {
+  switch (iconName) {
+    case "attack":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 18L18 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M13 5h6v6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 13l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "armor":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 4l6 2.5v5.3c0 4.1-2.4 6.8-6 8.7-3.6-1.9-6-4.6-6-8.7V6.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
+    case "movement":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 15l3-3 3 1 2-5 4 1" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 18.5a1.4 1.4 0 110-2.8 1.4 1.4 0 010 2.8zm8 0a1.4 1.4 0 110-2.8 1.4 1.4 0 010 2.8z" fill="currentColor"/>
+        </svg>
+      `;
+    case "range":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 4v3M12 17v3M4 12h3M17 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+        </svg>
+      `;
+    case "ammo":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 5h4v3.2l1.7 1.8V18a2 2 0 01-2 2h-3.4a2 2 0 01-2-2V10l1.7-1.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M10 8h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "stamina":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M13 3L7 13h4l-1 8 7-11h-4l0-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
+    case "command":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 18V9l6-4 6 4v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9 18v-4h6v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M8 7.5h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "barracks":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 18V9l7-4 7 4v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9 18v-4h6v4M8.5 11h1M12 11h1M15.5 11h1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "motor-pool":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 15V9h10l3 3v3H5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="8" cy="17" r="1.8" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="16" cy="17" r="1.8" fill="none" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      `;
+    case "airfield":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 4v16M8 10l4 2 4-2M9 18l3-2 3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+    case "sector":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 20V5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M8 6h8l-2.2 3L16 12H8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
+    case "hospital":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="5" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "repair-station":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M14.5 6.5a3.5 3.5 0 01-4.8 4.8l-4.9 4.9 2 2 4.9-4.9a3.5 3.5 0 004.8-4.8l-2.2 2.2-2.8-2.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
+    case "plain":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 18c1.5-3 3.2-4.7 6-6.2M12 18c1-2.1 2.3-3.8 4.8-5.3M8.5 10.5L10 7M14.5 11L16 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "road":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 20l2-16M15 20l-2-16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 7v2M12 12v2M12 17v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "forest":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 5l4 5h-2l3 4h-3l2 4H8l2-4H7l3-4H8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
+    case "mountain":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 18l5-8 3 4 3-6 5 10H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
+    case "water":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 10c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2M4 15c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    case "ridge":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 18l4-5 3 3 3-6 6 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M6 9l2-3 2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
+    default:
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="5" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      `;
+  }
+}
+
+function getBuildingIconName(buildingType) {
+  switch (buildingType) {
+    case BUILDING_KEYS.COMMAND:
+      return "command";
+    case BUILDING_KEYS.BARRACKS:
+      return "barracks";
+    case BUILDING_KEYS.MOTOR_POOL:
+      return "motor-pool";
+    case BUILDING_KEYS.AIRFIELD:
+      return "airfield";
+    case BUILDING_KEYS.SECTOR:
+      return "sector";
+    case BUILDING_KEYS.HOSPITAL:
+      return "hospital";
+    case BUILDING_KEYS.REPAIR_STATION:
+      return "repair-station";
+    default:
+      return "building";
+  }
+}
+
+function getTerrainIconName(terrainId) {
+  switch (terrainId) {
+    case TERRAIN_KEYS.PLAIN:
+      return "plain";
+    case TERRAIN_KEYS.ROAD:
+      return "road";
+    case TERRAIN_KEYS.FOREST:
+      return "forest";
+    case TERRAIN_KEYS.MOUNTAIN:
+      return "mountain";
+    case TERRAIN_KEYS.WATER:
+      return "water";
+    case TERRAIN_KEYS.RIDGE:
+      return "ridge";
+    default:
+      return "terrain";
+  }
+}
+
+function renderStatCell(iconName, label, value) {
+  return `
+    <div class="selection-stat">
+      <span class="selection-stat__label">
+        <span class="selection-icon selection-icon--stat" aria-hidden="true">${renderSelectionIcon(iconName)}</span>
+        <span>${label}</span>
+      </span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function renderHealthBar(unit) {
+  const healthRatio = getMeterWidthPercent(unit.hp, unit.maxHealth);
+
+  return `
+    <div class="selection-health">
+      <span class="selection-health__label">HP</span>
+      <div class="selection-health__bar" aria-label="Health ${unit.hp} out of ${unit.maxHealth}">
+        <div
+          class="selection-health__fill"
+          data-meter-fill="hp"
+          data-meter-value="${healthRatio}"
+          style="width:${healthRatio}%"
+        ></div>
+        <span class="selection-health__value">${unit.hp}/${unit.maxHealth}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderUnitStatGrid(unit) {
+  return `
+    <div class="selection-stat-grid">
+      ${renderStatCell("attack", "ATK", unit.attack)}
+      ${renderStatCell("armor", "ARM", unit.armor)}
+      ${renderStatCell("movement", "MOV", unit.movement)}
+      ${renderStatCell("range", "RNG", formatRangeLabel(unit.minRange, unit.maxRange))}
+      ${renderStatCell("ammo", "AMMO", `${unit.ammo}/${unit.ammoMax}`)}
+      ${renderStatCell("stamina", "STA", `${unit.stamina}/${unit.staminaMax}`)}
+    </div>
+  `;
+}
+
+function renderUnitSummary(unit, { showExperience = false } = {}) {
+  return `
+    <div class="selection-section" data-selection-unit-card="${unit.id ?? ""}">
+      <div class="selection-unit-heading">
+        <div class="selection-unit-heading__title">
+          <strong>${unit.name}</strong>
+          <span class="selection-level-badge" aria-label="Level ${unit.level}">${unit.level}</span>
+        </div>
+      </div>
+      ${renderHealthBar(unit)}
+      ${renderUnitStatGrid(unit)}
+    </div>
+    ${showExperience ? renderExperienceBar(unit) : ""}
+  `;
+}
+
+function renderFeatureSection(iconName, title, lines, modifierClass = "") {
+  return `
+    <div class="selection-section ${modifierClass}">
+      <div class="selection-feature">
+        <span class="selection-icon selection-icon--feature" aria-hidden="true">${renderSelectionIcon(iconName)}</span>
+        <div class="selection-feature__body">
+          <strong>${title}</strong>
+          ${lines.map((line) => `<p>${line}</p>`).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getTerrainTraversalText(terrain) {
+  if (terrain.blocksGround) {
+    return "Ground units cannot cross this tile.";
+  }
+
+  if (terrain.blockedFamilies?.length) {
+    return `${terrain.blockedFamilies.join(", ")} units cannot cross this tile.`;
+  }
+
+  return "Ground units can traverse this tile.";
+}
+
 function renderExperienceBar(unit) {
+  const experienceRatio = Math.max(6, unit.experienceRatio * 100);
+
   return `
     <div class="selection-section selection-section--xp">
       <div class="selection-header">
@@ -19,7 +301,11 @@ function renderExperienceBar(unit) {
       </div>
       <div class="meter meter--exp">
         <div class="meter__bar">
-          <div style="width:${Math.max(6, unit.experienceRatio * 100)}%"></div>
+          <div
+            data-meter-fill="xp"
+            data-meter-value="${experienceRatio}"
+            style="width:${experienceRatio}%"
+          ></div>
         </div>
       </div>
     </div>
@@ -206,55 +492,33 @@ function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyBody } =
     <div class="card-block">
       <div class="selection-header">
         <h3>${title ?? "Selection"}</h3>
-        <span class="selection-chip">Tile ${selectedTile.x + 1},${selectedTile.y + 1}</span>
       </div>
-      ${
-        unit
-          ? `
-            <div class="selection-section">
-              <div class="selection-header">
-                <strong>${unit.name}</strong>
-                <span class="selection-chip selection-chip--${unit.owner}">${unit.ownerLabel}</span>
-              </div>
-              <p>Level ${unit.level} | HP ${unit.hp}/${unit.maxHealth}</p>
-              <p>ATK ${unit.attack} | ARM ${unit.armor} | MOV ${unit.movement}</p>
-              <p>RNG ${unit.minRange}-${unit.maxRange} | Ammo ${unit.ammo}/${unit.ammoMax}</p>
-            </div>
-            ${renderExperienceBar(unit)}
-          `
-          : ""
-      }
+      ${unit ? renderUnitSummary(unit, { showExperience: true }) : ""}
       ${
         building
-          ? `
-            <div class="selection-section">
-              <div class="selection-header">
-                <strong>${building.name}</strong>
-                <span class="selection-chip selection-chip--${building.owner}">${building.ownerLabel}</span>
-              </div>
-              <p>${building.summary}</p>
-              ${
+          ? renderFeatureSection(
+              getBuildingIconName(building.type),
+              building.name,
+              [
+                building.summary,
                 building.canRecruit
-                  ? `<p>Function: Produces ${building.recruitmentFamilies.length} unit types.</p>`
-                  : ""
-              }
-              ${building.income > 0 ? `<p>Income: +${building.income} funds each turn.</p>` : ""}
-            </div>
-          `
+                  ? `Function: Produces ${building.recruitmentFamilies.length} unit types.`
+                  : "",
+                building.income > 0 ? `Income: +${building.income} funds each turn.` : ""
+              ].filter(Boolean)
+            )
           : ""
       }
-      <div class="selection-section selection-section--terrain">
-        <strong>${selectedTile.terrain.label}</strong>
-        <p>Infantry cost ${formatCostLabel(selectedTile.terrain.moveCost)} | Vehicles cost ${formatCostLabel(selectedTile.terrain.vehicleMoveCost)}</p>
-        <p>Armor bonus: +${selectedTile.terrain.armorBonus ?? 0}</p>
-        <p>${
-          selectedTile.terrain.blocksGround
-            ? "Ground units cannot cross this tile."
-            : selectedTile.terrain.blockedFamilies?.length
-              ? `${selectedTile.terrain.blockedFamilies.join(", ")} units cannot cross this tile.`
-              : "Ground units can traverse this tile."
-        }</p>
-      </div>
+      ${renderFeatureSection(
+        getTerrainIconName(selectedTile.terrain.id),
+        selectedTile.terrain.label,
+        [
+          `Infantry cost ${formatCostLabel(selectedTile.terrain.moveCost)} | Vehicles cost ${formatCostLabel(selectedTile.terrain.vehicleMoveCost)}`,
+          `Armor bonus: +${selectedTile.terrain.armorBonus ?? 0}`,
+          getTerrainTraversalText(selectedTile.terrain)
+        ],
+        "selection-section--terrain"
+      )}
     </div>
   `;
 }
@@ -281,6 +545,10 @@ function getFocusTileForSide(battleSnapshot, battleUi, side) {
 
   if (selectedTile && selectedTileSide === side) {
     return selectedTile;
+  }
+
+  if (side === TURN_SIDES.ENEMY) {
+    return null;
   }
 
   const focus = side === TURN_SIDES.PLAYER ? battleUi?.playerFocus : battleUi?.enemyFocus;
@@ -325,22 +593,28 @@ function renderTargetReference(battleSnapshot, hoveredTile) {
   const counterLabel = forecast.received
     ? `${forecast.received.min}-${forecast.received.max}`
     : "0";
+  const targetView = {
+    name: target.name,
+    level: target.level,
+    hp: target.current.hp,
+    maxHealth: target.stats.maxHealth,
+    attack: target.stats.attack,
+    armor: target.stats.armor,
+    movement: target.stats.movement,
+    minRange: target.stats.minRange,
+    maxRange: target.stats.maxRange,
+    stamina: target.current.stamina,
+    staminaMax: target.stats.staminaMax,
+    ammo: target.current.ammo,
+    ammoMax: target.stats.ammoMax
+  };
 
   return `
     <div class="card-block card-block--target-reference">
       <div class="selection-header">
         <h3>Target</h3>
-        <span class="selection-chip selection-chip--enemy">Enemy</span>
       </div>
-      <div class="selection-section">
-        <div class="selection-header">
-          <strong>${target.name}</strong>
-          <span class="selection-chip">Lv ${target.level}</span>
-        </div>
-        <p>HP ${target.current.hp}/${target.stats.maxHealth} | XP ${target.experience}</p>
-        <p>ATK ${target.stats.attack} | ARM ${target.stats.armor} | MOV ${target.stats.movement}</p>
-        <p>RNG ${target.stats.minRange}-${target.stats.maxRange} | Ammo ${target.current.ammo}/${target.stats.ammoMax}</p>
-      </div>
+      ${renderUnitSummary(targetView)}
       <div class="selection-section">
         <strong>Forecast</strong>
         <p>Damage ${forecast.dealt.min}-${forecast.dealt.max} | Counter ${counterLabel}</p>
@@ -398,6 +672,24 @@ function renderActionPrompt(battleSnapshot) {
           <button class="battle-command-prompt__action" data-action="wait-unit">Wait</button>
           <button class="battle-command-prompt__action battle-command-prompt__action--subtle" data-action="redo-move">Redo</button>
         </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCommandFeed(log, hoveredTile) {
+  const hoveredTileLabel = hoveredTile
+    ? `Tile ${hoveredTile.x + 1},${hoveredTile.y + 1}`
+    : null;
+
+  return `
+    <div class="card-block">
+      <div class="selection-header">
+        <h3>Command Feed</h3>
+        ${hoveredTileLabel ? `<span class="selection-chip">${hoveredTileLabel}</span>` : ""}
+      </div>
+      <div class="log-feed">
+        ${log.map((line) => `<p>${line}</p>`).join("")}
       </div>
     </div>
   `;
@@ -883,12 +1175,7 @@ export function renderBattleHudView(state, options = {}) {
           emptyTitle: "Enemy Intel",
           emptyBody: "Enemy scans and hostile unit details will appear here."
         })}
-        <div class="card-block">
-          <h3>Command Feed</h3>
-          <div class="log-feed">
-            ${battleSnapshot.log.map((line) => `<p>${line}</p>`).join("")}
-          </div>
-        </div>
+        ${renderCommandFeed(battleSnapshot.log, state.battleUi?.hoveredTile)}
       </aside>
       ${renderActionPrompt(battleSnapshot)}
       ${renderTargetingPrompt(battleSnapshot)}

@@ -62,12 +62,13 @@ function formatSelectionOwner(owner) {
   return owner === TURN_SIDES.PLAYER ? "Player" : "Enemy";
 }
 
-function describeTerrain(terrain) {
+function describeTerrain(terrain, terrainId = null) {
   if (!terrain) {
     return null;
   }
 
   return {
+    id: terrainId,
     label: terrain.label,
     armorBonus: terrain.armorBonus ?? 0,
     moveCost: terrain.moveCost,
@@ -116,6 +117,7 @@ function buildSelectedTile(state, selectionCoordinates) {
     return null;
   }
 
+  const terrainId = state.map.tiles[selectionCoordinates.y]?.[selectionCoordinates.x] ?? null;
   const terrain = getTerrainAt(state, selectionCoordinates.x, selectionCoordinates.y);
 
   if (!terrain) {
@@ -127,7 +129,7 @@ function buildSelectedTile(state, selectionCoordinates) {
   return {
     x: selectionCoordinates.x,
     y: selectionCoordinates.y,
-    terrain: describeTerrain(terrain),
+    terrain: describeTerrain(terrain, terrainId),
     unit: describeUnit(state, getUnitAt(state, selectionCoordinates.x, selectionCoordinates.y)),
     building: building ? describeBuilding(building) : null
   };

@@ -58,6 +58,8 @@ const GAMEPAD_BUTTONS = {
 const GAMEPAD_REPEAT_INITIAL_MS = 220;
 const GAMEPAD_REPEAT_MS = 120;
 const GAMEPAD_AXIS_THRESHOLD = 0.5;
+const BATTLE_HP_METER_ANIMATION_MS = 380;
+const BATTLE_XP_METER_ANIMATION_MS = 620;
 
 export function shouldTriggerCommanderSwipe(deltaX, deltaY) {
   const horizontalDistance = Math.abs(deltaX);
@@ -191,6 +193,7 @@ export class AppShell {
         const suppressLevelUpOverlay = this.shouldSuppressLevelUpOverlay(state);
         const suppressOutcomeOverlay = this.shouldSuppressOutcomeOverlay(state);
         const turnBanner = this.getTurnBanner(state);
+        const previousMeterState = this.captureBattleMeterState();
         this.captureBattleDrawerState();
         this.root.innerHTML = renderBattleHudView(state, {
           suppressLevelUpOverlay,
@@ -199,6 +202,7 @@ export class AppShell {
         });
         this.syncDebugSpawnStatFields();
         this.applyBattleDrawerState();
+        this.animateBattleMeters(previousMeterState);
         this.animateFundsGain(state);
         this.previousBattleSnapshot = state.battleSnapshot;
         this.syncControllerFocusAfterRender();
@@ -467,6 +471,100 @@ export class AppShell {
     };
 
     this.fundsAnimationFrame = window.requestAnimationFrame(tick);
+  }
+
+  captureBattleMeterState() {
+    const meterState = new Map();
+
+    for (const card of this.root.querySelectorAll("[data-selection-unit-card]")) {
+      const unitId = card.dataset.selectionUnitCard;
+
+      if (!unitId) {
+        continue;
+      }
+
+      const hpFill = card.querySelector('[data-meter-fill="hp"]');
+      const xpFill = card.parentElement?.querySelector?.('.selection-section--xp [data-meter-fill="xp"]');
+
+      meterState.set(unitId, {
+        hp: Number(hpFill?.dataset.meterValue),
+        xp: Number(xpFill?.dataset.meterValue)
+      });
+    }
+
+    return meterState;
+  }
+
+  animateBattleMeters(previousMeterState) {
+    if (
+      !previousMeterState?.size ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    for (const card of this.root.querySelectorAll("[data-selection-unit-card]")) {
+      const unitId = card.dataset.selectionUnitCard;
+
+      if (!unitId) {
+        continue;
+      }
+
+      const previousMeter = previousMeterState.get(unitId);
+
+      if (!previousMeter) {
+        continue;
+      }
+
+      const hpFill = card.querySelector('[data-meter-fill="hp"]');
+      const nextHp = Number(hpFill?.dataset.meterValue);
+
+      if (Number.isFinite(previousMeter.hp) && Number.isFinite(nextHp) && previousMeter.hp !== nextHp) {
+        this.animateBattleMeterFill(hpFill, previousMeter.hp, nextHp, {
+          duration: BATTLE_HP_METER_ANIMATION_MS,
+          emphasisClass: nextHp < previousMeter.hp ? "is-animating-loss" : "is-animating-gain"
+        });
+      }
+
+      const xpFill = card.parentElement?.querySelector?.('.selection-section--xp [data-meter-fill="xp"]');
+      const nextXp = Number(xpFill?.dataset.meterValue);
+
+      if (Number.isFinite(previousMeter.xp) && Number.isFinite(nextXp) && nextXp > previousMeter.xp) {
+        this.animateBattleMeterFill(xpFill, previousMeter.xp, nextXp, {
+          duration: BATTLE_XP_METER_ANIMATION_MS,
+          emphasisClass: "is-animating-gain"
+        });
+      }
+    }
+  }
+
+  animateBattleMeterFill(fill, from, to, { duration, emphasisClass } = {}) {
+    if (!fill || !Number.isFinite(from) || !Number.isFinite(to) || Math.abs(from - to) < 0.1) {
+      return;
+    }
+
+    fill.style.transition = "none";
+    fill.style.width = `${from}%`;
+    fill.classList.remove("is-animating-loss", "is-animating-gain");
+    void fill.offsetWidth;
+
+    if (emphasisClass) {
+      fill.classList.add(emphasisClass);
+    }
+
+    window.requestAnimationFrame(() => {
+      fill.style.transition = `width ${duration}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+      fill.style.width = `${to}%`;
+    });
+
+    window.setTimeout(() => {
+      if (!document.body.contains(fill)) {
+        return;
+      }
+
+      fill.style.transition = "";
+      fill.classList.remove("is-animating-loss", "is-animating-gain");
+    }, duration + 140);
   }
 
   renderCommanderSelect(state) {

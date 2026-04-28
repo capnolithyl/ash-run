@@ -77,7 +77,11 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
 
   assert.match(html, /<h3>Target<\/h3>/);
   assert.match(html, /Runner/);
-  assert.match(html, /HP 20\/20/);
+  assert.match(html, /selection-level-badge[^>]*>1<\/span>/);
+  assert.match(html, /selection-health__value">20\/20<\/span>/);
+  assert.match(html, /selection-stat-grid/);
+  assert.match(html, /AMMO/);
+  assert.match(html, /STA/);
   assert.match(html, /Forecast/);
 });
 
@@ -159,6 +163,71 @@ test("battle HUD keeps player and enemy intel in separate sidebars", () => {
 
   assert.match(html, /battle-rail--left[\s\S]*?Player Selection[\s\S]*?Bruiser/);
   assert.match(html, /battle-rail--right[\s\S]*?Enemy Selection[\s\S]*?Runner/);
+});
+
+test("battle HUD shows hovered tile coordinates in the command feed instead of the selection card header", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit]
+  });
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+  const system = new BattleSystem(battleState);
+
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: { x: 4, y: 1 },
+      playerFocus: { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y },
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /<h3>Command Feed<\/h3>[\s\S]*?Tile 5,2/);
+  assert.doesNotMatch(html, /<h3>Player Selection<\/h3>[\s\S]*?Tile 3,3/);
+});
+
+test("battle HUD only shows enemy selection details while an enemy is actively selected", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit]
+  });
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+  const system = new BattleSystem(battleState);
+
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y },
+      enemyFocus: { type: "unit", id: enemyUnit.id, x: enemyUnit.x, y: enemyUnit.y }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /battle-rail--left[\s\S]*?Player Selection[\s\S]*?Grunt/);
+  assert.match(html, /battle-rail--right[\s\S]*?Enemy Intel[\s\S]*?Enemy scans and hostile unit details will appear here\./);
+  assert.doesNotMatch(html, /battle-rail--right[\s\S]*?Enemy Selection[\s\S]*?Runner/);
 });
 
 test("battle HUD renders transient battle notices", () => {

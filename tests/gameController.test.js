@@ -53,14 +53,16 @@ test("recruiting at the player unit cap shows a battle notice", async () => {
 test("enemy-turn inspection clicks sync the HUD without persisting a save", async () => {
   const controller = new GameController();
   let syncCalls = 0;
+  let receivedOptions = null;
   let persistCalls = 0;
 
   controller.state.screen = SCREEN_IDS.BATTLE;
   controller.state.battleSnapshot = {
     levelUpQueue: []
   };
-  controller.syncBattleState = () => {
+  controller.syncBattleState = (options = {}) => {
     syncCalls += 1;
+    receivedOptions = options;
   };
   controller.persistCurrentRun = async () => {
     persistCalls += 1;
@@ -77,6 +79,7 @@ test("enemy-turn inspection clicks sync the HUD without persisting a save", asyn
   await controller.handleBattleTileClick(3, 2);
 
   assert.equal(syncCalls, 1);
+  assert.equal(receivedOptions.allowEnemyFocusDuringEnemyTurn, true);
   assert.equal(persistCalls, 0);
 });
 
@@ -104,6 +107,29 @@ test("syncBattleState preserves player focus when enemy focus updates", () => {
 
   battleUi = controller.getState().battleUi;
   assert.equal(battleUi.playerFocus.id, playerUnit.id);
+  assert.equal(battleUi.enemyFocus.id, enemyUnit.id);
+});
+
+test("syncBattleState ignores enemy auto-selection during enemy turns unless explicitly allowed", () => {
+  const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2)],
+    enemyUnits: [enemyUnit]
+  });
+  battleState.turn.activeSide = TURN_SIDES.ENEMY;
+  battleState.selection = { type: "unit", id: enemyUnit.id, x: enemyUnit.x, y: enemyUnit.y };
+  const system = new BattleSystem(battleState);
+  const controller = new GameController();
+
+  controller.battleSystem = system;
+  controller.syncBattleState();
+
+  let battleUi = controller.getState().battleUi;
+  assert.equal(battleUi.enemyFocus, null);
+
+  controller.syncBattleState({ allowEnemyFocusDuringEnemyTurn: true });
+
+  battleUi = controller.getState().battleUi;
   assert.equal(battleUi.enemyFocus.id, enemyUnit.id);
 });
 

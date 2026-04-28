@@ -536,7 +536,7 @@ export class GameController {
 
     if (changed) {
       if (this.battleSystem.isEnemyTurnActive?.()) {
-        this.syncBattleState();
+        this.syncBattleState({ allowEnemyFocusDuringEnemyTurn: true });
         return;
       }
 
@@ -1010,7 +1010,7 @@ export class GameController {
     await this.persistCurrentRun();
   }
 
-  syncBattleState() {
+  syncBattleState({ allowEnemyFocusDuringEnemyTurn = false } = {}) {
     this.state.battleSnapshot = this.battleSystem?.getSnapshot() ?? null;
 
     const focusSide = getFocusSideForSelection(
@@ -1020,7 +1020,13 @@ export class GameController {
 
     if (focusSide === TURN_SIDES.PLAYER) {
       this.state.battleUi.playerFocus = cloneFocusSelection(this.state.battleSnapshot.selection);
-    } else if (focusSide === TURN_SIDES.ENEMY) {
+    } else if (
+      focusSide === TURN_SIDES.ENEMY &&
+      (
+        this.state.battleSnapshot?.turn.activeSide !== TURN_SIDES.ENEMY ||
+        allowEnemyFocusDuringEnemyTurn
+      )
+    ) {
       this.state.battleUi.enemyFocus = cloneFocusSelection(this.state.battleSnapshot.selection);
     }
 
