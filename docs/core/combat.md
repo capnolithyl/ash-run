@@ -8,7 +8,7 @@ Current combat damage is based on:
 2. Flat effectiveness bonus when the attacker has the right matchup.
 3. HP scaling by attacker health ratio.
 4. Luck roll from `0` through the attacker's luck value.
-5. Defender armor plus commander/status, terrain, and building armor modifiers.
+5. Defender armor plus commander/status and one positional armor bonus.
 
 Minimum final damage is 0.
 
@@ -20,11 +20,12 @@ Given attacker **A** and defender **D**:
 2. `effectiveBonus = A.effectiveAgainstTags includes D.family ? 6 : 0`
 3. `baseArmor = D.stats.armor`
 4. `if A is Breaker and D is a vehicle, baseArmor = floor(baseArmor / 2)`
-5. `armor = baseArmor + armorModifier(D) + terrainArmor(D) + buildingArmor(D)`
-6. `hpRatio = max(0, A.current.hp / A.stats.maxHealth)`
-7. `roll = randomInt(0, A.stats.luck)` inclusive
-8. `scaledAttack = round((attack + effectiveBonus) * hpRatio)`
-9. `damage = max(0, scaledAttack + roll - armor)`
+5. `positionArmor = buildingArmor(D) > 0 ? buildingArmor(D) : terrainArmor(D)`
+6. `armor = baseArmor + armorModifier(D) + positionArmor`
+7. `hpRatio = max(0, A.current.hp / A.stats.maxHealth)`
+8. `roll = randomInt(0, A.stats.luck)` inclusive
+9. `scaledAttack = round((attack + effectiveBonus) * hpRatio)`
+10. `damage = max(0, scaledAttack + roll - armor)`
 
 Player mental model:
 
@@ -34,6 +35,8 @@ Player mental model:
 - Subtract defense
 
 Primary weapons still use full listed attack and consume ammo. Empty-ammo units switch to weaker secondary fire with 55% base attack, 1 range, and no ammo cost. Effectiveness is always a flat `+6`; there are no hidden multipliers in the current model.
+
+Buildings override terrain defense instead of stacking with it. Any building gives `+3` armor, and command posts give `+4`, regardless of ownership.
 
 ## Counterattacks
 

@@ -32,19 +32,25 @@ function getBuildingArmorBonus(state, unit) {
 
   const building = getBuildingAt(state, unit.x, unit.y);
 
-  if (!building || building.owner !== unit.owner) {
+  if (!building) {
     return 0;
   }
 
   if (building.type === BUILDING_KEYS.COMMAND) {
-    return 5;
-  }
-
-  if (building.type === BUILDING_KEYS.SECTOR) {
-    return 3;
+    return 4;
   }
 
   return 3;
+}
+
+export function getPositionArmorBonus(state, unit) {
+  const buildingArmorBonus = getBuildingArmorBonus(state, unit);
+
+  if (buildingArmorBonus > 0) {
+    return buildingArmorBonus;
+  }
+
+  return getTerrainArmorBonus(state, unit);
 }
 
 function getArmorBreakMultiplier(attacker, defender) {
@@ -61,8 +67,7 @@ export function getDefenderArmor(state, defender, attacker = null) {
   return (
     baseArmor +
     getArmorModifier(state, defender) +
-    getTerrainArmorBonus(state, defender) +
-    getBuildingArmorBonus(state, defender)
+    getPositionArmorBonus(state, defender)
   );
 }
 

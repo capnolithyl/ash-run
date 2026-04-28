@@ -3,6 +3,8 @@ import { getBattlefieldLayout } from "../../game/core/battlefieldLayout.js";
 import { getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
+import { getArmorModifier } from "../../game/simulation/commanderEffects.js";
+import { getPositionArmorBonus } from "../../game/simulation/combatResolver.js";
 import { buildFocusedTile } from "../../game/simulation/battlePresentation.js";
 import { renderOptionFields } from "./optionFieldsView.js";
 
@@ -236,8 +238,8 @@ function renderHealthBar(unit) {
 }
 
 function renderUnitStatGrid(unit) {
-  const armorLabel = unit.terrainArmorBonus > 0
-    ? `${unit.armor} (+${unit.terrainArmorBonus})`
+  const armorLabel = unit.positionArmorBonus > 0
+    ? `${unit.armor} (+${unit.positionArmorBonus})`
     : `${unit.armor}`;
 
   return `
@@ -603,8 +605,8 @@ function renderTargetReference(battleSnapshot, hoveredTile) {
     hp: target.current.hp,
     maxHealth: target.stats.maxHealth,
     attack: target.stats.attack,
-    armor: target.stats.armor,
-    terrainArmorBonus: 0,
+    armor: target.stats.armor + getArmorModifier(battleSnapshot, target),
+    positionArmorBonus: getPositionArmorBonus(battleSnapshot, target),
     movement: target.stats.movement,
     minRange: target.stats.minRange,
     maxRange: target.stats.maxRange,

@@ -99,6 +99,30 @@ test("battle HUD shows terrain armor bonuses next to the armor stat", () => {
   assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>1 \(\+2\)<\/strong>/);
 });
 
+test("battle HUD shows building armor bonuses instead of stacking terrain under any building", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit]
+  });
+  battleState.map.tiles[playerUnit.y][playerUnit.x] = TERRAIN_KEYS.FOREST;
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) => building.x !== playerUnit.x || building.y !== playerUnit.y
+  );
+  battleState.map.buildings.push({
+    id: "neutral-sector-armor",
+    type: "sector",
+    owner: "neutral",
+    x: playerUnit.x,
+    y: playerUnit.y
+  });
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>1 \(\+3\)<\/strong>/);
+  assert.doesNotMatch(html, />ARM<\/span>\s*<\/span>\s*<strong>1 \(\+5\)<\/strong>/);
+});
+
 test("battle HUD replaces unload command menu with a cancellable unload prompt", () => {
   const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 2, {
     hasMoved: true

@@ -1,4 +1,4 @@
-import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
+import { TURN_SIDES } from "../core/constants.js";
 import { describeBuilding } from "../content/buildings.js";
 import {
   getArmorModifier,
@@ -12,7 +12,8 @@ import {
   getAttackForecast,
   getAttackRangeCap,
   getAttackableUnitIds,
-  getElevationRangeBonus
+  getElevationRangeBonus,
+  getPositionArmorBonus
 } from "./combatResolver.js";
 import { findUnitById } from "./battleUnits.js";
 import {
@@ -84,8 +85,7 @@ function describeUnit(state, unit) {
   }
 
   const experience = getLevelProgress(unit);
-  const terrain = getTerrainAt(state, unit.x, unit.y);
-  const terrainArmorBonus = unit.family === UNIT_TAGS.AIR ? 0 : terrain?.armorBonus ?? 0;
+  const positionArmorBonus = getPositionArmorBonus(state, unit);
 
   return {
     id: unit.id,
@@ -98,7 +98,7 @@ function describeUnit(state, unit) {
     maxHealth: unit.stats.maxHealth,
     attack: unit.stats.attack + getAttackModifier(state, unit),
     armor: unit.stats.armor + getArmorModifier(state, unit),
-    terrainArmorBonus,
+    positionArmorBonus,
     movement: unit.stats.movement + getMovementModifier(state, unit),
     minRange: unit.stats.minRange,
     maxRange: unit.stats.maxRange + getRangeModifier(state, unit) + getElevationRangeBonus(state, unit),

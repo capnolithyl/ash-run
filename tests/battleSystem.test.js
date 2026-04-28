@@ -500,6 +500,28 @@ test("damage forecast matches actual damage with building and status armor", () 
   assert.equal(forecast.dealt.max, actualDamage);
 });
 
+test("buildings override terrain armor regardless of ownership, and command posts give plus four", () => {
+  const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [defender],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+
+  battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.MOUNTAIN;
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) => building.x !== defender.x || building.y !== defender.y
+  );
+  battleState.map.buildings.push({
+    id: "neutral-command-override",
+    type: BUILDING_KEYS.COMMAND,
+    owner: "neutral",
+    x: defender.x,
+    y: defender.y
+  });
+
+  assert.equal(getDefenderArmor(battleState, defender), defender.stats.armor + 4);
+});
+
 test("combat can deal zero damage when defense fully absorbs the hit", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const defender = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
@@ -786,15 +808,15 @@ test("breaker halves only vehicle base armor for its own attack", () => {
     y: bruiser.y
   });
 
-  assert.equal(getDefenderArmor(battleState, bruiser), bruiser.stats.armor + 2 + 3);
+  assert.equal(getDefenderArmor(battleState, bruiser), bruiser.stats.armor + 3);
   assert.equal(
     getDefenderArmor(battleState, bruiser, breaker),
-    Math.floor(bruiser.stats.armor * 0.5) + 2 + 3
+    Math.floor(bruiser.stats.armor * 0.5) + 3
   );
 
   const forecast = getAttackForecast(battleState, breaker, bruiser);
-  assert.equal(forecast.dealt.min, 8);
-  assert.equal(forecast.dealt.max, 8);
+  assert.equal(forecast.dealt.min, 10);
+  assert.equal(forecast.dealt.max, 10);
 
   const system = new BattleSystem(battleState);
   const startingHp = bruiser.current.hp;
@@ -804,9 +826,9 @@ test("breaker halves only vehicle base armor for its own attack", () => {
   const afterAttack = system.getStateForSave();
   const damagedBruiser = afterAttack.enemy.units[0];
 
-  assert.equal(startingHp - damagedBruiser.current.hp, 8);
+  assert.equal(startingHp - damagedBruiser.current.hp, 10);
   assert.equal(damagedBruiser.statuses.some((status) => status.type === "armor-break"), false);
-  assert.equal(getDefenderArmor(afterAttack, damagedBruiser), bruiser.stats.armor + 2 + 3);
+  assert.equal(getDefenderArmor(afterAttack, damagedBruiser), bruiser.stats.armor + 3);
 });
 
 test("runner transport rules reject non-infantry cargo", () => {
