@@ -127,6 +127,18 @@ function isTerrainBlockedForUnit(unit, terrain) {
   return (terrain.blockedFamilies ?? []).includes(unit.family);
 }
 
+function isAirUnit(unit) {
+  return unit?.family === UNIT_TAGS.AIR;
+}
+
+function occupiesBlockingLayer(movingUnit, occupant) {
+  if (!occupant) {
+    return false;
+  }
+
+  return isAirUnit(movingUnit) === isAirUnit(occupant);
+}
+
 function canUnitOccupyTile(state, unit, x, y) {
   const terrain = getTerrainAt(state, x, y);
 
@@ -196,7 +208,8 @@ function getMovementSearch(state, unit, movementBudget) {
       const occupiedByBlockingUnit =
         occupant &&
         occupant.id !== unit.id &&
-        occupant.owner !== unit.owner;
+        occupant.owner !== unit.owner &&
+        occupiesBlockingLayer(unit, occupant);
       const bestKnownCost = bestCosts.get(key);
 
       if (

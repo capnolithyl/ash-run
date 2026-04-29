@@ -130,6 +130,33 @@ test("the fire command arms a pending unit to attack an enemy tile", () => {
   assert.equal(afterAttack.pendingAction, null);
 });
 
+test("ground units can move through aircraft but cannot stop on occupied tiles", () => {
+  const groundUnit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1);
+  const aircraft = createPlacedUnit("gunship", TURN_SIDES.ENEMY, 2, 1);
+  const battleState = createTestBattleState({
+    width: 5,
+    height: 3,
+    playerUnits: [groundUnit],
+    enemyUnits: [aircraft]
+  });
+
+  battleState.map.tiles = [
+    [TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER],
+    [TERRAIN_KEYS.ROAD, TERRAIN_KEYS.ROAD, TERRAIN_KEYS.ROAD, TERRAIN_KEYS.ROAD, TERRAIN_KEYS.ROAD],
+    [TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER, TERRAIN_KEYS.WATER]
+  ];
+
+  const groundReachableTiles = getReachableTiles(battleState, groundUnit, groundUnit.stats.movement);
+
+  assert.equal(groundReachableTiles.some((tile) => tile.x === aircraft.x && tile.y === aircraft.y), false);
+  assert.equal(groundReachableTiles.some((tile) => tile.x === 3 && tile.y === 1), true);
+
+  const aircraftReachableTiles = getReachableTiles(battleState, aircraft, aircraft.stats.movement);
+
+  assert.equal(aircraftReachableTiles.some((tile) => tile.x === groundUnit.x && tile.y === groundUnit.y), false);
+  assert.equal(aircraftReachableTiles.some((tile) => tile.x === 0 && tile.y === 1), true);
+});
+
 test("units can move through same-side units but cannot stop on them", () => {
   const unit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1);
   const ally = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 1);
