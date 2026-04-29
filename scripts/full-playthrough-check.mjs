@@ -53,17 +53,33 @@ function forceBattleWinner(controller, winner) {
   controller.battleSystem.updateVictoryState();
 }
 
+async function startConfiguredRun(controller) {
+  controller.openNewRun();
+  controller.openRunLoadout();
+  controller.addRunLoadoutUnit('grunt');
+  await controller.startNewRun();
+  const state = controller.getState();
+  assert.equal(state.screen, 'battle');
+  assert.ok(controller.battleSystem, 'battle system should exist after starting a configured run');
+}
+
 async function runFullClearScenario() {
   const storage = new MemoryStorage();
   const controller = new GameController(storage);
   await controller.initialize();
-  controller.openNewRun();
-  await controller.startNewRun();
+  await startConfiguredRun(controller);
 
   let battlesCleared = 0;
 
   while (controller.getState().runStatus !== 'complete') {
     const loopState = controller.getState();
+    if (loopState.runStatus === 'reward') {
+      const reward = loopState.runState?.pendingRewardChoices?.[0];
+      assert.ok(reward, 'reward state should expose at least one reward choice');
+      await controller.selectRunReward(reward.id);
+      continue;
+    }
+
     assert.equal(loopState.screen, 'battle');
     assert.ok(controller.battleSystem, 'battle system should exist while run is active');
 
@@ -96,8 +112,7 @@ async function runDefeatScenario() {
   const storage = new MemoryStorage();
   const controller = new GameController(storage);
   await controller.initialize();
-  controller.openNewRun();
-  await controller.startNewRun();
+  await startConfiguredRun(controller);
 
   forceBattleWinner(controller, TURN_SIDES.ENEMY);
   await controller.persistCurrentRun();
@@ -115,8 +130,7 @@ async function runBattleTurnSmoke() {
   const storage = new MemoryStorage();
   const controller = new GameController(storage);
   await controller.initialize();
-  controller.openNewRun();
-  await controller.startNewRun();
+  await startConfiguredRun(controller);
 
   for (let i = 0; i < 3; i += 1) {
     await controller.endTurn();

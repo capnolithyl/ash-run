@@ -248,7 +248,7 @@ function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
-export function getMatchupXpMultiplier(attackerFamily, defenderFamily) {
+function getMatchupXpMultiplier(attackerFamily, defenderFamily) {
   if (attackerFamily === UNIT_TAGS.INFANTRY) {
     if (defenderFamily === UNIT_TAGS.VEHICLE) {
       return 1.5;

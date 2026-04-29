@@ -113,7 +113,7 @@ function getExperienceEventDuration(event) {
   return duration + 120 + 280;
 }
 
-export function getBattleAnimationDurationMs(events) {
+function getBattleAnimationDurationMs(events) {
   if (!events?.length) {
     return 0;
   }

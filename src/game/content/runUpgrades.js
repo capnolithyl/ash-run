@@ -4,7 +4,7 @@ export const RUN_CARD_TYPES = {
   UNIT: "unit"
 };
 
-export const RUN_UPGRADE_SCHEDULE = {
+const RUN_UPGRADE_SCHEDULE = {
   2: RUN_CARD_TYPES.UNIT,
   5: RUN_CARD_TYPES.UNIT,
   7: RUN_CARD_TYPES.UNIT,
