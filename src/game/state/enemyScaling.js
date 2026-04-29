@@ -3,13 +3,13 @@ import { createUnitFromType } from "../simulation/unitFactory.js";
 import { awardExperience, getXpThreshold } from "../simulation/progression.js";
 
 const ENEMY_REINFORCEMENT_SCHEDULE = [
-  { tier: 2, unitTypeId: "grunt" },
-  { tier: 4, unitTypeId: "bruiser" },
-  { tier: 6, unitTypeId: "skyguard" },
-  { tier: 8, unitTypeId: "siege-gun" }
+  { tier: 3, unitTypeId: "grunt" },
+  { tier: 5, unitTypeId: "bruiser" },
+  { tier: 7, unitTypeId: "skyguard" },
+  { tier: 9, unitTypeId: "siege-gun" }
 ];
-const ENEMY_STARTING_FUNDS_PER_TIER = 150;
-const ENEMY_STARTING_FUNDS_MAX = 750;
+const ENEMY_STARTING_FUNDS_PER_TIER = 100;
+const ENEMY_STARTING_FUNDS_MAX = 500;
 const ENEMY_LEVEL_STEP_INTERVAL = 2;
 const ENEMY_LEVEL_MAX = 5;
 const ENEMY_PRECAPTURE_STEP_INTERVAL = 3;

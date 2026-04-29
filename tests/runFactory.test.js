@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { TURN_SIDES, UNIT_TAGS } from "../src/game/core/constants.js";
-import { getBuildingIncomeForSide } from "../src/game/core/economy.js";
 import { MAP_POOL } from "../src/game/content/maps.js";
 import { createBattleStateForRun } from "../src/game/state/runFactory.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../src/game/simulation/unitFactory.js";
@@ -25,7 +24,7 @@ function uniquePositionCount(units) {
   return new Set(units.map((unit) => `${unit.x},${unit.y}`)).size;
 }
 
-test("createBattleStateForRun restores persistent survivors while seeding opening player funds from buildings", () => {
+test("createBattleStateForRun restores persistent survivors without run-mode player funds", () => {
   const veteran = createUnitFromType("grunt", TURN_SIDES.PLAYER);
   veteran.level = 3;
   veteran.experience = 27;
@@ -38,9 +37,8 @@ test("createBattleStateForRun restores persistent survivors while seeding openin
 
   const battleState = createBattleStateForRun(runState);
   const deployedVeteran = battleState.player.units[0];
-  const expectedOpeningFunds = getBuildingIncomeForSide(battleState.map.buildings, TURN_SIDES.PLAYER);
-
-  assert.equal(battleState.player.funds, expectedOpeningFunds);
+  assert.equal(battleState.mode, "run");
+  assert.equal(battleState.player.funds, 0);
   assert.equal(battleState.enemy.recruitsBuiltThisMap, 0);
   assert.equal(deployedVeteran.level, 3);
   assert.equal(deployedVeteran.experience, 27);

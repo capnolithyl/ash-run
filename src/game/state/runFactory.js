@@ -1,6 +1,6 @@
 import {
+  BATTLE_MODES,
   ENEMY_STARTING_FUNDS,
-  PLAYER_STARTING_FUNDS,
   PROTOTYPE_RUN_GOAL,
   TURN_SIDES,
   UNIT_TAGS
@@ -14,7 +14,6 @@ import {
   RUN_UPGRADES,
   getRunRewardTypeForMap
 } from "../content/runUpgrades.js";
-import { BUILDING_RECRUITMENT, UNIT_CATALOG } from "../content/unitCatalog.js";
 import { MAP_POOL, RUN_MAP_POOL, getMapById } from "../content/maps.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
 import {
@@ -109,23 +108,10 @@ function hasAntiAirCounter(units) {
   return units.some((unit) => ANTI_AIR_UNIT_IDS.has(unit.unitTypeId));
 }
 
-function canRecruitAntiAirNow(mapDefinition, playerOpeningFunds) {
-  return mapDefinition.buildings
-    .filter((building) => building.owner === TURN_SIDES.PLAYER)
-    .some((building) =>
-      (BUILDING_RECRUITMENT[building.type] ?? []).some(
-        (unitTypeId) =>
-          ANTI_AIR_UNIT_IDS.has(unitTypeId) &&
-          UNIT_CATALOG[unitTypeId].cost <= playerOpeningFunds
-      )
-    );
-}
-
-function addEmergencyAntiAirIfNeeded(playerUnits, enemyUnits, mapDefinition, playerOpeningFunds) {
+function addEmergencyAntiAirIfNeeded(playerUnits, enemyUnits, mapDefinition) {
   if (
     !hasAirThreat(enemyUnits) ||
-    hasAntiAirCounter(playerUnits) ||
-    canRecruitAntiAirNow(mapDefinition, playerOpeningFunds)
+    hasAntiAirCounter(playerUnits)
   ) {
     return {
       units: playerUnits,
@@ -187,7 +173,8 @@ export function createNewRunState({ slotId, commanderId }) {
     roster: [],
     completedMaps: [],
     runUpgrades: [],
-    runFunds: 1000
+    selectedRewards: [],
+    pendingRewardChoices: []
   };
 }
 
@@ -197,16 +184,9 @@ export function createBattleStateForRun(runState) {
   const difficultyTier = runState.mapIndex + 1;
   const enemyCommanderId = pickEnemyCommander(runState.seed + runState.mapIndex, runState.commanderId);
   const capturedBuildings = applyEnemyMapControlScaling(mapDefinition, difficultyTier);
-  const playerOpeningFunds =
-    PLAYER_STARTING_FUNDS + getBuildingIncomeForSide(mapDefinition.buildings, TURN_SIDES.PLAYER);
   const playerUnits = createPlayerBattleRoster(runState, mapDefinition);
   const enemyUnits = createEnemyBattleRoster(runState, mapDefinition, enemyCommanderId);
-  const antiAirSafety = addEmergencyAntiAirIfNeeded(
-    playerUnits,
-    enemyUnits,
-    mapDefinition,
-    playerOpeningFunds
-  );
+  const antiAirSafety = addEmergencyAntiAirIfNeeded(playerUnits, enemyUnits, mapDefinition);
   const openingLog = [`${runState.mapIndex + 1}/${runState.targetMapCount}: ${mapDefinition.name}`];
   const rewardedPlayerUnits = applyRunRewardsToUnits(runState, antiAirSafety.units);
 
@@ -232,6 +212,7 @@ export function createBattleStateForRun(runState) {
 
   return {
     id: createId("battle"),
+    mode: BATTLE_MODES.RUN,
     seed: runState.seed + runState.mapIndex,
     difficultyTier,
     map: mapDefinition,
@@ -241,7 +222,7 @@ export function createBattleStateForRun(runState) {
     },
     player: {
       commanderId: runState.commanderId,
-      funds: playerOpeningFunds,
+      funds: 0,
       charge: 0,
       recruitDiscount: 0,
       units: rewardedPlayerUnits
@@ -291,6 +272,7 @@ export function createSkirmishBattleState({
 
   return {
     id: createId("battle"),
+    mode: BATTLE_MODES.SKIRMISH,
     seed: stringToSeed(`skirmish-${mapDefinition.id}-${playerCommanderId}-${enemyCommanderId}`),
     difficultyTier: 1,
     map: mapDefinition,

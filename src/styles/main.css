@@ -553,10 +553,11 @@ input {
 }
 
 .title-card {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 1rem;
-  width: min(48rem, 100%);
+  width: min(54rem, 100%);
   padding: 2rem 2rem 1.6rem;
 }
 
@@ -565,19 +566,47 @@ input {
   margin-bottom: 0.25rem;
 }
 
+.title-utility-button {
+  position: absolute;
+  top: 1.35rem;
+  right: 1.35rem;
+  z-index: 2;
+  width: 3.25rem;
+  min-width: 3.25rem;
+  min-height: 3.25rem;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(11, 6, 25, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(255, 138, 61, 0.18),
+    0 0.85rem 2rem rgba(4, 0, 14, 0.28);
+}
+
+.title-utility-button .title-button__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-utility-button .title-button__icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: rgba(255, 245, 223, 0.95);
+}
+
 .title-orbit {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(7rem, 10rem));
+  grid-template-columns: repeat(5, minmax(5.4rem, 1fr));
   grid-template-rows: repeat(3, minmax(3.5rem, auto));
   grid-template-areas:
-    ". continue ."
-    "skirmish newrun debug"
-    ". tutorial .";
+    ". . progression . ."
+    ". continue newrun tutorial ."
+    ". skirmish . debug .";
   place-items: center;
   column-gap: 0.85rem;
   row-gap: 0.95rem;
-  width: min(100%, 33rem);
+  width: min(100%, 40rem);
   margin-top: -0.2rem;
   padding: 1.2rem 0 0.4rem;
 }
@@ -598,7 +627,7 @@ input {
 .title-orbit::after {
   content: "";
   position: absolute;
-  inset: 24% 28%;
+  inset: 22% 21%;
   z-index: -1;
   border: 1px solid rgba(255, 138, 61, 0.18);
   border-radius: 999px;
@@ -610,8 +639,8 @@ input {
 .title-orbit__button {
   position: relative;
   min-width: 9.5rem;
-  min-height: 3.6rem;
-  padding-inline: 1.25rem;
+  min-height: 5rem;
+  padding: 0.9rem 1rem 1rem;
   background:
     radial-gradient(circle at top center, rgba(255, 255, 255, 0.1), transparent 55%),
     linear-gradient(135deg, rgba(255, 79, 216, 0.22), rgba(255, 138, 61, 0.26));
@@ -638,6 +667,25 @@ input {
   filter: drop-shadow(0 0 0.45rem rgba(255, 79, 216, 0.35));
 }
 
+.title-orbit .title-button__content,
+.title-bottom-action .title-button__content {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.title-orbit .title-button__icon,
+.title-bottom-action .title-button__icon {
+  flex: 0 0 auto;
+  width: 1.55rem;
+  height: 1.55rem;
+  color: rgba(255, 245, 223, 0.95);
+  filter: drop-shadow(0 0 0.45rem rgba(255, 79, 216, 0.35));
+}
+
 .title-button__icon svg {
   display: block;
   width: 100%;
@@ -646,12 +694,19 @@ input {
 
 .title-button__label {
   min-width: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.title-orbit__button--progression {
+  grid-area: progression;
+  animation-delay: -2.7s;
 }
 
 .title-orbit__button--new-run {
   grid-area: newrun;
   min-width: 12.5rem;
-  min-height: 4.35rem;
+  min-height: 5.85rem;
   font-size: 1.06rem;
   box-shadow:
     0 1.25rem 2.5rem rgba(4, 0, 14, 0.38),
@@ -660,13 +715,13 @@ input {
 }
 
 .title-orbit__button--new-run .title-button__icon {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.8rem;
+  height: 1.8rem;
 }
 
 .title-orbit__button--continue {
   grid-area: continue;
-  transform: translateY(0.15rem);
+  justify-self: end;
   animation-delay: -1.5s;
 }
 
@@ -678,7 +733,7 @@ input {
 
 .title-orbit__button--tutorial {
   grid-area: tutorial;
-  transform: translateY(-0.1rem);
+  justify-self: start;
   animation-delay: -0.9s;
 }
 
@@ -688,27 +743,14 @@ input {
   animation-delay: -3s;
 }
 
-.title-bottom-bar {
-  display: flex;
-  justify-content: center;
-  gap: 0.85rem;
-  margin-top: 0.1rem;
-  padding: 0.45rem 0.75rem;
-  border: 1px solid rgba(255, 79, 216, 0.18);
-  border-radius: 999px;
-  background: rgba(8, 3, 20, 0.42);
-  box-shadow: 0 1rem 3rem rgba(3, 0, 10, 0.34);
-  backdrop-filter: blur(10px);
-  margin-top: 0.2rem;
+.title-bottom-action {
+  width: min(100%, 18rem);
+  margin-top: 0.15rem;
 }
 
-.title-bottom-bar__button {
-  min-width: 10rem;
-}
-
-.title-bottom-bar__button .title-button__icon {
-  width: 0.95rem;
-  height: 0.95rem;
+.title-bottom-action__button {
+  width: 100%;
+  min-height: 4.45rem;
 }
 
 .footer-note,
@@ -4101,7 +4143,7 @@ input {
   }
 
   .title-orbit {
-    width: min(100%, 30rem);
+    width: min(100%, 36rem);
     row-gap: 0.72rem;
   }
 
@@ -4110,13 +4152,13 @@ input {
   }
 
   .title-orbit__button {
-    min-width: 8.7rem;
-    min-height: 3.15rem;
+    min-width: 8rem;
+    min-height: 4.4rem;
   }
 
   .title-orbit__button--new-run {
     min-width: 11.25rem;
-    min-height: 3.9rem;
+    min-height: 5rem;
   }
 
   .title-run-stats {
@@ -4162,7 +4204,7 @@ input {
   }
 
   .title-orbit {
-    width: min(100%, 27rem);
+    width: min(100%, 31rem);
     row-gap: 0.55rem;
     margin-top: -0.35rem;
   }
@@ -4172,14 +4214,14 @@ input {
   }
 
   .title-orbit__button {
-    min-width: 7.7rem;
-    min-height: 2.85rem;
+    min-width: 7rem;
+    min-height: 3.9rem;
     font-size: 0.84rem;
   }
 
   .title-orbit__button--new-run {
     min-width: 9.7rem;
-    min-height: 3.35rem;
+    min-height: 4.55rem;
     font-size: 0.94rem;
   }
 
@@ -4861,8 +4903,13 @@ input {
 
   .title-orbit {
     grid-template-columns: repeat(3, minmax(5.2rem, 1fr));
-    grid-template-rows: repeat(3, minmax(2.85rem, auto));
-    width: min(22.5rem, 100%);
+    grid-template-rows: repeat(4, minmax(2.85rem, auto));
+    grid-template-areas:
+      ". progression ."
+      "continue newrun tutorial"
+      ". skirmish ."
+      ". debug .";
+    width: min(23.5rem, 100%);
     column-gap: 0.35rem;
     row-gap: 0.45rem;
     margin-top: -0.25rem;
@@ -4876,28 +4923,30 @@ input {
   .title-orbit__button {
     min-width: 0;
     width: 100%;
-    min-height: 2.8rem;
+    min-height: 3.55rem;
     padding-inline: 0.55rem;
     font-size: 0.74rem;
   }
 
-  .title-button__content {
+  .title-orbit .title-button__content,
+  .title-bottom-action .title-button__content {
     gap: 0.42rem;
   }
 
-  .title-button__icon {
-    width: 0.82rem;
-    height: 0.82rem;
+  .title-orbit .title-button__icon,
+  .title-bottom-action .title-button__icon {
+    width: 1.05rem;
+    height: 1.05rem;
   }
 
   .title-orbit__button--new-run {
-    min-height: 3.25rem;
+    min-height: 4.2rem;
     font-size: 0.95rem;
   }
 
   .title-orbit__button--new-run .title-button__icon {
-    width: 0.95rem;
-    height: 0.95rem;
+    width: 1.2rem;
+    height: 1.2rem;
   }
 
   .title-run-stats {
@@ -4906,15 +4955,26 @@ input {
     text-align: center;
   }
 
-  .title-bottom-bar {
-    gap: 0.45rem;
-    padding: 0.3rem 0.45rem;
+  .title-bottom-action {
+    width: min(100%, 15.5rem);
   }
 
-  .title-bottom-bar__button {
-    min-width: 0;
-    padding-inline: 0.8rem;
-    font-size: 0.72rem;
+  .title-bottom-action__button {
+    min-height: 3.6rem;
+    font-size: 0.78rem;
+  }
+
+  .title-utility-button {
+    top: 0.9rem;
+    right: 0.9rem;
+    width: 2.85rem;
+    min-width: 2.85rem;
+    min-height: 2.85rem;
+  }
+
+  .title-utility-button .title-button__icon {
+    width: 1.12rem;
+    height: 1.12rem;
   }
 }
 
@@ -4929,28 +4989,30 @@ input {
   }
 
   .title-orbit {
-    grid-template-columns: repeat(3, minmax(4.5rem, 5.7rem));
-    grid-template-rows: repeat(3, minmax(2.6rem, auto));
-    width: min(18rem, 100%);
+    grid-template-columns: repeat(3, minmax(4.6rem, 5.8rem));
+    grid-template-rows: repeat(4, minmax(2.55rem, auto));
+    width: min(18.5rem, 100%);
     margin-top: -0.1rem;
   }
 
   .title-orbit__button {
-    min-height: 2.45rem;
+    min-height: 3.1rem;
     font-size: 0.68rem;
   }
 
-  .title-button__content {
+  .title-orbit .title-button__content,
+  .title-bottom-action .title-button__content {
     gap: 0.35rem;
   }
 
-  .title-button__icon {
-    width: 0.74rem;
-    height: 0.74rem;
+  .title-orbit .title-button__icon,
+  .title-bottom-action .title-button__icon {
+    width: 0.92rem;
+    height: 0.92rem;
   }
 
   .title-orbit__button--new-run {
-    min-height: 2.95rem;
+    min-height: 3.7rem;
     font-size: 0.84rem;
   }
 

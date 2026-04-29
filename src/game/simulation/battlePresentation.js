@@ -1,4 +1,4 @@
-import { TURN_SIDES } from "../core/constants.js";
+import { BATTLE_MODES, TURN_SIDES } from "../core/constants.js";
 import { describeBuilding } from "../content/buildings.js";
 import {
   getArmorModifier,
@@ -354,7 +354,9 @@ export function buildBattlePresentation(snapshot) {
       selectedTile,
       pendingAction,
       recruitOptions:
-        snapshot.turn.activeSide === TURN_SIDES.PLAYER && selectedBuilding.owner === TURN_SIDES.PLAYER
+        snapshot.mode !== BATTLE_MODES.RUN &&
+        snapshot.turn.activeSide === TURN_SIDES.PLAYER &&
+        selectedBuilding.owner === TURN_SIDES.PLAYER
           ? getRecruitmentOptions(snapshot, selectedBuilding, snapshot.player)
           : []
     };

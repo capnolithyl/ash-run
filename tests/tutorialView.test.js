@@ -22,6 +22,9 @@ test("title screen links to the tutorial", () => {
 
   assert.match(html, /data-action="open-tutorial"/);
   assert.match(html, /Tutorial/);
+  assert.match(html, /data-action="open-progression"/);
+  assert.match(html, /data-action="open-options"[\s\S]*aria-label="Options"/);
+  assert.match(html, /Quit Game/);
 });
 
 test("tutorial covers basics, economy, commanders, and advanced tools", () => {
@@ -31,7 +34,7 @@ test("tutorial covers basics, economy, commanders, and advanced tools", () => {
   assert.match(html, /Clear ten maps/);
   assert.match(html, /Select, move, act/);
   assert.match(html, /Ranges, armor, ammo/);
-  assert.match(html, /Capture income/);
+  assert.match(html, /Capture intel/);
   assert.match(html, /Passives are constant/);
   assert.match(html, /Transport, support, terrain/);
   assert.match(html, /data-action="open-new-run"/);

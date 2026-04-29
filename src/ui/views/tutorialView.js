@@ -42,12 +42,12 @@ const TUTORIAL_STEPS = [
   {
     id: "economy",
     eyebrow: "04 / Economy",
-    title: "Capture income, recruit answers, hold service points.",
+    title: "Capture intel, deny income, hold service points.",
     summary:
-      "Funds are battle-local. Buildings create income, production buildings recruit units, and service buildings keep a push alive.",
+      "In run mode, your squad is bought before the map. Capturing buildings now pays Intel Credits, cuts enemy income lanes, and keeps your service sites online.",
     points: [
-      "Command posts, sectors, and factories add income each turn.",
-      "Barracks recruit infantry, Motor Pools recruit vehicles, and Airfields recruit air units.",
+      "Every building you capture during a run awards Intel Credits immediately.",
+      "Enemy-owned production buildings still matter because the enemy uses them to buy reinforcements.",
       "Sectors service units each turn; hospitals restore infantry on capture; repair stations restore vehicles."
     ],
     drill: "Use combat infantry to capture. Medics and mechanics are support units, not capture units."
@@ -60,8 +60,8 @@ const TUTORIAL_STEPS = [
       "Every commander has an always-on passive and a charged active power. Charge comes from dealing and taking damage, then resets after use.",
     points: [
       "Atlas, Viper, and Rook start unlocked.",
-      "Active powers can heal, resupply, strike, shield, boost movement, boost attack, or add funds.",
-      "Funds and commander charge reset between maps, so spend them before the battle ends."
+      "Active powers can heal, resupply, strike, shield, boost movement, boost attack, or manipulate battlefield resources.",
+      "Commander charge resets between maps, so use powers to solve the current field."
     ],
     drill: "Use Commander Power only when the meter is full and the effect will change the current map."
   },
@@ -70,7 +70,7 @@ const TUTORIAL_STEPS = [
     eyebrow: "06 / Advanced",
     title: "Win by combining tempo, logistics, and preservation.",
     summary:
-      "The stronger play is rarely just attacking. Transport, support, terrain, and recruitment timing let a small squad survive bad maps.",
+      "The stronger play is rarely just attacking. Transport, support, terrain, and capture tempo let a small squad survive bad maps.",
     points: [
       "Runners can carry one infantry unit and unload it onto a legal adjacent tile.",
       "Medics support adjacent infantry; mechanics support adjacent vehicles and then go on cooldown.",
@@ -159,7 +159,7 @@ export function renderTutorialView() {
 
         <div class="tutorial-checklist" aria-label="Readiness checklist">
           <label><input type="checkbox" /> I can win by eliminating the enemy force.</label>
-          <label><input type="checkbox" /> I know funds and commander charge reset each map.</label>
+          <label><input type="checkbox" /> I know commander charge resets each map and Intel Credits come from captures and map clears.</label>
           <label><input type="checkbox" /> I know survivors persist, but defeated units are gone from the run.</label>
         </div>
 

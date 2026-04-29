@@ -1,4 +1,4 @@
-import { TURN_SIDES } from "../core/constants.js";
+import { BATTLE_MODES, TURN_SIDES } from "../core/constants.js";
 import { buildBattlePresentation } from "./battlePresentation.js";
 import { getRecruitDiscount } from "./commanderEffects.js";
 import * as debugActions from "./debugActions.js";
@@ -9,6 +9,7 @@ import * as turnFlow from "./turnFlow.js";
 export class BattleSystem {
   constructor(initialState) {
     this.state = structuredClone(initialState);
+    this.state.mode ??= BATTLE_MODES.SKIRMISH;
     this.state.pendingAction ??= null;
     this.state.enemyTurn ??= null;
     this.state.levelUpQueue ??= [];

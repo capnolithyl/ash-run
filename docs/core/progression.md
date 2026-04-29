@@ -36,10 +36,14 @@ Range growth is skipped for units that cannot attack at range, both on the norma
 - Units reduced to 0 HP are permanently removed from the run roster.
 - Roster deployment is capped at 6 units per battle.
 - Returning rosters are redeployed to unique nearby starting tiles so carried units cannot stack on the same spawn.
+- Each cleared map awards `5` Intel Credits.
+- Capturing any building during a run awards `2` Intel Credits.
+- Clearing the full 10-map run grants an extra `30` Intel Credits on top of the `50` earned from map clears.
 
 ## Enemy Map Scaling
 
 - Enemy pressure rises with map index.
-- Map 2 starts adding light reinforcements and extra opening funds.
+- Early maps keep reinforcements lighter now that player recruiting is locked to the pre-map loadout.
+- Enemy starting funds and reinforcement drops still rise over the run, but later and more gradually than before.
 - Later maps add higher-level enemy units, heavier starting reinforcements, and a small number of enemy-held forward sectors.
 - The scaling remains capped so it pressures snowballing without replacing authored map balance.

@@ -45,6 +45,13 @@ function renderTitleIcon(iconName) {
           <circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="2"/>
         </svg>
       `;
+    case "progression":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3.5l2.6 5.2 5.8.8-4.2 4.1 1 5.9-5.2-2.7-5.2 2.7 1-5.9-4.2-4.1 5.8-.8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M12 8.8l1.2 2.3 2.5.4-1.8 1.8.4 2.5-2.3-1.2-2.3 1.2.4-2.5-1.8-1.8 2.5-.4z" fill="currentColor"/>
+        </svg>
+      `;
     case "quit":
       return `
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -57,12 +64,25 @@ function renderTitleIcon(iconName) {
   }
 }
 
-function renderTitleButton({ action, className, label, icon, disabled = false }) {
+function renderTitleButton({
+  action,
+  className,
+  label,
+  icon,
+  disabled = false,
+  iconOnly = false,
+  ariaLabel = label
+}) {
   return `
-    <button class="menu-button ${className}" data-action="${action}" ${disabled ? "disabled" : ""}>
+    <button
+      class="menu-button ${className}"
+      data-action="${action}"
+      aria-label="${ariaLabel}"
+      ${disabled ? "disabled" : ""}
+    >
       <span class="title-button__content">
         <span class="title-button__icon">${renderTitleIcon(icon)}</span>
-        <span class="title-button__label">${label}</span>
+        ${iconOnly ? "" : `<span class="title-button__label">${label}</span>`}
       </span>
     </button>
   `;
@@ -86,11 +106,24 @@ export function renderTitleView(state) {
         <div class="title-scene__grid"></div>
       </div>
       <section class="hero-card title-card" aria-labelledby="title-screen-heading">
+        ${renderTitleButton({
+          action: "open-options",
+          className: "ghost-button title-utility-button",
+          label: "Options",
+          icon: "options",
+          iconOnly: true
+        })}
         <div class="hero-logo" aria-label="Ash Run '84 logo">
           <div class="hero-logo__sun" aria-hidden="true"></div>
           <h1 class="hero-logo__title" id="title-screen-heading">ASH RUN '84</h1>
         </div>
         <nav class="title-orbit" aria-label="Main menu">
+          ${renderTitleButton({
+            action: "open-progression",
+            className: "title-orbit__button title-orbit__button--progression",
+            label: "Progression",
+            icon: "progression"
+          })}
           ${renderTitleButton({
             action: "open-continue",
             className: "title-orbit__button title-orbit__button--continue",
@@ -128,26 +161,14 @@ export function renderTitleView(state) {
           <p><strong>Latest Clear:</strong> ${formatTurnCount(latestClearTurnCount)}</p>
           <p><strong>Best Clear:</strong> ${formatTurnCount(bestClearTurnCount)}</p>
         </div>
-        <nav class="title-bottom-bar" aria-label="Game utilities">
-          ${renderTitleButton({
-            action: "open-progression",
-            className: "title-bottom-bar__button",
-            label: "Progression",
-            icon: "options"
-          })}
-          ${renderTitleButton({
-            action: "open-options",
-            className: "title-bottom-bar__button",
-            label: "Options",
-            icon: "options"
-          })}
+        <div class="title-bottom-action">
           ${renderTitleButton({
             action: "quit-game",
-            className: "menu-button--danger title-bottom-bar__button",
-            label: "Return To Windows",
+            className: "menu-button--danger title-bottom-action__button",
+            label: "Quit Game",
             icon: "quit"
           })}
-        </nav>
+        </div>
       </section>
     </div>
   `;

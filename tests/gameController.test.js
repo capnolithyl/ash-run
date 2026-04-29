@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { SCREEN_IDS, TURN_SIDES } from "../src/game/core/constants.js";
+import { BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../src/game/core/constants.js";
 import { GameController } from "../src/game/app/GameController.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
+import { createBattleStateForRun } from "../src/game/state/runFactory.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
 test("battle context action ignores duplicate right-click source events", async () => {
@@ -224,6 +225,82 @@ test("run loadout purchases update counts and remaining funds", () => {
   state = controller.getState();
   assert.deepEqual(state.runLoadout.units, ["runner"]);
   assert.equal(state.runLoadout.fundsRemaining, 100);
+});
+
+test("run-mode captures award intel credits instead of funds", async () => {
+  const controller = new GameController({
+    async saveMeta() {},
+    async saveSlot() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  const playerInfantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN,
+    playerUnits: [playerInfantry]
+  });
+  battleState.player.funds = 0;
+  const capturable = battleState.map.buildings.find((building) => building.type === "sector");
+  capturable.owner = TURN_SIDES.ENEMY;
+  playerInfantry.x = capturable.x;
+  playerInfantry.y = capturable.y;
+  battleState.pendingAction = {
+    type: "move",
+    unitId: playerInfantry.id,
+    mode: "menu"
+  };
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.runState = { id: "run-1" };
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.persistCurrentRun = async () => {};
+
+  await controller.captureWithSelectedUnit();
+
+  const state = controller.getState();
+  assert.equal(state.metaState.metaCurrency, 2);
+  assert.equal(state.battleUi.notice?.title, "Intel Secured");
+  assert.equal(controller.battleSystem.getStateForSave().player.funds, 0);
+});
+
+test("run victories award five intel credits per cleared map", async () => {
+  const controller = new GameController({
+    async saveMeta() {},
+    async saveSlot() {},
+    async deleteSlot() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  const runState = {
+    id: "run-test",
+    seed: 99,
+    slotId: "slot-1",
+    commanderId: "atlas",
+    mapIndex: 0,
+    targetMapCount: 10,
+    mapSequence: ["ashline-crossing"],
+    roster: [],
+    completedMaps: [],
+    selectedRewards: [],
+    pendingRewardChoices: []
+  };
+  const battleState = createBattleStateForRun(runState);
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Battle won."
+  };
+
+  controller.state.runState = runState;
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.persistCurrentRun = async () => {};
+
+  await controller.advanceRun();
+
+  const state = controller.getState();
+  assert.equal(state.metaState.metaCurrency, 5);
+  assert.match(state.banner, /\+5 Intel Credits/);
 });
 
 test("skirmish battle tile clicks sync selection without a run save", async () => {

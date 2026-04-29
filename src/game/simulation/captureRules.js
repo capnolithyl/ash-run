@@ -1,4 +1,4 @@
-import { BUILDING_KEYS, UNIT_TAGS } from "../core/constants.js";
+import { BATTLE_MODES, BUILDING_KEYS, UNIT_TAGS } from "../core/constants.js";
 import { describeBuilding } from "../content/buildings.js";
 import { appendLog } from "./battleLog.js";
 import {
@@ -22,7 +22,11 @@ export function canCaptureBuilding(unit, building) {
 export function captureBuildingForUnit(state, unit, building) {
   const previousOwner = building.owner;
   building.owner = unit.owner;
-  if (previousOwner !== unit.owner && building.type === BUILDING_KEYS.SECTOR) {
+  if (
+    state.mode !== BATTLE_MODES.RUN &&
+    previousOwner !== unit.owner &&
+    building.type === BUILDING_KEYS.SECTOR
+  ) {
     state[unit.owner].funds += 100;
     appendLog(state, `${unit.name} secured immediate sector funds (+100).`);
   }

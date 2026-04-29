@@ -1,4 +1,5 @@
 import {
+  BATTLE_MODES,
   BUILDING_KEYS,
   ENEMY_RECRUITMENT_UNIT_LEAD_LIMIT,
   TURN_SIDES
@@ -460,6 +461,17 @@ function applyStartTurnGearEffects(state, side) {
 }
 
 export function collectIncome(system, side) {
+  if (system.state.mode === BATTLE_MODES.RUN && side === TURN_SIDES.PLAYER) {
+    return {
+      side,
+      amount: 0,
+      buildingIncome: 0,
+      commanderBonus: 0,
+      previousFunds: system.state[side].funds,
+      nextFunds: system.state[side].funds
+    };
+  }
+
   const commanderBonus = getIncomeBonus(system.state, side);
   const incomeByType = system.state.economy?.incomeByType;
   const buildingIncome = getBuildingIncomeForSide(system.state.map.buildings, side, incomeByType);

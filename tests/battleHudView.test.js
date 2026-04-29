@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { TERRAIN_KEYS, TURN_SIDES } from "../src/game/core/constants.js";
+import { BATTLE_MODES, TERRAIN_KEYS, TURN_SIDES } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
@@ -168,6 +168,20 @@ test("battle HUD shows commander funds inside the commander panels without a top
   assert.match(html, /commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>[\s\S]*?data-funds-panel="enemy"/);
   assert.doesNotMatch(html, /commander-panel__sigil/);
   assert.doesNotMatch(html, /battle-topbar/);
+});
+
+test("battle HUD hides funds and recruitment in run mode", () => {
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN
+  });
+  const building = battleState.map.buildings[0];
+  building.owner = TURN_SIDES.PLAYER;
+  battleState.selection = { type: "building", id: building.id, x: building.x, y: building.y };
+  const html = renderHudForBattleState(battleState);
+
+  assert.doesNotMatch(html, /data-funds-panel="player"/);
+  assert.doesNotMatch(html, /data-funds-panel="enemy"/);
+  assert.doesNotMatch(html, /<h3>Recruitment<\/h3>/);
 });
 
 test("battle HUD keeps player and enemy intel in separate sidebars", () => {

@@ -1,4 +1,4 @@
-import { TURN_SIDES } from "../../src/game/core/constants.js";
+import { BATTLE_MODES, TURN_SIDES } from "../../src/game/core/constants.js";
 import { createBattlefield } from "../../src/game/content/mapFactory.js";
 import { createUnitFromType } from "../../src/game/simulation/unitFactory.js";
 
@@ -29,7 +29,8 @@ export function createTestBattleState({
   playerUnits = [],
   enemyUnits = [],
   activeSide = TURN_SIDES.PLAYER,
-  seed = 1337
+  seed = 1337,
+  mode = BATTLE_MODES.SKIRMISH
 } = {}) {
   const map = createBattlefield({
     id,
@@ -43,6 +44,7 @@ export function createTestBattleState({
 
   return {
     id: `battle-${id}`,
+    mode,
     seed,
     map,
     turn: {

@@ -1,4 +1,10 @@
-import { BATTLE_NOTICE_DISPLAY_MS, BUILDING_KEYS, TERRAIN_KEYS, TURN_SIDES } from "../../game/core/constants.js";
+import {
+  BATTLE_MODES,
+  BATTLE_NOTICE_DISPLAY_MS,
+  BUILDING_KEYS,
+  TERRAIN_KEYS,
+  TURN_SIDES
+} from "../../game/core/constants.js";
 import { getBattlefieldLayout } from "../../game/core/battlefieldLayout.js";
 import { COMMANDERS, getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
@@ -276,7 +282,7 @@ function renderCommanderPanel(
   commander,
   sideState,
   side,
-  { fundsGain = null, canActivatePower = false, isCharged = false } = {}
+  { fundsGain = null, canActivatePower = false, isCharged = false, showFunds = true } = {}
 ) {
   const sideLabel = side === "player" ? "Player Commander" : "Enemy Commander";
   const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
@@ -287,7 +293,17 @@ function renderCommanderPanel(
         <div class="commander-panel__summary">
           <p class="eyebrow">${sideLabel}</p>
           <h2>${commander.name}</h2>
-          ${renderFundsPanel("Funds", sideState.funds, side, `funds-panel--${side} funds-panel--commander`, fundsGain)}
+          ${
+            showFunds
+              ? renderFundsPanel(
+                  "Funds",
+                  sideState.funds,
+                  side,
+                  `funds-panel--${side} funds-panel--commander`,
+                  fundsGain
+                )
+              : ""
+          }
         </div>
         <div class="commander-panel__identity">
           ${
@@ -738,6 +754,10 @@ function renderPowerOverlay(powerOverlay) {
 }
 
 function renderRecruitPanel(battleSnapshot) {
+  if (battleSnapshot.mode === BATTLE_MODES.RUN) {
+    return "";
+  }
+
   const options = battleSnapshot.presentation?.recruitOptions ?? [];
 
   if (options.length === 0) {
@@ -1049,6 +1069,7 @@ export function renderBattleHudView(state, options = {}) {
   const playerPowerEnabled = canActivatePlayerPower(battleSnapshot);
   const playerPowerCharged = isPlayerPowerCharged(battleSnapshot);
   const fundsGain = state.battleUi?.fundsGain ?? null;
+  const showFunds = battleSnapshot.mode !== BATTLE_MODES.RUN;
   const playerFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.PLAYER);
   const enemyFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.ENEMY);
 
@@ -1096,6 +1117,7 @@ export function renderBattleHudView(state, options = {}) {
         </div>
         ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player", {
           fundsGain,
+          showFunds,
           canActivatePower: playerPowerEnabled,
           isCharged: playerPowerCharged
         })}
@@ -1111,7 +1133,7 @@ export function renderBattleHudView(state, options = {}) {
           <span>Enemy Intel</span>
           <label class="ghost-button ghost-button--small" for="battle-command-drawer">Close</label>
         </div>
-        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", { fundsGain })}
+        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", { fundsGain, showFunds })}
         ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
         ${renderSelectionDetails(enemyFocusTile, {
           title: "Enemy Selection",

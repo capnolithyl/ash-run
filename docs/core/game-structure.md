@@ -19,7 +19,7 @@
 - Surviving player units carry to the next battle.
 - Dead units are removed from run roster.
 - Unit XP/level/stats persist across the run.
-- Funds and commander charge are battle-local and reset per map.
+- Commander charge resets per map. Skirmish funds are battle-local, while run mode pays out Intel Credits and keeps battlefield funds as an enemy-only reinforcement resource.
 
 ## Save Structure
 

@@ -6,7 +6,6 @@ export const SLOT_IDS = ["slot-1", "slot-2", "slot-3"];
 export const PROTOTYPE_ROSTER_CAP = 6;
 export const PROTOTYPE_RUN_GOAL = 10;
 export const DEFAULT_SAVE_VERSION = 1;
-export const PLAYER_STARTING_FUNDS = 0;
 export const ENEMY_STARTING_FUNDS = 0;
 export const SKIRMISH_DEFAULT_STARTING_FUNDS = 1200;
 export const SKIRMISH_DEFAULT_FUNDS_PER_BUILDING = 100;
@@ -54,6 +53,11 @@ export const SCREEN_IDS = {
   OPTIONS: "options",
   PROGRESSION: "progression",
   BATTLE: "battle"
+};
+
+export const BATTLE_MODES = {
+  RUN: "run",
+  SKIRMISH: "skirmish"
 };
 
 export const TURN_SIDES = {

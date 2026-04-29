@@ -1,5 +1,6 @@
 import { createEmitter } from "../core/emitter.js";
 import {
+  BATTLE_MODES,
   BATTLE_FUNDS_GAIN_ANIMATION_MS,
   BATTLE_NOTICE_DISPLAY_MS,
   BATTLE_POWER_OVERLAY_DISPLAY_MS,
@@ -168,8 +169,9 @@ function getFundsGainFromSnapshots(previousSnapshot, nextSnapshot) {
 }
 
 const BATTLE_CONTEXT_ACTION_DEDUPE_MS = 180;
-const RUN_META_CURRENCY_WIN_REWARD = 120;
-const RUN_META_CURRENCY_LOSS_REWARD = 45;
+const RUN_META_CURRENCY_MAP_REWARD = 5;
+const RUN_META_CURRENCY_CLEAR_BONUS = 30;
+const RUN_CAPTURE_INTEL_REWARD = 2;
 
 /**
  * The controller owns app flow and save orchestration.
@@ -198,8 +200,7 @@ export class GameController {
       banner: "",
       runStatus: null,
       battleUi: createBattleUiState(),
-      skirmishSetup: createDefaultSkirmishSetupState()
-      ,
+      skirmishSetup: createDefaultSkirmishSetupState(),
       runLoadout: createDefaultRunLoadoutState()
     };
   }
@@ -214,6 +215,16 @@ export class GameController {
 
   emit() {
     this.events.emit("state:changed", this.getState());
+  }
+
+  isRunBattle(snapshot = null) {
+    const resolvedSnapshot =
+      snapshot ??
+      this.state.battleSnapshot ??
+      this.battleSystem?.getStateForSave?.() ??
+      null;
+
+    return resolvedSnapshot?.mode === BATTLE_MODES.RUN || Boolean(this.state.runState);
   }
 
   async initialize() {
@@ -345,11 +356,7 @@ export class GameController {
   }
 
   async returnToTitle() {
-    if (this.state.runState && this.state.runStatus === "failed") {
-      this.state.metaState.metaCurrency += RUN_META_CURRENCY_LOSS_REWARD;
-      await this.storage.saveMeta(this.state.metaState);
-      this.state.banner = `Run failed. You earned ${RUN_META_CURRENCY_LOSS_REWARD} intel credits.`;
-    }
+    const bannerMessage = this.state.runStatus === "failed" ? "Run failed." : this.state.banner;
 
     if (this.state.runStatus === "failed" || this.state.runStatus === "complete") {
       await this.deleteSlot(this.state.selectedSlotId, false);
@@ -357,6 +364,7 @@ export class GameController {
 
     this.state.screen = SCREEN_IDS.TITLE;
     this.clearBattleSession();
+    this.state.banner = bannerMessage;
     this.emit();
   }
 
@@ -528,6 +536,10 @@ export class GameController {
 
     if (!slotRecord) {
       return;
+    }
+
+    if (slotRecord.runState && !slotRecord.battleState?.mode) {
+      slotRecord.battleState.mode = BATTLE_MODES.RUN;
     }
 
     this.state.selectedSlotId = slotId;
@@ -821,6 +833,16 @@ export class GameController {
     const changed = this.battleSystem.captureWithPendingUnit();
 
     if (changed) {
+      if (this.isRunBattle(this.battleSystem.getStateForSave()) && !this.state.debugMode) {
+        this.state.metaState.metaCurrency += RUN_CAPTURE_INTEL_REWARD;
+        await this.storage.saveMeta(this.state.metaState);
+        this.showBattleNotice({
+          title: "Intel Secured",
+          message: `+${RUN_CAPTURE_INTEL_REWARD} Intel Credits for the capture.`,
+          tone: "info"
+        });
+      }
+
       await this.persistCurrentRun();
     }
   }
@@ -965,6 +987,8 @@ export class GameController {
     }
 
     const nextRunState = applyBattleVictoryToRun(this.state.runState, battleState);
+    this.state.metaState.metaCurrency += RUN_META_CURRENCY_MAP_REWARD;
+    this.state.banner = `Map ${nextRunState.mapIndex}/${nextRunState.targetMapCount} clear. +${RUN_META_CURRENCY_MAP_REWARD} Intel Credits.`;
 
     if (isRunComplete(nextRunState)) {
       this.state.runState = nextRunState;
@@ -976,11 +1000,11 @@ export class GameController {
       );
 
       const unlocked = unlockNextCommander(this.state.metaState);
-      this.state.metaState.metaCurrency += RUN_META_CURRENCY_WIN_REWARD;
+      this.state.metaState.metaCurrency += RUN_META_CURRENCY_CLEAR_BONUS;
       if (unlocked) {
-        this.state.banner = `${unlocked.name} is now unlocked. +${RUN_META_CURRENCY_WIN_REWARD} intel credits. Clear time: ${nextRunState.totalTurns} turns.`;
+        this.state.banner = `${unlocked.name} is now unlocked. Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_CLEAR_BONUS} bonus Intel Credits (80 total).`;
       } else {
-        this.state.banner = `Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_WIN_REWARD} intel credits.`;
+        this.state.banner = `Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_CLEAR_BONUS} bonus Intel Credits (80 total).`;
       }
 
       await this.storage.saveMeta(this.state.metaState);
@@ -990,6 +1014,7 @@ export class GameController {
     }
 
     this.state.runState = nextRunState;
+    await this.storage.saveMeta(this.state.metaState);
     if ((nextRunState.pendingRewardChoices ?? []).length > 0) {
       this.state.runStatus = "reward";
       await this.persistCurrentRun();
@@ -1112,6 +1137,12 @@ export class GameController {
   }
 
   async playFundsGain(incomeGain) {
+    if (this.isRunBattle()) {
+      this.state.battleUi.fundsGain = null;
+      this.syncBattleState();
+      return;
+    }
+
     const fundsGain = this.prepareFundsGain(incomeGain);
 
     if (!fundsGain) {
@@ -1140,7 +1171,12 @@ export class GameController {
         return;
       }
 
-      await this.playFundsGain(enemyStart.incomeGain);
+      if (this.isRunBattle(this.battleSystem.getStateForSave())) {
+        this.state.battleUi.fundsGain = null;
+        this.syncBattleState();
+      } else {
+        await this.playFundsGain(enemyStart.incomeGain);
+      }
 
       if (this.state.battleSnapshot?.victory) {
         await this.persistCurrentRun();
@@ -1199,15 +1235,20 @@ export class GameController {
     const playerStart = this.battleSystem?.finalizeEnemyTurn();
 
     if (playerStart?.changed) {
-      const playerFundsGain = this.prepareFundsGain(playerStart.incomeGain, {
-        pending: true
-      });
+      if (this.isRunBattle(this.battleSystem?.getStateForSave())) {
+        this.state.battleUi.fundsGain = null;
+        this.syncBattleState();
+      } else {
+        const playerFundsGain = this.prepareFundsGain(playerStart.incomeGain, {
+          pending: true
+        });
 
-      this.syncBattleState();
+        this.syncBattleState();
 
-      if (playerFundsGain && !this.state.battleSnapshot?.victory) {
-        await delay(BATTLE_TURN_BANNER_SETTLE_MS);
-        await this.playPreparedFundsGain(playerFundsGain.id);
+        if (playerFundsGain && !this.state.battleSnapshot?.victory) {
+          await delay(BATTLE_TURN_BANNER_SETTLE_MS);
+          await this.playPreparedFundsGain(playerFundsGain.id);
+        }
       }
     }
 
@@ -1217,8 +1258,16 @@ export class GameController {
   syncBattleState({ allowEnemyFocusDuringEnemyTurn = false } = {}) {
     const previousSnapshot = this.state.battleSnapshot;
     const nextSnapshot = this.battleSystem?.getSnapshot() ?? null;
+    const shouldShowFunds = !this.isRunBattle(nextSnapshot);
+
+    if (!shouldShowFunds) {
+      this.state.battleUi.fundsGain = null;
+    }
+
     const autoFundsGain =
-      this.state.battleUi.fundsGain ? null : getFundsGainFromSnapshots(previousSnapshot, nextSnapshot);
+      shouldShowFunds && !this.state.battleUi.fundsGain
+        ? getFundsGainFromSnapshots(previousSnapshot, nextSnapshot)
+        : null;
 
     if (autoFundsGain) {
       this.prepareFundsGain(autoFundsGain, { pending: true });
