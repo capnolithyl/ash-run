@@ -1,7 +1,6 @@
 import {
   ENEMY_STARTING_FUNDS,
   PLAYER_STARTING_FUNDS,
-  PROTOTYPE_ROSTER_CAP,
   PROTOTYPE_RUN_GOAL,
   TURN_SIDES,
   UNIT_TAGS
@@ -10,8 +9,13 @@ import { getBuildingIncomeForSide } from "../core/economy.js";
 import { createId } from "../core/id.js";
 import { pickOne, shuffle, stringToSeed } from "../core/random.js";
 import { COMMANDERS } from "../content/commanders.js";
+import {
+  RUN_CARD_TYPES,
+  RUN_UPGRADES,
+  getRunRewardTypeForMap
+} from "../content/runUpgrades.js";
 import { BUILDING_RECRUITMENT, UNIT_CATALOG } from "../content/unitCatalog.js";
-import { MAP_POOL, getMapById } from "../content/maps.js";
+import { MAP_POOL, RUN_MAP_POOL, getMapById } from "../content/maps.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
 import {
   deployPersistentRoster,
@@ -33,7 +37,7 @@ function buildEnemyRoster(commanderId, difficultyTier) {
 }
 
 function buildMapSequence(seed, targetMapCount) {
-  const shuffled = shuffle(seed, MAP_POOL.map((mapDefinition) => mapDefinition.id));
+  const shuffled = shuffle(seed, RUN_MAP_POOL.map((mapDefinition) => mapDefinition.id));
   return shuffled.value.slice(0, Math.max(targetMapCount, 10));
 }
 
@@ -42,7 +46,7 @@ function createPlayerBattleRoster(runState, mapDefinition) {
     runState.roster.length > 0
       ? runState.roster
       : buildPersistentStarterRoster(runState.commanderId)
-  ).slice(0, PROTOTYPE_ROSTER_CAP);
+  );
 
   return deployPersistentRoster(roster, TURN_SIDES.PLAYER, mapDefinition, mapDefinition.playerSpawns);
 }
@@ -55,6 +59,46 @@ function createEnemyBattleRoster(runState, mapDefinition, enemyCommanderId) {
     mapDefinition,
     mapDefinition.enemySpawns
   );
+}
+
+function applyRunRewardsToUnits(runState, units) {
+  const rewards = runState.selectedRewards ?? [];
+  if (rewards.length === 0) {
+    return units;
+  }
+
+  return units.map((unit) => {
+    const nextUnit = structuredClone(unit);
+
+    for (const reward of rewards) {
+      if (reward.id === "passive-drill" && nextUnit.family === UNIT_TAGS.INFANTRY) {
+        nextUnit.stats.movement += 1;
+      }
+
+      if (reward.id === "passive-plating" && nextUnit.family === UNIT_TAGS.VEHICLE) {
+        nextUnit.stats.armor += 1;
+      }
+
+      if (
+        reward.type === RUN_CARD_TYPES.GEAR &&
+        Array.isArray(reward.unitIds) &&
+        reward.unitIds.includes(nextUnit.unitTypeId) &&
+        nextUnit.gear?.slot === null
+      ) {
+        nextUnit.gear = {
+          slot: reward.id
+        };
+      }
+    }
+
+    nextUnit.current = {
+      hp: nextUnit.stats.maxHealth,
+      stamina: nextUnit.stats.staminaMax,
+      ammo: nextUnit.stats.ammoMax
+    };
+
+    return nextUnit;
+  });
 }
 
 function hasAirThreat(units) {
@@ -89,10 +133,7 @@ function addEmergencyAntiAirIfNeeded(playerUnits, enemyUnits, mapDefinition, pla
     };
   }
 
-  const replacementIndex =
-    playerUnits.length >= PROTOTYPE_ROSTER_CAP
-      ? Math.max(0, playerUnits.findIndex((unit) => unit.family !== UNIT_TAGS.AIR))
-      : playerUnits.length;
+  const replacementIndex = Math.max(0, playerUnits.findIndex((unit) => unit.family !== UNIT_TAGS.AIR));
   const spawnPoint =
     playerUnits[replacementIndex] ??
     findOpenDeploymentPoint(
@@ -144,7 +185,9 @@ export function createNewRunState({ slotId, commanderId }) {
     targetMapCount,
     mapSequence: buildMapSequence(seed, targetMapCount),
     roster: [],
-    completedMaps: []
+    completedMaps: [],
+    runUpgrades: [],
+    runFunds: 1000
   };
 }
 
@@ -165,6 +208,7 @@ export function createBattleStateForRun(runState) {
     playerOpeningFunds
   );
   const openingLog = [`${runState.mapIndex + 1}/${runState.targetMapCount}: ${mapDefinition.name}`];
+  const rewardedPlayerUnits = applyRunRewardsToUnits(runState, antiAirSafety.units);
 
   if (difficultyTier > 1) {
     openingLog.push(`Enemy pressure increased to tier ${difficultyTier}.`);
@@ -182,6 +226,10 @@ export function createBattleStateForRun(runState) {
     openingLog.push("Anti-air escort assigned to answer enemy air power.");
   }
 
+  if ((runState.selectedRewards ?? []).length > 0) {
+    openingLog.push(`Run upgrades active: ${(runState.selectedRewards ?? []).map((reward) => reward.name).join(", ")}.`);
+  }
+
   return {
     id: createId("battle"),
     seed: runState.seed + runState.mapIndex,
@@ -196,7 +244,7 @@ export function createBattleStateForRun(runState) {
       funds: playerOpeningFunds,
       charge: 0,
       recruitDiscount: 0,
-      units: antiAirSafety.units
+      units: rewardedPlayerUnits
     },
     enemy: {
       commanderId: enemyCommanderId,
@@ -306,13 +354,52 @@ function extractRosterFromBattle(battleState) {
 }
 
 export function applyBattleVictoryToRun(runState, battleState) {
+  const nextMapNumber = runState.mapIndex + 1;
+  const forcedType = getRunRewardTypeForMap(nextMapNumber);
+  const rewardChoices = buildRunRewardChoices(runState, battleState, forcedType);
+
   return {
     ...structuredClone(runState),
     totalTurns: (runState.totalTurns ?? 0) + battleState.turn.number,
     roster: extractRosterFromBattle(battleState),
     completedMaps: [...runState.completedMaps, battleState.map.id],
-    mapIndex: runState.mapIndex + 1
+    mapIndex: runState.mapIndex + 1,
+    pendingRewardChoices: rewardChoices,
+    selectedRewards: [...(runState.selectedRewards ?? [])]
   };
+}
+
+function buildRunRewardChoices(runState, battleState, forcedType) {
+  const selectedRewardIds = new Set((runState.selectedRewards ?? []).map((reward) => reward.id));
+  const eligibleUpgrades = RUN_UPGRADES.filter((upgrade) => !selectedRewardIds.has(upgrade.id));
+  const preferredTypes =
+    forcedType === RUN_CARD_TYPES.UNIT
+      ? [RUN_CARD_TYPES.UNIT, RUN_CARD_TYPES.PASSIVE, RUN_CARD_TYPES.GEAR]
+      : [RUN_CARD_TYPES.PASSIVE, RUN_CARD_TYPES.GEAR, RUN_CARD_TYPES.UNIT];
+  const picked = [];
+
+  for (const type of preferredTypes) {
+    const candidate = eligibleUpgrades.find((upgrade) => upgrade.type === type);
+
+    if (candidate && !picked.some((upgrade) => upgrade.id === candidate.id)) {
+      picked.push(candidate);
+    }
+  }
+
+  if (forcedType === RUN_CARD_TYPES.UNIT && picked.every((upgrade) => upgrade.type !== RUN_CARD_TYPES.UNIT)) {
+    picked.push({
+      id: `unit-choice-${nextUnitChoiceIdSeed(runState, battleState)}`,
+      type: RUN_CARD_TYPES.UNIT,
+      name: "Reinforcement Draft",
+      summary: "Add one unlocked unit to your run roster after this map."
+    });
+  }
+
+  return picked.slice(0, 3);
+}
+
+function nextUnitChoiceIdSeed(runState, battleState) {
+  return `${runState.id}-${battleState.id}-${runState.mapIndex + 1}`;
 }
 
 export function isRunComplete(runState) {

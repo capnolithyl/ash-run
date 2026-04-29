@@ -116,7 +116,9 @@ export function getDamageResult(state, attacker, defender, attackProfile = getUn
   state.seed = attackRoll.seed;
 
   const scaledAttack = Math.round((attackerAttack + effectivenessBonus) * healthRatio);
-  const damage = Math.max(0, scaledAttack + attackRoll.value - defenderArmor);
+  const antiAirGearPenalty =
+    attacker.gear?.slot === "gear-aa-kit" && defender.family === UNIT_TAGS.AIR ? 0.6 : 1;
+  const damage = Math.max(0, Math.round((scaledAttack + attackRoll.value - defenderArmor) * antiAirGearPenalty));
 
   return {
     damage,
@@ -146,24 +148,26 @@ function getDamageRange(
   const normalizedHpMax = Math.max(0, Math.max(hpMin, hpMax));
   const luckMin = 0;
   const luckMax = Math.max(0, attacker.stats.luck + getLuckModifier(state, attacker));
+  const antiAirGearPenalty =
+    attacker.gear?.slot === "gear-aa-kit" && defender.family === UNIT_TAGS.AIR ? 0.6 : 1;
 
   return {
-    min: getDamageAmount(
+    min: Math.round(getDamageAmount(
       attackerAttack,
       defenderArmor,
       effectivenessBonus,
       normalizedHpMin,
       attacker.stats.maxHealth,
       luckMin
-    ),
-    max: getDamageAmount(
+    ) * antiAirGearPenalty),
+    max: Math.round(getDamageAmount(
       attackerAttack,
       defenderArmor,
       effectivenessBonus,
       normalizedHpMax,
       attacker.stats.maxHealth,
       luckMax
-    ),
+    ) * antiAirGearPenalty),
     isEffective: effectivenessBonus > 0
   };
 }

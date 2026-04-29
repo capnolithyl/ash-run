@@ -11,6 +11,7 @@ import {
   TURN_SIDES
 } from "../core/constants.js";
 import { COMMANDERS } from "../content/commanders.js";
+import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 import { getBattleSnapshotTransitionDurationMs } from "../phaser/view/battleAnimationEvents.js";
 import { StorageRepository } from "../services/StorageRepository.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
@@ -23,6 +24,8 @@ import {
   isRunComplete
 } from "../state/runFactory.js";
 import { createDefaultMetaState } from "../state/defaults.js";
+import { UNIT_CATALOG } from "../content/unitCatalog.js";
+import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
 
 function pickFirstAvailableSlot(slots) {
   return slots.find((slot) => !slot.exists)?.slotId ?? SLOT_IDS[0];
@@ -66,6 +69,14 @@ function createDefaultSkirmishSetupState(unlockedCommanderIds = []) {
     mapId: "ashline-crossing",
     startingFunds: SKIRMISH_DEFAULT_STARTING_FUNDS,
     fundsPerBuilding: SKIRMISH_DEFAULT_FUNDS_PER_BUILDING
+  };
+}
+
+function createDefaultRunLoadoutState() {
+  return {
+    budget: 1000,
+    fundsRemaining: 1000,
+    units: []
   };
 }
 
@@ -157,6 +168,8 @@ function getFundsGainFromSnapshots(previousSnapshot, nextSnapshot) {
 }
 
 const BATTLE_CONTEXT_ACTION_DEDUPE_MS = 180;
+const RUN_META_CURRENCY_WIN_REWARD = 120;
+const RUN_META_CURRENCY_LOSS_REWARD = 45;
 
 /**
  * The controller owns app flow and save orchestration.
@@ -186,6 +199,8 @@ export class GameController {
       runStatus: null,
       battleUi: createBattleUiState(),
       skirmishSetup: createDefaultSkirmishSetupState()
+      ,
+      runLoadout: createDefaultRunLoadoutState()
     };
   }
 
@@ -247,6 +262,23 @@ export class GameController {
     this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);
     this.state.banner = "";
     this.state.debugMode = false;
+    this.state.runLoadout = createDefaultRunLoadoutState();
+    this.resetBattleUi();
+    this.emit();
+  }
+
+  openRunLoadout() {
+    if (!this.state.selectedCommanderId) {
+      return;
+    }
+
+    this.state.screen = SCREEN_IDS.RUN_LOADOUT;
+    this.resetBattleUi();
+    this.emit();
+  }
+
+  returnToCommanderSelect() {
+    this.state.screen = SCREEN_IDS.COMMANDER_SELECT;
     this.resetBattleUi();
     this.emit();
   }
@@ -306,7 +338,19 @@ export class GameController {
     this.emit();
   }
 
+  openProgression() {
+    this.state.screen = SCREEN_IDS.PROGRESSION;
+    this.resetBattleUi();
+    this.emit();
+  }
+
   async returnToTitle() {
+    if (this.state.runState && this.state.runStatus === "failed") {
+      this.state.metaState.metaCurrency += RUN_META_CURRENCY_LOSS_REWARD;
+      await this.storage.saveMeta(this.state.metaState);
+      this.state.banner = `Run failed. You earned ${RUN_META_CURRENCY_LOSS_REWARD} intel credits.`;
+    }
+
     if (this.state.runStatus === "failed" || this.state.runStatus === "complete") {
       await this.deleteSlot(this.state.selectedSlotId, false);
     }
@@ -330,6 +374,34 @@ export class GameController {
     this.emit();
   }
 
+  addRunLoadoutUnit(unitTypeId) {
+    const unitType = UNIT_CATALOG[unitTypeId];
+    if (!unitType) {
+      return;
+    }
+    if (!this.state.metaState.unlockedUnitIds.includes(unitTypeId)) {
+      return;
+    }
+    if (this.state.runLoadout.fundsRemaining < unitType.cost) {
+      return;
+    }
+
+    this.state.runLoadout.units.push(unitTypeId);
+    this.state.runLoadout.fundsRemaining -= unitType.cost;
+    this.emit();
+  }
+
+  removeRunLoadoutUnit(unitTypeId) {
+    const index = this.state.runLoadout.units.lastIndexOf(unitTypeId);
+    if (index < 0) {
+      return;
+    }
+    const unitType = UNIT_CATALOG[unitTypeId];
+    this.state.runLoadout.units.splice(index, 1);
+    this.state.runLoadout.fundsRemaining += unitType?.cost ?? 0;
+    this.emit();
+  }
+
   updateSkirmishSetup(patch) {
     const next = {
       ...this.state.skirmishSetup,
@@ -341,6 +413,56 @@ export class GameController {
       startingFunds: Math.max(0, Number(next.startingFunds ?? 0)),
       fundsPerBuilding: Math.max(0, Number(next.fundsPerBuilding ?? 0))
     };
+    this.emit();
+  }
+
+  purchaseUnitUnlock(unitTypeId) {
+    if (this.state.metaState.unlockedUnitIds.includes(unitTypeId)) {
+      return;
+    }
+
+    const targetTier = UNIT_UNLOCK_TIERS.find((tier) => tier.unitIds.includes(unitTypeId));
+    if (!targetTier || targetTier.tier <= 0) {
+      return;
+    }
+
+    const previousTier = UNIT_UNLOCK_TIERS.find((tier) => tier.tier === targetTier.tier - 1);
+    const previousTierUnlocked = previousTier
+      ? previousTier.unitIds.every((id) => this.state.metaState.unlockedUnitIds.includes(id))
+      : true;
+    if (!previousTierUnlocked) {
+      return;
+    }
+
+    const cost = targetTier.unlockCost ?? 0;
+    if (this.state.metaState.metaCurrency < cost) {
+      return;
+    }
+
+    this.state.metaState.metaCurrency -= cost;
+    this.state.metaState.unlockedUnitIds.push(unitTypeId);
+    this.storage.saveMeta(this.state.metaState);
+    this.emit();
+  }
+
+  purchaseRunCardUnlock(cardId) {
+    if (this.state.metaState.unlockedRunCardIds.includes(cardId)) {
+      return;
+    }
+
+    const card = RUN_UPGRADES.find((entry) => entry.id === cardId);
+    if (!card) {
+      return;
+    }
+
+    const cost = card.unlockCost ?? 80;
+    if (this.state.metaState.metaCurrency < cost) {
+      return;
+    }
+
+    this.state.metaState.metaCurrency -= cost;
+    this.state.metaState.unlockedRunCardIds.push(cardId);
+    this.storage.saveMeta(this.state.metaState);
     this.emit();
   }
 
@@ -376,7 +498,7 @@ export class GameController {
   }
 
   async startNewRun() {
-    if (!this.state.selectedCommanderId) {
+    if (!this.state.selectedCommanderId || this.state.runLoadout.units.length === 0) {
       return;
     }
 
@@ -384,6 +506,11 @@ export class GameController {
       slotId: this.state.selectedSlotId,
       commanderId: this.state.selectedCommanderId
     });
+    const purchasedRoster = this.state.runLoadout.units
+      .map((unitTypeId) => createUnitFromType(unitTypeId, TURN_SIDES.PLAYER))
+      .map((unit) => createPersistentUnitSnapshot(unit));
+
+    runState.roster = purchasedRoster;
     const battleState = createBattleStateForRun(runState);
 
     this.battleSystem = new BattleSystem(battleState);
@@ -626,6 +753,15 @@ export class GameController {
       return;
     }
 
+    if (this.state.runState && !this.state.debugMode) {
+      this.showBattleNotice({
+        title: "Run Rules",
+        message: "Recruiting is disabled in run mode. Expand your squad between maps instead.",
+        tone: "info"
+      });
+      return;
+    }
+
     const changed = this.battleSystem.recruitUnit(unitTypeId);
 
     if (changed) {
@@ -840,10 +976,11 @@ export class GameController {
       );
 
       const unlocked = unlockNextCommander(this.state.metaState);
+      this.state.metaState.metaCurrency += RUN_META_CURRENCY_WIN_REWARD;
       if (unlocked) {
-        this.state.banner = `${unlocked.name} is now unlocked. Clear time: ${nextRunState.totalTurns} turns.`;
+        this.state.banner = `${unlocked.name} is now unlocked. +${RUN_META_CURRENCY_WIN_REWARD} intel credits. Clear time: ${nextRunState.totalTurns} turns.`;
       } else {
-        this.state.banner = `Run clear in ${nextRunState.totalTurns} turns. All commanders are already unlocked.`;
+        this.state.banner = `Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_WIN_REWARD} intel credits.`;
       }
 
       await this.storage.saveMeta(this.state.metaState);
@@ -853,9 +990,43 @@ export class GameController {
     }
 
     this.state.runState = nextRunState;
-    const nextBattleState = createBattleStateForRun(nextRunState);
-    this.battleSystem = new BattleSystem(nextBattleState);
+    if ((nextRunState.pendingRewardChoices ?? []).length > 0) {
+      this.state.runStatus = "reward";
+      await this.persistCurrentRun();
+      return;
+    }
+
     this.state.runStatus = null;
+    await this.startNextRunBattle();
+  }
+
+  async selectRunReward(rewardId) {
+    if (!this.state.runState || this.state.runStatus !== "reward") {
+      return;
+    }
+
+    const reward = (this.state.runState.pendingRewardChoices ?? []).find((choice) => choice.id === rewardId);
+
+    if (!reward) {
+      return;
+    }
+
+    this.state.runState = {
+      ...this.state.runState,
+      selectedRewards: [...(this.state.runState.selectedRewards ?? []), reward],
+      pendingRewardChoices: []
+    };
+    this.state.runStatus = null;
+    await this.startNextRunBattle();
+  }
+
+  async startNextRunBattle() {
+    if (!this.state.runState) {
+      return;
+    }
+
+    const nextBattleState = createBattleStateForRun(this.state.runState);
+    this.battleSystem = new BattleSystem(nextBattleState);
     this.resetBattleUi();
     await this.persistCurrentRun();
   }

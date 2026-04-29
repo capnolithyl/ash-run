@@ -191,6 +191,41 @@ test("startSkirmish opens an unsaved battle with configured economy", async () =
   assert.equal(state.battleSnapshot.economy.incomeByType.sector, 250);
 });
 
+test("new run can advance to loadout once a commander is selected", () => {
+  const controller = new GameController();
+
+  controller.openNewRun();
+  controller.openRunLoadout();
+
+  const state = controller.getState();
+  assert.equal(state.screen, SCREEN_IDS.RUN_LOADOUT);
+  assert.equal(state.selectedCommanderId, "atlas");
+});
+
+test("run loadout purchases update counts and remaining funds", () => {
+  const controller = new GameController();
+
+  controller.state.metaState.unlockedUnitIds = ["grunt", "runner"];
+  controller.state.runLoadout = {
+    budget: 500,
+    fundsRemaining: 500,
+    units: []
+  };
+
+  controller.addRunLoadoutUnit("grunt");
+  controller.addRunLoadoutUnit("runner");
+
+  let state = controller.getState();
+  assert.deepEqual(state.runLoadout.units, ["grunt", "runner"]);
+  assert.equal(state.runLoadout.fundsRemaining, 0);
+
+  controller.removeRunLoadoutUnit("grunt");
+
+  state = controller.getState();
+  assert.deepEqual(state.runLoadout.units, ["runner"]);
+  assert.equal(state.runLoadout.fundsRemaining, 100);
+});
+
 test("skirmish battle tile clicks sync selection without a run save", async () => {
   const controller = new GameController();
 

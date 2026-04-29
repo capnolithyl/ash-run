@@ -14,7 +14,8 @@ export function canCaptureBuilding(unit, building) {
     building &&
     unit.family === UNIT_TAGS.INFANTRY &&
     !["medic", "mechanic"].includes(unit.unitTypeId) &&
-    building.owner !== unit.owner
+    building.owner !== unit.owner &&
+    building.canCapture !== false
   );
 }
 

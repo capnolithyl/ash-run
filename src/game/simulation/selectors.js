@@ -301,7 +301,7 @@ export function canUnitAttackTarget(attacker, target) {
   }
 
   if (isAirTarget) {
-    return attacker.unitTypeId === "skyguard";
+    return attacker.unitTypeId === "skyguard" || attacker.gear?.slot === "gear-aa-kit";
   }
 
   return true;

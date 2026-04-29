@@ -29,7 +29,7 @@ test("commander select renders carousel controls and a reachable deployment acti
   assert.match(html, /data-action="commander-slider-prev"/);
   assert.match(html, /data-action="commander-slider-next"/);
   assert.match(html, /data-role="start-run-button"/);
-  assert.match(html, /Begin Deployment/);
+  assert.match(html, /Next: Starting Squad/);
   assert.match(html, /commander-card__info-image/);
   assert.match(html, /assets\/img\/commanders\/atlas\/Atlas%20-%20Info\.png/);
   assert.match(html, /assets\/img\/commanders\/sables\/Sables%20-%20Info\.png/);

@@ -205,10 +205,10 @@ export function renderCommanderSelectView(state) {
           <button
             class="menu-button"
             data-role="start-run-button"
-            data-action="start-run"
+            data-action="open-run-loadout"
             ${state.selectedCommanderId ? "" : "disabled"}
           >
-            Begin Deployment
+            Next: Starting Squad
           </button>
         </div>
       </section>

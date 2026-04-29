@@ -1430,19 +1430,43 @@ test("xp thresholds follow the new 90 plus 30-per-level curve", () => {
   assert.equal(getXpThreshold(4), 180);
 });
 
-test("only dedicated anti-air units can attack aircraft", () => {
+test("anti-air targeting allows skyguard/interceptor and AA-kit infantry only", () => {
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  grunt.gear = { slot: "gear-aa-kit" };
   const skyguard = createPlacedUnit("skyguard", TURN_SIDES.PLAYER, 1, 1);
   const interceptor = createPlacedUnit("interceptor", TURN_SIDES.PLAYER, 1, 1);
   const gunship = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
   const payload = createPlacedUnit("payload", TURN_SIDES.PLAYER, 1, 1);
   const enemyGunship = createPlacedUnit("gunship", TURN_SIDES.ENEMY, 2, 1);
 
-  assert.equal(canUnitAttackTarget(grunt, enemyGunship), false);
+  assert.equal(canUnitAttackTarget(grunt, enemyGunship), true);
   assert.equal(canUnitAttackTarget(gunship, enemyGunship), false);
   assert.equal(canUnitAttackTarget(payload, enemyGunship), false);
   assert.equal(canUnitAttackTarget(skyguard, enemyGunship), true);
   assert.equal(canUnitAttackTarget(interceptor, enemyGunship), true);
+});
+
+test("field medpack gear heals at player turn start", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 5, {
+    current: {
+      hp: 6
+    }
+  });
+  grunt.gear = { slot: "gear-field-meds" };
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
+  const state = createTestBattleState({
+    playerUnits: [grunt],
+    enemyUnits: [enemy]
+  });
+  state.map.buildings = [];
+  state.turn.activeSide = TURN_SIDES.ENEMY;
+  const system = new BattleSystem(state);
+
+  system.finalizeEnemyTurn();
+  const after = system.getStateForSave();
+  const updated = after.player.units[0];
+
+  assert.equal(updated.current.hp, 9);
 });
 
 test("units only gain combat XP when they actually deal damage", () => {

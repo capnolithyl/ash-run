@@ -130,6 +130,12 @@ export function renderTitleView(state) {
         </div>
         <nav class="title-bottom-bar" aria-label="Game utilities">
           ${renderTitleButton({
+            action: "open-progression",
+            className: "title-bottom-bar__button",
+            label: "Progression",
+            icon: "options"
+          })}
+          ${renderTitleButton({
             action: "open-options",
             className: "title-bottom-bar__button",
             label: "Options",

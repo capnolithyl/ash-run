@@ -36,6 +36,7 @@ import {
 import { createUnitFromType } from "./unitFactory.js";
 
 const PRODUCTION_BUILDING_TYPES = ["barracks", "motor-pool", "airfield"];
+const FIELD_MEDS_HEAL = 3;
 
 export function tickUnitDurations(system, side) {
   for (const unit of getLivingUnits(system.state, side)) {
@@ -432,6 +433,7 @@ export function finalizeEnemyTurn(system) {
   system.state.turn.activeSide = TURN_SIDES.PLAYER;
   tickSideStatuses(system.state, TURN_SIDES.PLAYER);
   tickUnitDurations(system, TURN_SIDES.PLAYER);
+  applyStartTurnGearEffects(system.state, TURN_SIDES.PLAYER);
   const incomeGain = collectIncome(system, TURN_SIDES.PLAYER);
   resetActions(system, TURN_SIDES.PLAYER);
   serviceUnitsOnSectors(system.state, TURN_SIDES.PLAYER);
@@ -440,6 +442,21 @@ export function finalizeEnemyTurn(system) {
     changed: true,
     incomeGain
   };
+}
+
+function applyStartTurnGearEffects(state, side) {
+  for (const unit of getLivingUnits(state, side)) {
+    if (unit.gear?.slot !== "gear-field-meds") {
+      continue;
+    }
+
+    const previousHp = unit.current.hp;
+    unit.current.hp = Math.min(unit.stats.maxHealth, unit.current.hp + FIELD_MEDS_HEAL);
+
+    if (unit.current.hp > previousHp) {
+      appendLog(state, `${unit.name} recovered ${unit.current.hp - previousHp} HP from Field Medpack.`);
+    }
+  }
 }
 
 export function collectIncome(system, side) {

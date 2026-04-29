@@ -48,9 +48,11 @@ export const SCREEN_IDS = {
   TITLE: "title",
   TUTORIAL: "tutorial",
   COMMANDER_SELECT: "commander-select",
+  RUN_LOADOUT: "run-loadout",
   SKIRMISH_SETUP: "skirmish-setup",
   LOAD_SLOT: "load-slot",
   OPTIONS: "options",
+  PROGRESSION: "progression",
   BATTLE: "battle"
 };
 

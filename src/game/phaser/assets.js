@@ -127,7 +127,8 @@ export function getUnitSpriteKey(unitTypeId, owner = "player") {
 }
 
 export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
-  const fallbackKey = getUnitSpriteKey(unitTypeId, owner);
+  const fallbackAsset = UNIT_SPRITES[unitTypeId]?.[owner] ?? UNIT_SPRITES[unitTypeId]?.player ?? null;
+  const fallbackKey = fallbackAsset?.key ?? null;
   const sheet = GENERATED_UNIT_SPRITE_SHEETS[unitTypeId]?.[owner];
 
   if (sheet) {
@@ -141,7 +142,8 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
   return fallbackKey
     ? {
         type: "image",
-        key: fallbackKey
+        key: fallbackKey,
+        url: fallbackAsset?.url ?? null
       }
     : null;
 }

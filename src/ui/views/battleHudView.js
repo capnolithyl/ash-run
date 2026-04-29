@@ -2,6 +2,7 @@ import { BATTLE_NOTICE_DISPLAY_MS, BUILDING_KEYS, TERRAIN_KEYS, TURN_SIDES } fro
 import { getBattlefieldLayout } from "../../game/core/battlefieldLayout.js";
 import { COMMANDERS, getCommanderById, getCommanderPowerMax } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
+import { RUN_UPGRADES } from "../../game/content/runUpgrades.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 import { getArmorModifier } from "../../game/simulation/commanderEffects.js";
 import { getPositionArmorBonus } from "../../game/simulation/combatResolver.js";
@@ -255,6 +256,10 @@ function renderUnitStatGrid(unit) {
 }
 
 function renderUnitSummary(unit, { showExperience = false } = {}) {
+  const attachedGear = unit.gear?.slot
+    ? RUN_UPGRADES.find((upgrade) => upgrade.id === unit.gear.slot) ?? { name: unit.gear.slot, summary: "" }
+    : null;
+
   return `
     <div class="selection-section" data-selection-unit-card="${unit.id ?? ""}">
       <div class="selection-unit-heading">
@@ -265,6 +270,17 @@ function renderUnitSummary(unit, { showExperience = false } = {}) {
       </div>
       ${renderHealthBar(unit)}
       ${renderUnitStatGrid(unit)}
+      ${
+        attachedGear
+          ? `
+            <div class="selection-header">
+              <strong>Gear</strong>
+              <span>${attachedGear.name}</span>
+            </div>
+            ${attachedGear.summary ? `<p>${attachedGear.summary}</p>` : ""}
+          `
+          : ""
+      }
     </div>
     ${showExperience ? renderExperienceBar(unit) : ""}
   `;
@@ -1113,6 +1129,31 @@ function renderOutcomeOverlay(state, battleSnapshot) {
   }
 
   if (battleSnapshot.victory.winner === "player") {
+    if (state.runStatus === "reward") {
+      const choices = state.runState?.pendingRewardChoices ?? [];
+      return `
+        <div class="battle-overlay">
+          <div class="overlay-card">
+            <p class="eyebrow">Battle Won</p>
+            <h2>Choose An Upgrade</h2>
+            <p>Select one reward before deploying to the next map.</p>
+            <div class="battle-actions battle-actions--stack">
+              ${choices
+                .map(
+                  (choice) => `
+                    <button class="menu-button" data-action="select-run-reward" data-reward-id="${choice.id}">
+                      <strong>${choice.name}</strong><br />
+                      <small>${choice.summary}</small>
+                    </button>
+                  `
+                )
+                .join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     return `
       <div class="battle-overlay">
         <div class="overlay-card">

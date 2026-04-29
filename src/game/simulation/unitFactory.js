@@ -29,6 +29,9 @@ export function createUnitFromType(unitTypeId, owner, level = 1) {
     experience: 0,
     effectiveAgainstTags: [...unitType.effectiveAgainstTags],
     cost: unitType.cost,
+    gear: {
+      slot: null
+    },
     stats,
     current: {
       hp: stats.maxHealth,
@@ -61,7 +64,8 @@ export function createPersistentUnitSnapshot(unit) {
     experience: unit.experience,
     effectiveAgainstTags: unit.effectiveAgainstTags,
     cost: unit.cost,
-    stats: unit.stats
+    stats: unit.stats,
+    gear: unit.gear ?? { slot: null }
   });
 }
 

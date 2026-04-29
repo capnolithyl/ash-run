@@ -8,6 +8,8 @@ import { renderBattleHudView } from "./views/battleHudView.js";
 import { renderCommanderSelectView } from "./views/commanderSelectView.js";
 import { titleCaseSlot } from "./formatters.js";
 import { renderOptionsView } from "./views/optionsView.js";
+import { renderProgressionView } from "./views/progressionView.js";
+import { renderRunLoadoutView } from "./views/runLoadoutView.js";
 import { renderSaveSlotView } from "./views/saveSlotView.js";
 import { renderSkirmishSetupView } from "./views/skirmishSetupView.js";
 import { renderTitleView } from "./views/titleView.js";
@@ -172,6 +174,18 @@ export class AppShell {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderOptionsView(state);
+        this.syncControllerFocusAfterRender();
+        return;
+      case SCREEN_IDS.PROGRESSION:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
+        this.root.innerHTML = renderProgressionView(state);
+        this.syncControllerFocusAfterRender();
+        return;
+      case SCREEN_IDS.RUN_LOADOUT:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
+        this.root.innerHTML = renderRunLoadoutView(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.SKIRMISH_SETUP:
@@ -1106,7 +1120,16 @@ export class AppShell {
             element.dataset.action === "select-commander" &&
             element.dataset.commanderId === this.latestState.selectedCommanderId
         ) ??
+        elements.find((element) => element.dataset.action === "open-run-loadout") ??
+        elements[0]
+      );
+    }
+
+    if (this.latestState?.screen === SCREEN_IDS.RUN_LOADOUT) {
+      return (
+        elements.find((element) => element.dataset.action === "run-loadout-add") ??
         elements.find((element) => element.dataset.action === "start-run") ??
+        elements.find((element) => element.dataset.action === "back-to-commander-select") ??
         elements[0]
       );
     }
@@ -1169,6 +1192,7 @@ export class AppShell {
         '[data-action="cancel-abandon-run"]',
         '[data-action="resume-battle"]',
         '[data-action="redo-move"]',
+        '[data-action="back-to-commander-select"]',
         '[data-action="back-to-title"]'
       ].join(",")
     );
@@ -1441,6 +1465,18 @@ export class AppShell {
       case "open-options":
         this.controller.openOptions();
         break;
+      case "open-progression":
+        this.controller.openProgression();
+        break;
+      case "open-run-loadout":
+        this.controller.openRunLoadout();
+        break;
+      case "purchase-unit-unlock":
+        this.controller.purchaseUnitUnlock(unitTypeId);
+        break;
+      case "purchase-card-unlock":
+        this.controller.purchaseRunCardUnlock(trigger.dataset.cardId);
+        break;
       case "open-debug-run":
         this.controller.startDebugRun();
         break;
@@ -1505,6 +1541,15 @@ export class AppShell {
         break;
       case "start-run":
         await this.controller.startNewRun();
+        break;
+      case "back-to-commander-select":
+        this.controller.returnToCommanderSelect();
+        break;
+      case "run-loadout-add":
+        this.controller.addRunLoadoutUnit(unitTypeId);
+        break;
+      case "run-loadout-remove":
+        this.controller.removeRunLoadoutUnit(unitTypeId);
         break;
       case "select-skirmish-player-commander":
         if (
@@ -1596,6 +1641,9 @@ export class AppShell {
         break;
       case "advance-run":
         await this.controller.advanceRun();
+        break;
+      case "select-run-reward":
+        await this.controller.selectRunReward(trigger.dataset.rewardId);
         break;
       case "debug-spawn-unit":
         await this.controller.debugSpawnUnit({

@@ -233,6 +233,27 @@ export const MAP_POOL = [
   })
 ];
 
+const PRODUCTION_BUILDINGS = new Set([BUILDING_KEYS.BARRACKS, BUILDING_KEYS.MOTOR_POOL, BUILDING_KEYS.AIRFIELD]);
+
+export const RUN_MAP_POOL = MAP_POOL.map((mapDefinition) => {
+  const runMap = structuredClone(mapDefinition);
+  runMap.id = `${mapDefinition.id}-run`;
+  runMap.name = `${mapDefinition.name} (Run)`;
+  runMap.buildings = runMap.buildings.filter(
+    (building) => !(building.owner === "player" && PRODUCTION_BUILDINGS.has(building.type))
+  );
+  runMap.buildings = runMap.buildings.map((building) =>
+    PRODUCTION_BUILDINGS.has(building.type)
+      ? {
+          ...building,
+          canCapture: false
+        }
+      : building
+  );
+  return runMap;
+});
+
 export function getMapById(mapId) {
-  return MAP_POOL.find((mapDefinition) => mapDefinition.id === mapId);
+  return MAP_POOL.find((mapDefinition) => mapDefinition.id === mapId)
+    ?? RUN_MAP_POOL.find((mapDefinition) => mapDefinition.id === mapId);
 }
