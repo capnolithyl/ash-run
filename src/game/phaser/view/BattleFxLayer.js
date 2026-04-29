@@ -281,7 +281,8 @@ export class BattleFxLayer {
     const width = Math.max(72, layout.cellSize * 1.9);
     const height = Math.max(12, layout.cellSize * 0.24);
     const background = this.scene.add.graphics();
-    const fill = this.scene.add.graphics();
+    const baseFill = this.scene.add.graphics();
+    const gainFill = this.scene.add.graphics();
     const title = this.scene.add
       .text(0, -height - 12, "EXP", {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
@@ -303,7 +304,7 @@ export class BattleFxLayer {
     background.fillRoundedRect(-width / 2, -height / 2, width, height, height / 2);
     background.lineStyle(2, 0xffd76b, 0.75);
     background.strokeRoundedRect(-width / 2, -height / 2, width, height, height / 2);
-    container.add([background, fill, title, value]);
+    container.add([background, baseFill, gainFill, title, value]);
 
     const progress = { segmentIndex: 0, value: 0 };
     const updateValueLabel = () => {
@@ -316,23 +317,62 @@ export class BattleFxLayer {
       value.setText(`Lv ${segment.level} ${Math.round(progress.value)}/${segment.threshold}`);
     };
 
-    const drawFill = () => {
-      fill.clear();
+    const getTrackWidth = () => width - 6;
+    const getFillWidthForValue = (segment, experienceValue) =>
+      Math.max(
+        0,
+        getTrackWidth() *
+          (segment.threshold > 0 ? Phaser.Math.Clamp(experienceValue / segment.threshold, 0, 1) : 0)
+      );
 
-      const segment = event.segments[Math.min(progress.segmentIndex, event.segments.length - 1)];
+    const drawBaseFill = (segment) => {
+      baseFill.clear();
 
       if (!segment) {
         return;
       }
 
-      const ratio = segment.threshold > 0 ? Phaser.Math.Clamp(progress.value / segment.threshold, 0, 1) : 0;
-      const fillWidth = Math.max(0, (width - 6) * ratio);
+      const fillWidth = getFillWidthForValue(segment, segment.fromExperience);
 
-      fill.fillStyle(0xff5fd6, 0.94);
-      fill.fillRoundedRect(-width / 2 + 3, -height / 2 + 3, fillWidth, height - 6, (height - 6) / 2);
-      fill.fillStyle(0xffd76b, 0.55);
-      fill.fillRoundedRect(-width / 2 + 3, -height / 2 + 3, Math.max(0, fillWidth * 0.54), height - 6, (height - 6) / 2);
+      if (fillWidth <= 0) {
+        return;
+      }
+
+      baseFill.fillStyle(0xffc58a, 0.96);
+      baseFill.fillRoundedRect(-width / 2 + 3, -height / 2 + 3, fillWidth, height - 6, (height - 6) / 2);
+    };
+
+    const drawGainFill = (segment) => {
+      gainFill.clear();
+
+      if (!segment) {
+        return;
+      }
+
+      const fromWidth = getFillWidthForValue(segment, segment.fromExperience);
+      const toWidth = getFillWidthForValue(segment, progress.value);
+      const gainWidth = Math.max(0, toWidth - fromWidth);
+
+      if (gainWidth <= 0) {
+        updateValueLabel();
+        return;
+      }
+
+      gainFill.fillStyle(0xff5fd6, 0.96);
+      gainFill.fillRoundedRect(
+        -width / 2 + 3 + fromWidth,
+        -height / 2 + 3,
+        gainWidth,
+        height - 6,
+        (height - 6) / 2
+      );
       updateValueLabel();
+    };
+
+    const drawSegment = () => {
+      const segment = event.segments[Math.min(progress.segmentIndex, event.segments.length - 1)];
+      drawBaseFill(segment);
+      drawGainFill(segment);
     };
 
     const playSegment = (segmentIndex) => {
@@ -352,7 +392,7 @@ export class BattleFxLayer {
       const segment = event.segments[segmentIndex];
       progress.segmentIndex = segmentIndex;
       progress.value = segment.fromExperience;
-      drawFill();
+      drawSegment();
 
       this.scene.tweens.addCounter({
         from: segment.fromExperience,
@@ -361,7 +401,7 @@ export class BattleFxLayer {
         ease: "Sine.Out",
         onUpdate: (tween) => {
           progress.value = tween.getValue();
-          drawFill();
+          drawSegment();
         },
         onComplete: () => {
           if (segment.toExperience >= segment.threshold && segmentIndex < event.segments.length - 1) {
@@ -383,15 +423,8 @@ export class BattleFxLayer {
 
     progress.segmentIndex = 0;
     progress.value = firstSegment.fromExperience;
-    drawFill();
-
-    this.scene.time.delayedCall(180, () => {
-      if (!container.active) {
-        return;
-      }
-
-      playSegment(0);
-    });
+    drawSegment();
+    playSegment(0);
   }
 
   playCapture(event, layout) {

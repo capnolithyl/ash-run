@@ -100,6 +100,10 @@ export class AppShell {
       intel: false,
       command: false
     };
+    this.runLoadoutTableScroll = {
+      top: 0,
+      left: 0
+    };
     this.controllerFocusElement = null;
     this.inputMode = "mouse";
     this.gamepadButtonState = new Map();
@@ -161,6 +165,12 @@ export class AppShell {
       return;
     }
 
+    if (state.screen === SCREEN_IDS.RUN_LOADOUT) {
+      this.renderRunLoadout(state);
+      this.syncControllerFocusAfterRender();
+      return;
+    }
+
     this.resetCommanderSliderState();
 
     switch (state.screen) {
@@ -180,12 +190,6 @@ export class AppShell {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderProgressionView(state);
-        this.syncControllerFocusAfterRender();
-        return;
-      case SCREEN_IDS.RUN_LOADOUT:
-        this.resetBattleUiTimers();
-        this.previousBattleSnapshot = null;
-        this.root.innerHTML = renderRunLoadoutView(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.SKIRMISH_SETUP:
@@ -613,6 +617,60 @@ export class AppShell {
     }
 
     this.syncCommanderSlider(state);
+  }
+
+  renderRunLoadout(state) {
+    this.resetBattleUiTimers();
+    this.previousBattleSnapshot = null;
+
+    const existingScreen = this.root.querySelector('[data-screen-id="run-loadout"]');
+
+    if (!existingScreen) {
+      this.root.innerHTML = renderRunLoadoutView(state);
+      return;
+    }
+
+    this.captureRunLoadoutTableScroll();
+
+    const nextMarkup = renderRunLoadoutView(state);
+    const template = document.createElement("template");
+    template.innerHTML = nextMarkup.trim();
+
+    const nextPanel = template.content.querySelector(".run-loadout-panel");
+    const currentPanel = existingScreen.querySelector(".run-loadout-panel");
+
+    if (!nextPanel || !currentPanel) {
+      this.root.innerHTML = nextMarkup;
+      this.applyRunLoadoutTableScroll();
+      return;
+    }
+
+    currentPanel.replaceWith(nextPanel);
+    this.applyRunLoadoutTableScroll();
+  }
+
+  captureRunLoadoutTableScroll() {
+    const tableShell = this.root.querySelector('[data-role="run-loadout-table-shell"]');
+
+    if (!tableShell) {
+      return;
+    }
+
+    this.runLoadoutTableScroll = {
+      top: tableShell.scrollTop,
+      left: tableShell.scrollLeft
+    };
+  }
+
+  applyRunLoadoutTableScroll() {
+    const tableShell = this.root.querySelector('[data-role="run-loadout-table-shell"]');
+
+    if (!tableShell) {
+      return;
+    }
+
+    tableShell.scrollTop = this.runLoadoutTableScroll.top ?? 0;
+    tableShell.scrollLeft = this.runLoadoutTableScroll.left ?? 0;
   }
 
   scrollCommanderSlider(direction) {

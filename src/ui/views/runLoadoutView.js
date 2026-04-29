@@ -2,7 +2,7 @@ import { getCommanderById } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 import { getUnitSpriteDefinition } from "../../game/phaser/assets.js";
-import { titleCaseSlot } from "../formatters.js";
+import { formatRangeLabel, renderSelectionIcon } from "../shared/unitStatPresentation.js";
 
 const UNIT_FAMILY_LABELS = {
   infantry: "Infantry",
@@ -18,14 +18,6 @@ function getLoadoutCounts(units = []) {
   }
 
   return counts;
-}
-
-function formatUnitRange(unit) {
-  if (unit.minRange === unit.maxRange) {
-    return `${unit.maxRange}`;
-  }
-
-  return `${unit.minRange}-${unit.maxRange}`;
 }
 
 function renderUnitPreview(unitTypeId, unitName) {
@@ -77,14 +69,36 @@ function renderSelectedSquad(counts) {
   `;
 }
 
+function renderLoadoutStatCell(iconName, label, value) {
+  return `
+    <div class="selection-stat run-loadout-stat">
+      <span class="selection-stat__label">
+        <span class="selection-icon selection-icon--stat" aria-hidden="true">${renderSelectionIcon(iconName)}</span>
+        <span>${label}</span>
+      </span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function renderDeploymentIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12h9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M10 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15.5 8.5h3.5v7h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+  `;
+}
+
 export function renderRunLoadoutView(state) {
   const commander = getCommanderById(state.selectedCommanderId);
   const commanderPortraitUrl = commander ? getCommanderPortraitImageUrl(commander.id) : null;
   const runLoadout = state.runLoadout ?? { budget: 1000, fundsRemaining: 1000, units: [] };
   const unlockedUnitIds = state.metaState.unlockedUnitIds ?? [];
   const loadoutCounts = getLoadoutCounts(runLoadout.units);
-  const spentFunds = Math.max(0, (runLoadout.budget ?? 0) - (runLoadout.fundsRemaining ?? 0));
   const purchasedUnitCount = runLoadout.units.length;
+  const budgetLabel = `${runLoadout.fundsRemaining ?? 0}/${runLoadout.budget ?? 0}`;
 
   return `
     <div class="screen screen--commander screen--run-loadout" data-screen-id="run-loadout">
@@ -107,138 +121,135 @@ export function renderRunLoadoutView(state) {
           </div>
           <button class="ghost-button" data-action="back-to-commander-select">Back</button>
         </div>
-        <div class="run-loadout-layout">
-          <aside class="run-loadout-sidebar">
-            <section class="run-loadout-summary-card run-loadout-summary-card--commander" style="--accent:${commander?.accent ?? "#ffa95e"}">
-              <span class="run-loadout-summary-card__label">Selected Commander</span>
-              <div class="run-loadout-commander">
-                ${commanderPortraitUrl
-                  ? `
-                    <img
-                      class="run-loadout-commander__portrait"
-                      src="${commanderPortraitUrl}"
-                      alt="${commander?.name ?? "Commander"} portrait"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  `
-                  : ""}
-                <div class="run-loadout-commander__body">
-                  <strong>${commander?.name ?? "Commander"}</strong>
-                  <span>${commander?.title ?? "Doctrine"}</span>
-                  <p><span>Passive:</span> ${commander?.passive?.summary ?? "No passive summary available."}</p>
-                  <p><span>Power:</span> ${commander?.active?.summary ?? "No power summary available."}</p>
-                </div>
+        <section class="run-loadout-topband">
+          <section class="run-loadout-summary-card run-loadout-summary-card--commander" style="--accent:${commander?.accent ?? "#ffa95e"}">
+            <span class="run-loadout-summary-card__label">Selected Commander</span>
+            <div class="run-loadout-commander">
+              <div class="run-loadout-commander__body">
+                <strong>${commander?.name ?? "Commander"}</strong>
+                <span>${commander?.title ?? "Doctrine"}</span>
+                <p><span>Passive:</span> ${commander?.passive?.summary ?? "No passive summary available."}</p>
+                <p><span>Power:</span> ${commander?.active?.summary ?? "No power summary available."}</p>
               </div>
-            </section>
-            <section class="run-loadout-summary-card">
-              <span class="run-loadout-summary-card__label">Budget</span>
-              <div class="run-loadout-budget-grid">
-                <div class="run-loadout-budget-card">
-                  <span>Starting Funds</span>
-                  <strong>${runLoadout.budget ?? 0}</strong>
-                </div>
-                <div class="run-loadout-budget-card run-loadout-budget-card--highlight">
-                  <span>Funds Remaining</span>
-                  <strong>${runLoadout.fundsRemaining ?? 0}</strong>
-                </div>
-                <div class="run-loadout-budget-card">
-                  <span>Funds Committed</span>
-                  <strong>${spentFunds}</strong>
-                </div>
-                <div class="run-loadout-budget-card">
-                  <span>Units Purchased</span>
-                  <strong>${purchasedUnitCount}</strong>
-                </div>
-              </div>
-            </section>
-            <section class="run-loadout-summary-card">
+              ${commanderPortraitUrl
+                ? `
+                  <img
+                    class="run-loadout-commander__portrait"
+                    src="${commanderPortraitUrl}"
+                    alt="${commander?.name ?? "Commander"} portrait"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                `
+                : ""}
+            </div>
+          </section>
+          <section class="run-loadout-summary-card run-loadout-summary-card--squad">
+            <div class="run-loadout-summary-card__header">
               <span class="run-loadout-summary-card__label">Selected Squad</span>
-              ${renderSelectedSquad(loadoutCounts)}
-            </section>
-          </aside>
+              <div class="run-loadout-budget-pill run-loadout-budget-pill--inline">
+                <span>Funds</span>
+                <strong>${budgetLabel}</strong>
+              </div>
+            </div>
+            ${renderSelectedSquad(loadoutCounts)}
+          </section>
+        </section>
+        <div class="run-loadout-layout">
           <section class="run-loadout-catalog">
             <div class="run-loadout-catalog__header">
               <div>
                 <span class="run-loadout-summary-card__label">Unit Catalog</span>
-                <h3>Purchase Units</h3>
               </div>
-              <p>These use the same battlefield art your units will deploy with in combat.</p>
             </div>
-            <div class="run-loadout-unit-grid">
-              ${unlockedUnitIds.map((unitTypeId) => {
-                const unit = UNIT_CATALOG[unitTypeId];
-                const count = loadoutCounts.get(unitTypeId) ?? 0;
-                const canAfford = (runLoadout.fundsRemaining ?? 0) >= (unit?.cost ?? Number.POSITIVE_INFINITY);
+            <div class="run-loadout-table-shell" data-role="run-loadout-table-shell">
+              <table class="run-loadout-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Unit</th>
+                    <th scope="col">Battle Stats</th>
+                    <th scope="col">Purchase</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${unlockedUnitIds.map((unitTypeId) => {
+                    const unit = UNIT_CATALOG[unitTypeId];
+                    const count = loadoutCounts.get(unitTypeId) ?? 0;
+                    const canAfford = (runLoadout.fundsRemaining ?? 0) >= (unit?.cost ?? Number.POSITIVE_INFINITY);
 
-                if (!unit) {
-                  return "";
-                }
+                    if (!unit) {
+                      return "";
+                    }
 
-                return `
-                  <article class="run-unit-card ${count > 0 ? "run-unit-card--selected" : ""}">
-                    <div class="run-unit-card__preview">
-                      ${renderUnitPreview(unitTypeId, unit.name)}
-                    </div>
-                    <div class="run-unit-card__body">
-                      <div class="run-unit-card__header">
-                        <div>
-                          <strong>${unit.name}</strong>
-                          <span>${UNIT_FAMILY_LABELS[unit.family] ?? unit.family}</span>
-                        </div>
-                        <span class="run-unit-card__cost">${unit.cost}</span>
-                      </div>
-                      <div class="run-unit-card__stats">
-                        <span>ATK ${unit.attack}</span>
-                        <span>ARM ${unit.armor}</span>
-                        <span>MV ${unit.movement}</span>
-                        <span>RNG ${formatUnitRange(unit)}</span>
-                        <span>HP ${unit.maxHealth}</span>
-                        <span>AMMO ${unit.ammoMax}</span>
-                      </div>
-                      <div class="run-unit-card__actions">
-                        <button
-                          class="ghost-button ghost-button--small"
-                          data-action="run-loadout-remove"
-                          data-unit-type-id="${unitTypeId}"
-                          aria-label="Remove ${unit.name} from starting squad"
-                          ${count > 0 ? "" : "disabled"}
-                        >
-                          -
-                        </button>
-                        <div class="run-unit-card__count">
-                          <span>Selected</span>
-                          <strong>${count}</strong>
-                        </div>
-                        <button
-                          class="ghost-button ghost-button--small"
-                          data-action="run-loadout-add"
-                          data-unit-type-id="${unitTypeId}"
-                          aria-label="Add ${unit.name} to starting squad"
-                          ${canAfford ? "" : "disabled"}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                `;
-              }).join("")}
+                    return `
+                      <tr class="run-loadout-row ${count > 0 ? "run-loadout-row--selected" : ""}">
+                        <td>
+                          <div class="run-loadout-unit-cell">
+                            <div class="run-unit-card__preview run-loadout-unit-cell__preview">
+                              ${renderUnitPreview(unitTypeId, unit.name)}
+                            </div>
+                            <div class="run-loadout-unit-cell__body">
+                              <strong>${unit.name}</strong>
+                              <span>${UNIT_FAMILY_LABELS[unit.family] ?? unit.family}</span>
+                              <small>${unit.cost} funds</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="selection-stat-grid run-loadout-stat-grid">
+                            ${renderLoadoutStatCell("attack", "ATK", unit.attack)}
+                            ${renderLoadoutStatCell("armor", "ARM", unit.armor)}
+                            ${renderLoadoutStatCell("movement", "MOV", unit.movement)}
+                            ${renderLoadoutStatCell("range", "RNG", formatRangeLabel(unit.minRange, unit.maxRange))}
+                            ${renderLoadoutStatCell("ammo", "AMMO", unit.ammoMax)}
+                            ${renderLoadoutStatCell("stamina", "STA", unit.staminaMax)}
+                          </div>
+                        </td>
+                        <td>
+                          <div class="run-loadout-purchase-cell">
+                            <button
+                              class="ghost-button ghost-button--small"
+                              data-action="run-loadout-remove"
+                              data-unit-type-id="${unitTypeId}"
+                              aria-label="Remove ${unit.name} from starting squad"
+                              ${count > 0 ? "" : "disabled"}
+                            >
+                              -
+                            </button>
+                            <div class="run-loadout-purchase-cell__count">
+                              <span>Count</span>
+                              <strong>${count}</strong>
+                            </div>
+                            <button
+                              class="ghost-button ghost-button--small"
+                              data-action="run-loadout-add"
+                              data-unit-type-id="${unitTypeId}"
+                              aria-label="Add ${unit.name} to starting squad"
+                              ${canAfford ? "" : "disabled"}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join("")}
+                </tbody>
+              </table>
             </div>
           </section>
         </div>
         <div class="panel-footer run-loadout-panel__footer">
-          <div class="footer-meta">
-            <span>Selected slot: ${titleCaseSlot(state.selectedSlotId)}</span>
-            <span>Commander: ${commander?.name ?? "Unassigned"}</span>
-          </div>
           <button
-            class="menu-button"
+            class="menu-button run-loadout-start-button"
             data-role="start-run-button"
             data-action="start-run"
             ${purchasedUnitCount > 0 ? "" : "disabled"}
           >
-            Begin Deployment
+            <span class="title-button__content">
+              <span class="title-button__icon run-loadout-start-button__icon">${renderDeploymentIcon()}</span>
+              <span class="title-button__label">Begin Deployment</span>
+            </span>
           </button>
         </div>
       </section>
