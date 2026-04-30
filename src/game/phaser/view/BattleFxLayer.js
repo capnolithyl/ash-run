@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import {
-  BATTLE_ATTACK_IMPACT_DELAY_MS,
   BATTLE_ATTACK_WINDOW_MS
 } from "../../core/constants.js";
 
@@ -72,12 +71,6 @@ export class BattleFxLayer {
     const skipAttackVisuals = options.skipAttackVisuals === true;
     const skipCaptureVisuals = options.skipCaptureVisuals === true;
     const attackEvents = events.filter((event) => event.type === "attack");
-    const destroyDelaysByUnitId = new Map(
-      attackEvents.map((event) => [
-        event.targetId,
-        getScheduledDelay(baseDelay, event.delay ?? 0) + BATTLE_ATTACK_IMPACT_DELAY_MS
-      ])
-    );
     const combatDelay = attackEvents.length
       ? getScheduledDelay(
           baseDelay,
@@ -112,7 +105,7 @@ export class BattleFxLayer {
           this.schedule(baseDelay, () => this.playDeploy(event, layout));
           break;
         case "destroy":
-          this.schedule(destroyDelaysByUnitId.get(event.unitId) ?? baseDelay, () =>
+          this.schedule(getScheduledDelay(baseDelay, event.delay ?? 0), () =>
             this.playDestroy(event, layout)
           );
           break;

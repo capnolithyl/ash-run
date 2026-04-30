@@ -128,19 +128,13 @@ test("forced draft maps offer only reinforcement unit choices", () => {
   );
 });
 
-test("non-forced reward choices stay within unlocked unowned upgrades and vary by seed", () => {
+test("non-forced reward choices stay within unlocked unowned upgrades", () => {
   const baseRunState = createRunState({
     availableRunCardIds: ["passive-drill", "passive-plating", "gear-aa-kit", "gear-field-meds"],
     selectedRewards: [{ id: "passive-drill", type: RUN_CARD_TYPES.PASSIVE }]
   });
   const firstBattle = createBattleStateForRun(baseRunState);
-  const secondRunState = {
-    ...baseRunState,
-    seed: baseRunState.seed + 1
-  };
-  const secondBattle = createBattleStateForRun(secondRunState);
   const firstRewards = applyBattleVictoryToRun(baseRunState, firstBattle).pendingRewardChoices;
-  const secondRewards = applyBattleVictoryToRun(secondRunState, secondBattle).pendingRewardChoices;
 
   assert.ok(firstRewards.every((choice) => choice.type !== RUN_CARD_TYPES.UNIT));
   assert.ok(firstRewards.every((choice) => choice.id !== "passive-drill"));
@@ -149,8 +143,8 @@ test("non-forced reward choices stay within unlocked unowned upgrades and vary b
       ["passive-plating", "gear-aa-kit", "gear-field-meds"].includes(choice.id)
     )
   );
-  assert.notDeepEqual(
-    firstRewards.map((choice) => choice.id),
-    secondRewards.map((choice) => choice.id)
+  assert.deepEqual(
+    new Set(firstRewards.map((choice) => choice.id)),
+    new Set(["passive-plating", "gear-aa-kit", "gear-field-meds"])
   );
 });

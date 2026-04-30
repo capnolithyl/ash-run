@@ -14,6 +14,7 @@ import { canResupplyUnit, getMovementModifier } from "./commanderEffects.js";
 import {
   getAttackForecast,
   getAttackRangeCap,
+  getPositionArmorBonus,
   getTargetsForUnit
 } from "./combatResolver.js";
 import {
@@ -525,6 +526,66 @@ function getNearestPlayerDistance(state, tile) {
     const distance = Math.abs(tile.x - playerUnit.x) + Math.abs(tile.y - playerUnit.y);
     return Math.min(nearest, distance);
   }, Number.POSITIVE_INFINITY);
+}
+
+function compareDescending(left, right) {
+  return right - left;
+}
+
+function compareAscending(left, right) {
+  return left - right;
+}
+
+function compareBooleanDescending(left, right) {
+  return Number(right) - Number(left);
+}
+
+function compareSlipstreamCandidates(left, right) {
+  return (
+    compareBooleanDescending(left.isSafeFromMovementThreat, right.isSafeFromMovementThreat) ||
+    compareBooleanDescending(left.isSafeFromImmediateThreat, right.isSafeFromImmediateThreat) ||
+    compareDescending(left.positionArmorBonus, right.positionArmorBonus) ||
+    compareDescending(left.movementThreatMargin, right.movementThreatMargin) ||
+    compareDescending(left.attackThreatMargin, right.attackThreatMargin) ||
+    compareDescending(left.nearestPlayerDistance, right.nearestPlayerDistance) ||
+    compareBooleanDescending(left.isCurrentTile, right.isCurrentTile) ||
+    compareAscending(left.y, right.y) ||
+    compareAscending(left.x, right.x)
+  );
+}
+
+export function pickEnemySlipstreamTile(state, unit, reachableTiles) {
+  if (getLivingUnits(state, TURN_SIDES.PLAYER).length === 0) {
+    return { x: unit.x, y: unit.y };
+  }
+
+  const candidateTiles = reachableTiles.length > 0
+    ? reachableTiles
+    : [{ x: unit.x, y: unit.y }];
+  const rankedTiles = candidateTiles
+    .map((tile) => {
+      const positionedUnit = {
+        ...unit,
+        x: tile.x,
+        y: tile.y
+      };
+      const attackThreatMargin = getPlayerAttackThreatMargin(state, positionedUnit, tile);
+      const movementThreatMargin = getPlayerMovementThreatMargin(state, positionedUnit, tile);
+
+      return {
+        ...tile,
+        nearestPlayerDistance: getNearestPlayerDistance(state, tile),
+        attackThreatMargin,
+        movementThreatMargin,
+        positionArmorBonus: getPositionArmorBonus(state, positionedUnit),
+        isSafeFromImmediateThreat: attackThreatMargin > 0,
+        isSafeFromMovementThreat: movementThreatMargin > 0,
+        isCurrentTile: tile.x === unit.x && tile.y === unit.y
+      };
+    })
+    .sort(compareSlipstreamCandidates);
+
+  return rankedTiles[0] ?? { x: unit.x, y: unit.y };
 }
 
 export function pickFallbackMovementTile(state, unit, reachableTiles) {

@@ -61,7 +61,9 @@ export class UnitLayer {
   clear() {
     this.entities.forEach((entity) => {
       entity.queuedAttack = null;
+      entity.afterMoveCallbacks = [];
       this.stopMoveTween(entity);
+      this.stopDestroyTimer(entity);
       for (const tween of entity.effectTweens) {
         tween.stop();
       }
@@ -155,7 +157,14 @@ export class UnitLayer {
       targetX: 0,
       targetY: 0,
       alphaTarget: 1,
+      displayedHp: unit.current.hp,
+      pendingHp: unit.current.hp,
+      maxHealth: unit.stats.maxHealth,
       queuedAttack: null,
+      afterMoveCallbacks: [],
+      awaitingDeploy: false,
+      awaitingDestroy: false,
+      destroyTimer: null,
       transportIcon
     };
   }
@@ -181,6 +190,32 @@ export class UnitLayer {
 
     entity.moveTween.stop();
     entity.moveTween = null;
+  }
+
+  stopDestroyTimer(entity) {
+    if (!entity.destroyTimer) {
+      return;
+    }
+
+    entity.destroyTimer.remove(false);
+    entity.destroyTimer = null;
+  }
+
+  runAfterMoveCallbacks(entity) {
+    if (!entity?.afterMoveCallbacks?.length) {
+      return;
+    }
+
+    const callbacks = entity.afterMoveCallbacks.splice(0);
+
+    callbacks.forEach(({ callback, delay }) => {
+      if (delay > 0) {
+        this.scene.time.delayedCall(delay, callback);
+        return;
+      }
+
+      callback();
+    });
   }
 
   getMoveTweenRemaining(unitId) {
@@ -254,6 +289,7 @@ export class UnitLayer {
     if (tweens.length === 0) {
       entity.container.setPosition(entity.targetX, entity.targetY);
       entity.moveTween = null;
+      this.runAfterMoveCallbacks(entity);
       this.playQueuedAttack(entity);
       return;
     }
@@ -264,6 +300,7 @@ export class UnitLayer {
       onComplete: () => {
         entity.moveTween = null;
         entity.container.setPosition(entity.targetX, entity.targetY);
+        this.runAfterMoveCallbacks(entity);
         this.playQueuedAttack(entity);
       }
     });
@@ -274,6 +311,34 @@ export class UnitLayer {
       entity.visualBaseScaleX * multiplier,
       entity.visualBaseScaleY * multiplier
     );
+  }
+
+  drawHealthRing(entity) {
+    const ringYOffset = -this.cellSize * 0.42;
+    const ringRadius = this.cellSize * 0.12;
+    const hpRatio = Math.max(0, Math.min(1, entity.displayedHp / Math.max(1, entity.maxHealth)));
+    entity.healthRing.clear();
+    entity.healthRing.lineStyle(3, 0x11081c, 0.95);
+    entity.healthRing.strokeCircle(0, ringYOffset, ringRadius);
+    entity.healthRing.lineStyle(2.5, 0xffffff, 0.18);
+    entity.healthRing.beginPath();
+    entity.healthRing.arc(0, ringYOffset, ringRadius, -Math.PI / 2, Math.PI * 1.5, false);
+    entity.healthRing.strokePath();
+    entity.healthRing.lineStyle(
+      3,
+      hpRatio > 0.5 ? 0x7dffbf : hpRatio > 0.25 ? 0xffd166 : 0xff6b8c,
+      0.95
+    );
+    entity.healthRing.beginPath();
+    entity.healthRing.arc(
+      0,
+      ringYOffset,
+      ringRadius,
+      -Math.PI / 2,
+      -Math.PI / 2 + Math.PI * 2 * hpRatio,
+      false
+    );
+    entity.healthRing.strokePath();
   }
 
   resetEntityEffects(entity) {
@@ -313,7 +378,10 @@ export class UnitLayer {
     }
 
     entity.queuedAttack = null;
+    entity.afterMoveCallbacks = [];
+    entity.awaitingDestroy = false;
     this.stopMoveTween(entity);
+    this.stopDestroyTimer(entity);
 
     this.stopEffectTweens(entity);
 
@@ -329,6 +397,56 @@ export class UnitLayer {
     this.entities.delete(unitId);
   }
 
+  scheduleDestroy(unitId, delay = 0) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    entity.awaitingDestroy = true;
+
+    if (delay <= 0) {
+      this.destroyEntity(unitId);
+      return;
+    }
+
+    this.stopDestroyTimer(entity);
+    entity.destroyTimer = this.scene.time.delayedCall(delay, () => {
+      entity.destroyTimer = null;
+      this.destroyEntity(unitId);
+    });
+  }
+
+  holdForDestroy(unitId) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    entity.awaitingDestroy = true;
+  }
+
+  queueAfterMovement(unitId, callback, delay = 0) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity?.moveTween) {
+      if (delay > 0) {
+        this.scene.time.delayedCall(delay, callback);
+        return;
+      }
+
+      callback();
+      return;
+    }
+
+    entity.afterMoveCallbacks.push({
+      callback,
+      delay
+    });
+  }
+
   playDeploy(unitId) {
     const entity = this.entities.get(unitId);
 
@@ -336,6 +454,7 @@ export class UnitLayer {
       return;
     }
 
+    entity.awaitingDeploy = false;
     entity.container.setScale(0.22);
     entity.container.setAlpha(0);
     entity.container.y += this.cellSize ? this.cellSize * 0.14 : 6;
@@ -419,6 +538,27 @@ export class UnitLayer {
     }
 
     this.stopEffectTweens(entity);
+    const damageFromHp = entity.pendingHp;
+
+    if (Number.isFinite(damageFromHp) && damageFromHp !== entity.displayedHp) {
+      const hpTweenState = { hp: entity.displayedHp };
+
+      this.scene.tweens.addCounter({
+        from: entity.displayedHp,
+        to: damageFromHp,
+        duration: 220,
+        ease: "Sine.Out",
+        onUpdate: (tween) => {
+          hpTweenState.hp = tween.getValue();
+          entity.displayedHp = hpTweenState.hp;
+          this.drawHealthRing(entity);
+        },
+        onComplete: () => {
+          entity.displayedHp = damageFromHp;
+          this.drawHealthRing(entity);
+        }
+      });
+    }
 
     entity.aura.setAlpha(0.5);
     entity.glow.setAlpha(0.3);
@@ -474,7 +614,7 @@ export class UnitLayer {
     }));
   }
 
-  render(snapshot, layout, movementEvents = []) {
+  render(snapshot, layout, movementEvents = [], lifecycleEvents = {}) {
     if (this.cellSize !== layout.cellSize) {
       this.clear();
       this.cellSize = layout.cellSize;
@@ -487,6 +627,9 @@ export class UnitLayer {
     const movementEventMap = new Map(
       movementEvents.map((event) => [event.unitId, event])
     );
+    const deployUnitIds = lifecycleEvents.deployUnitIds ?? new Set();
+    const destroyUnitIds = lifecycleEvents.destroyUnitIds ?? new Set();
+    const damageByUnitId = lifecycleEvents.damageByUnitId ?? new Map();
 
     for (const unit of units) {
       activeIds.add(unit.id);
@@ -500,6 +643,9 @@ export class UnitLayer {
         entity.container.setPosition(initialPosition.x, initialPosition.y);
         entity.targetX = initialPosition.x;
         entity.targetY = initialPosition.y;
+        entity.awaitingDeploy = deployUnitIds.has(unit.id);
+      } else if (deployUnitIds.has(unit.id)) {
+        entity.awaitingDeploy = true;
       }
 
       const color = getOwnerColor(unit.owner);
@@ -528,31 +674,15 @@ export class UnitLayer {
       entity.visual.setFlipX?.(unit.owner === "enemy");
       entity.shadow?.setFlipX?.(unit.owner === "enemy");
       entity.fallbackLabel?.setText(unit.name.slice(0, 2).toUpperCase());
-      const ringYOffset = -layout.cellSize * 0.42;
-      const ringRadius = layout.cellSize * 0.12;
-      const hpRatio = Math.max(0, Math.min(1, unit.current.hp / unit.stats.maxHealth));
-      entity.healthRing.clear();
-      entity.healthRing.lineStyle(3, 0x11081c, 0.95);
-      entity.healthRing.strokeCircle(0, ringYOffset, ringRadius);
-      entity.healthRing.lineStyle(2.5, 0xffffff, 0.18);
-      entity.healthRing.beginPath();
-      entity.healthRing.arc(0, ringYOffset, ringRadius, -Math.PI / 2, Math.PI * 1.5, false);
-      entity.healthRing.strokePath();
-      entity.healthRing.lineStyle(
-        3,
-        hpRatio > 0.5 ? 0x7dffbf : hpRatio > 0.25 ? 0xffd166 : 0xff6b8c,
-        0.95
-      );
-      entity.healthRing.beginPath();
-      entity.healthRing.arc(
-        0,
-        ringYOffset,
-        ringRadius,
-        -Math.PI / 2,
-        -Math.PI / 2 + Math.PI * 2 * hpRatio,
-        false
-      );
-      entity.healthRing.strokePath();
+      const pendingDamage = damageByUnitId.get(unit.id);
+      entity.maxHealth = unit.stats.maxHealth;
+      entity.pendingHp = pendingDamage ? pendingDamage.nextHp : unit.current.hp;
+
+      if (!pendingDamage) {
+        entity.displayedHp = unit.current.hp;
+      }
+
+      this.drawHealthRing(entity);
       entity.transportIcon?.setVisible(Boolean(unit.transport?.carryingUnitId));
       const dimmed =
         unit.hasMoved ||
@@ -564,7 +694,7 @@ export class UnitLayer {
             ? 0.68
             : 1
           : 0.4;
-      entity.container.setAlpha(entity.alphaTarget);
+      entity.container.setAlpha(entity.awaitingDeploy ? 0 : entity.alphaTarget);
 
       const nextPosition = this.getTileCenter(unit, layout);
       const movementEvent = movementEventMap.get(unit.id);
@@ -595,6 +725,7 @@ export class UnitLayer {
             onComplete: () => {
               entity.moveTween = null;
               entity.container.setPosition(entity.targetX, entity.targetY);
+              this.runAfterMoveCallbacks(entity);
               this.playQueuedAttack(entity);
             }
           });
@@ -604,6 +735,18 @@ export class UnitLayer {
 
     for (const existingUnitId of [...this.entities.keys()]) {
       if (!activeIds.has(existingUnitId)) {
+        const entity = this.entities.get(existingUnitId);
+        const pendingDamage = damageByUnitId.get(existingUnitId);
+
+        if (pendingDamage && entity) {
+          entity.pendingHp = pendingDamage.nextHp;
+          entity.maxHealth = pendingDamage.maxHealth;
+        }
+
+        if (destroyUnitIds.has(existingUnitId) || entity?.awaitingDestroy) {
+          continue;
+        }
+
         this.destroyEntity(existingUnitId);
       }
     }

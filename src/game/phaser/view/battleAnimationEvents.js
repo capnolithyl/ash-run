@@ -1,6 +1,4 @@
 import {
-  BATTLE_ATTACK_IMPACT_DELAY_MS,
-  BATTLE_ATTACK_STAGGER_MS,
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
   getBattleMoveDuration
@@ -131,12 +129,6 @@ function getBattleAnimationDurationMs(events) {
   }
 
   const attackEvents = events.filter((event) => event.type === "attack");
-  const destroyDelaysByUnitId = new Map(
-    attackEvents.map((event) => [
-      event.targetId,
-      (event.delay ?? 0) + BATTLE_ATTACK_IMPACT_DELAY_MS
-    ])
-  );
   const combatDelay = attackEvents.length
     ? Math.max(...attackEvents.map((event) => event.delay ?? 0)) + BATTLE_ATTACK_WINDOW_MS
     : 0;
@@ -166,7 +158,7 @@ function getBattleAnimationDurationMs(events) {
       case "deploy":
         return Math.max(maxDuration, 420);
       case "destroy":
-        return Math.max(maxDuration, (destroyDelaysByUnitId.get(event.unitId) ?? 0) + 340);
+        return Math.max(maxDuration, (event.delay ?? 0) + 340);
       default:
         return maxDuration;
     }
@@ -239,7 +231,8 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
         owner: nextUnit.owner,
         x: nextUnit.x,
         y: nextUnit.y,
-        fromUnload: true
+        fromUnload: true,
+        carrierId: previousUnit.transport.carriedByUnitId
       });
     }
 
@@ -412,8 +405,19 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
     .sort((left, right) => Number(right.isInitiator) - Number(left.isInitiator))
     .map((event, index) => ({
       ...event,
-      delay: index * BATTLE_ATTACK_STAGGER_MS
+      delay: index * BATTLE_ATTACK_WINDOW_MS
     }));
+
+  const destroyDelaysByUnitId = new Map(
+    orderedAttacks.map((event) => [
+      event.targetId,
+      (event.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS
+    ])
+  );
+  const orderedDestroys = destroys.map((event) => ({
+    ...event,
+    delay: destroyDelaysByUnitId.get(event.unitId) ?? 0
+  }));
 
   return [
     ...movements,
@@ -422,6 +426,6 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
     ...experience,
     ...captures,
     ...deployments,
-    ...destroys
+    ...orderedDestroys
   ];
 }

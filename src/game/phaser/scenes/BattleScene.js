@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
   BATTLE_TURN_BANNER_SETTLE_MS
 } from "../../core/constants.js";
@@ -650,13 +651,43 @@ export class BattleScene extends Phaser.Scene {
 
     const animationEvents = deriveBattleAnimationEvents(previousSnapshot, snapshot);
     const movementEvents = animationEvents.filter((event) => event.type === "move");
-    const maxMoveDelay = movementEvents.length
-      ? Math.max(
-          ...movementEvents.map((event) =>
-            event.unitId ? this.unitLayer.getMoveTweenRemaining(event.unitId) : 0
-          )
+    const attackEvents = animationEvents
+      .filter((event) => event.type === "attack")
+      .sort((left, right) => (left.delay ?? 0) - (right.delay ?? 0));
+    const experienceEvents = animationEvents.filter((event) => event.type === "experience");
+    const deployUnitIds = new Set(
+      animationEvents
+        .filter((event) => event.type === "deploy")
+        .map((event) => event.unitId)
+    );
+    const destroyUnitIds = new Set(
+      animationEvents
+        .filter((event) => event.type === "destroy")
+        .map((event) => event.unitId)
+    );
+    const damageByUnitId = new Map();
+    const previousUnitsById = previousSnapshot
+      ? new Map(
+          [...previousSnapshot.player.units, ...previousSnapshot.enemy.units].map((unit) => [
+            unit.id,
+            unit
+          ])
         )
-      : 0;
+      : new Map();
+    const nextUnitsById = new Map(
+      [...snapshot.player.units, ...snapshot.enemy.units].map((unit) => [unit.id, unit])
+    );
+
+    previousUnitsById.forEach((previousUnit, unitId) => {
+      const nextUnit = nextUnitsById.get(unitId);
+
+      if (!nextUnit || nextUnit.current.hp < previousUnit.current.hp) {
+        damageByUnitId.set(unitId, {
+          nextHp: nextUnit?.current.hp ?? 0,
+          maxHealth: previousUnit.stats.maxHealth
+        });
+      }
+    });
     const turnTransitionDelay = getTurnTransitionDelay(previousSnapshot, snapshot);
     this.fxLayer.setScreenShakeEnabled(this.latestState.metaState.options.screenShake !== false);
 
@@ -670,30 +701,53 @@ export class BattleScene extends Phaser.Scene {
       hoveredAttackForecast
     );
     this.buildingLayer.render(snapshot, layout);
-    this.unitLayer.render(snapshot, layout, movementEvents);
-    const sequencedAnimationEvents = animationEvents.map((event) => {
-      if (event.type !== "attack") {
-        return event;
-      }
-
-      const moveDelay = this.unitLayer.getMoveTweenRemaining(event.attackerId);
-
-      if (moveDelay <= 0) {
-        return event;
-      }
-
-      return {
-        ...event,
-        delay: (event.delay ?? 0) + moveDelay + BATTLE_MOVE_SETTLE_MS
-      };
+    this.unitLayer.render(snapshot, layout, movementEvents, {
+      deployUnitIds,
+      destroyUnitIds,
+      damageByUnitId
     });
+    const maxMoveDelay = movementEvents.length
+      ? Math.max(
+          ...movementEvents.map((event) =>
+            event.unitId ? this.unitLayer.getMoveTweenRemaining(event.unitId) : 0
+          )
+        )
+      : 0;
+    const destroyEventByUnitId = new Map(
+      animationEvents
+        .filter((event) => event.type === "destroy")
+        .map((event) => [event.unitId, event])
+    );
+    const attackDrivenDestroyUnitIds = new Set(
+      attackEvents
+        .filter((event) => destroyEventByUnitId.has(event.targetId))
+        .map((event) => event.targetId)
+    );
+    const experienceRevealDelay = 180;
 
-    for (const event of sequencedAnimationEvents) {
+    for (const unitId of attackDrivenDestroyUnitIds) {
+      this.unitLayer.holdForDestroy(unitId);
+    }
+
+    for (const event of animationEvents) {
       if (event.type === "deploy") {
-        this.fxLayer.schedule(
-          turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS,
-          () => this.unitLayer.playDeploy(event.unitId)
-        );
+        if (event.fromUnload && event.carrierId) {
+          this.fxLayer.schedule(turnTransitionDelay, () => {
+            this.unitLayer.queueAfterMovement(
+              event.carrierId,
+              () => {
+                this.unitLayer.playDeploy(event.unitId);
+                this.fxLayer.playDeploy(event, layout);
+              },
+              BATTLE_MOVE_SETTLE_MS
+            );
+          });
+        } else {
+          this.fxLayer.schedule(turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS, () => {
+            this.unitLayer.playDeploy(event.unitId);
+            this.fxLayer.playDeploy(event, layout);
+          });
+        }
       }
 
       if (event.type === "capture") {
@@ -703,34 +757,96 @@ export class BattleScene extends Phaser.Scene {
         );
       }
 
+      if (event.type === "destroy") {
+        if (attackDrivenDestroyUnitIds.has(event.unitId)) {
+          continue;
+        }
+
+        this.unitLayer.scheduleDestroy(event.unitId, turnTransitionDelay + (event.delay ?? 0));
+        this.fxLayer.schedule(turnTransitionDelay + (event.delay ?? 0), () =>
+          this.fxLayer.playDestroy(event, layout)
+        );
+      }
+
       if (event.type === "heal" || event.type === "resupply") {
         this.fxLayer.schedule(turnTransitionDelay, () => this.unitLayer.playHeal(event.unitId));
       }
-
-      if (event.type === "attack") {
-        const attackDelay = turnTransitionDelay + (event.delay ?? 0);
-        this.fxLayer.schedule(attackDelay, () =>
-          this.unitLayer.playAttack(
-            event.attackerId,
-            event.toX - event.fromX,
-            event.toY - event.fromY,
-            {
-              onStart: () => this.fxLayer.playAttack(event, layout),
-              onImpact: () => {
-                this.unitLayer.playDamage(event.targetId);
-                this.fxLayer.playDamageNumber(event, layout);
-              }
-            }
-          )
-        );
-      }
     }
 
-    this.fxLayer.playEvents(sequencedAnimationEvents, layout, {
-      baseDelay: turnTransitionDelay,
-      skipAttackVisuals: true,
-      skipCaptureVisuals: true
-    });
+    if (attackEvents.length > 0) {
+      const playAttackSequence = (index = 0) => {
+        if (index >= attackEvents.length) {
+          if (experienceEvents.length > 0) {
+            this.fxLayer.schedule(experienceRevealDelay, () => {
+              experienceEvents.forEach((event) => this.fxLayer.playExperience(event, layout));
+            });
+          }
+          return;
+        }
+
+        const event = attackEvents[index];
+        const destroyEvent = destroyEventByUnitId.get(event.targetId);
+
+        this.unitLayer.playAttack(
+          event.attackerId,
+          event.toX - event.fromX,
+          event.toY - event.fromY,
+          {
+            onStart: () => {
+              this.fxLayer.playAttack(event, layout);
+
+              if (destroyEvent) {
+                this.unitLayer.scheduleDestroy(event.targetId, BATTLE_ATTACK_WINDOW_MS);
+                this.fxLayer.schedule(BATTLE_ATTACK_WINDOW_MS, () =>
+                  this.fxLayer.playDestroy(destroyEvent, layout)
+                );
+              }
+
+              this.fxLayer.schedule(BATTLE_ATTACK_WINDOW_MS, () => playAttackSequence(index + 1));
+            },
+            onImpact: () => {
+              this.unitLayer.playDamage(event.targetId);
+              this.fxLayer.playDamageNumber(event, layout);
+            }
+          }
+        );
+      };
+
+      const firstAttack = attackEvents[0];
+      const firstAttackMoveDelay = this.unitLayer.getMoveTweenRemaining(firstAttack.attackerId);
+
+      this.fxLayer.schedule(turnTransitionDelay, () => {
+        if (firstAttackMoveDelay > 0) {
+          this.unitLayer.queueAfterMovement(
+            firstAttack.attackerId,
+            () => playAttackSequence(0),
+            BATTLE_MOVE_SETTLE_MS
+          );
+          return;
+        }
+
+        playAttackSequence(0);
+      });
+    } else if (experienceEvents.length > 0) {
+      this.fxLayer.schedule(turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS, () => {
+        experienceEvents.forEach((event) => this.fxLayer.playExperience(event, layout));
+      });
+    }
+
+    this.fxLayer.playEvents(
+      animationEvents.filter(
+        (event) =>
+          event.type !== "attack" &&
+          event.type !== "experience" &&
+          event.type !== "capture" &&
+          event.type !== "deploy" &&
+          event.type !== "destroy"
+      ),
+      layout,
+      {
+        baseDelay: turnTransitionDelay
+      }
+    );
     this.previousSnapshot = structuredClone(snapshot);
   }
 

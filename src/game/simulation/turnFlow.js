@@ -29,6 +29,7 @@ import {
   pickBestFavorableAttack,
   pickBestAvailableAttack,
   pickEnemyRecruitmentCandidate,
+  pickEnemySlipstreamTile,
   pickFallbackMovementTile
 } from "./enemyAi.js";
 import {
@@ -159,19 +160,19 @@ function queueEnemySlipstreamMove(system, unitId) {
     return null;
   }
 
-  const fallbackTile = pickFallbackMovementTile(system.state, unit, reachableTiles);
+  const slipstreamTile = pickEnemySlipstreamTile(system.state, unit, reachableTiles);
 
-  if (!fallbackTile || (fallbackTile.x === unit.x && fallbackTile.y === unit.y)) {
+  if (!slipstreamTile || (slipstreamTile.x === unit.x && slipstreamTile.y === unit.y)) {
     return null;
   }
 
-  const movePath = getMovementPath(system.state, unit, 1, fallbackTile.x, fallbackTile.y);
+  const movePath = getMovementPath(system.state, unit, 1, slipstreamTile.x, slipstreamTile.y);
   const moveSegments = Math.max(0, movePath.length - 1);
 
   system.state.enemyTurn.pendingSlipstream = {
     unitId,
-    x: fallbackTile.x,
-    y: fallbackTile.y,
+    x: slipstreamTile.x,
+    y: slipstreamTile.y,
     moveSegments
   };
 

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { TURN_SIDES } from "../src/game/core/constants.js";
+import { BATTLE_ATTACK_WINDOW_MS, TURN_SIDES } from "../src/game/core/constants.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
@@ -65,6 +65,35 @@ test("battle animation events emit a deploy event when a carried unit unloads", 
   assert.equal(system.handleTileSelection(unloadTile.x, unloadTile.y), true);
   const after = system.getSnapshot();
   const deployEvents = deriveBattleAnimationEvents(before, after).filter((event) => event.type === "deploy");
+  const deployEvent = deployEvents.find((event) => event.unitId === infantry.id);
 
-  assert.ok(deployEvents.some((event) => event.unitId === infantry.id));
+  assert.ok(deployEvent);
+  assert.equal(deployEvent.fromUnload, true);
+  assert.equal(deployEvent.carrierId, runner.id);
+});
+
+test("lethal attacks delay destroy events until the attack window finishes", () => {
+  const attacker = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2, {
+    current: {
+      hp: 4
+    }
+  });
+  const system = new BattleSystem(
+    createTestBattleState({
+      playerUnits: [attacker],
+      enemyUnits: [defender]
+    })
+  );
+
+  const before = system.getSnapshot();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  const after = system.getSnapshot();
+  const events = deriveBattleAnimationEvents(before, after);
+  const attackEvent = events.find((event) => event.type === "attack" && event.targetId === defender.id);
+  const destroyEvent = events.find((event) => event.type === "destroy" && event.unitId === defender.id);
+
+  assert.ok(attackEvent);
+  assert.ok(destroyEvent);
+  assert.equal(destroyEvent.delay, (attackEvent.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS);
 });

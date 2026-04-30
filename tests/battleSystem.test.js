@@ -326,6 +326,24 @@ test("atlas power heals half max HP and grants armor through the enemy turn", ()
   assert.equal(getArmorModifier(nextPlayerTurnState, expiredOnNextTurn), 0);
 });
 
+test("active powers do not recharge during the same turn they were activated", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  battleState.player.commanderId = "viper";
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.getStateForSave().player.charge, 0);
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  assert.equal(system.getStateForSave().player.charge, 0);
+});
+
 test("enemy turns still allow inspection clicks without opening player actions", () => {
   const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 2);
@@ -455,7 +473,53 @@ test("echo units can reposition 1 tile after attacking", () => {
   assert.equal(afterSlipstream.pendingAction, null);
 });
 
-test("enemy echo units reposition after attacking when a slipstream tile is available", () => {
+test("enemy echo units stay put after attacking when their current tile is the best cover", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 3, 3, {
+    current: {
+      hp: 18
+    }
+  });
+  player.stats.luck = 0;
+  const enemy = createPlacedUnit("longshot", TURN_SIDES.ENEMY, 5, 3);
+  enemy.stats.luck = 0;
+  const battleState = createTestBattleState({
+    width: 6,
+    height: 6,
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 7
+  });
+  battleState.map.tiles = Array.from({ length: 6 }, () =>
+    Array.from({ length: 6 }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.map.buildings = [
+    { id: "player-command-echo-test", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 0, y: 5 },
+    { id: "enemy-command-echo-test", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 5, y: 3 }
+  ];
+  battleState.enemy.commanderId = "echo";
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const attackStep = system.processEnemyTurnStep();
+  const afterAttack = system.getStateForSave();
+  const updatedEnemy = afterAttack.enemy.units.find((unit) => unit.id === enemy.id);
+
+  assert.equal(attackStep.type, "attack");
+  assert.equal(afterAttack.enemyTurn.pendingSlipstream, null);
+  assert.equal(updatedEnemy.x, enemy.x);
+  assert.equal(updatedEnemy.y, enemy.y);
+  assert.equal(updatedEnemy.hasAttacked, true);
+  assert.ok(
+    !afterAttack.player.units.find((unit) => unit.id === player.id) ||
+      afterAttack.player.units.find((unit) => unit.id === player.id).current.hp < player.current.hp
+  );
+});
+
+test("enemy echo units reposition after attacking when a safer slipstream tile is available", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3, {
     current: {
       hp: 18
@@ -478,7 +542,7 @@ test("enemy echo units reposition after attacking when a slipstream tile is avai
   );
   battleState.map.buildings = [
     { id: "player-command-echo-test", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 0, y: 5 },
-    { id: "enemy-command-echo-test", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 5, y: 0 }
+    { id: "enemy-command-echo-test", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 5, y: 4 }
   ];
   battleState.enemy.commanderId = "echo";
   battleState.enemyTurn = {
@@ -492,6 +556,12 @@ test("enemy echo units reposition after attacking when a slipstream tile is avai
 
   assert.equal(attackStep.type, "attack");
   assert.ok(afterAttack.enemyTurn.pendingSlipstream);
+  assert.deepEqual(afterAttack.enemyTurn.pendingSlipstream, {
+    unitId: enemy.id,
+    x: 5,
+    y: 4,
+    moveSegments: 1
+  });
   assert.equal(
     afterAttack.enemy.units.find((unit) => unit.id === enemy.id).hasAttacked,
     true
@@ -506,7 +576,8 @@ test("enemy echo units reposition after attacking when a slipstream tile is avai
 
   assert.equal(moveStep.type, "move");
   assert.equal(system.getStateForSave().enemyTurn.pendingSlipstream, null);
-  assert.notEqual(`${updatedEnemy.x},${updatedEnemy.y}`, `${enemy.x},${enemy.y}`);
+  assert.equal(updatedEnemy.x, 5);
+  assert.equal(updatedEnemy.y, 4);
   assert.equal(updatedEnemy.hasAttacked, true);
 });
 
