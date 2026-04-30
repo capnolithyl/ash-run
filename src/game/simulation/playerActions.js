@@ -24,6 +24,7 @@ import {
   getBuildingAt,
   getLivingUnits,
   getReachableTiles,
+  getMovementPathCost,
   getSelectedBuilding,
   getSelectedUnit,
   getTerrainAt,
@@ -269,11 +270,16 @@ export function handleTileSelection(system, x, y) {
       };
 
       if (!isCurrentTile) {
+        const spentStamina = getMovementPathCost(
+          system.state,
+          selectedUnit,
+          movementBudget,
+          x,
+          y
+        ) ?? 0;
         selectedUnit.x = x;
         selectedUnit.y = y;
-        // Stamina is currently a move-token resource: any reposition costs 1,
-        // while terrain/path cost only controls which tiles are reachable.
-        selectedUnit.current.stamina = Math.max(0, selectedUnit.current.stamina - 1);
+        selectedUnit.current.stamina = Math.max(0, selectedUnit.current.stamina - spentStamina);
         if (selectedUnit.unitTypeId === "runner" && selectedUnit.transport?.carryingUnitId) {
           selectedUnit.transport.canUnloadAfterMove = true;
           system.syncTransportCargoPosition(selectedUnit);

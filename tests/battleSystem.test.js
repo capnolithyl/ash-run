@@ -10,7 +10,6 @@ import { COMMANDERS, getCommanderPowerMax } from "../src/game/content/commanders
 import { BUILDING_RECRUITMENT } from "../src/game/content/unitCatalog.js";
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
-import { serviceUnitsOnSectors } from "../src/game/simulation/battleServicing.js";
 import {
   canResupplyUnit,
   getExperienceModifier,
@@ -204,7 +203,7 @@ test("units with empty primary ammo can still use weak secondary fire", () => {
   assert.ok(afterAttack.log.some((line) => line.includes("secondary fire")));
 });
 
-test("owned sectors heal one third of max HP and resupply units", () => {
+test("owned sectors heal ten percent of max HP and resupply units", () => {
   const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
     current: {
       hp: 1,
@@ -230,9 +229,40 @@ test("owned sectors heal one third of max HP and resupply units", () => {
 
   const healedUnit = system.getStateForSave().player.units[0];
 
-  assert.equal(healedUnit.current.hp, 1 + Math.ceil(unit.stats.maxHealth / 3));
+  assert.equal(healedUnit.current.hp, 1 + Math.ceil(unit.stats.maxHealth * 0.1));
   assert.equal(healedUnit.current.ammo, healedUnit.stats.ammoMax);
   assert.equal(healedUnit.current.stamina, healedUnit.stats.staminaMax);
+});
+
+test("owned command posts resupply ammo and stamina without healing HP", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  const commandPost = battleState.map.buildings.find(
+    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
+  );
+  unit.x = commandPost.x;
+  unit.y = commandPost.y;
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.finalizeEnemyTurn().changed, true);
+
+  const servicedUnit = system.getStateForSave().player.units[0];
+
+  assert.equal(servicedUnit.current.hp, 5);
+  assert.equal(servicedUnit.current.ammo, servicedUnit.stats.ammoMax);
+  assert.equal(servicedUnit.current.stamina, servicedUnit.stats.staminaMax);
 });
 
 test("atlas passively restores 1 HP to each unit at the start of the turn", () => {
@@ -495,7 +525,7 @@ test("unimplemented commanders use explicit future effect names without old gene
     "supply-drop"
   ]);
 
-  for (const commander of COMMANDERS.filter((candidate) => !["atlas", "viper", "rook", "echo"].includes(candidate.id))) {
+  for (const commander of COMMANDERS.filter((candidate) => !["atlas", "viper", "echo"].includes(candidate.id))) {
     assert.equal(staleTypes.has(commander.passive.type), false, commander.id);
     assert.equal(staleTypes.has(commander.active.type), false, commander.id);
   }
@@ -504,7 +534,7 @@ test("unimplemented commanders use explicit future effect names without old gene
 test("unimplemented commander hooks are inert until their mechanics are built", () => {
   const unit = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 4);
-  const futureCommanderIds = ["blaze", "knox", "falcon", "graves", "nova", "sable"];
+  const futureCommanderIds = ["rook", "blaze", "knox", "falcon", "graves", "nova", "sable"];
 
   for (const commanderId of futureCommanderIds) {
     const battleState = createTestBattleState({
@@ -521,132 +551,6 @@ test("unimplemented commander hooks are inert until their mechanics are built", 
     assert.equal(getLuckModifier(battleState, testedUnit), 0, commanderId);
     assert.equal(getExperienceModifier(battleState, testedUnit), 0, commanderId);
   }
-});
-
-test("rook gains war budget income and cannot resupply from sector service", () => {
-  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
-    current: {
-      hp: 1,
-      ammo: 0,
-      stamina: 0
-    }
-  });
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
-  const battleState = createTestBattleState({
-    playerUnits: [unit],
-    enemyUnits: [enemy],
-    activeSide: TURN_SIDES.ENEMY
-  });
-  battleState.player.commanderId = "rook";
-  const sector = battleState.map.buildings.find(
-    (building) => building.type === BUILDING_KEYS.SECTOR && building.owner === TURN_SIDES.PLAYER
-  );
-  unit.x = sector.x;
-  unit.y = sector.y;
-
-  const system = new BattleSystem(battleState);
-  const result = system.finalizeEnemyTurn();
-  const healedUnit = system.getStateForSave().player.units[0];
-
-  assert.equal(result.incomeGain.commanderBonus, 200);
-  assert.equal(canResupplyUnit(system.getStateForSave(), healedUnit), false);
-  assert.equal(healedUnit.current.hp, 1 + Math.ceil(unit.stats.maxHealth / 3));
-  assert.equal(healedUnit.current.ammo, 0);
-  assert.equal(healedUnit.current.stamina, healedUnit.stats.staminaMax);
-
-  const directServiceState = system.getStateForSave();
-  const directServiceUnit = directServiceState.player.units[0];
-  directServiceUnit.current.hp = 1;
-  directServiceUnit.current.ammo = 0;
-  directServiceUnit.current.stamina = 0;
-  serviceUnitsOnSectors(directServiceState, TURN_SIDES.PLAYER);
-  assert.equal(directServiceUnit.current.ammo, 0);
-  assert.equal(directServiceUnit.current.stamina, 0);
-});
-
-test("rook liquidation spends funds, grants current-turn attack, and expires on end turn", () => {
-  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
-  const battleState = createTestBattleState({
-    playerUnits: [unit],
-    enemyUnits: [enemy]
-  });
-  battleState.player.commanderId = "rook";
-  battleState.player.funds = 950;
-  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
-
-  const system = new BattleSystem(battleState);
-
-  assert.equal(system.activatePower(), true);
-
-  const afterPower = system.getStateForSave();
-  const poweredUnit = afterPower.player.units[0];
-
-  assert.equal(afterPower.player.funds, 0);
-  assert.equal(getAttackModifier(afterPower, poweredUnit), 3);
-
-  assert.equal(system.endTurn(), true);
-
-  const afterEndTurn = system.getStateForSave();
-
-  assert.equal(getAttackModifier(afterEndTurn, afterEndTurn.player.units[0]), 0);
-});
-
-test("rook units are not support targets when only ammo and stamina are missing", () => {
-  const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 3, 3);
-  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3, {
-    current: {
-      hp: 18,
-      ammo: 0,
-      stamina: 0
-    }
-  });
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
-  const battleState = createTestBattleState({
-    width: 10,
-    height: 8,
-    playerUnits: [medic, grunt],
-    enemyUnits: [enemy]
-  });
-  battleState.player.commanderId = "rook";
-
-  const system = new BattleSystem(battleState);
-
-  assert.deepEqual(system.getSupportTargetsForUnit(medic), []);
-});
-
-test("rook support abilities can still heal HP without restoring ammo or stamina", () => {
-  const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 3, 3);
-  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3, {
-    current: {
-      hp: 5,
-      ammo: 0,
-      stamina: 0
-    }
-  });
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
-  const battleState = createTestBattleState({
-    width: 10,
-    height: 8,
-    playerUnits: [medic, grunt],
-    enemyUnits: [enemy]
-  });
-  battleState.player.commanderId = "rook";
-  battleState.selection = { type: "unit", id: medic.id, x: medic.x, y: medic.y };
-
-  const system = new BattleSystem(battleState);
-
-  assert.equal(system.handleTileSelection(medic.x, medic.y), true);
-  assert.equal(system.useSupportAbilityWithPendingUnit(grunt.id), true);
-
-  const afterSupport = system.getStateForSave();
-  const updatedMedic = afterSupport.player.units.find((unit) => unit.id === medic.id);
-  const updatedGrunt = afterSupport.player.units.find((unit) => unit.id === grunt.id);
-
-  assert.ok(updatedGrunt.current.hp > grunt.current.hp);
-  assert.equal(updatedGrunt.current.ammo, 0);
-  assert.equal(updatedGrunt.current.stamina, 0);
-  assert.equal(updatedMedic.cooldowns.support, 2);
 });
 
 test("damage forecast matches actual damage with terrain armor", () => {
@@ -734,7 +638,9 @@ test("buildings override terrain armor regardless of ownership, and command post
 
 test("combat can deal zero damage when defense fully absorbs the hit", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
-  const defender = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
+  const defender = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1, {
+    statuses: [{ type: "shield", value: 2, turnsRemaining: 1 }]
+  });
   attacker.stats.luck = 0;
   defender.stats.luck = 0;
   const battleState = createTestBattleState({
@@ -742,8 +648,6 @@ test("combat can deal zero damage when defense fully absorbs the hit", () => {
     enemyUnits: [defender],
     seed: 3
   });
-  battleState.player.commanderId = "rook";
-  battleState.enemy.commanderId = "rook";
   battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.FOREST;
   battleState.map.buildings = battleState.map.buildings.filter(
     (building) => building.x !== defender.x || building.y !== defender.y
@@ -771,10 +675,10 @@ test("combat can deal zero damage when defense fully absorbs the hit", () => {
   assert.equal(actualDamage, 0);
 });
 
-test("movement stamina is a one-token cost regardless of path length", () => {
+test("movement spends stamina equal to the path cost used", () => {
   const unit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
     current: {
-      stamina: 6
+      stamina: 8
     }
   });
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
@@ -784,15 +688,43 @@ test("movement stamina is a one-token cost regardless of path length", () => {
     playerUnits: [unit],
     enemyUnits: [enemy]
   });
+  battleState.map.tiles[1][2] = TERRAIN_KEYS.FOREST;
+  battleState.map.tiles[1][3] = TERRAIN_KEYS.ROAD;
   battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
 
   const system = new BattleSystem(battleState);
 
-  assert.equal(system.handleTileSelection(5, 3), true);
+  assert.equal(system.handleTileSelection(3, 1), true);
 
   const movedUnit = system.getStateForSave().player.units[0];
 
-  assert.equal(movedUnit.current.stamina, 5);
+  assert.equal(movedUnit.current.stamina, 4);
+});
+
+test("units with zero stamina can hold position but cannot move off their tile", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(unit.x, unit.y), true);
+  assert.equal(system.getStateForSave().pendingAction?.unitId, unit.id);
+  assert.equal(system.handleContextAction(), true);
+
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  const secondSystem = new BattleSystem(battleState);
+  assert.equal(secondSystem.handleTileSelection(2, 1), true);
+  assert.equal(secondSystem.getStateForSave().pendingAction, null);
+  assert.equal(secondSystem.getStateForSave().player.units[0].x, unit.x);
+  assert.equal(secondSystem.getStateForSave().player.units[0].y, unit.y);
 });
 
 test("carrier stays in data but is not recruitable from airfields", () => {
@@ -885,7 +817,7 @@ test("repair stations service vehicles once per owner and ignore infantry", () =
 
   assert.equal(servicedVehicle.current.hp, 4 + 1);
   assert.equal(servicedVehicle.current.ammo, 0);
-  assert.equal(servicedVehicle.current.stamina, servicedVehicle.stats.staminaMax);
+  assert.equal(servicedVehicle.current.stamina, 0);
 });
 
 test("hospitals restore infantry once per owner and do not service vehicles", () => {
@@ -1004,8 +936,8 @@ test("breaker halves only vehicle base armor for its own attack", () => {
     enemyUnits: [bruiser],
     seed: 4
   });
-  battleState.player.commanderId = "rook";
-  battleState.enemy.commanderId = "rook";
+  battleState.player.commanderId = "atlas";
+  battleState.enemy.commanderId = "atlas";
   battleState.map.tiles[bruiser.y][bruiser.x] = TERRAIN_KEYS.FOREST;
   battleState.map.buildings = battleState.map.buildings.filter(
     (building) => building.x !== bruiser.x || building.y !== bruiser.y
@@ -1084,7 +1016,7 @@ test("right-click context action redoes a pending move", () => {
 
   const system = new BattleSystem(battleState);
 
-  assert.equal(system.handleTileSelection(5, 3), true);
+  assert.equal(system.handleTileSelection(3, 1), true);
   assert.equal(system.handleContextAction(), true);
 
   const afterContextAction = system.getStateForSave();
@@ -1155,7 +1087,7 @@ test("enemy turns queue a post-move attack so combat resolves after movement", (
   assert.ok(afterAttack.player.units[0].current.hp < startingHp);
 });
 
-test("enemy units avoid bad immediate trades instead of attacking blindly", () => {
+test("enemy units attack when player threat cannot be escaped", () => {
   const player = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 4, 3);
   const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 3);
   const battleState = createTestBattleState({
@@ -1173,10 +1105,9 @@ test("enemy units avoid bad immediate trades instead of attacking blindly", () =
   const step = system.processEnemyTurnStep();
   const afterStep = system.getStateForSave();
 
-  assert.equal(step.type, "move");
+  assert.equal(step.type, "attack");
   assert.equal(afterStep.enemyTurn.pendingAttack, null);
-  assert.equal(afterStep.player.units[0].current.hp, player.current.hp);
-  assert.ok(afterStep.log.some((line) => line.includes("fell back")));
+  assert.ok(afterStep.player.units[0].current.hp < player.current.hp);
 });
 
 test("wounded enemy units enter repair mode and move toward service buildings", () => {
@@ -1294,7 +1225,6 @@ test("enemy units advance into staging range when no attack is available", () =>
 
   assert.equal(step.type, "move");
   assert.ok(movedEnemy.x < enemy.x, "enemy should close distance instead of running away");
-  assert.ok(afterStep.log.some((line) => line.includes("advanced into position")));
 });
 
 test("enemy units choose a favorable target when one is available", () => {
@@ -1311,7 +1241,6 @@ test("enemy units choose a favorable target when one is available", () => {
     enemyUnits: [enemy],
     activeSide: TURN_SIDES.ENEMY
   });
-  battleState.player.commanderId = "rook";
   battleState.enemyTurn = {
     pendingAttack: null,
     pendingUnitIds: [enemy.id]
@@ -1433,6 +1362,48 @@ test("enemy start actions wait for the controller to release the turn banner", (
   assert.equal(afterStartActions.log.some((line) => line.startsWith("Enemy deployed ")), false);
 });
 
+test("enemy powers wait for real attack opportunities", () => {
+  const distantPlayer = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const distantEnemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 8, 6);
+  const distantBattleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [distantPlayer],
+    enemyUnits: [distantEnemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  distantBattleState.enemyTurn = {
+    started: true,
+    pendingAttack: null,
+    pendingSlipstream: null,
+    pendingUnitIds: [distantEnemy.id]
+  };
+
+  const distantSystem = new BattleSystem(distantBattleState);
+
+  assert.equal(distantSystem.shouldEnemyUsePower(), false);
+
+  const closePlayer = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 3, 3);
+  const closeEnemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 3);
+  const closeBattleState = createTestBattleState({
+    width: 10,
+    height: 8,
+    playerUnits: [closePlayer],
+    enemyUnits: [closeEnemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  closeBattleState.enemyTurn = {
+    started: true,
+    pendingAttack: null,
+    pendingSlipstream: null,
+    pendingUnitIds: [closeEnemy.id]
+  };
+
+  const closeSystem = new BattleSystem(closeBattleState);
+
+  assert.equal(closeSystem.shouldEnemyUsePower(), true);
+});
+
 test("combat XP uses target max-health percent, level delta, and family matchups", () => {
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, { level: 1 });
   const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 2, 1, { level: 1 });
@@ -1494,6 +1465,32 @@ test("field medpack gear heals at player turn start", () => {
   const updated = after.player.units[0];
 
   assert.equal(updated.current.hp, 9);
+});
+
+test("field medpack gear only triggers once per map", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 5, {
+    current: {
+      hp: 6
+    }
+  });
+  grunt.gear = { slot: "gear-field-meds" };
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
+  const state = createTestBattleState({
+    playerUnits: [grunt],
+    enemyUnits: [enemy]
+  });
+  state.map.buildings = [];
+  state.turn.activeSide = TURN_SIDES.ENEMY;
+  const system = new BattleSystem(state);
+
+  system.finalizeEnemyTurn();
+  system.state.player.units[0].current.hp = 5;
+  system.state.turn.activeSide = TURN_SIDES.ENEMY;
+  system.finalizeEnemyTurn();
+
+  const updated = system.getStateForSave().player.units[0];
+
+  assert.equal(updated.current.hp, 5);
 });
 
 test("units only gain combat XP when they actually deal damage", () => {
@@ -1686,15 +1683,15 @@ test("pending move redo emits a teleport rollback instead of replaying movement"
 
   const system = new BattleSystem(battleState);
 
-  assert.equal(system.handleTileSelection(5, 3), true);
+  assert.equal(system.handleTileSelection(3, 1), true);
 
   const movedSnapshot = system.getSnapshot();
   const pendingAction = movedSnapshot.presentation.pendingAction;
 
   assert.equal(pendingAction.fromX, 1);
   assert.equal(pendingAction.fromY, 1);
-  assert.equal(pendingAction.toX, 5);
-  assert.equal(pendingAction.toY, 3);
+  assert.equal(pendingAction.toX, 3);
+  assert.equal(pendingAction.toY, 1);
 
   assert.equal(system.redoPendingMove(), true);
 

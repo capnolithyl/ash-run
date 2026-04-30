@@ -650,6 +650,13 @@ export class BattleScene extends Phaser.Scene {
 
     const animationEvents = deriveBattleAnimationEvents(previousSnapshot, snapshot);
     const movementEvents = animationEvents.filter((event) => event.type === "move");
+    const maxMoveDelay = movementEvents.length
+      ? Math.max(
+          ...movementEvents.map((event) =>
+            event.unitId ? this.unitLayer.getMoveTweenRemaining(event.unitId) : 0
+          )
+        )
+      : 0;
     const turnTransitionDelay = getTurnTransitionDelay(previousSnapshot, snapshot);
     this.fxLayer.setScreenShakeEnabled(this.latestState.metaState.options.screenShake !== false);
 
@@ -683,7 +690,17 @@ export class BattleScene extends Phaser.Scene {
 
     for (const event of sequencedAnimationEvents) {
       if (event.type === "deploy") {
-        this.fxLayer.schedule(turnTransitionDelay, () => this.unitLayer.playDeploy(event.unitId));
+        this.fxLayer.schedule(
+          turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS,
+          () => this.unitLayer.playDeploy(event.unitId)
+        );
+      }
+
+      if (event.type === "capture") {
+        this.fxLayer.schedule(
+          turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS,
+          () => this.fxLayer.playCapture(event, layout)
+        );
       }
 
       if (event.type === "heal" || event.type === "resupply") {
@@ -699,7 +716,10 @@ export class BattleScene extends Phaser.Scene {
             event.toY - event.fromY,
             {
               onStart: () => this.fxLayer.playAttack(event, layout),
-              onImpact: () => this.unitLayer.playDamage(event.targetId)
+              onImpact: () => {
+                this.unitLayer.playDamage(event.targetId);
+                this.fxLayer.playDamageNumber(event, layout);
+              }
             }
           )
         );
@@ -708,7 +728,8 @@ export class BattleScene extends Phaser.Scene {
 
     this.fxLayer.playEvents(sequencedAnimationEvents, layout, {
       baseDelay: turnTransitionDelay,
-      skipAttackVisuals: true
+      skipAttackVisuals: true,
+      skipCaptureVisuals: true
     });
     this.previousSnapshot = structuredClone(snapshot);
   }

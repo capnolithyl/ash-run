@@ -111,6 +111,12 @@ function getMovementCost(unit, terrain) {
   return unit.family === UNIT_TAGS.VEHICLE ? terrain.vehicleMoveCost : terrain.moveCost;
 }
 
+export function getUnitMovementAllowance(unit, movementBudget) {
+  const requestedBudget = Math.max(0, Math.floor(movementBudget ?? 0));
+  const currentStamina = Math.max(0, Math.floor(unit?.current?.stamina ?? requestedBudget));
+  return Math.min(requestedBudget, currentStamina);
+}
+
 function isTerrainBlockedForUnit(unit, terrain) {
   if (!terrain) {
     return true;
@@ -163,6 +169,7 @@ export function getValidUnloadTiles(state, runner, carriedUnit) {
 }
 
 function getMovementSearch(state, unit, movementBudget) {
+  const allowedBudget = getUnitMovementAllowance(unit, movementBudget);
   const frontier = [{ x: unit.x, y: unit.y, cost: 0 }];
   const bestCosts = new Map([[tileKey(unit.x, unit.y), 0]]);
   const previous = new Map();
@@ -213,7 +220,7 @@ function getMovementSearch(state, unit, movementBudget) {
       const bestKnownCost = bestCosts.get(key);
 
       if (
-        nextCost > movementBudget ||
+        nextCost > allowedBudget ||
         isTerrainBlockedForUnit(unit, terrain) ||
         occupiedByBlockingUnit ||
         (bestKnownCost !== undefined && bestKnownCost <= nextCost)
@@ -267,6 +274,12 @@ export function getMovementPath(state, unit, movementBudget, targetX, targetY) {
   }
 
   return path;
+}
+
+export function getMovementPathCost(state, unit, movementBudget, targetX, targetY) {
+  const search = getMovementSearch(state, unit, movementBudget);
+  const targetKey = tileKey(targetX, targetY);
+  return search.bestCosts.get(targetKey) ?? null;
 }
 
 export function getTargetsInRange(state, unit, minimumRange, maximumRange) {

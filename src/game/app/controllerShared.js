@@ -10,6 +10,7 @@ export const BATTLE_CONTEXT_ACTION_DEDUPE_MS = 180;
 export const RUN_META_CURRENCY_MAP_REWARD = 5;
 export const RUN_META_CURRENCY_CLEAR_BONUS = 30;
 export const RUN_CAPTURE_INTEL_REWARD = 2;
+export const RUN_CAPTURE_EXPERIENCE_REWARD = 20;
 
 export function pickFirstAvailableSlot(slots) {
   return slots.find((slot) => !slot.exists)?.slotId ?? SLOT_IDS[0];

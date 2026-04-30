@@ -28,6 +28,7 @@ export const MAP_POOL = [
     layout: "north-south",
     ridges: [{ x: 5, y: 1, width: 1, height: 3 }, { x: 8, y: 6, width: 1, height: 3 }],
     forests: [{ x: 2, y: 7, width: 2, height: 2 }, { x: 10, y: 1, width: 2, height: 2 }],
+    mountains: [{ x: 13, y: 3, width: 2, height: 2 }],
     playerProduction: BUILDING_KEYS.MOTOR_POOL
   }),
   createBattlefield({
@@ -39,6 +40,8 @@ export const MAP_POOL = [
     layout: "corner",
     roadSpurs: [4, 9],
     forests: [{ x: 4, y: 3, width: 2, height: 2 }, { x: 8, y: 5, width: 2, height: 2 }],
+    mountains: [{ x: 11, y: 1, width: 2, height: 2 }],
+    ridges: [{ x: 12, y: 6, width: 1, height: 2 }],
     neutralBuildings: [{ id: "afterglow-sector-a", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 6, y: 3 }]
   }),
   createBattlefield({
@@ -50,6 +53,8 @@ export const MAP_POOL = [
     layout: "center-ring",
     playerProduction: BUILDING_KEYS.AIRFIELD,
     forests: [{ x: 5, y: 1, width: 1, height: 2 }, { x: 8, y: 7, width: 1, height: 2 }],
+    mountains: [{ x: 13, y: 2, width: 2, height: 1 }],
+    ridges: [{ x: 14, y: 7, width: 1, height: 2 }],
     neutralBuildings: [{ id: "meridian-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 7, y: 5 }]
   }),
   createBattlefield({
@@ -61,7 +66,9 @@ export const MAP_POOL = [
     layout: "corner",
     riverColumns: [4, 9],
     forests: [{ x: 1, y: 1, width: 2, height: 2 }, { x: 11, y: 7, width: 2, height: 2 }],
-    ridges: [{ x: 6, y: 0, width: 2, height: 2 }]
+    ridges: [{ x: 6, y: 0, width: 2, height: 2 }],
+    mountains: [{ x: 15, y: 3, width: 2, height: 2 }],
+    bridgeRows: [2, 7, 12]
   }),
   createBattlefield({
     id: "hinterworks",
@@ -96,7 +103,9 @@ export const MAP_POOL = [
     layout: "center-ring",
     playerProduction: BUILDING_KEYS.BARRACKS,
     roadSpurs: [3, 10],
-    ridges: [{ x: 5, y: 2, width: 1, height: 5 }, { x: 8, y: 3, width: 1, height: 5 }]
+    ridges: [{ x: 5, y: 2, width: 1, height: 5 }, { x: 8, y: 3, width: 1, height: 5 }],
+    forests: [{ x: 13, y: 2, width: 2, height: 2 }, { x: 13, y: 9, width: 2, height: 2 }],
+    mountains: [{ x: 2, y: 10, width: 2, height: 1 }]
   }),
   createBattlefield({
     id: "violet-approach",
@@ -141,7 +150,9 @@ export const MAP_POOL = [
     riverColumns: [5, 8],
     roadGaps: [5, 8],
     neutralBuildings: [{ id: "breakwater-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 7, y: 3 }],
-    forests: [{ x: 2, y: 7, width: 2, height: 2 }]
+    forests: [{ x: 2, y: 7, width: 2, height: 2 }, { x: 11, y: 1, width: 2, height: 2 }],
+    mountains: [{ x: 12, y: 8, width: 2, height: 1 }],
+    ridges: [{ x: 14, y: 4, width: 1, height: 2 }]
   }),
   createBattlefield({
     id: "sunset-delta",
@@ -152,6 +163,8 @@ export const MAP_POOL = [
     layout: "north-south",
     roadSpurs: [6],
     forests: [{ x: 4, y: 6, width: 2, height: 2 }, { x: 8, y: 1, width: 2, height: 2 }],
+    mountains: [{ x: 13, y: 5, width: 2, height: 2 }],
+    ridges: [{ x: 14, y: 11, width: 1, height: 3 }],
     playerProduction: BUILDING_KEYS.BARRACKS
   }),
   createBattlefield({
@@ -196,6 +209,8 @@ export const MAP_POOL = [
     layout: "center-ring",
     playerProduction: BUILDING_KEYS.MOTOR_POOL,
     roadSpurs: [2, 5, 11],
+    forests: [{ x: 16, y: 2, width: 3, height: 2 }, { x: 16, y: 10, width: 3, height: 2 }],
+    mountains: [{ x: 20, y: 5, width: 2, height: 2 }],
     neutralBuildings: [{ id: "sable-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 6, y: 5 }]
   }),
   createBattlefield({
@@ -229,7 +244,9 @@ export const MAP_POOL = [
     layout: "center-ring",
     playerProduction: BUILDING_KEYS.MOTOR_POOL,
     roadSpurs: [4, 9],
-    ridges: [{ x: 6, y: 0, width: 2, height: 2 }, { x: 6, y: 8, width: 2, height: 2 }]
+    ridges: [{ x: 6, y: 0, width: 2, height: 2 }, { x: 6, y: 8, width: 2, height: 2 }],
+    forests: [{ x: 15, y: 2, width: 2, height: 2 }, { x: 15, y: 11, width: 2, height: 2 }],
+    mountains: [{ x: 18, y: 6, width: 2, height: 2 }]
   })
 ];
 

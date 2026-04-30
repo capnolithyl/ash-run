@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run full playthrough smoke
+        run: npm run test:playthrough
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run unused-code sweep
+        shell: pwsh
+        run: |
+          $env:NODE_OPTIONS='--experimental-require-module'
+          npm run check:unused
+
+      - name: Run Playwright UI suite
+        run: npm run test:ui
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results

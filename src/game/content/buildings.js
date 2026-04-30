@@ -5,7 +5,7 @@ const BUILDING_LIBRARY = {
   [BUILDING_KEYS.COMMAND]: {
     name: "Command Post",
     shortLabel: "HQ",
-    summary: "Primary headquarters. Grants extra income each turn.",
+    summary: "Primary headquarters. Grants extra income and restores ammo and stamina each turn.",
     canRecruit: false
   },
   [BUILDING_KEYS.BARRACKS]: {
@@ -29,7 +29,7 @@ const BUILDING_LIBRARY = {
   [BUILDING_KEYS.SECTOR]: {
     name: "Sector Node",
     shortLabel: "SEC",
-    summary: "Income site that boosts your funds while held.",
+    summary: "Income site that slowly heals and resupplies units while held.",
     canRecruit: false
   },
   [BUILDING_KEYS.HOSPITAL]: {

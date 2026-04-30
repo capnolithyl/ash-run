@@ -2,6 +2,24 @@ import { BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../../game/core/constan
 import { renderOptionFields } from "../optionFieldsView.js";
 import { renderDebugControls } from "./interactionPanels.js";
 
+function renderIntelBreakdown(runState) {
+  const intelLedger = runState?.intelLedger;
+
+  if (!intelLedger) {
+    return "";
+  }
+
+  return `
+    <div class="battle-results-breakdown">
+      <h3>Intel Breakdown</h3>
+      <div class="battle-results-breakdown__row"><span>Captures</span><strong>${intelLedger.capture}</strong></div>
+      <div class="battle-results-breakdown__row"><span>Map Clears</span><strong>${intelLedger.mapClear}</strong></div>
+      <div class="battle-results-breakdown__row"><span>Run Clear Bonus</span><strong>${intelLedger.runClearBonus}</strong></div>
+      <div class="battle-results-breakdown__row battle-results-breakdown__row--total"><span>Total Earned</span><strong>${intelLedger.total}</strong></div>
+    </div>
+  `;
+}
+
 export function renderLevelUpOverlay(battleSnapshot) {
   const levelUpEvent = battleSnapshot.levelUpQueue?.[0];
 
@@ -92,6 +110,7 @@ export function renderPauseOverlay(state, battleSnapshot) {
   }
 
   const confirmingExit = state.battleUi.confirmAbandon;
+  const isRunBattle = Boolean(state.runState) && !state.debugMode;
 
   return `
     <div class="battle-overlay battle-overlay--pause">
@@ -102,11 +121,15 @@ export function renderPauseOverlay(state, battleSnapshot) {
           confirmingExit
             ? `
               <div class="pause-warning">
-                <p>Return to the main menu and abandon this run?</p>
-                <p>The active save slot will be cleared so this battle will not be available to continue.</p>
+                <p>${isRunBattle ? "Forfeit this run?" : "Return to the main menu?"}</p>
+                <p>${
+                  isRunBattle
+                    ? "The battle will count as a loss. Earned Intel Credits stay banked, but you will not get a map-clear payout."
+                    : "The active battle will be discarded when you leave this screen."
+                }</p>
               </div>
               <div class="battle-actions">
-                <button class="menu-button menu-button--danger" data-action="confirm-abandon-run">Return To Main Menu</button>
+                <button class="menu-button menu-button--danger" data-action="confirm-abandon-run">${isRunBattle ? "Forfeit Run" : "Return To Main Menu"}</button>
                 <button class="ghost-button" data-action="cancel-abandon-run">Keep Playing</button>
               </div>
             `
@@ -127,7 +150,7 @@ export function renderPauseOverlay(state, battleSnapshot) {
               ` : ""}
               <div class="battle-actions">
                 <button class="menu-button" data-action="resume-battle">Continue Battle</button>
-                <button class="ghost-button" data-action="prompt-abandon-run">Back To Main Menu</button>
+                <button class="ghost-button" data-action="prompt-abandon-run">${isRunBattle ? "Forfeit Run" : "Back To Main Menu"}</button>
               </div>
             `
         }
@@ -148,7 +171,11 @@ export function renderOutcomeOverlay(state, battleSnapshot) {
           <p class="eyebrow">Run Complete</p>
           <h2>Route Secured</h2>
           <p>${state.banner || "You cleared the current prototype goal."}</p>
-          <button class="menu-button" data-action="back-to-title">Return To Title</button>
+          ${renderIntelBreakdown(state.runState)}
+          <div class="battle-actions">
+            <button class="menu-button" data-action="open-progression">Progression</button>
+            <button class="ghost-button" data-action="back-to-title">Return To Title</button>
+          </div>
         </div>
       </div>
     `;
@@ -197,8 +224,16 @@ export function renderOutcomeOverlay(state, battleSnapshot) {
       <div class="overlay-card">
         <p class="eyebrow">Run Lost</p>
         <h2>${battleSnapshot.victory.message}</h2>
-        <p>The current save slot will be cleared when you return to the title screen.</p>
-        <button class="menu-button menu-button--danger" data-action="back-to-title">Return To Title</button>
+        <p>${
+          battleSnapshot.rewardLedger?.forfeited
+            ? "Your earned Intel Credits were preserved, but no map-clear reward was granted."
+            : "The current save slot will be cleared when you return to the title screen."
+        }</p>
+        ${renderIntelBreakdown(state.runState)}
+        <div class="battle-actions">
+          <button class="menu-button" data-action="open-progression">Progression</button>
+          <button class="ghost-button menu-button--danger" data-action="back-to-title">Return To Title</button>
+        </div>
       </div>
     </div>
   `;

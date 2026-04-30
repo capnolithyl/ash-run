@@ -5,6 +5,7 @@ import { getLivingUnits } from "./selectors.js";
 const RECON_UNIT_IDS = new Set(["runner"]);
 
 const UNIMPLEMENTED_ACTIVE_EFFECT_TYPES = new Set([
+  "rook-hostile-takeover",
   "blaze-ignition",
   "knox-fortress-protocol",
   "falcon-reinforcements",
@@ -91,17 +92,13 @@ const luckModifierHandlers = {
   "sable-loaded-dice": () => 0
 };
 
-const incomeModifierHandlers = {
-  "rook-war-budget": (_state, _side, passive) => passive.value
-};
+const incomeModifierHandlers = {};
 
 const experienceModifierHandlers = {
   "graves-kill-confirm": () => 0
 };
 
-const resupplyPermissionHandlers = {
-  "rook-war-budget": () => false
-};
+const resupplyPermissionHandlers = {};
 
 export function getAttackModifier(state, unit) {
   const commander = getCommanderForSide(state, unit.owner);
@@ -190,15 +187,26 @@ export function resupplyUnitIfAllowed(state, unit) {
 }
 
 export function applyChargeFromCombat(state, attackingSide, defendingSide, damageDealt, damageTaken) {
-  state[attackingSide].charge = Math.min(
-    getCommanderPowerMaxForSide(state, attackingSide),
-    state[attackingSide].charge + damageDealt * 0.5
-  );
+  const attackingPowerLocked =
+    state.turn?.activeSide === attackingSide &&
+    state[attackingSide]?.powerUsedTurn === state.turn?.number;
+  const defendingPowerLocked =
+    state.turn?.activeSide === defendingSide &&
+    state[defendingSide]?.powerUsedTurn === state.turn?.number;
 
-  state[defendingSide].charge = Math.min(
-    getCommanderPowerMaxForSide(state, defendingSide),
-    state[defendingSide].charge + damageTaken
-  );
+  if (!attackingPowerLocked) {
+    state[attackingSide].charge = Math.min(
+      getCommanderPowerMaxForSide(state, attackingSide),
+      state[attackingSide].charge + damageDealt * 0.5
+    );
+  }
+
+  if (!defendingPowerLocked) {
+    state[defendingSide].charge = Math.min(
+      getCommanderPowerMaxForSide(state, defendingSide),
+      state[defendingSide].charge + damageTaken
+    );
+  }
 }
 
 function applyStatusToSide(state, side, statusType, value, options = {}) {
@@ -264,19 +272,6 @@ function applyEchoDisruption(state, side, commander, notes) {
   notes.push(`${commander.name} disrupted enemy movement patterns.`);
 }
 
-function applyRookLiquidation(state, side, commander, notes) {
-  const fundsSpent = state[side].funds;
-  const attackBonus = Math.floor(fundsSpent / (commander.active.fundsPerAttack ?? 300));
-
-  state[side].funds = 0;
-
-  if (attackBonus > 0) {
-    applyStatusToSide(state, side, "attack", attackBonus, { currentTurnOnly: true });
-  }
-
-  notes.push(`${commander.name} liquidated ${fundsSpent} funds for +${attackBonus} attack this turn.`);
-}
-
 function applyUnimplementedPower(_state, _side, commander, notes) {
   notes.push(`${commander.name}'s ${commander.active.name} has no effect yet.`);
 }
@@ -285,7 +280,6 @@ const activeHandlers = {
   "atlas-overhaul": applyAtlasOverhaul,
   "viper-blitz-surge": applyViperBlitzSurge,
   "echo-disruption": applyEchoDisruption,
-  "rook-liquidation": applyRookLiquidation,
   ...Object.fromEntries([...UNIMPLEMENTED_ACTIVE_EFFECT_TYPES].map((type) => [type, applyUnimplementedPower]))
 };
 
@@ -309,6 +303,7 @@ export function activateCommanderPower(state, side, seed) {
   }
 
   state[side].charge = 0;
+  state[side].powerUsedTurn = state.turn?.number ?? null;
   handler(state, side, commander, notes);
 
   return { changed: true, seed, notes };

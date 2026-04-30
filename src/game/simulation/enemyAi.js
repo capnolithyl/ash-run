@@ -20,16 +20,20 @@ import {
   canUnitAttackTarget,
   getBuildingAt,
   getLivingUnits,
+  getReachableTiles,
+  getUnitMovementAllowance,
   getRecruitmentOptions,
   getUnitAt,
   getUnitAttackProfile
 } from "./selectors.js";
 
 const ANTI_AIR_RECRUITS = new Set(["skyguard", "interceptor"]);
+const ENEMY_AIR_RECRUITS = new Set(["gunship", "payload", "interceptor", "carrier"]);
 const ANTI_VEHICLE_RECRUITS = new Set(["breaker", "juggernaut", "siege-gun", "payload"]);
 const ANTI_INFANTRY_RECRUITS = new Set(["longshot", "runner", "bruiser", "gunship", "payload"]);
 const SUPPORT_RECRUITS = new Set(["medic", "mechanic"]);
 const REPAIR_MODE_HEALTH_RATIO = 0.55;
+const ENEMY_AIR_UNLOCK_TIER = 4;
 
 export function getEnemyRecruitmentLimit(state) {
   return (state.difficultyTier ?? 1) <= 2
@@ -100,6 +104,14 @@ function countUnitsByType(units, unitTypeId) {
   return units.filter((unit) => unit.unitTypeId === unitTypeId).length;
 }
 
+function canEnemyFieldAir(state) {
+  return (state.difficultyTier ?? 1) >= ENEMY_AIR_UNLOCK_TIER;
+}
+
+function canEnemyRecruitOption(state, option) {
+  return canEnemyFieldAir(state) || !ENEMY_AIR_RECRUITS.has(option.id);
+}
+
 function scoreEnemyRecruitmentOption(state, option) {
   const playerUnits = getLivingUnits(state, TURN_SIDES.PLAYER);
   const enemyUnits = getLivingUnits(state, TURN_SIDES.ENEMY);
@@ -138,9 +150,13 @@ function scoreEnemyRecruitmentOption(state, option) {
     );
     const existingSupport = countUnitsByType(enemyUnits, option.id);
 
-    score += hasRelevantNeed ? 18 : hasRelevantAlly ? 5 : -8;
-    score -= existingSupport * 14;
-    score -= enemyUnits.length < 3 ? 8 : 0;
+    score += hasRelevantNeed ? 10 : hasRelevantAlly ? 2 : -12;
+    score -= existingSupport * 20;
+    score -= enemyUnits.length < 4 ? 10 : 0;
+  }
+
+  if (!canEnemyFieldAir(state) && ENEMY_AIR_RECRUITS.has(option.id)) {
+    score -= 30;
   }
 
   if (fundsAfterPurchase >= 300) {
@@ -165,6 +181,7 @@ export function pickEnemyRecruitmentCandidate(state, productionSites, usedBuildi
     .filter((building) => !usedBuildingIds.has(building.id))
     .flatMap((building) =>
       getRecruitmentOptions(state, building, state.enemy)
+        .filter((option) => canEnemyRecruitOption(state, option))
         .filter((option) => option.adjustedCost <= state.enemy.funds)
         .map((option) => ({
           building,
@@ -203,11 +220,18 @@ function scoreAttackTrade(state, attacker, defender) {
   const killsTarget = forecast.dealt.max >= defender.current.hp;
   const damageRatio = defender.stats.maxHealth > 0 ? dealtAverage / defender.stats.maxHealth : 0;
   const targetValue = Math.max(1, defender.cost / 300);
+  const attackProfile = getUnitAttackProfile(attacker);
+  const attackDistance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
+  const isRangedAttack = Boolean(attackProfile && attackDistance > 1);
+  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
   const score =
-    dealtAverage * 2.2 -
-    receivedAverage * 2.6 +
-    damageRatio * 12 +
+    dealtAverage * 2.35 -
+    receivedAverage * 2.1 +
+    damageRatio * 13 +
     targetValue +
+    (isEffective ? 8 : 0) +
+    (isRangedAttack ? 6 : 0) +
+    (!forecast.received ? 6 : 0) +
     (killsTarget ? 55 : 0);
 
   return {
@@ -215,23 +239,34 @@ function scoreAttackTrade(state, attacker, defender) {
     dealtAverage,
     receivedAverage,
     killsTarget,
+    isEffective,
+    isRangedAttack,
     isFavorable:
       killsTarget ||
+      (!forecast.received && dealtAverage >= 3) ||
+      (isEffective && dealtAverage >= 3) ||
       (dealtAverage >= Math.max(5, defender.stats.maxHealth * 0.3) &&
-        dealtAverage >= receivedAverage + 2) ||
-      (dealtAverage >= 4 && dealtAverage >= receivedAverage * 1.35 + 1),
+        dealtAverage >= receivedAverage + 1) ||
+      (dealtAverage >= 4 && dealtAverage >= receivedAverage * 1.15 + 1),
     score
   };
 }
 
-export function pickBestFavorableAttack(state, unit) {
+function getScoredAttackOptions(state, unit) {
   return getTargetsForUnit(state, unit)
     .map((target) => ({
       target,
       trade: scoreAttackTrade(state, unit, target)
     }))
-    .filter((option) => option.trade.isFavorable)
-    .sort((left, right) => right.trade.score - left.trade.score)[0] ?? null;
+    .sort((left, right) => right.trade.score - left.trade.score);
+}
+
+export function pickBestFavorableAttack(state, unit) {
+  return getScoredAttackOptions(state, unit).find((option) => option.trade.isFavorable) ?? null;
+}
+
+export function pickBestAvailableAttack(state, unit) {
+  return getScoredAttackOptions(state, unit)[0] ?? null;
 }
 
 function getBuildingCapturePriority(building) {
@@ -392,7 +427,7 @@ export function getBestRepairPlan(state, unit, reachableTiles) {
     .sort((left, right) => right.score - left.score)[0] ?? null;
 }
 
-export function getBestMoveAttackOption(state, unit, reachableTiles) {
+export function getBestMoveAttackOption(state, unit, reachableTiles, { allowRisky = false } = {}) {
   const originalPosition = { x: unit.x, y: unit.y };
   let bestOption = null;
 
@@ -400,14 +435,20 @@ export function getBestMoveAttackOption(state, unit, reachableTiles) {
     unit.x = tile.x;
     unit.y = tile.y;
 
-    const attackOption = pickBestFavorableAttack(state, unit);
+    const attackOption = allowRisky
+      ? pickBestAvailableAttack(state, unit)
+      : pickBestFavorableAttack(state, unit);
 
     if (!attackOption) {
       continue;
     }
 
     const movementCost = Math.abs(originalPosition.x - tile.x) + Math.abs(originalPosition.y - tile.y);
-    const score = attackOption.trade.score - movementCost * 0.4;
+    const score =
+      attackOption.trade.score +
+      (attackOption.trade.isEffective ? 5 : 0) +
+      (attackOption.trade.isRangedAttack ? 4 : 0) -
+      movementCost * 0.25;
 
     if (!bestOption || score > bestOption.score) {
       bestOption = {
@@ -461,7 +502,10 @@ function getPlayerMovementThreatMargin(state, unit, tile) {
       continue;
     }
 
-    const movementBudget = playerUnit.stats.movement + getMovementModifier(state, playerUnit);
+    const movementBudget = getUnitMovementAllowance(
+      playerUnit,
+      playerUnit.stats.movement + getMovementModifier(state, playerUnit)
+    );
     const threatRange = movementBudget + getAttackRangeCap(state, playerUnit, attackProfile);
     const distance = Math.abs(playerUnit.x - tile.x) + Math.abs(playerUnit.y - tile.y);
     lowestMargin = Math.min(lowestMargin, distance - threatRange);
@@ -491,7 +535,9 @@ export function pickFallbackMovementTile(state, unit, reachableTiles) {
   const currentTile = { x: unit.x, y: unit.y };
   const currentNearestDistance = getNearestPlayerDistance(state, currentTile);
   const currentMovementThreatMargin = getPlayerMovementThreatMargin(state, unit, currentTile);
-  const shouldFallBack = currentMovementThreatMargin <= 0;
+  const shouldFallBack =
+    currentMovementThreatMargin <= 0 &&
+    unit.current.hp / Math.max(1, unit.stats.maxHealth) <= REPAIR_MODE_HEALTH_RATIO;
   const postureRoll = takeRandomInt(state, 0, 99);
   const targetThreatMargin = postureRoll < 18 ? 0 : postureRoll < 42 ? 2 : 1;
   const aggressionWeight = postureRoll < 18 ? 7.5 : postureRoll < 42 ? 4.5 : 6;
@@ -530,4 +576,32 @@ export function pickFallbackMovementTile(state, unit, reachableTiles) {
     .sort((left, right) => right.score - left.score);
 
   return rankedTiles[0] ?? currentTile;
+}
+
+export function isUnitPinnedByThreat(state, unit, reachableTiles) {
+  const currentTile = { x: unit.x, y: unit.y };
+
+  if (getPlayerMovementThreatMargin(state, unit, currentTile) > 0) {
+    return false;
+  }
+
+  return !reachableTiles.some((tile) => getPlayerMovementThreatMargin(state, unit, tile) > 0);
+}
+
+export function hasEnemyAttackOpportunity(state) {
+  const enemyUnits = getLivingUnits(state, TURN_SIDES.ENEMY)
+    .filter((unit) => !unit.hasMoved && !unit.hasAttacked && !unit.transport?.carriedByUnitId);
+
+  return enemyUnits.some((unit) => {
+    if (pickBestAvailableAttack(state, unit)) {
+      return true;
+    }
+
+    const movementBudget = getUnitMovementAllowance(
+      unit,
+      unit.stats.movement + getMovementModifier(state, unit)
+    );
+    const reachableTiles = getReachableTiles(state, unit, movementBudget);
+    return Boolean(getBestMoveAttackOption(state, unit, reachableTiles, { allowRisky: true }));
+  });
 }

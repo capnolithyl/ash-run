@@ -7,10 +7,35 @@ import {
 import { COMMANDERS } from "../content/commanders.js";
 import {
   BATTLE_CONTEXT_ACTION_DEDUPE_MS,
+  RUN_CAPTURE_EXPERIENCE_REWARD,
   RUN_CAPTURE_INTEL_REWARD,
   delay,
   getCommanderPowerTitle
 } from "./controllerShared.js";
+import { addRunIntel, createEmptyBattleRewardLedger } from "../state/runFactory.js";
+
+function getPendingCaptureRewardContext(controller) {
+  const battleState = controller.battleSystem?.getStateForSave();
+  const pendingAction = battleState?.pendingAction;
+
+  if (!pendingAction?.unitId || !controller.isRunBattle(battleState)) {
+    return null;
+  }
+
+  const unit = battleState.player?.units?.find((candidate) => candidate.id === pendingAction.unitId);
+  const building = unit
+    ? battleState.map?.buildings?.find((candidate) => candidate.x === unit.x && candidate.y === unit.y)
+    : null;
+
+  if (!unit || !building) {
+    return null;
+  }
+
+  return {
+    unitId: unit.id,
+    buildingId: building.id
+  };
+}
 
 export const controllerBattleMethods = {
   openPauseMenu() {
@@ -121,8 +146,20 @@ export const controllerBattleMethods = {
   },
 
   async abandonRun() {
-    if (this.state.runState) {
-      await this.deleteSlot(this.state.selectedSlotId, false);
+    if (this.state.runState && this.battleSystem) {
+      this.battleSystem.state.pendingAction = null;
+      this.battleSystem.state.rewardLedger ??= createEmptyBattleRewardLedger();
+      this.battleSystem.state.rewardLedger.forfeited = true;
+      this.battleSystem.state.victory = {
+        winner: TURN_SIDES.ENEMY,
+        message: "Retreat ordered. Earned Intel Credits were extracted."
+      };
+      this.state.battleUi.pauseMenuOpen = false;
+      this.state.battleUi.confirmAbandon = false;
+      this.state.runStatus = "failed";
+      this.state.banner = "Run forfeited. Earned Intel Credits were preserved.";
+      await this.persistCurrentRun();
+      return;
     }
 
     this.state.screen = SCREEN_IDS.TITLE;
@@ -247,17 +284,33 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const captureRewardContext = getPendingCaptureRewardContext(this);
     const changed = this.battleSystem.captureWithPendingUnit();
 
     if (changed) {
-      if (this.isRunBattle(this.battleSystem.getStateForSave()) && !this.state.debugMode) {
-        this.state.metaState.metaCurrency += RUN_CAPTURE_INTEL_REWARD;
-        await this.storage.saveMeta(this.state.metaState);
-        this.showBattleNotice({
-          title: "Intel Secured",
-          message: `+${RUN_CAPTURE_INTEL_REWARD} Intel Credits for the capture.`,
-          tone: "info"
-        });
+      if (captureRewardContext && !this.state.debugMode) {
+        const rewardLedger = this.battleSystem.state.rewardLedger ??= createEmptyBattleRewardLedger();
+        const rewardAlreadyClaimed = rewardLedger.rewardedCaptureBuildingIds.includes(
+          captureRewardContext.buildingId
+        );
+
+        if (!rewardAlreadyClaimed) {
+          rewardLedger.rewardedCaptureBuildingIds.push(captureRewardContext.buildingId);
+          rewardLedger.captureIntel += RUN_CAPTURE_INTEL_REWARD;
+          rewardLedger.captureExperience += RUN_CAPTURE_EXPERIENCE_REWARD;
+          this.battleSystem.awardExperienceToUnit(
+            captureRewardContext.unitId,
+            RUN_CAPTURE_EXPERIENCE_REWARD
+          );
+          this.state.runState = addRunIntel(this.state.runState, "capture", RUN_CAPTURE_INTEL_REWARD);
+          this.state.metaState.metaCurrency += RUN_CAPTURE_INTEL_REWARD;
+          await this.storage.saveMeta(this.state.metaState);
+          this.showBattleNotice({
+            title: "Intel Secured",
+            message: `+${RUN_CAPTURE_INTEL_REWARD} Intel Credits and +${RUN_CAPTURE_EXPERIENCE_REWARD} EXP.`,
+            tone: "info"
+          });
+        }
       }
 
       await this.persistCurrentRun();

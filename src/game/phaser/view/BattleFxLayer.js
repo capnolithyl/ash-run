@@ -70,6 +70,7 @@ export class BattleFxLayer {
   playEvents(events, layout, options = {}) {
     const baseDelay = options.baseDelay ?? 0;
     const skipAttackVisuals = options.skipAttackVisuals === true;
+    const skipCaptureVisuals = options.skipCaptureVisuals === true;
     const attackEvents = events.filter((event) => event.type === "attack");
     const destroyDelaysByUnitId = new Map(
       attackEvents.map((event) => [
@@ -103,7 +104,9 @@ export class BattleFxLayer {
           this.schedule(combatDelay, () => this.playExperience(event, layout));
           break;
         case "capture":
-          this.schedule(baseDelay, () => this.playCapture(event, layout));
+          if (!skipCaptureVisuals) {
+            this.schedule(baseDelay, () => this.playCapture(event, layout));
+          }
           break;
         case "deploy":
           this.schedule(baseDelay, () => this.playDeploy(event, layout));
@@ -209,6 +212,34 @@ export class BattleFxLayer {
     if (this.screenShakeEnabled) {
       this.scene.cameras.main.shake(100, 0.0032);
     }
+  }
+
+  playDamageNumber(event, layout) {
+    const point = toWorldPoint(layout, event.toX, event.toY);
+    const label = this.track(
+      this.scene.add
+        .text(point.x, point.y - layout.cellSize * 0.38, `-${event.damage ?? 0}`, {
+          fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+          fontSize: `${Math.max(16, Math.floor(layout.cellSize * 0.24))}px`,
+          color: "#fff6dd",
+          stroke: "#120812",
+          strokeThickness: 5
+        })
+        .setOrigin(0.5)
+        .setDepth(46)
+    );
+    label.setShadow(0, 0, "#ff8a3d", 18, false, true);
+
+    const tween = this.scene.tweens.add({
+      targets: label,
+      y: label.y - layout.cellSize * 0.34,
+      alpha: 0,
+      scaleX: 1.08,
+      scaleY: 1.08,
+      duration: 520,
+      ease: "Cubic.Out"
+    });
+    destroyAfterTween(label, tween);
   }
 
   playRestore(event, layout) {

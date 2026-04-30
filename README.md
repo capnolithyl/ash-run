@@ -91,11 +91,20 @@ docs/
 - `yarn check:unused` -> unused files/exports/dependencies sweep
 - `yarn test` -> Node test suite
 - `yarn test:playthrough` -> forced full-run smoke check
+- `yarn test:ui` -> Playwright visual + live-flow browser coverage
+- `yarn test:ui:update` -> refresh approved Playwright screenshot baselines
 - `yarn package` -> production build plus Electron Builder package
 
 The scripts in `scripts/` call Vite/Electron through Node APIs rather than shell wrappers to stay stable across Windows/network-share paths.
 
 Set `ASH_RUN_84_DEV_PORT` before `yarn dev` when port `5173` is already taken.
+
+## UI Regression Testing
+
+- Visual baselines live in `tests/ui/visual-regression.spec.js-snapshots/`.
+- The deterministic browser harness lives at `ui-harness.html` and is powered by `src/dev/uiHarnessFixtures.js`.
+- While the dev server is running, you can inspect harness scenes directly with URLs like `http://127.0.0.1:4173/ui-harness.html?scene=run-loadout`.
+- See `docs/planning/ui-regression-testing.md` for the workflow for adding new harness scenes and snapshot coverage.
 
 ## Known Prototype Limits
 
@@ -112,4 +121,3 @@ Set `ASH_RUN_84_DEV_PORT` before `yarn dev` when port `5173` is already taken.
 The project has initial Electron packaging support, but it is **not fully Steam-release ready yet**.
 
 - See `docs/planning/steam-release.md` for a concrete readiness checklist and an achievement-integration approach.
-

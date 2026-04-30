@@ -48,8 +48,9 @@ Buildings override terrain defense instead of stacking with it. Any building giv
 
 - Primary attacks consume ammo.
 - Empty-ammo units can still make weak secondary attacks.
-- Movement range is gated by terrain/path cost, but any completed reposition currently spends 1 stamina.
-- Sector servicing and some commander powers can resupply both.
+- Movement spends stamina equal to the actual path cost paid to reach the destination tile.
+- Sectors heal `10%` max HP and resupply ammo/stamina.
+- Command posts resupply ammo/stamina without restoring HP.
 
 ## Effectiveness
 

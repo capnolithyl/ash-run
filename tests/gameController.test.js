@@ -260,8 +260,57 @@ test("run-mode captures award intel credits instead of funds", async () => {
 
   const state = controller.getState();
   assert.equal(state.metaState.metaCurrency, 2);
+  assert.equal(state.runState.intelLedger.capture, 2);
   assert.equal(state.battleUi.notice?.title, "Intel Secured");
+  assert.match(state.battleUi.notice?.message ?? "", /\+20 EXP/);
   assert.equal(controller.battleSystem.getStateForSave().player.funds, 0);
+  assert.equal(controller.battleSystem.getStateForSave().player.units[0].experience, 20);
+});
+
+test("run-mode capture rewards only pay once per building even after a recapture", async () => {
+  const controller = new GameController({
+    async saveMeta() {},
+    async saveSlot() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  const playerInfantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN,
+    playerUnits: [playerInfantry]
+  });
+  const capturable = battleState.map.buildings.find((building) => building.type === "sector");
+  capturable.owner = TURN_SIDES.ENEMY;
+  playerInfantry.x = capturable.x;
+  playerInfantry.y = capturable.y;
+  battleState.pendingAction = {
+    type: "move",
+    unitId: playerInfantry.id,
+    mode: "menu"
+  };
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.runState = { id: "run-1" };
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.persistCurrentRun = async () => {};
+
+  await controller.captureWithSelectedUnit();
+
+  controller.battleSystem.state.map.buildings.find((building) => building.id === capturable.id).owner = TURN_SIDES.ENEMY;
+  controller.battleSystem.state.pendingAction = {
+    type: "move",
+    unitId: playerInfantry.id,
+    mode: "menu"
+  };
+
+  await controller.captureWithSelectedUnit();
+
+  const state = controller.getState();
+  assert.equal(state.metaState.metaCurrency, 2);
+  assert.equal(state.runState.intelLedger.capture, 2);
+  assert.equal(controller.battleSystem.getStateForSave().rewardLedger.captureIntel, 2);
+  assert.equal(controller.battleSystem.getStateForSave().player.units[0].experience, 20);
 });
 
 test("run victories award five intel credits per cleared map", async () => {
@@ -300,7 +349,75 @@ test("run victories award five intel credits per cleared map", async () => {
 
   const state = controller.getState();
   assert.equal(state.metaState.metaCurrency, 5);
+  assert.equal(state.runState.intelLedger.mapClear, 5);
   assert.match(state.banner, /\+5 Intel Credits/);
+});
+
+test("selecting a reinforcement draft adds that unit to the run roster", async () => {
+  const controller = new GameController();
+
+  controller.state.runStatus = "reward";
+  controller.state.runState = {
+    id: "run-draft",
+    roster: [],
+    selectedRewards: [],
+    pendingRewardChoices: [
+      {
+        id: "draft-runner",
+        type: "unit",
+        unitTypeId: "runner",
+        name: "Runner",
+        summary: "Draft Runner into your run roster for the next map."
+      }
+    ]
+  };
+  controller.startNextRunBattle = async () => {};
+
+  await controller.selectRunReward("draft-runner");
+
+  const state = controller.getState();
+  assert.equal(state.runStatus, null);
+  assert.equal(state.runState.roster.length, 1);
+  assert.equal(state.runState.roster[0].unitTypeId, "runner");
+  assert.deepEqual(state.runState.selectedRewards, []);
+  assert.deepEqual(state.runState.pendingRewardChoices, []);
+});
+
+test("forfeiting a run marks the battle as lost and preserves earned intel", async () => {
+  const controller = new GameController();
+  const runState = {
+    id: "run-forfeit",
+    slotId: "slot-1",
+    intelLedger: {
+      capture: 6,
+      mapClear: 5,
+      runClearBonus: 0,
+      total: 11
+    }
+  };
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN
+  });
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.runState = runState;
+  controller.state.runStatus = null;
+  controller.state.battleUi.pauseMenuOpen = true;
+  controller.state.metaState.metaCurrency = 11;
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.persistCurrentRun = async () => {
+    controller.syncBattleState();
+  };
+
+  await controller.abandonRun();
+
+  const state = controller.getState();
+  assert.equal(state.screen, SCREEN_IDS.BATTLE);
+  assert.equal(state.runStatus, "failed");
+  assert.equal(state.metaState.metaCurrency, 11);
+  assert.equal(state.battleUi.pauseMenuOpen, false);
+  assert.equal(state.battleSnapshot.victory?.winner, TURN_SIDES.ENEMY);
+  assert.equal(state.battleSnapshot.rewardLedger?.forfeited, true);
 });
 
 test("skirmish battle tile clicks sync selection without a run save", async () => {

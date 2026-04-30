@@ -3,4 +3,5 @@ dist/
 dist-electron/
 release/
 *.log
-
+playwright-report/
+test-results/

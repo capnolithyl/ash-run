@@ -37,8 +37,9 @@ Range growth is skipped for units that cannot attack at range, both on the norma
 - Roster deployment is capped at 6 units per battle.
 - Returning rosters are redeployed to unique nearby starting tiles so carried units cannot stack on the same spawn.
 - Each cleared map awards `5` Intel Credits.
-- Capturing any building during a run awards `2` Intel Credits.
+- The first time a building is captured in a battle, the capturing infantry also earns `+20` XP and `+2` Intel Credits.
 - Clearing the full 10-map run grants an extra `30` Intel Credits on top of the `50` earned from map clears.
+- Reinforcement Draft now replaces card rewards on maps `2`, `4`, `6`, and `8`.
 
 ## Enemy Map Scaling
 

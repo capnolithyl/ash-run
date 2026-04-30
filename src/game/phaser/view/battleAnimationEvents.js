@@ -39,6 +39,18 @@ function isPendingMoveRollback(previousSnapshot, unitId, previousUnit, nextUnit)
   );
 }
 
+function didUnitSpendAmmo(previousUnit, nextUnit) {
+  return previousUnit.current.ammo > nextUnit.current.ammo;
+}
+
+function didUnitStartAttack(previousUnit, nextUnit) {
+  return !previousUnit.hasAttacked && nextUnit.hasAttacked;
+}
+
+function didUnitAttack(previousUnit, nextUnit) {
+  return didUnitSpendAmmo(previousUnit, nextUnit) || didUnitStartAttack(previousUnit, nextUnit);
+}
+
 function getGainedExperience(previousUnit, nextUnit) {
   if (nextUnit.level === previousUnit.level) {
     return Math.max(0, nextUnit.experience - previousUnit.experience);
@@ -197,7 +209,8 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
         id: unitId,
         owner: previousUnit.owner,
         x: previousUnit.x,
-        y: previousUnit.y
+        y: previousUnit.y,
+        amount: previousUnit.current.hp
       });
       destroys.push({
         type: "destroy",
@@ -219,7 +232,22 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
       });
     }
 
-    if (nextUnit.x !== previousUnit.x || nextUnit.y !== previousUnit.y) {
+    if (previousUnit.transport?.carriedByUnitId && !nextUnit.transport?.carriedByUnitId) {
+      deployments.push({
+        type: "deploy",
+        unitId,
+        owner: nextUnit.owner,
+        x: nextUnit.x,
+        y: nextUnit.y,
+        fromUnload: true
+      });
+    }
+
+    if (
+      !previousUnit.transport?.carriedByUnitId &&
+      !nextUnit.transport?.carriedByUnitId &&
+      (nextUnit.x !== previousUnit.x || nextUnit.y !== previousUnit.y)
+    ) {
       if (isPendingMoveRollback(previousSnapshot, unitId, previousUnit, nextUnit)) {
         movements.push({
           type: "move",
@@ -300,7 +328,7 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
       continue;
     }
 
-    if (previousUnit.current.ammo <= nextUnit.current.ammo) {
+    if (!didUnitAttack(previousUnit, nextUnit)) {
       continue;
     }
 
@@ -324,6 +352,46 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
       damage: target.amount ?? 0,
       isInitiator: !previousUnit.hasAttacked && nextUnit.hasAttacked
     });
+  }
+
+  const existingAttackPairs = new Set(attacks.map((event) => `${event.attackerId}->${event.targetId}`));
+
+  for (const event of [...attacks]) {
+    const previousAttacker = previousUnits.get(event.attackerId);
+    const nextAttacker = nextUnits.get(event.attackerId);
+    const previousDefender = previousUnits.get(event.targetId);
+    const nextDefender = nextUnits.get(event.targetId);
+
+    if (!previousAttacker || !nextAttacker || !previousDefender) {
+      continue;
+    }
+
+    const counterDamage = previousAttacker.current.hp - nextAttacker.current.hp;
+
+    if (counterDamage <= 0) {
+      continue;
+    }
+
+    const counterUnit = nextDefender ?? previousDefender;
+    const counterKey = `${event.targetId}->${event.attackerId}`;
+
+    if (existingAttackPairs.has(counterKey) || !isWithinRange(counterUnit, nextAttacker)) {
+      continue;
+    }
+
+    attacks.push({
+      type: "attack",
+      attackerId: event.targetId,
+      owner: counterUnit.owner,
+      fromX: counterUnit.x,
+      fromY: counterUnit.y,
+      toX: nextAttacker.x,
+      toY: nextAttacker.y,
+      targetId: event.attackerId,
+      damage: counterDamage,
+      isInitiator: false
+    });
+    existingAttackPairs.add(counterKey);
   }
 
   for (const [buildingId, nextBuilding] of nextBuildings.entries()) {

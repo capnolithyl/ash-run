@@ -24,12 +24,16 @@ import {
   getBestSupportPlan,
   getEnemyRecruitmentLimit,
   getEnemyRecruitmentMapCap,
+  hasEnemyAttackOpportunity,
+  isUnitPinnedByThreat,
   pickBestFavorableAttack,
+  pickBestAvailableAttack,
   pickEnemyRecruitmentCandidate,
   pickFallbackMovementTile
 } from "./enemyAi.js";
 import {
   getLivingUnits,
+  getMovementPathCost,
   getMovementPath,
   getReachableTiles,
   getUnitAt
@@ -119,11 +123,15 @@ function moveEnemyUnit(system, unit, tile, movementBudget) {
   const movePath = moved
     ? getMovementPath(system.state, unit, movementBudget, tile.x, tile.y)
     : [];
+  const moveCost = moved
+    ? getMovementPathCost(system.state, unit, movementBudget, tile.x, tile.y) ?? 0
+    : 0;
   const moveSegments = Math.max(0, movePath.length - 1);
 
   if (moved) {
     unit.x = tile.x;
     unit.y = tile.y;
+    unit.current.stamina = Math.max(0, unit.current.stamina - moveCost);
     if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
       unit.transport.canUnloadAfterMove = true;
     }
@@ -145,8 +153,7 @@ function queueEnemySlipstreamMove(system, unitId) {
     return null;
   }
 
-  const reachableTiles = getReachableTiles(system.state, unit, 1)
-    .filter((tile) => tile.x !== unit.x || tile.y !== unit.y);
+  const reachableTiles = getReachableTiles(system.state, unit, 1);
 
   if (reachableTiles.length === 0) {
     return null;
@@ -356,7 +363,30 @@ export function processEnemyTurnStep(system) {
     }
 
     const moveAttackOption = getBestMoveAttackOption(system.state, unit, reachableTiles);
-    const fallbackTile = moveAttackOption?.tile ?? pickFallbackMovementTile(system.state, unit, reachableTiles);
+    const pinnedByThreat = isUnitPinnedByThreat(system.state, unit, reachableTiles);
+
+    if (pinnedByThreat) {
+      const pressuredAttack = pickBestAvailableAttack(system.state, unit);
+
+      if (pressuredAttack && pressuredAttack.trade.dealtAverage >= 2) {
+        system.attackTarget(unit.id, pressuredAttack.target.id);
+        queueEnemySlipstreamMove(system, unit.id);
+        return {
+          changed: true,
+          done: system.state.victory || !hasPendingEnemyTurn(system),
+          type: "attack",
+          unitId
+        };
+      }
+    }
+
+    const pressuredMoveAttack = pinnedByThreat
+      ? getBestMoveAttackOption(system.state, unit, reachableTiles, { allowRisky: true })
+      : null;
+    const fallbackTile =
+      moveAttackOption?.tile ??
+      pressuredMoveAttack?.tile ??
+      pickFallbackMovementTile(system.state, unit, reachableTiles);
     const movement = moveEnemyUnit(system, unit, fallbackTile, movementBudget);
 
     if (moveAttackOption && movement.moved) {
@@ -371,6 +401,27 @@ export function processEnemyTurnStep(system) {
         unitId,
         moveSegments: movement.moveSegments
       };
+    }
+
+    if (pinnedByThreat) {
+      if (
+        pressuredMoveAttack &&
+        movement.moved &&
+        pressuredMoveAttack.tile.x === fallbackTile.x &&
+        pressuredMoveAttack.tile.y === fallbackTile.y
+      ) {
+        system.state.enemyTurn.pendingAttack = {
+          attackerId: unit.id,
+          targetId: pressuredMoveAttack.target.id
+        };
+        return {
+          changed: true,
+          done: system.state.victory || !hasPendingEnemyTurn(system),
+          type: "move",
+          unitId,
+          moveSegments: movement.moveSegments
+        };
+      }
     }
 
     if (movement.moved) {
@@ -412,6 +463,14 @@ export function performEnemyEndTurnRecruitment(system) {
   };
 }
 
+export function shouldEnemyUsePower(system) {
+  if (!system.state.enemyTurn || !isEnemyTurnActive(system) || system.state.victory) {
+    return false;
+  }
+
+  return hasEnemyAttackOpportunity(system.state);
+}
+
 export function finalizeEnemyTurn(system) {
   if (system.state.turn.activeSide !== TURN_SIDES.ENEMY) {
     return {
@@ -447,7 +506,10 @@ export function finalizeEnemyTurn(system) {
 
 function applyStartTurnGearEffects(state, side) {
   for (const unit of getLivingUnits(state, side)) {
-    if (unit.gear?.slot !== "gear-field-meds") {
+    if (
+      unit.gear?.slot !== "gear-field-meds" ||
+      unit.gearState?.fieldMedpackUsed
+    ) {
       continue;
     }
 
@@ -455,6 +517,7 @@ function applyStartTurnGearEffects(state, side) {
     unit.current.hp = Math.min(unit.stats.maxHealth, unit.current.hp + FIELD_MEDS_HEAL);
 
     if (unit.current.hp > previousHp) {
+      unit.gearState.fieldMedpackUsed = true;
       appendLog(state, `${unit.name} recovered ${unit.current.hp - previousHp} HP from Field Medpack.`);
     }
   }
@@ -494,7 +557,6 @@ export function resetActions(system, side) {
   for (const unit of getLivingUnits(system.state, side)) {
     unit.hasMoved = false;
     unit.hasAttacked = false;
-    unit.current.stamina = unit.stats.staminaMax;
   }
 }
 

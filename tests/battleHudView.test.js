@@ -158,10 +158,10 @@ test("battle HUD shows commander funds inside the commander panels without a top
 
   assert.match(html, /Passive: Shock Doctrine/);
   assert.match(html, /Power: Blitz Surge/);
-  assert.match(html, /Passive: War Budget/);
-  assert.match(html, /Power: Liquidation/);
+  assert.match(html, /Passive: Estate Claim/);
+  assert.match(html, /Power: Hostile Takeover/);
   assert.match(html, /Infantry and Runners gain \+2 attack; other units gain -2 attack/);
-  assert.match(html, /Spend all funds\. All units gain \+1 attack per 300 funds spent/);
+  assert.match(html, /Reserved for a future redesign/);
   assert.match(html, /assets\/img\/commanders\/viper\/Viper%20-%20Portrait\.png/);
   assert.match(html, /assets\/img\/commanders\/rook\/Rook%20-%20Portrait\.png/);
   assert.match(html, /commander-panel--player[\s\S]*?<h2>Viper<\/h2>[\s\S]*?data-funds-panel="player"/);
@@ -182,6 +182,17 @@ test("battle HUD hides funds and recruitment in run mode", () => {
   assert.doesNotMatch(html, /data-funds-panel="player"/);
   assert.doesNotMatch(html, /data-funds-panel="enemy"/);
   assert.doesNotMatch(html, /<h3>Recruitment<\/h3>/);
+});
+
+test("battle HUD shows building ownership in the selection sidebar", () => {
+  const battleState = createTestBattleState();
+  const building = battleState.map.buildings[0];
+  building.owner = TURN_SIDES.ENEMY;
+  battleState.selection = { type: "building", id: building.id, x: building.x, y: building.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /Owner: Enemy/);
 });
 
 test("battle HUD keeps player and enemy intel in separate sidebars", () => {
@@ -393,6 +404,125 @@ test("battle HUD turns the power meter into the activation control", () => {
   const enemyTurnButton = getActionButton(renderHudForBattleState(enemyTurnState), "activate-power");
 
   assert.match(enemyTurnButton, /disabled/);
+});
+
+test("battle HUD keeps the power meter visually active for the rest of the activation turn", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2)]
+  });
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /commander-power-button--active/);
+  assert.match(html, />ACTIVE<\/strong>/);
+  assert.match(html, /Active This Turn/);
+});
+
+test("run-complete overlay includes intel breakdown and a progression button", () => {
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN
+  });
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Route secured."
+  };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 10,
+      targetMapCount: 10,
+      intelLedger: {
+        capture: 8,
+        mapClear: 50,
+        runClearBonus: 30,
+        total: 88
+      }
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: "complete",
+    banner: "Run clear in 18 turns. +30 bonus Intel Credits."
+  });
+
+  assert.match(html, /Run Complete/);
+  assert.match(html, /Intel Breakdown/);
+  assert.match(html, /Total Earned/);
+  assert.match(html, /data-action="open-progression"/);
+});
+
+test("run-lost overlay shows preserved intel and progression access after a forfeit", () => {
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN
+  });
+  battleState.rewardLedger = {
+    captureIntel: 4,
+    captureExperience: 40,
+    rewardedCaptureBuildingIds: ["sector-1"],
+    forfeited: true
+  };
+  battleState.victory = {
+    winner: TURN_SIDES.ENEMY,
+    message: "Retreat ordered. Earned Intel Credits were extracted."
+  };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 3,
+      targetMapCount: 10,
+      intelLedger: {
+        capture: 4,
+        mapClear: 10,
+        runClearBonus: 0,
+        total: 14
+      }
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: "failed",
+    banner: "Run forfeited."
+  });
+
+  assert.match(html, /Run Lost/);
+  assert.match(html, /earned Intel Credits were preserved/i);
+  assert.match(html, /data-action="open-progression"/);
 });
 
 test("debug pause menu groups tools into accordion sections", () => {

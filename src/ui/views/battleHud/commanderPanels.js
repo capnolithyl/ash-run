@@ -38,6 +38,7 @@ export function canActivatePlayerPower(battleSnapshot) {
       !battleSnapshot.victory &&
       battleSnapshot.turn.activeSide === TURN_SIDES.PLAYER &&
       !battleSnapshot.presentation?.pendingAction &&
+      battleSnapshot.player.powerUsedTurn !== battleSnapshot.turn.number &&
       battleSnapshot.player.charge >= getCommanderPowerMax(battleSnapshot.player.commanderId)
   );
 }
@@ -54,17 +55,25 @@ function renderCommanderPowerControl(
   commander,
   sideState,
   side,
-  { canActivatePower = false, isCharged = false } = {}
+  { canActivatePower = false, isCharged = false, isActive = false } = {}
 ) {
   const powerMax = getCommanderPowerMax(sideState.commanderId);
   const powerRatio = Math.min(1, sideState.charge / powerMax);
+  const statusLabel =
+    isActive
+      ? "Active This Turn"
+      : canActivatePower
+        ? "Activate Power"
+        : isCharged
+          ? "Ready Next Turn"
+          : "Charging";
 
   if (side !== TURN_SIDES.PLAYER) {
     return `
       <div class="meter commander-meter">
-        <span>Power: ${commander.active.name ?? "Power"} | ${Math.floor(sideState.charge)}/${powerMax}</span>
+        <span>Power: ${commander.active.name ?? "Power"} | ${isActive ? "ACTIVE" : `${Math.floor(sideState.charge)}/${powerMax}`}</span>
         <div class="meter__bar">
-          <div style="width:${powerRatio * 100}%"></div>
+          <div class="${isActive ? "commander-meter__fill--active" : ""}" style="width:${isActive ? 100 : powerRatio * 100}%"></div>
         </div>
       </div>
     `;
@@ -72,20 +81,20 @@ function renderCommanderPowerControl(
 
   return `
     <button
-      class="commander-power-button ${isCharged ? "commander-power-button--charged" : ""} ${canActivatePower ? "commander-power-button--ready" : ""}"
+      class="commander-power-button ${isCharged ? "commander-power-button--charged" : ""} ${canActivatePower ? "commander-power-button--ready" : ""} ${isActive ? "commander-power-button--active" : ""}"
       data-action="activate-power"
       ${canActivatePower ? "" : "disabled"}
     >
       <div class="commander-power-button__header">
         <span>Power: ${commander.active.name ?? "Power"}</span>
-        <strong>${Math.floor(sideState.charge)}/${powerMax}</strong>
+        <strong>${isActive ? "ACTIVE" : `${Math.floor(sideState.charge)}/${powerMax}`}</strong>
       </div>
       <div class="meter commander-meter commander-meter--interactive">
         <div class="meter__bar">
-          <div style="width:${powerRatio * 100}%"></div>
+          <div class="${isActive ? "commander-meter__fill--active" : ""}" style="width:${isActive ? 100 : powerRatio * 100}%"></div>
         </div>
       </div>
-      <small>${canActivatePower ? "Activate Power" : isCharged ? "Ready Next Turn" : "Charging"}</small>
+      <small>${statusLabel}</small>
     </button>
   `;
 }
@@ -94,7 +103,7 @@ export function renderCommanderPanel(
   commander,
   sideState,
   side,
-  { fundsGain = null, canActivatePower = false, isCharged = false, showFunds = true } = {}
+  { fundsGain = null, canActivatePower = false, isCharged = false, isActive = false, showFunds = true } = {}
 ) {
   const sideLabel = side === TURN_SIDES.PLAYER ? "Player Commander" : "Enemy Commander";
   const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
@@ -141,7 +150,7 @@ export function renderCommanderPanel(
         <span>Power: ${commander.active.name ?? "Power"}</span>
         <p>${commander.active.summary}</p>
       </div>
-      ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged })}
+      ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged, isActive })}
     </div>
   `;
 }

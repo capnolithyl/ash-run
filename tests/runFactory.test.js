@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { TURN_SIDES, UNIT_TAGS } from "../src/game/core/constants.js";
+import { RUN_CARD_TYPES } from "../src/game/content/runUpgrades.js";
 import { MAP_POOL } from "../src/game/content/maps.js";
-import { createBattleStateForRun } from "../src/game/state/runFactory.js";
+import { applyBattleVictoryToRun, createBattleStateForRun } from "../src/game/state/runFactory.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../src/game/simulation/unitFactory.js";
 
 function createRunState(overrides = {}) {
@@ -81,6 +82,7 @@ test("createBattleStateForRun assigns anti-air support when enemy opens with air
   for (let seed = 0; seed < 500 && !battleState; seed += 1) {
     const candidate = createBattleStateForRun(createRunState({
       seed,
+      mapIndex: 3,
       commanderId: "atlas",
       id: `run-air-check-${seed}`
     }));
@@ -95,4 +97,60 @@ test("createBattleStateForRun assigns anti-air support when enemy opens with air
     battleState.player.units.some((unit) => ["skyguard", "interceptor"].includes(unit.unitTypeId))
   );
   assert.ok(battleState.log.includes("Anti-air escort assigned to answer enemy air power."));
+});
+
+test("enemy air units are gated until map four", () => {
+  const earlyAirOpener = Array.from({ length: 200 }, (_, seed) =>
+    createBattleStateForRun(createRunState({
+      seed,
+      mapIndex: 0,
+      commanderId: "atlas",
+      id: `run-early-air-${seed}`
+    }))
+  ).find((candidate) => candidate.enemy.units.some((unit) => unit.family === UNIT_TAGS.AIR));
+
+  assert.equal(earlyAirOpener, undefined);
+});
+
+test("forced draft maps offer only reinforcement unit choices", () => {
+  const runState = createRunState({
+    mapIndex: 1,
+    availableDraftUnitIds: ["grunt", "runner", "longshot", "medic"]
+  });
+  const battleState = createBattleStateForRun(runState);
+  const nextRunState = applyBattleVictoryToRun(runState, battleState);
+
+  assert.equal(nextRunState.pendingRewardChoices.length, 3);
+  assert.ok(nextRunState.pendingRewardChoices.every((choice) => choice.type === RUN_CARD_TYPES.UNIT));
+  assert.equal(
+    new Set(nextRunState.pendingRewardChoices.map((choice) => choice.unitTypeId)).size,
+    nextRunState.pendingRewardChoices.length
+  );
+});
+
+test("non-forced reward choices stay within unlocked unowned upgrades and vary by seed", () => {
+  const baseRunState = createRunState({
+    availableRunCardIds: ["passive-drill", "passive-plating", "gear-aa-kit", "gear-field-meds"],
+    selectedRewards: [{ id: "passive-drill", type: RUN_CARD_TYPES.PASSIVE }]
+  });
+  const firstBattle = createBattleStateForRun(baseRunState);
+  const secondRunState = {
+    ...baseRunState,
+    seed: baseRunState.seed + 1
+  };
+  const secondBattle = createBattleStateForRun(secondRunState);
+  const firstRewards = applyBattleVictoryToRun(baseRunState, firstBattle).pendingRewardChoices;
+  const secondRewards = applyBattleVictoryToRun(secondRunState, secondBattle).pendingRewardChoices;
+
+  assert.ok(firstRewards.every((choice) => choice.type !== RUN_CARD_TYPES.UNIT));
+  assert.ok(firstRewards.every((choice) => choice.id !== "passive-drill"));
+  assert.ok(
+    firstRewards.every((choice) =>
+      ["passive-plating", "gear-aa-kit", "gear-field-meds"].includes(choice.id)
+    )
+  );
+  assert.notDeepEqual(
+    firstRewards.map((choice) => choice.id),
+    secondRewards.map((choice) => choice.id)
+  );
 });

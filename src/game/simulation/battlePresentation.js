@@ -27,6 +27,7 @@ import {
   getSelectedUnit,
   getValidUnloadTiles,
   getTerrainAt,
+  getUnitMovementAllowance,
   getTilesInRange,
   getUnitAt,
   getUnitAttackProfile
@@ -276,8 +277,9 @@ export function buildBattlePresentation(snapshot) {
   if (selectedUnit) {
     const attackProfile = getUnitAttackProfile(selectedUnit);
     const isSlipstream = pendingAction?.unitId === selectedUnit.id && pendingAction?.isSlipstream;
-    const movementBudget =
+    const requestedMovementBudget =
       isSlipstream ? 1 : selectedUnit.stats.movement + getMovementModifier(snapshot, selectedUnit);
+    const movementBudget = getUnitMovementAllowance(selectedUnit, requestedMovementBudget);
     const rangeCap = getAttackRangeCap(snapshot, selectedUnit, attackProfile);
     const attackableUnitIds = getAttackableUnitIds(snapshot, selectedUnit);
     const shouldRevealAttackTargets =

@@ -32,10 +32,23 @@ function renderUnitPreview(unitTypeId, unitName) {
     return `
       <div
         class="run-unit-card__preview-image run-unit-card__preview-image--sheet"
-        style="--frame-count:${spriteDefinition.frameCount}; --sheet-duration:${durationSeconds}s; background-image:url('${spriteDefinition.url}')"
         role="img"
         aria-label="${unitName} battlefield animation preview"
-      ></div>
+      >
+        <div
+          class="run-unit-card__preview-strip"
+          style="--frame-count:${spriteDefinition.frameCount}; --sheet-duration:${durationSeconds}s"
+          aria-hidden="true"
+        >
+          <img
+            class="run-unit-card__preview-sheet-image"
+            src="${spriteDefinition.url}"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
     `;
   }
 

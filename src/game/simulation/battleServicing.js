@@ -46,6 +46,7 @@ export function restoreUnitServiceResources(
 
 export function serviceUnitsOnSectors(state, side) {
   let servicedUnits = 0;
+  let commandResupplies = 0;
   let repairedVehicles = 0;
 
   for (const unit of getLivingUnits(state, side)) {
@@ -60,11 +61,19 @@ export function serviceUnitsOnSectors(state, side) {
     }
 
     if (building.type === BUILDING_KEYS.SECTOR) {
-      const healAmount = Math.max(1, Math.ceil(unit.stats.maxHealth / 3));
+      const healAmount = Math.max(1, Math.ceil(unit.stats.maxHealth * 0.1));
       const result = restoreUnitServiceResources(state, unit, { healAmount });
 
       if (result.changed) {
         servicedUnits += 1;
+      }
+    }
+
+    if (building.type === BUILDING_KEYS.COMMAND) {
+      const result = restoreUnitServiceResources(state, unit, { healAmount: 0 });
+
+      if (result.changed) {
+        commandResupplies += 1;
       }
     }
 
@@ -84,6 +93,15 @@ export function serviceUnitsOnSectors(state, side) {
       state,
       `${side === TURN_SIDES.PLAYER ? "Allied" : "Enemy"} sector nodes serviced ${servicedUnits} unit${
         servicedUnits === 1 ? "" : "s"
+      }.`
+    );
+  }
+
+  if (commandResupplies > 0) {
+    appendLog(
+      state,
+      `${side === TURN_SIDES.PLAYER ? "Allied" : "Enemy"} command posts rearmed ${commandResupplies} unit${
+        commandResupplies === 1 ? "" : "s"
       }.`
     );
   }

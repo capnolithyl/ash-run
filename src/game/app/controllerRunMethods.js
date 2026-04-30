@@ -5,12 +5,16 @@ import {
 } from "../core/constants.js";
 import { getBattleSnapshotTransitionDurationMs } from "../phaser/view/battleAnimationEvents.js";
 import {
+  addRunIntel,
   applyBattleVictoryToRun,
   createBattleStateForRun,
   createSlotRecord,
-  isRunComplete
+  isRunComplete,
+  normalizeBattleState,
+  normalizeRunState
 } from "../state/runFactory.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
+import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
 import {
   RUN_META_CURRENCY_CLEAR_BONUS,
   RUN_META_CURRENCY_MAP_REWARD,
@@ -27,17 +31,19 @@ export const controllerRunMethods = {
       return;
     }
 
-    const battleState = this.battleSystem.getStateForSave();
+    const battleState = normalizeBattleState(this.battleSystem.getStateForSave());
 
     if (battleState.victory?.winner !== TURN_SIDES.PLAYER) {
       return;
     }
 
-    const nextRunState = applyBattleVictoryToRun(this.state.runState, battleState);
+    let nextRunState = applyBattleVictoryToRun(this.state.runState, battleState);
+    nextRunState = addRunIntel(nextRunState, "mapClear", RUN_META_CURRENCY_MAP_REWARD);
     this.state.metaState.metaCurrency += RUN_META_CURRENCY_MAP_REWARD;
     this.state.banner = `Map ${nextRunState.mapIndex}/${nextRunState.targetMapCount} clear. +${RUN_META_CURRENCY_MAP_REWARD} Intel Credits.`;
 
     if (isRunComplete(nextRunState)) {
+      nextRunState = addRunIntel(nextRunState, "runClearBonus", RUN_META_CURRENCY_CLEAR_BONUS);
       this.state.runState = nextRunState;
       this.state.runStatus = "complete";
       this.state.metaState.latestClearTurnCount = nextRunState.totalTurns;
@@ -50,9 +56,9 @@ export const controllerRunMethods = {
       this.state.metaState.metaCurrency += RUN_META_CURRENCY_CLEAR_BONUS;
 
       if (unlocked) {
-        this.state.banner = `${unlocked.name} is now unlocked. Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_CLEAR_BONUS} bonus Intel Credits (80 total).`;
+        this.state.banner = `${unlocked.name} is now unlocked. Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_CLEAR_BONUS} bonus Intel Credits.`;
       } else {
-        this.state.banner = `Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_CLEAR_BONUS} bonus Intel Credits (80 total).`;
+        this.state.banner = `Run clear in ${nextRunState.totalTurns} turns. +${RUN_META_CURRENCY_CLEAR_BONUS} bonus Intel Credits.`;
       }
 
       await this.storage.saveMeta(this.state.metaState);
@@ -85,11 +91,22 @@ export const controllerRunMethods = {
       return;
     }
 
-    this.state.runState = {
+    const nextRunState = {
       ...this.state.runState,
-      selectedRewards: [...(this.state.runState.selectedRewards ?? []), reward],
+      selectedRewards:
+        reward.type === "unit"
+          ? [...(this.state.runState.selectedRewards ?? [])]
+          : [...(this.state.runState.selectedRewards ?? []), reward],
+      roster:
+        reward.type === "unit" && reward.unitTypeId
+          ? [
+              ...(this.state.runState.roster ?? []),
+              createPersistentUnitSnapshot(createUnitFromType(reward.unitTypeId, TURN_SIDES.PLAYER))
+            ]
+          : [...(this.state.runState.roster ?? [])],
       pendingRewardChoices: []
     };
+    this.state.runState = normalizeRunState(nextRunState);
     this.state.runStatus = null;
     await this.startNextRunBattle();
   },
@@ -133,7 +150,8 @@ export const controllerRunMethods = {
       return;
     }
 
-    const battleState = this.battleSystem.getStateForSave();
+    const battleState = normalizeBattleState(this.battleSystem.getStateForSave());
+    this.state.runState = normalizeRunState(this.state.runState);
 
     if (battleState.victory?.winner === TURN_SIDES.ENEMY) {
       this.state.runStatus = "failed";
@@ -235,7 +253,9 @@ export const controllerRunMethods = {
       this.syncBattleState();
     }
 
-    const enemyPowerUsed = this.battleSystem?.activatePower();
+    const enemyPowerUsed = this.battleSystem?.shouldEnemyUsePower?.()
+      ? this.battleSystem.activatePower()
+      : false;
 
     if (enemyPowerUsed) {
       await this.playPowerOverlay(TURN_SIDES.ENEMY);

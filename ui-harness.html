@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Ash Run '84 UI Harness</title>
+    <style>
+      body[data-ui-harness="true"] {
+        margin: 0;
+        background: #06040a;
+      }
+
+      .ui-harness-toolbar {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 20;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        max-width: min(960px, calc(100vw - 24px));
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 14px;
+        background: rgba(10, 8, 18, 0.84);
+        backdrop-filter: blur(16px);
+      }
+
+      .ui-harness-toolbar[hidden] {
+        display: none;
+      }
+
+      .ui-harness-toolbar button {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #f7f1db;
+        cursor: pointer;
+        font: inherit;
+        padding: 0.45rem 0.8rem;
+      }
+
+      .ui-harness-toolbar button[data-active="true"] {
+        background: linear-gradient(135deg, #ff8f57, #df4bbf);
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body data-ui-harness="true">
+    <div id="app">
+      <div id="game-root" aria-hidden="true"></div>
+      <div id="ui-root"></div>
+    </div>
+    <nav class="ui-harness-toolbar" id="ui-harness-toolbar" aria-label="UI harness scenes"></nav>
+    <script type="module" src="./src/dev/uiHarnessMain.js"></script>
+  </body>
+</html>

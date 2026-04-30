@@ -213,6 +213,7 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
               getBuildingIconName(building.type),
               building.name,
               [
+                `Owner: ${building.ownerLabel}`,
                 building.summary,
                 building.canRecruit
                   ? `Function: Produces ${building.recruitmentFamilies.length} unit types.`
@@ -331,6 +332,7 @@ export function renderTargetReference(battleSnapshot, hoveredTile) {
       ${renderUnitSummary(targetView)}
       <div class="selection-section">
         <strong>Forecast</strong>
+        <p>${target.name}</p>
         <p>Damage ${forecast.dealt.min}-${forecast.dealt.max} | Counter ${counterLabel}</p>
       </div>
     </div>

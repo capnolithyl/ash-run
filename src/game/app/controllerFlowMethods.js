@@ -6,7 +6,9 @@ import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/
 import {
   createBattleStateForRun,
   createNewRunState,
-  createSkirmishBattleState
+  createSkirmishBattleState,
+  normalizeBattleState,
+  normalizeRunState
 } from "../state/runFactory.js";
 import {
   createBattleUiState,
@@ -72,6 +74,8 @@ export const controllerFlowMethods = {
       slotId: this.state.selectedSlotId,
       commanderId
     });
+    runState.availableRunCardIds = [...this.state.metaState.unlockedRunCardIds];
+    runState.availableDraftUnitIds = [...this.state.metaState.unlockedUnitIds];
     const battleState = createBattleStateForRun(runState);
 
     this.battleSystem = new BattleSystem(battleState);
@@ -291,6 +295,8 @@ export const controllerFlowMethods = {
       slotId: this.state.selectedSlotId,
       commanderId: this.state.selectedCommanderId
     });
+    runState.availableRunCardIds = [...this.state.metaState.unlockedRunCardIds];
+    runState.availableDraftUnitIds = [...this.state.metaState.unlockedUnitIds];
     const purchasedRoster = this.state.runLoadout.units
       .map((unitTypeId) => createUnitFromType(unitTypeId, TURN_SIDES.PLAYER))
       .map((unit) => createPersistentUnitSnapshot(unit));
@@ -319,9 +325,20 @@ export const controllerFlowMethods = {
       slotRecord.battleState.mode = BATTLE_MODES.RUN;
     }
 
+    const normalizedRunState = normalizeRunState(slotRecord.runState);
+    const normalizedBattleState = normalizeBattleState(slotRecord.battleState);
+
+    if ((normalizedRunState?.availableRunCardIds?.length ?? 0) === 0) {
+      normalizedRunState.availableRunCardIds = [...this.state.metaState.unlockedRunCardIds];
+    }
+
+    if ((normalizedRunState?.availableDraftUnitIds?.length ?? 0) === 0) {
+      normalizedRunState.availableDraftUnitIds = [...this.state.metaState.unlockedUnitIds];
+    }
+
     this.state.selectedSlotId = slotId;
-    this.state.runState = slotRecord.runState;
-    this.battleSystem = new BattleSystem(slotRecord.battleState);
+    this.state.runState = normalizedRunState;
+    this.battleSystem = new BattleSystem(normalizedBattleState);
     this.state.screen = SCREEN_IDS.BATTLE;
     this.state.debugMode = false;
     this.resetBattleUi();

@@ -46,9 +46,9 @@ const TUTORIAL_STEPS = [
     summary:
       "In run mode, your squad is bought before the map. Capturing buildings now pays Intel Credits, cuts enemy income lanes, and keeps your service sites online.",
     points: [
-      "Every building you capture during a run awards Intel Credits immediately.",
+      "The first time you capture a building in a battle, the infantry that took it earns Intel Credits and capture XP.",
       "Enemy-owned production buildings still matter because the enemy uses them to buy reinforcements.",
-      "Sectors service units each turn; hospitals restore infantry on capture; repair stations restore vehicles."
+      "Sectors service units each turn; command posts resupply without healing; hospitals restore infantry on capture; repair stations restore vehicles."
     ],
     drill: "Use combat infantry to capture. Medics and mechanics are support units, not capture units."
   },

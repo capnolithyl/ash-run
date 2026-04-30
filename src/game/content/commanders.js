@@ -61,16 +61,14 @@ export const COMMANDERS = [
     accent: "#d2bc62",
     powerMax: COMMANDER_POWER_MAX,
     passive: {
-      name: "War Budget",
-      type: "rook-war-budget",
-      value: 200,
-      summary: "+200 funds per turn; cannot resupply units.",
+      name: "Estate Claim",
+      type: "rook-estate-claim",
+      summary: "Reserved for a future redesign.",
     },
     active: {
-      name: "Liquidation",
-      type: "rook-liquidation",
-      fundsPerAttack: 300,
-      summary: "Spend all funds. All units gain +1 attack per 300 funds spent.",
+      name: "Hostile Takeover",
+      type: "rook-hostile-takeover",
+      summary: "Reserved for a future redesign.",
     },
   },
   {

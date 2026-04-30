@@ -1,8 +1,11 @@
 import { BATTLE_MODES, TURN_SIDES } from "../core/constants.js";
+import { pushLevelUpEvents, appendLog } from "./battleLog.js";
+import { findUnitById } from "./battleUnits.js";
 import { buildBattlePresentation } from "./battlePresentation.js";
 import { getRecruitDiscount } from "./commanderEffects.js";
 import * as debugActions from "./debugActions.js";
 import * as playerActions from "./playerActions.js";
+import { awardExperience } from "./progression.js";
 import * as transportRules from "./transportRules.js";
 import * as turnFlow from "./turnFlow.js";
 
@@ -29,6 +32,7 @@ export class BattleSystem {
     for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
       for (const unit of this.state[side].units) {
         unit.cooldowns ??= {};
+        unit.gearState ??= {};
         unit.transport ??= {
           carryingUnitId: null,
           carriedByUnitId: null,
@@ -241,6 +245,10 @@ export class BattleSystem {
     return turnFlow.performEnemyEndTurnRecruitment(this);
   }
 
+  shouldEnemyUsePower() {
+    return turnFlow.shouldEnemyUsePower(this);
+  }
+
   finalizeEnemyTurn() {
     return turnFlow.finalizeEnemyTurn(this);
   }
@@ -259,5 +267,21 @@ export class BattleSystem {
 
   updateVictoryState() {
     return turnFlow.updateVictoryState(this);
+  }
+
+  awardExperienceToUnit(unitId, amount) {
+    const unit = findUnitById(this.state, unitId);
+    const reward = Math.max(0, Number(amount) || 0);
+
+    if (!unit || reward <= 0) {
+      return false;
+    }
+
+    const result = awardExperience(unit, reward, this.state.seed);
+    this.state.seed = result.seed;
+    Object.assign(unit, result.unit);
+    result.notes.forEach((note) => appendLog(this.state, note));
+    pushLevelUpEvents(this.state, unit, result.levelUps);
+    return true;
   }
 }
