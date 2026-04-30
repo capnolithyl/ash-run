@@ -1,9 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { TURN_SIDES, UNIT_TAGS } from "../src/game/core/constants.js";
+import {
+  ENEMY_AI_ARCHETYPES,
+  TURN_SIDES,
+  UNIT_TAGS
+} from "../src/game/core/constants.js";
 import { RUN_CARD_TYPES } from "../src/game/content/runUpgrades.js";
 import { MAP_POOL } from "../src/game/content/maps.js";
-import { applyBattleVictoryToRun, createBattleStateForRun } from "../src/game/state/runFactory.js";
+import {
+  applyBattleVictoryToRun,
+  createBattleStateForRun,
+  createSkirmishBattleState,
+  normalizeBattleState
+} from "../src/game/state/runFactory.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../src/game/simulation/unitFactory.js";
 
 function createRunState(overrides = {}) {
@@ -110,6 +119,74 @@ test("enemy air units are gated until map four", () => {
   ).find((candidate) => candidate.enemy.units.some((unit) => unit.family === UNIT_TAGS.AIR));
 
   assert.equal(earlyAirOpener, undefined);
+});
+
+test("skirmish battle creation assigns deterministic enemy AI archetypes for the same commander and map", () => {
+  const firstBattle = createSkirmishBattleState({
+    mapId: MAP_POOL[0].id,
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
+  const secondBattle = createSkirmishBattleState({
+    mapId: MAP_POOL[0].id,
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
+
+  assert.equal(firstBattle.enemy.aiArchetype, secondBattle.enemy.aiArchetype);
+});
+
+test("enemy AI archetype rolls stay biased by commander weights across skirmish battle creation", () => {
+  const atlasCounts = new Map();
+  const falconCounts = new Map();
+
+  for (const mapDefinition of MAP_POOL) {
+    const atlasBattle = createSkirmishBattleState({
+      mapId: mapDefinition.id,
+      playerCommanderId: "rook",
+      enemyCommanderId: "atlas",
+      startingFunds: 1200,
+      fundsPerBuilding: 100
+    });
+    atlasCounts.set(
+      atlasBattle.enemy.aiArchetype,
+      (atlasCounts.get(atlasBattle.enemy.aiArchetype) ?? 0) + 1
+    );
+
+    const falconBattle = createSkirmishBattleState({
+      mapId: mapDefinition.id,
+      playerCommanderId: "rook",
+      enemyCommanderId: "falcon",
+      startingFunds: 1200,
+      fundsPerBuilding: 100
+    });
+    falconCounts.set(
+      falconBattle.enemy.aiArchetype,
+      (falconCounts.get(falconBattle.enemy.aiArchetype) ?? 0) + 1
+    );
+  }
+
+  assert.ok(
+    (atlasCounts.get(ENEMY_AI_ARCHETYPES.TURTLE) ?? 0) >
+      (atlasCounts.get(ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE) ?? 0)
+  );
+  assert.ok(
+    (falconCounts.get(ENEMY_AI_ARCHETYPES.HQ_RUSH) ?? 0) >=
+      (falconCounts.get(ENEMY_AI_ARCHETYPES.CAPTURE) ?? 0)
+  );
+});
+
+test("legacy battle states normalize a missing enemy AI archetype to balanced", () => {
+  const battleState = createBattleStateForRun(createRunState());
+  delete battleState.enemy.aiArchetype;
+
+  const normalized = normalizeBattleState(battleState);
+
+  assert.equal(normalized.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.BALANCED);
 });
 
 test("forced draft maps offer only reinforcement unit choices", () => {

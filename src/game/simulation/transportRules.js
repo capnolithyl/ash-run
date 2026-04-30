@@ -114,7 +114,7 @@ export function getNearestOpponentDistance(state, unit, tile) {
   );
 }
 
-export function unloadTransportForEnemy(state, runner) {
+export function unloadTransportForEnemy(state, runner, destination = null) {
   const carried = runner?.transport?.carryingUnitId
     ? findUnitById(state, runner.transport.carryingUnitId)
     : null;
@@ -123,20 +123,23 @@ export function unloadTransportForEnemy(state, runner) {
     return false;
   }
 
-  const destination = getValidUnloadTiles(state, runner, carried)
-    .sort(
-      (left, right) =>
-        getNearestOpponentDistance(state, carried, left) -
-        getNearestOpponentDistance(state, carried, right)
-    )[0];
+  const validUnloadTiles = getValidUnloadTiles(state, runner, carried);
+  const resolvedDestination = destination
+    ? validUnloadTiles.find((tile) => tile.x === destination.x && tile.y === destination.y) ?? null
+    : validUnloadTiles
+        .sort(
+          (left, right) =>
+            getNearestOpponentDistance(state, carried, left) -
+            getNearestOpponentDistance(state, carried, right)
+        )[0];
 
-  if (!destination) {
+  if (!resolvedDestination) {
     return false;
   }
 
   carried.transport.carriedByUnitId = null;
-  carried.x = destination.x;
-  carried.y = destination.y;
+  carried.x = resolvedDestination.x;
+  carried.y = resolvedDestination.y;
   carried.hasMoved = true;
   carried.hasAttacked = true;
   runner.transport.carryingUnitId = null;

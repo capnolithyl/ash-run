@@ -44,6 +44,42 @@ export function pickOne(seed, items) {
   };
 }
 
+export function pickWeighted(seed, weightedItems) {
+  const normalizedItems = weightedItems
+    .map((entry) => ({
+      ...entry,
+      weight: Math.max(0, Math.floor(entry.weight ?? 0))
+    }))
+    .filter((entry) => entry.weight > 0);
+
+  if (normalizedItems.length === 0) {
+    return {
+      seed,
+      value: null
+    };
+  }
+
+  const totalWeight = normalizedItems.reduce((sum, entry) => sum + entry.weight, 0);
+  const roll = randomInt(seed, 1, totalWeight);
+  let remaining = roll.value;
+
+  for (const entry of normalizedItems) {
+    remaining -= entry.weight;
+
+    if (remaining <= 0) {
+      return {
+        seed: roll.seed,
+        value: entry.value
+      };
+    }
+  }
+
+  return {
+    seed: roll.seed,
+    value: normalizedItems[normalizedItems.length - 1].value
+  };
+}
+
 export function shuffle(seed, items) {
   const cloned = [...items];
   let currentSeed = seed;

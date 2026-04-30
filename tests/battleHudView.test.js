@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BATTLE_MODES, TERRAIN_KEYS, TURN_SIDES } from "../src/game/core/constants.js";
+import {
+  BATTLE_MODES,
+  ENEMY_AI_ARCHETYPES,
+  TERRAIN_KEYS,
+  TURN_SIDES
+} from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
@@ -568,6 +573,7 @@ test("debug pause menu groups tools into accordion sections", () => {
   assert.match(html, /data-debug-field="spawn-owner"/);
   assert.match(html, /data-debug-field="player-commander"/);
   assert.match(html, /data-debug-field="enemy-commander"/);
+  assert.match(html, /data-debug-field="enemy-ai-archetype"/);
   assert.match(html, /data-debug-field="unit-hp"/);
 });
 
@@ -619,6 +625,7 @@ test("debug commander overrides reflect the current battle commanders", () => {
   const battleState = createTestBattleState();
   battleState.player.commanderId = "atlas";
   battleState.enemy.commanderId = "sable";
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.HQ_RUSH;
   const system = new BattleSystem(battleState);
   const html = renderBattleHudView({
     battleSnapshot: system.getSnapshot(),
@@ -647,8 +654,9 @@ test("debug commander overrides reflect the current battle commanders", () => {
     banner: ""
   });
 
-  assert.match(html, /Atlas vs Sable/);
+  assert.match(html, /Atlas vs Sable \| HQ Rush AI/);
   assert.match(html, /data-debug-field="player-commander"[\s\S]*value="atlas" selected/);
   assert.match(html, /data-debug-field="enemy-commander"[\s\S]*value="sable" selected/);
+  assert.match(html, /data-debug-field="enemy-ai-archetype"[\s\S]*value="hq-rush" selected/);
   assert.match(html, /data-action="debug-apply-commanders"/);
 });

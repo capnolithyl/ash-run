@@ -1,10 +1,15 @@
-import { COMMANDER_POWER_MAX } from "../core/constants.js";
+import {
+  COMMANDER_POWER_MAX,
+  ENEMY_AI_ARCHETYPES,
+  ENEMY_AI_ARCHETYPE_ORDER
+} from "../core/constants.js";
 
 /**
  * Only the first three commanders are available from the start.
  * The others already exist in data so enemy armies can use them immediately.
  */
 export const DEFAULT_UNLOCKED_COMMANDER_IDS = ["atlas", "viper", "rook"];
+const DEFAULT_ENEMY_AI_WEIGHTS = [100, 0, 0, 0, 0];
 
 export const COMMANDERS = [
   {
@@ -14,6 +19,7 @@ export const COMMANDERS = [
     quote: "\"If it still rolls, it can still win.\"",
     accent: "#f3a55a",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [25, 5, 45, 20, 5],
     passive: {
       name: "Field Repairs",
       type: "atlas-field-repairs",
@@ -35,6 +41,7 @@ export const COMMANDERS = [
     quote: "\"Hit first, smile last, leave them guessing in between.\"",
     accent: "#ec775e",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [25, 40, 5, 15, 15],
     passive: {
       name: "Shock Doctrine",
       type: "viper-shock-doctrine",
@@ -60,6 +67,7 @@ export const COMMANDERS = [
     quote: "\"A clean ledger wins dirtier wars.\"",
     accent: "#d2bc62",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [20, 5, 20, 40, 15],
     passive: {
       name: "Estate Claim",
       type: "rook-estate-claim",
@@ -78,6 +86,7 @@ export const COMMANDERS = [
     quote: "\"The battle is over the moment I decide where you stand.\"",
     accent: "#70d3c5",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [35, 20, 20, 5, 20],
     passive: {
       name: "Slipstream",
       type: "echo-slipstream",
@@ -97,6 +106,7 @@ export const COMMANDERS = [
     quote: "\"If they wanted mercy, they should've brought rain.\"",
     accent: "#ff8c42",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [20, 45, 5, 5, 25],
     passive: {
       name: "Scorched Earth",
       type: "blaze-scorched-earth",
@@ -115,6 +125,7 @@ export const COMMANDERS = [
     quote: "\"Let them break themselves on the wall.\"",
     accent: "#95a7c7",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [25, 5, 50, 15, 5],
     passive: {
       name: "Shield Wall",
       type: "knox-shield-wall",
@@ -133,6 +144,7 @@ export const COMMANDERS = [
     quote: "\"Own the sky and the ground starts asking permission.\"",
     accent: "#71b5ff",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [25, 25, 5, 5, 40],
     passive: {
       name: "Air Superiority",
       type: "falcon-air-superiority",
@@ -151,6 +163,7 @@ export const COMMANDERS = [
     quote: "\"Make it count. Then make sure they stay down.\"",
     accent: "#b68f6e",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [20, 40, 5, 5, 30],
     passive: {
       name: "Kill Confirm",
       type: "graves-kill-confirm",
@@ -169,6 +182,7 @@ export const COMMANDERS = [
     quote: "\"If you're going to burn bright, make sure they have to look away.\"",
     accent: "#f086d9",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [20, 45, 5, 5, 25],
     passive: {
       name: "Full Magazine",
       type: "nova-full-magazine",
@@ -187,6 +201,7 @@ export const COMMANDERS = [
     quote: "\"Chance is just another weapon if you know how to hold it.\"",
     accent: "#8ac79b",
     powerMax: COMMANDER_POWER_MAX,
+    enemyAiWeights: [40, 20, 15, 15, 10],
     passive: {
       name: "Loaded Dice",
       type: "sable-loaded-dice",
@@ -206,4 +221,29 @@ export function getCommanderById(commanderId) {
 
 export function getCommanderPowerMax(commanderId) {
   return getCommanderById(commanderId)?.powerMax ?? COMMANDER_POWER_MAX;
+}
+
+export function getCommanderEnemyAiWeights(commanderId) {
+  const commander = getCommanderById(commanderId);
+  const weights = Array.isArray(commander?.enemyAiWeights)
+    ? commander.enemyAiWeights
+    : DEFAULT_ENEMY_AI_WEIGHTS;
+
+  return ENEMY_AI_ARCHETYPE_ORDER.map((_, index) => Math.max(0, Number(weights[index]) || 0));
+}
+
+export function getEnemyAiArchetypeLabel(archetype) {
+  switch (archetype) {
+    case ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE:
+      return "Hyper Aggressive";
+    case ENEMY_AI_ARCHETYPES.TURTLE:
+      return "Turtle";
+    case ENEMY_AI_ARCHETYPES.CAPTURE:
+      return "Capture";
+    case ENEMY_AI_ARCHETYPES.HQ_RUSH:
+      return "HQ Rush";
+    case ENEMY_AI_ARCHETYPES.BALANCED:
+    default:
+      return "Balanced";
+  }
 }

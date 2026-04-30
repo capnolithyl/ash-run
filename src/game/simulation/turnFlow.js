@@ -21,6 +21,7 @@ import {
   getBestCapturePlan,
   getBestMoveAttackOption,
   getBestRepairPlan,
+  getBestRunnerTransportPlan,
   getBestSupportPlan,
   getEnemyRecruitmentLimit,
   getEnemyRecruitmentMapCap,
@@ -237,6 +238,41 @@ function resolveEnemyCapturePlan(system, unit, capturePlan, movementBudget) {
   return null;
 }
 
+function resolveEnemyTransportPlan(system, unit, transportPlan, movementBudget) {
+  if (!transportPlan) {
+    return null;
+  }
+
+  if (transportPlan.passengerId && !unit.transport?.carryingUnitId) {
+    const passenger = findUnitById(system.state, transportPlan.passengerId);
+
+    if (!passenger || !system.boardUnitIntoRunner(passenger, unit)) {
+      return null;
+    }
+  }
+
+  const movement = moveEnemyUnit(system, unit, transportPlan.moveTile, movementBudget);
+  const unloaded = transportPlan.unloadTile
+    ? system.unloadTransportForEnemy(unit, transportPlan.unloadTile)
+    : false;
+
+  if (!unloaded) {
+    unit.hasAttacked = true;
+  }
+
+  if (movement.moved || unloaded) {
+    return {
+      changed: true,
+      done: system.state.victory || system.state.enemyTurn.pendingUnitIds.length === 0,
+      type: movement.moved ? "move" : "unload",
+      unitId: unit.id,
+      moveSegments: movement.moveSegments
+    };
+  }
+
+  return null;
+}
+
 export function processEnemyTurnStep(system) {
   if (!system.state.enemyTurn || system.state.turn.activeSide !== TURN_SIDES.ENEMY || system.state.victory) {
     return { changed: false, done: true };
@@ -282,13 +318,6 @@ export function processEnemyTurnStep(system) {
     }
 
     system.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
-
-    if (unit.unitTypeId === "runner" && !unit.transport?.carryingUnitId) {
-      const passenger = system.getAdjacentTransportPassenger(unit);
-      if (passenger) {
-        system.boardUnitIntoRunner(passenger, unit);
-      }
-    }
 
     const supportPlan = getBestSupportPlan(system.state, unit);
 
@@ -363,6 +392,15 @@ export function processEnemyTurnStep(system) {
       }
     }
 
+    if (unit.unitTypeId === "runner") {
+      const transportPlan = getBestRunnerTransportPlan(system.state, unit, reachableTiles);
+      const transportResult = resolveEnemyTransportPlan(system, unit, transportPlan, movementBudget);
+
+      if (transportResult) {
+        return transportResult;
+      }
+    }
+
     const moveAttackOption = getBestMoveAttackOption(system.state, unit, reachableTiles);
     const pinnedByThreat = isUnitPinnedByThreat(system.state, unit, reachableTiles);
 
@@ -426,7 +464,7 @@ export function processEnemyTurnStep(system) {
     }
 
     if (movement.moved) {
-      const unloaded = system.unloadTransportForEnemy(unit);
+      const unloaded = unit.unitTypeId === "runner" ? system.unloadTransportForEnemy(unit) : false;
       if (!unloaded) {
         unit.hasAttacked = true;
       }

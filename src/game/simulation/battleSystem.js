@@ -1,4 +1,9 @@
-import { BATTLE_MODES, TURN_SIDES } from "../core/constants.js";
+import {
+  BATTLE_MODES,
+  ENEMY_AI_ARCHETYPES,
+  ENEMY_AI_ARCHETYPE_ORDER,
+  TURN_SIDES
+} from "../core/constants.js";
 import { pushLevelUpEvents, appendLog } from "./battleLog.js";
 import { findUnitById } from "./battleUnits.js";
 import { buildBattlePresentation } from "./battlePresentation.js";
@@ -43,6 +48,10 @@ export class BattleSystem {
       }
     }
     this.state.player.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.PLAYER);
+    this.state.enemy.aiArchetype ??= ENEMY_AI_ARCHETYPES.BALANCED;
+    if (!ENEMY_AI_ARCHETYPE_ORDER.includes(this.state.enemy.aiArchetype)) {
+      this.state.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.BALANCED;
+    }
     this.state.enemy.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.ENEMY);
   }
 
@@ -117,8 +126,8 @@ export class BattleSystem {
     return transportRules.getNearestOpponentDistance(this.state, unit, tile);
   }
 
-  unloadTransportForEnemy(runner) {
-    return transportRules.unloadTransportForEnemy(this.state, runner);
+  unloadTransportForEnemy(runner, destination = null) {
+    return transportRules.unloadTransportForEnemy(this.state, runner, destination);
   }
 
   getSupportTargetForUnit(unit, options) {

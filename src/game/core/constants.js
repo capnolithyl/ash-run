@@ -64,6 +64,22 @@ export const TURN_SIDES = {
   ENEMY: "enemy"
 };
 
+export const ENEMY_AI_ARCHETYPES = {
+  BALANCED: "balanced",
+  HYPER_AGGRESSIVE: "hyper-aggressive",
+  TURTLE: "turtle",
+  CAPTURE: "capture",
+  HQ_RUSH: "hq-rush"
+};
+
+export const ENEMY_AI_ARCHETYPE_ORDER = [
+  ENEMY_AI_ARCHETYPES.BALANCED,
+  ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE,
+  ENEMY_AI_ARCHETYPES.TURTLE,
+  ENEMY_AI_ARCHETYPES.CAPTURE,
+  ENEMY_AI_ARCHETYPES.HQ_RUSH
+];
+
 export const TERRAIN_KEYS = {
   PLAIN: "plain",
   ROAD: "road",

@@ -1,6 +1,11 @@
 import { BATTLE_MODES } from "../../../game/core/constants.js";
 import { getBattlefieldLayout } from "../../../game/core/battlefieldLayout.js";
-import { COMMANDERS, getCommanderById } from "../../../game/content/commanders.js";
+import {
+  COMMANDERS,
+  getCommanderById,
+  getEnemyAiArchetypeLabel
+} from "../../../game/content/commanders.js";
+import { ENEMY_AI_ARCHETYPE_ORDER } from "../../../game/core/constants.js";
 import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
 
 function getBattleLayout(battleSnapshot) {
@@ -230,6 +235,9 @@ export function renderDebugControls(state, battleSnapshot) {
   const commanderOptions = COMMANDERS.map(
     (commander) => `<option value="${commander.id}">${commander.name}</option>`
   ).join("");
+  const enemyAiOptions = ENEMY_AI_ARCHETYPE_ORDER.map(
+    (archetype) => `<option value="${archetype}">${getEnemyAiArchetypeLabel(archetype)}</option>`
+  ).join("");
   const unitOptions = Object.values(UNIT_CATALOG)
     .map(
       (unit) => `<option
@@ -295,7 +303,7 @@ export function renderDebugControls(state, battleSnapshot) {
             <strong>Commander Overrides</strong>
             <small>${getCommanderById(battleSnapshot.player.commanderId)?.name ?? "Player"} vs ${
               getCommanderById(battleSnapshot.enemy.commanderId)?.name ?? "Enemy"
-            }</small>
+            } | ${getEnemyAiArchetypeLabel(battleSnapshot.enemy.aiArchetype ?? "balanced")} AI</small>
           </span>
         </summary>
         <div class="debug-grid">
@@ -312,6 +320,14 @@ export function renderDebugControls(state, battleSnapshot) {
               ${commanderOptions.replace(
                 `value="${battleSnapshot.enemy.commanderId}"`,
                 `value="${battleSnapshot.enemy.commanderId}" selected`
+              )}
+            </select>
+          </label>
+          <label>Enemy AI
+            <select data-debug-field="enemy-ai-archetype">
+              ${enemyAiOptions.replace(
+                `value="${battleSnapshot.enemy.aiArchetype ?? "balanced"}"`,
+                `value="${battleSnapshot.enemy.aiArchetype ?? "balanced"}" selected`
               )}
             </select>
           </label>

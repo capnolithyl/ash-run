@@ -284,7 +284,8 @@ export const appShellEventMethods = {
       case "debug-apply-commanders":
         await this.controller.debugSetCommanders({
           playerCommanderId: this.getDebugField("player-commander", "atlas"),
-          enemyCommanderId: this.getDebugField("enemy-commander", "viper")
+          enemyCommanderId: this.getDebugField("enemy-commander", "viper"),
+          enemyAiArchetype: this.getDebugField("enemy-ai-archetype", "balanced")
         });
         break;
       case "debug-full-charge-player":

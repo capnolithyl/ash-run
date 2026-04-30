@@ -1,5 +1,5 @@
-import { TURN_SIDES } from "../core/constants.js";
-import { getCommanderById } from "../content/commanders.js";
+import { ENEMY_AI_ARCHETYPE_ORDER, TURN_SIDES } from "../core/constants.js";
+import { getCommanderById, getEnemyAiArchetypeLabel } from "../content/commanders.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { appendLog } from "./battleLog.js";
 import { getCommanderPowerMaxForSide, getRecruitDiscount } from "./commanderEffects.js";
@@ -143,6 +143,19 @@ export function setDebugCommanders(system, commanderAssignments) {
     system.state[side].recruitDiscount = getRecruitDiscount(system.state, side);
     changed = true;
     updatedSides.push(`${side}: ${commander.name}`);
+  }
+
+  if (commanderAssignments?.enemyAiArchetype) {
+    const requestedArchetype = commanderAssignments.enemyAiArchetype;
+
+    if (
+      ENEMY_AI_ARCHETYPE_ORDER.includes(requestedArchetype) &&
+      system.state.enemy.aiArchetype !== requestedArchetype
+    ) {
+      system.state.enemy.aiArchetype = requestedArchetype;
+      changed = true;
+      updatedSides.push(`enemy AI: ${getEnemyAiArchetypeLabel(requestedArchetype)}`);
+    }
   }
 
   if (!changed) {

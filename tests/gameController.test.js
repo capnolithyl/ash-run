@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../src/game/core/constants.js";
+import {
+  BATTLE_MODES,
+  ENEMY_AI_ARCHETYPES,
+  SCREEN_IDS,
+  TURN_SIDES
+} from "../src/game/core/constants.js";
 import { GameController } from "../src/game/app/GameController.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { createBattleStateForRun } from "../src/game/state/runFactory.js";
@@ -452,11 +457,13 @@ test("sandbox commander overrides update both battle sides without saving a run"
 
   await controller.debugSetCommanders({
     playerCommanderId: "atlas",
-    enemyCommanderId: "sable"
+    enemyCommanderId: "sable",
+    enemyAiArchetype: ENEMY_AI_ARCHETYPES.HQ_RUSH
   });
 
   const state = controller.getState();
   assert.equal(state.runState, null);
   assert.equal(state.battleSnapshot.player.commanderId, "atlas");
   assert.equal(state.battleSnapshot.enemy.commanderId, "sable");
+  assert.equal(state.battleSnapshot.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.HQ_RUSH);
 });

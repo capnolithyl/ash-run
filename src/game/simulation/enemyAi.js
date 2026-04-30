@@ -1,5 +1,6 @@
 import {
   BUILDING_KEYS,
+  ENEMY_AI_ARCHETYPES,
   ENEMY_RECRUITMENT_BASE_MAP_CAP,
   ENEMY_RECRUITMENT_EARLY_LIMIT,
   ENEMY_RECRUITMENT_MAP_CAP_STEP_INTERVAL,
@@ -20,6 +21,7 @@ import {
 import {
   canUnitAttackTarget,
   getBuildingAt,
+  getValidUnloadTiles,
   getLivingUnits,
   getReachableTiles,
   getUnitMovementAllowance,
@@ -27,14 +29,68 @@ import {
   getUnitAt,
   getUnitAttackProfile
 } from "./selectors.js";
+import { canLoadUnit } from "./transportRules.js";
 
 const ANTI_AIR_RECRUITS = new Set(["skyguard", "interceptor"]);
 const ENEMY_AIR_RECRUITS = new Set(["gunship", "payload", "interceptor", "carrier"]);
 const ANTI_VEHICLE_RECRUITS = new Set(["breaker", "juggernaut", "siege-gun", "payload"]);
 const ANTI_INFANTRY_RECRUITS = new Set(["longshot", "runner", "bruiser", "gunship", "payload"]);
+const FRONTLINE_RECRUITS = new Set(["grunt", "runner", "bruiser", "breaker", "juggernaut", "gunship"]);
+const TURTLE_RECRUITS = new Set(["longshot", "juggernaut", "skyguard", "interceptor", "medic", "mechanic"]);
+const CAPTURE_RECRUITS = new Set(["grunt", "runner", "longshot"]);
+const HQ_RUSH_RECRUITS = new Set(["grunt", "runner", "breaker", "longshot", "gunship"]);
 const SUPPORT_RECRUITS = new Set(["medic", "mechanic"]);
-const REPAIR_MODE_HEALTH_RATIO = 0.55;
 const ENEMY_AIR_UNLOCK_TIER = 4;
+
+function getEnemyAiArchetype(state) {
+  return state.enemy?.aiArchetype ?? ENEMY_AI_ARCHETYPES.BALANCED;
+}
+
+function getEnemyAiProfile(state) {
+  switch (getEnemyAiArchetype(state)) {
+    case ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE:
+      return {
+        repairHealthRatio: 0.42,
+        objectiveWeight: 1.2,
+        safetyWeight: 0.65,
+        pressureWeight: 1.45,
+        retreatDistanceWeight: 1.1
+      };
+    case ENEMY_AI_ARCHETYPES.TURTLE:
+      return {
+        repairHealthRatio: 0.72,
+        objectiveWeight: 0.8,
+        safetyWeight: 1.7,
+        pressureWeight: 0.5,
+        retreatDistanceWeight: 2.4
+      };
+    case ENEMY_AI_ARCHETYPES.CAPTURE:
+      return {
+        repairHealthRatio: 0.55,
+        objectiveWeight: 1.55,
+        safetyWeight: 0.95,
+        pressureWeight: 0.9,
+        retreatDistanceWeight: 1.6
+      };
+    case ENEMY_AI_ARCHETYPES.HQ_RUSH:
+      return {
+        repairHealthRatio: 0.5,
+        objectiveWeight: 1.65,
+        safetyWeight: 0.75,
+        pressureWeight: 1.2,
+        retreatDistanceWeight: 1.35
+      };
+    case ENEMY_AI_ARCHETYPES.BALANCED:
+    default:
+      return {
+        repairHealthRatio: 0.55,
+        objectiveWeight: 1,
+        safetyWeight: 1,
+        pressureWeight: 1,
+        retreatDistanceWeight: 1.75
+      };
+  }
+}
 
 export function getEnemyRecruitmentLimit(state) {
   return (state.difficultyTier ?? 1) <= 2
@@ -91,14 +147,14 @@ function canRepairUnitAtBuilding(unit, building) {
   );
 }
 
-function wantsRepairMode(unit) {
+function wantsRepairMode(state, unit) {
   if (!unit || unit.transport?.carriedByUnitId || unit.current.hp >= unit.stats.maxHealth) {
     return false;
   }
 
   const healthRatio = unit.stats.maxHealth > 0 ? unit.current.hp / unit.stats.maxHealth : 1;
 
-  return healthRatio <= REPAIR_MODE_HEALTH_RATIO || (unit.cooldowns?.repairMode ?? 0) > 0;
+  return healthRatio <= getEnemyAiProfile(state).repairHealthRatio || (unit.cooldowns?.repairMode ?? 0) > 0;
 }
 
 function countUnitsByType(units, unitTypeId) {
@@ -114,6 +170,7 @@ function canEnemyRecruitOption(state, option) {
 }
 
 function scoreEnemyRecruitmentOption(state, option) {
+  const archetype = getEnemyAiArchetype(state);
   const playerUnits = getLivingUnits(state, TURN_SIDES.PLAYER);
   const enemyUnits = getLivingUnits(state, TURN_SIDES.ENEMY);
   const fundsAfterPurchase = state.enemy.funds - option.adjustedCost;
@@ -168,6 +225,28 @@ function scoreEnemyRecruitmentOption(state, option) {
     score -= 8;
   }
 
+  if (archetype === ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE) {
+    score += FRONTLINE_RECRUITS.has(option.id) ? 7 : 0;
+    score += SUPPORT_RECRUITS.has(option.id) ? -5 : 0;
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.TURTLE) {
+    score += TURTLE_RECRUITS.has(option.id) ? 6 : 0;
+    score += option.id === "grunt" || option.id === "runner" ? -2 : 0;
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.CAPTURE) {
+    score += CAPTURE_RECRUITS.has(option.id) ? 8 : 0;
+    score += option.id === "runner" ? 4 : 0;
+    score += SUPPORT_RECRUITS.has(option.id) ? -5 : 0;
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.HQ_RUSH) {
+    score += HQ_RUSH_RECRUITS.has(option.id) ? 8 : 0;
+    score += option.id === "runner" ? 5 : 0;
+    score += SUPPORT_RECRUITS.has(option.id) ? -4 : 0;
+  }
+
   return score;
 }
 
@@ -214,6 +293,94 @@ function getAverageDamage(damageRange) {
   return (damageRange.min + damageRange.max) / 2;
 }
 
+function getPlayerCommandBuilding(state) {
+  return state.map.buildings.find(
+    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
+  ) ?? null;
+}
+
+function getCaptureObjectiveScore(state, unit, tile) {
+  if (unit.family !== UNIT_TAGS.INFANTRY) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  return state.map.buildings
+    .filter((building) => canCaptureBuilding(unit, building))
+    .map((building) => {
+      const distance = Math.abs(tile.x - building.x) + Math.abs(tile.y - building.y);
+      return (
+        getBuildingCapturePriority(building) * 3 +
+        (distance === 0 ? 140 : 0) +
+        Math.max(0, 7 - distance) * 14
+      );
+    })
+    .sort((left, right) => right - left)[0] ?? Number.NEGATIVE_INFINITY;
+}
+
+function getPressureScore(state, tile) {
+  const nearestPlayerDistance = getNearestPlayerDistance(state, tile);
+  return Math.max(0, 14 - nearestPlayerDistance) * 8;
+}
+
+function getCommandRushScore(state, tile) {
+  const playerCommand = getPlayerCommandBuilding(state);
+
+  if (!playerCommand) {
+    return 0;
+  }
+
+  const distance = Math.abs(tile.x - playerCommand.x) + Math.abs(tile.y - playerCommand.y);
+  return Math.max(0, 16 - distance) * 9 + (distance === 0 ? 120 : 0);
+}
+
+function getTileSafetyScore(state, unit, tile) {
+  const positionedUnit = {
+    ...unit,
+    x: tile.x,
+    y: tile.y
+  };
+  const attackThreatMargin = getPlayerAttackThreatMargin(state, positionedUnit, tile);
+  const movementThreatMargin = getPlayerMovementThreatMargin(state, positionedUnit, tile);
+
+  return (
+    (attackThreatMargin > 0 ? 14 : attackThreatMargin * 7) +
+    (movementThreatMargin > 0 ? 20 : movementThreatMargin * 8) +
+    getPositionArmorBonus(state, positionedUnit) * 5
+  );
+}
+
+function getStrategicObjectiveScore(state, unit, tile) {
+  const profile = getEnemyAiProfile(state);
+  const archetype = getEnemyAiArchetype(state);
+  const captureScore = getCaptureObjectiveScore(state, unit, tile);
+  const pressureScore = getPressureScore(state, tile);
+  const commandScore = getCommandRushScore(state, tile);
+  const safetyScore = getTileSafetyScore(state, unit, tile);
+
+  if (archetype === ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE) {
+    return pressureScore * 1.3 + commandScore * 0.45 + safetyScore * profile.safetyWeight;
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.TURTLE) {
+    return safetyScore * profile.safetyWeight + pressureScore * 0.45 + Math.max(0, captureScore) * 0.3;
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.CAPTURE) {
+    return Math.max(0, captureScore) * profile.objectiveWeight + pressureScore * 0.45 + safetyScore;
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.HQ_RUSH) {
+    return commandScore * profile.objectiveWeight + pressureScore * 0.6 + safetyScore * profile.safetyWeight;
+  }
+
+  return (
+    Math.max(0, captureScore) * 0.6 +
+    pressureScore * profile.pressureWeight +
+    commandScore * 0.35 +
+    safetyScore * profile.safetyWeight
+  );
+}
+
 function scoreAttackTrade(state, attacker, defender) {
   const forecast = getAttackForecast(state, attacker, defender);
   const dealtAverage = getAverageDamage(forecast.dealt);
@@ -225,6 +392,15 @@ function scoreAttackTrade(state, attacker, defender) {
   const attackDistance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
   const isRangedAttack = Boolean(attackProfile && attackDistance > 1);
   const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
+  const canCounter = Boolean(forecast.received);
+  const netDamage = dealtAverage - receivedAverage;
+  const attackThreatMargin = getPlayerAttackThreatMargin(state, attacker, { x: attacker.x, y: attacker.y });
+  const movementThreatMargin = getPlayerMovementThreatMargin(state, attacker, { x: attacker.x, y: attacker.y });
+  const positionArmorBonus = getPositionArmorBonus(state, attacker);
+  const playerCommand = getPlayerCommandBuilding(state);
+  const defenderCommandDistance = playerCommand
+    ? Math.abs(defender.x - playerCommand.x) + Math.abs(defender.y - playerCommand.y)
+    : Number.POSITIVE_INFINITY;
   const score =
     dealtAverage * 2.35 -
     receivedAverage * 2.1 +
@@ -232,19 +408,31 @@ function scoreAttackTrade(state, attacker, defender) {
     targetValue +
     (isEffective ? 8 : 0) +
     (isRangedAttack ? 6 : 0) +
-    (!forecast.received ? 6 : 0) +
-    (killsTarget ? 55 : 0);
+    (!canCounter ? 6 : 0) +
+    (killsTarget ? 55 : 0) +
+    (movementThreatMargin > 0 ? 5 : 0) +
+    positionArmorBonus * 1.8 +
+    (defenderCommandDistance <= 2 ? 8 : 0);
 
   return {
     forecast,
     dealtAverage,
     receivedAverage,
+    netDamage,
     killsTarget,
     isEffective,
     isRangedAttack,
+    canCounter,
+    positionArmorBonus,
+    attackThreatMargin,
+    movementThreatMargin,
+    safeFromImmediateThreat: attackThreatMargin > 0,
+    safeFromMovementThreat: movementThreatMargin > 0,
+    canEscapeThreatAfterAttack: movementThreatMargin > 0,
+    defenderCommandDistance,
     isFavorable:
       killsTarget ||
-      (!forecast.received && dealtAverage >= 3) ||
+      (!canCounter && dealtAverage >= 3) ||
       (isEffective && dealtAverage >= 3) ||
       (dealtAverage >= Math.max(5, defender.stats.maxHealth * 0.3) &&
         dealtAverage >= receivedAverage + 1) ||
@@ -257,13 +445,76 @@ function getScoredAttackOptions(state, unit) {
   return getTargetsForUnit(state, unit)
     .map((target) => ({
       target,
-      trade: scoreAttackTrade(state, unit, target)
+      trade: scoreAttackTrade(state, unit, target),
+      objectiveScore: getStrategicObjectiveScore(state, unit, { x: unit.x, y: unit.y })
     }))
     .sort((left, right) => right.trade.score - left.trade.score);
 }
 
+function isAttackAcceptable(state, option, { allowRisky = false } = {}) {
+  if (!option) {
+    return false;
+  }
+
+  const archetype = getEnemyAiArchetype(state);
+  const trade = option.trade;
+  const hqRushPressure = trade.defenderCommandDistance <= 2;
+  const effectiveBias = trade.isEffective && trade.dealtAverage >= 2;
+
+  if (allowRisky) {
+    return trade.dealtAverage >= 2 || trade.killsTarget || effectiveBias;
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE) {
+    return (
+      trade.killsTarget ||
+      hqRushPressure ||
+      trade.score >= 14 ||
+      trade.dealtAverage >= 3.5 ||
+      effectiveBias ||
+      (trade.dealtAverage >= 4 && trade.netDamage >= -2)
+    );
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.TURTLE) {
+    return (
+      trade.killsTarget ||
+      (!trade.canCounter && trade.dealtAverage >= 3) ||
+      (trade.safeFromMovementThreat && trade.score >= 22) ||
+      (trade.dealtAverage >= 5 && trade.netDamage >= 2)
+    );
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.CAPTURE) {
+    return (
+      trade.killsTarget ||
+      trade.score >= 19 ||
+      (!trade.canCounter && trade.dealtAverage >= 3) ||
+      effectiveBias
+    );
+  }
+
+  if (archetype === ENEMY_AI_ARCHETYPES.HQ_RUSH) {
+    return (
+      trade.killsTarget ||
+      hqRushPressure ||
+      trade.score >= 15 ||
+      trade.dealtAverage >= 3 ||
+      effectiveBias
+    );
+  }
+
+  return (
+    trade.killsTarget ||
+    trade.score >= 18 ||
+    (!trade.canCounter && trade.dealtAverage >= 3) ||
+    effectiveBias ||
+    (trade.dealtAverage >= 4 && trade.netDamage >= -0.5)
+  );
+}
+
 export function pickBestFavorableAttack(state, unit) {
-  return getScoredAttackOptions(state, unit).find((option) => option.trade.isFavorable) ?? null;
+  return getScoredAttackOptions(state, unit).find((option) => isAttackAcceptable(state, option)) ?? null;
 }
 
 export function pickBestAvailableAttack(state, unit) {
@@ -367,7 +618,7 @@ export function getBestCapturePlan(state, unit, reachableTiles) {
 }
 
 export function getBestRepairPlan(state, unit, reachableTiles) {
-  if (!wantsRepairMode(unit)) {
+  if (!wantsRepairMode(state, unit)) {
     return null;
   }
 
@@ -437,7 +688,8 @@ export function getBestMoveAttackOption(state, unit, reachableTiles, { allowRisk
     unit.y = tile.y;
 
     const attackOption = allowRisky
-      ? pickBestAvailableAttack(state, unit)
+      ? getScoredAttackOptions(state, unit).find((option) => isAttackAcceptable(state, option, { allowRisky: true })) ??
+        pickBestAvailableAttack(state, unit)
       : pickBestFavorableAttack(state, unit);
 
     if (!attackOption) {
@@ -445,11 +697,15 @@ export function getBestMoveAttackOption(state, unit, reachableTiles, { allowRisk
     }
 
     const movementCost = Math.abs(originalPosition.x - tile.x) + Math.abs(originalPosition.y - tile.y);
+    const movementPenalty = attackOption.trade.isRangedAttack
+      ? movementCost * 0.35
+      : movementCost * 2.2;
     const score =
       attackOption.trade.score +
       (attackOption.trade.isEffective ? 5 : 0) +
-      (attackOption.trade.isRangedAttack ? 4 : 0) -
-      movementCost * 0.25;
+      (attackOption.trade.isRangedAttack ? 4 : 0) +
+      getStrategicObjectiveScore(state, unit, tile) * 0.08 -
+      movementPenalty;
 
     if (!bestOption || score > bestOption.score) {
       bestOption = {
@@ -593,16 +849,14 @@ export function pickFallbackMovementTile(state, unit, reachableTiles) {
     return { x: unit.x, y: unit.y, intent: "stage" };
   }
 
+  const profile = getEnemyAiProfile(state);
   const currentTile = { x: unit.x, y: unit.y };
+  const currentObjectiveScore = getStrategicObjectiveScore(state, unit, currentTile);
   const currentNearestDistance = getNearestPlayerDistance(state, currentTile);
   const currentMovementThreatMargin = getPlayerMovementThreatMargin(state, unit, currentTile);
   const shouldFallBack =
     currentMovementThreatMargin <= 0 &&
-    unit.current.hp / Math.max(1, unit.stats.maxHealth) <= REPAIR_MODE_HEALTH_RATIO;
-  const postureRoll = takeRandomInt(state, 0, 99);
-  const targetThreatMargin = postureRoll < 18 ? 0 : postureRoll < 42 ? 2 : 1;
-  const aggressionWeight = postureRoll < 18 ? 7.5 : postureRoll < 42 ? 4.5 : 6;
-  const threatPenalty = postureRoll < 18 ? 4 : postureRoll < 42 ? 18 : 11;
+    unit.current.hp / Math.max(1, unit.stats.maxHealth) <= profile.repairHealthRatio;
 
   const rankedTiles = reachableTiles
     .map((tile) => {
@@ -611,26 +865,30 @@ export function pickFallbackMovementTile(state, unit, reachableTiles) {
       const attackThreatMargin = getPlayerAttackThreatMargin(state, unit, tile);
       const movementThreatMargin = getPlayerMovementThreatMargin(state, unit, tile);
       const distanceImprovement = currentNearestDistance - nearestPlayerDistance;
-      const immediateThreatPenalty = attackThreatMargin <= 0 ? 22 : 0;
-      const movementThreatPenalty = movementThreatMargin <= 0 ? threatPenalty : 0;
+      const safetyScore = getTileSafetyScore(state, unit, tile);
+      const strategicObjectiveScore = getStrategicObjectiveScore(state, unit, tile);
       const stagingScore =
-        distanceImprovement * aggressionWeight -
-        Math.abs(Math.min(5, movementThreatMargin) - targetThreatMargin) * 2 -
-        movementDistance * 0.35 -
-        immediateThreatPenalty -
-        movementThreatPenalty +
-        takeRandomInt(state, 0, 5);
+        strategicObjectiveScore * profile.objectiveWeight +
+        safetyScore * profile.safetyWeight +
+        distanceImprovement * 6 * profile.pressureWeight -
+        movementDistance * 0.35 +
+        takeRandomInt(state, 0, 4);
       const fallbackScore =
+        safetyScore * (profile.safetyWeight + 0.6) +
         nearestPlayerDistance * 4 -
         movementDistance -
-        immediateThreatPenalty -
-        movementThreatPenalty +
-        (movementThreatMargin > 0 ? 12 : 0) +
-        takeRandomInt(state, 0, 5);
+        (attackThreatMargin > 0 ? 8 : 0) +
+        (movementThreatMargin > 0 ? 16 : movementThreatMargin * 6) +
+        takeRandomInt(state, 0, 4);
 
       return {
         ...tile,
-        intent: shouldFallBack ? "fallback" : "stage",
+        intent:
+          shouldFallBack
+            ? "fallback"
+            : strategicObjectiveScore > currentObjectiveScore + 8
+              ? "advance"
+              : "stage",
         score: shouldFallBack ? fallbackScore : stagingScore
       };
     })
@@ -647,6 +905,177 @@ export function isUnitPinnedByThreat(state, unit, reachableTiles) {
   }
 
   return !reachableTiles.some((tile) => getPlayerMovementThreatMargin(state, unit, tile) > 0);
+}
+
+function getAdjacentTransportPassengers(state, runner) {
+  return getLivingUnits(state, runner.owner)
+    .filter((candidate) => {
+      if (
+        !canLoadUnit(candidate, runner) ||
+        candidate.id === runner.id ||
+        candidate.hasMoved ||
+        candidate.hasAttacked
+      ) {
+        return false;
+      }
+
+      return Math.abs(candidate.x - runner.x) + Math.abs(candidate.y - runner.y) === 1;
+    })
+    .sort((left, right) => {
+      const score = (unit) => {
+        if (unit.unitTypeId === "grunt") {
+          return 6;
+        }
+        if (unit.unitTypeId === "breaker" || unit.unitTypeId === "longshot") {
+          return 5;
+        }
+        return 3;
+      };
+
+      return score(right) - score(left);
+    });
+}
+
+function getBestFootObjectiveScore(state, passenger) {
+  const movementBudget = getUnitMovementAllowance(
+    passenger,
+    passenger.stats.movement + getMovementModifier(state, passenger)
+  );
+  const reachableTiles = getReachableTiles(state, passenger, movementBudget);
+  const currentTile = { x: passenger.x, y: passenger.y };
+
+  return [currentTile, ...reachableTiles].reduce(
+    (bestScore, tile) => Math.max(bestScore, getStrategicObjectiveScore(state, passenger, tile)),
+    Number.NEGATIVE_INFINITY
+  );
+}
+
+function scoreLoadedPassengerPosition(state, passenger, tile) {
+  const positionedPassenger = {
+    ...passenger,
+    x: tile.x,
+    y: tile.y
+  };
+  const currentThreatMargin = getPlayerMovementThreatMargin(state, passenger, { x: passenger.x, y: passenger.y });
+  const nextThreatMargin = getPlayerMovementThreatMargin(state, positionedPassenger, tile);
+
+  return (
+    getStrategicObjectiveScore(state, positionedPassenger, tile) -
+    10 +
+    (currentThreatMargin <= 0 && nextThreatMargin > 0 ? 26 : 0)
+  );
+}
+
+export function getBestRunnerTransportPlan(state, runner, reachableTiles) {
+  if (runner.unitTypeId !== "runner") {
+    return null;
+  }
+
+  const carriedPassenger = runner.transport?.carryingUnitId
+    ? getLivingUnits(state, runner.owner).find((unit) => unit.id === runner.transport.carryingUnitId) ?? null
+    : null;
+  const passengers = carriedPassenger ? [carriedPassenger] : getAdjacentTransportPassengers(state, runner);
+
+  if (passengers.length === 0) {
+    return null;
+  }
+
+  const originalRunnerPosition = { x: runner.x, y: runner.y };
+  let bestPlan = null;
+
+  for (const passenger of passengers) {
+    const footObjectiveScore = carriedPassenger ? Number.NEGATIVE_INFINITY : getBestFootObjectiveScore(state, passenger);
+    const originalPassengerPosition = { x: passenger.x, y: passenger.y };
+    const currentPassengerThreatMargin = getPlayerMovementThreatMargin(state, passenger, originalPassengerPosition);
+
+    for (const moveTile of reachableTiles) {
+      const isMovedTile =
+        moveTile.x !== originalRunnerPosition.x || moveTile.y !== originalRunnerPosition.y;
+      runner.x = moveTile.x;
+      runner.y = moveTile.y;
+      passenger.x = moveTile.x;
+      passenger.y = moveTile.y;
+
+      const carryScore = scoreLoadedPassengerPosition(state, passenger, moveTile);
+      const carryType = currentPassengerThreatMargin <= 0 && getPlayerMovementThreatMargin(state, passenger, moveTile) > 0
+        ? "extract-and-retreat"
+        : carriedPassenger
+          ? "carry-forward"
+          : "board-and-carry";
+      const carryPlan = {
+        type: carryType,
+        passengerId: passenger.id,
+        moveTile,
+        unloadTile: null,
+        score: carryScore
+      };
+
+      if (
+        isMovedTile &&
+        (
+          carriedPassenger ||
+          carryScore >= footObjectiveScore + 10 ||
+          carryType === "extract-and-retreat"
+        )
+      ) {
+        if (!bestPlan || carryPlan.score > bestPlan.score) {
+          bestPlan = carryPlan;
+        }
+      }
+
+      const unloadTiles = getValidUnloadTiles(state, runner, passenger);
+
+      for (const unloadTile of unloadTiles) {
+        const unloadedPassenger = {
+          ...passenger,
+          x: unloadTile.x,
+          y: unloadTile.y,
+          transport: {
+            ...passenger.transport,
+            carriedByUnitId: null
+          }
+        };
+        const unloadScore =
+          getStrategicObjectiveScore(state, unloadedPassenger, unloadTile) +
+          6 +
+          (currentPassengerThreatMargin <= 0 &&
+          getPlayerMovementThreatMargin(state, unloadedPassenger, unloadTile) > 0
+            ? 18
+            : 0);
+        const unloadType =
+          moveTile.x === originalRunnerPosition.x && moveTile.y === originalRunnerPosition.y
+            ? "unload-now"
+            : currentPassengerThreatMargin <= 0 &&
+                getPlayerMovementThreatMargin(state, unloadedPassenger, unloadTile) > 0
+              ? "extract-and-retreat"
+              : "move-then-unload";
+        const unloadPlan = {
+          type: unloadType,
+          passengerId: passenger.id,
+          moveTile,
+          unloadTile,
+          score: unloadScore
+        };
+
+        if (
+          carriedPassenger ||
+          unloadScore >= footObjectiveScore + 6 ||
+          unloadType === "extract-and-retreat"
+        ) {
+          if (!bestPlan || unloadPlan.score > bestPlan.score) {
+            bestPlan = unloadPlan;
+          }
+        }
+      }
+    }
+
+    passenger.x = originalPassengerPosition.x;
+    passenger.y = originalPassengerPosition.y;
+  }
+
+  runner.x = originalRunnerPosition.x;
+  runner.y = originalRunnerPosition.y;
+  return bestPlan;
 }
 
 export function hasEnemyAttackOpportunity(state) {

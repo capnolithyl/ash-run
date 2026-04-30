@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   BUILDING_KEYS,
+  ENEMY_AI_ARCHETYPES,
   ENEMY_RECRUITMENT_BASE_MAP_CAP,
   TERRAIN_KEYS,
   TURN_SIDES
@@ -24,6 +25,7 @@ import {
   getCombatExperience,
   getDefenderArmor
 } from "../src/game/simulation/combatResolver.js";
+import { pickBestFavorableAttack } from "../src/game/simulation/enemyAi.js";
 import { getXpThreshold } from "../src/game/simulation/progression.js";
 import { canUnitAttackTarget, getReachableTiles, getUnitAt } from "../src/game/simulation/selectors.js";
 import { canLoadUnit } from "../src/game/simulation/transportRules.js";
@@ -1327,6 +1329,33 @@ test("enemy units choose a favorable target when one is available", () => {
   assert.equal(afterStep.player.units.find((unit) => unit.id === bruiser.id).current.hp, bruiser.current.hp);
 });
 
+test("hyper-aggressive AI accepts a riskier runner trade that turtle rejects", () => {
+  const player = createPlacedUnit("runner", TURN_SIDES.PLAYER, 4, 3);
+  const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 3);
+  player.stats.attack = 10;
+  player.stats.luck = 0;
+  enemy.stats.attack = 10;
+  enemy.stats.luck = 0;
+  const battleState = createTestBattleState({
+    id: "archetype-trade-threshold",
+    playerUnits: [player],
+    enemyUnits: [enemy]
+  });
+  battleState.map.buildings = [
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 1, y: 3 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 6, y: 3 }
+  ];
+
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE;
+  const hyperChoice = pickBestFavorableAttack(battleState, enemy);
+
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.TURTLE;
+  const turtleChoice = pickBestFavorableAttack(battleState, enemy);
+
+  assert.ok(hyperChoice);
+  assert.equal(turtleChoice, null);
+});
+
 test("enemy grunts capture buildings before attacking", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 3);
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 3);
@@ -1357,6 +1386,37 @@ test("enemy grunts capture buildings before attacking", () => {
   assert.equal(afterStep.player.units[0].current.hp, player.current.hp);
 });
 
+test("enemy capture archetype infantry advance toward neutral sectors when no attack is available", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 9, 5);
+  const battleState = createTestBattleState({
+    id: "capture-stage",
+    width: 14,
+    height: 8,
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 5
+  });
+  battleState.map.buildings = [
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 1, y: 4 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 12, y: 4 },
+    { id: "neutral-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 4, y: 5 }
+  ];
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.CAPTURE;
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const updatedEnemy = system.getStateForSave().enemy.units[0];
+
+  assert.equal(step.type, "move");
+  assert.deepEqual({ x: updatedEnemy.x, y: updatedEnemy.y }, { x: 5, y: 5 });
+});
+
 test("enemy breakers capture when no favorable target is available", () => {
   const player = createPlacedUnit("juggernaut", TURN_SIDES.PLAYER, 7, 3);
   const enemy = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 4, 3);
@@ -1384,6 +1444,94 @@ test("enemy breakers capture when no favorable target is available", () => {
 
   assert.equal(step.type, "capture");
   assert.equal(afterStep.map.buildings.find((building) => building.id === "neutral-sector-breaker").owner, TURN_SIDES.ENEMY);
+});
+
+test("enemy breakers prioritize effective attacks over capture plans", () => {
+  const player = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 5, 3);
+  const enemy = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 4, 3);
+  const battleState = createTestBattleState({
+    id: "breaker-effective-over-capture",
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.map.buildings = [
+    { id: "neutral-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 4, y: 3 },
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 1, y: 3 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 6, y: 3 }
+  ];
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.CAPTURE;
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const capturedBuilding = system.getStateForSave().map.buildings.find((building) => building.id === "neutral-sector");
+
+  assert.equal(step.type, "attack");
+  assert.equal(capturedBuilding.owner, "neutral");
+  assert.ok(system.getStateForSave().log.some((line) => line.includes("Breaker hit Bruiser")));
+});
+
+test("enemy longshots prioritize effective attacks over capture plans", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 6, 3);
+  const enemy = createPlacedUnit("longshot", TURN_SIDES.ENEMY, 4, 3);
+  const battleState = createTestBattleState({
+    id: "longshot-effective-over-capture",
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.map.buildings = [
+    { id: "neutral-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 4, y: 3 },
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 1, y: 3 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 6, y: 3 }
+  ];
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.CAPTURE;
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const capturedBuilding = system.getStateForSave().map.buildings.find((building) => building.id === "neutral-sector");
+
+  assert.equal(step.type, "attack");
+  assert.equal(capturedBuilding.owner, "neutral");
+  assert.ok(system.getStateForSave().log.some((line) => line.includes("Longshot hit Grunt")));
+});
+
+test("enemy hq-rush units stage toward the player command when no attack is available", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    id: "hq-stage",
+    width: 12,
+    height: 8,
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 5
+  });
+  battleState.map.buildings = [
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 1, y: 4 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 10, y: 4 }
+  ];
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.HQ_RUSH;
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const updatedEnemy = system.getStateForSave().enemy.units[0];
+
+  assert.equal(step.type, "move");
+  assert.deepEqual({ x: updatedEnemy.x, y: updatedEnemy.y }, { x: 2, y: 4 });
 });
 
 test("enemy start actions wait for the controller to release the turn banner", () => {
@@ -2000,12 +2148,12 @@ test("enemy medics use support on damaged adjacent infantry", () => {
   assert.equal(updatedMedic.cooldowns.support, 2);
 });
 
-test("enemy runners opportunistically ferry adjacent infantry", () => {
+test("enemy hq-rush runners can keep infantry loaded instead of auto-unloading", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 10, 6);
-  const passenger = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 10, 5);
+  const passenger = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 10, 5);
   const battleState = createTestBattleState({
-    id: "enemy-runner-ferry",
+    id: "hq-rush-transport",
     width: 12,
     height: 8,
     playerUnits: [player],
@@ -2013,6 +2161,7 @@ test("enemy runners opportunistically ferry adjacent infantry", () => {
     activeSide: TURN_SIDES.ENEMY,
     seed: 404
   });
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.HQ_RUSH;
   battleState.enemyTurn = {
     pendingAttack: null,
     pendingUnitIds: [runner.id, passenger.id]
@@ -2025,9 +2174,127 @@ test("enemy runners opportunistically ferry adjacent infantry", () => {
   const updatedPassenger = afterMove.enemy.units.find((unit) => unit.id === passenger.id);
 
   assert.equal(step.type, "move");
+  assert.equal(updatedRunner.transport.carryingUnitId, passenger.id);
+  assert.equal(updatedPassenger.transport.carriedByUnitId, runner.id);
+  assert.deepEqual({ x: updatedRunner.x, y: updatedRunner.y }, { x: 6, y: 4 });
+  assert.deepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: 6, y: 4 });
+  assert.ok(afterMove.log.some((line) => line.includes("boarded")));
+  assert.equal(afterMove.log.some((line) => line.includes("disembarked")), false);
+});
+
+test("enemy capture runners board infantry for an earlier capture approach", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 10, 5);
+  const passenger = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 10, 4);
+  const battleState = createTestBattleState({
+    id: "capture-transport",
+    width: 14,
+    height: 8,
+    playerUnits: [player],
+    enemyUnits: [runner, passenger],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 88
+  });
+  battleState.map.buildings = [
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 1, y: 4 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 12, y: 4 },
+    { id: "far-neutral", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 4, y: 5 }
+  ];
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.CAPTURE;
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [runner.id, passenger.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const afterMove = system.getStateForSave();
+  const updatedRunner = afterMove.enemy.units.find((unit) => unit.id === runner.id);
+  const updatedPassenger = afterMove.enemy.units.find((unit) => unit.id === passenger.id);
+
+  assert.equal(step.type, "move");
+  assert.equal(updatedRunner.transport.carryingUnitId, passenger.id);
+  assert.equal(updatedPassenger.transport.carriedByUnitId, runner.id);
+  assert.deepEqual({ x: updatedRunner.x, y: updatedRunner.y }, { x: 4, y: 5 });
+});
+
+test("enemy runners unload carried infantry when the destination directly improves a capture objective", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 5, {
+    hasMoved: false,
+    hasAttacked: false
+  });
+  const passenger = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 5, {
+    hasMoved: false,
+    hasAttacked: false
+  });
+  runner.transport.carryingUnitId = passenger.id;
+  passenger.transport.carriedByUnitId = runner.id;
+  const battleState = createTestBattleState({
+    id: "capture-unload",
+    width: 12,
+    height: 8,
+    playerUnits: [player],
+    enemyUnits: [runner, passenger],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 55
+  });
+  battleState.map.buildings = [
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 1, y: 4 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 10, y: 4 },
+    { id: "neutral-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 5, y: 4 }
+  ];
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.CAPTURE;
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [runner.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const afterUnload = system.getStateForSave();
+  const updatedRunner = afterUnload.enemy.units.find((unit) => unit.id === runner.id);
+  const updatedPassenger = afterUnload.enemy.units.find((unit) => unit.id === passenger.id);
+
+  assert.equal(step.type, "unload");
   assert.equal(updatedRunner.transport.carryingUnitId, null);
   assert.equal(updatedPassenger.transport.carriedByUnitId, null);
-  assert.notDeepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: passenger.x, y: passenger.y });
-  assert.ok(afterMove.log.some((line) => line.includes("boarded")));
-  assert.ok(afterMove.log.some((line) => line.includes("disembarked")));
+  assert.deepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: 5, y: 4 });
+  assert.ok(afterUnload.log.some((line) => line.includes("disembarked")));
+});
+
+test("enemy runners extract threatened infantry instead of leaving them exposed", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 7, 4);
+  const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 4);
+  const passenger = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 3, {
+    current: {
+      hp: 4
+    }
+  });
+  const battleState = createTestBattleState({
+    id: "retreat-transport",
+    width: 12,
+    height: 8,
+    playerUnits: [player],
+    enemyUnits: [runner, passenger],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 123
+  });
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.TURTLE;
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [runner.id, passenger.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+  const afterMove = system.getStateForSave();
+  const updatedRunner = afterMove.enemy.units.find((unit) => unit.id === runner.id);
+  const updatedPassenger = afterMove.enemy.units.find((unit) => unit.id === passenger.id);
+
+  assert.equal(step.type, "move");
+  assert.equal(updatedRunner.transport.carryingUnitId, passenger.id);
+  assert.equal(updatedPassenger.transport.carriedByUnitId, runner.id);
+  assert.deepEqual({ x: updatedRunner.x, y: updatedRunner.y }, { x: 3, y: 1 });
+  assert.deepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: 3, y: 1 });
 });

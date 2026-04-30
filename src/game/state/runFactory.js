@@ -1,5 +1,7 @@
 import {
   BATTLE_MODES,
+  ENEMY_AI_ARCHETYPES,
+  ENEMY_AI_ARCHETYPE_ORDER,
   ENEMY_STARTING_FUNDS,
   PROTOTYPE_RUN_GOAL,
   TURN_SIDES,
@@ -7,8 +9,11 @@ import {
 } from "../core/constants.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
 import { createId } from "../core/id.js";
-import { pickOne, shuffle, stringToSeed } from "../core/random.js";
-import { COMMANDERS } from "../content/commanders.js";
+import { pickOne, pickWeighted, shuffle, stringToSeed } from "../core/random.js";
+import {
+  COMMANDERS,
+  getCommanderEnemyAiWeights
+} from "../content/commanders.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import {
   RUN_CARD_TYPES,
@@ -123,6 +128,11 @@ export function normalizeBattleState(battleState) {
   }
 
   const nextBattleState = structuredClone(battleState);
+  nextBattleState.enemy ??= {};
+  nextBattleState.enemy.aiArchetype ??= ENEMY_AI_ARCHETYPES.BALANCED;
+  if (!ENEMY_AI_ARCHETYPE_ORDER.includes(nextBattleState.enemy.aiArchetype)) {
+    nextBattleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.BALANCED;
+  }
 
   if (nextBattleState.mode === BATTLE_MODES.RUN) {
     nextBattleState.rewardLedger = normalizeBattleRewardLedger(nextBattleState.rewardLedger);
@@ -273,6 +283,16 @@ function pickEnemyCommander(seed, commanderId) {
   return pickOne(seed, candidates).value.id;
 }
 
+function pickEnemyAiArchetype(seed, commanderId) {
+  const weights = getCommanderEnemyAiWeights(commanderId);
+  const weightedArchetypes = ENEMY_AI_ARCHETYPE_ORDER.map((archetype, index) => ({
+    value: archetype,
+    weight: weights[index]
+  }));
+  const roll = pickWeighted(stringToSeed(`${seed}-${commanderId}-enemy-ai`), weightedArchetypes);
+  return roll.value ?? ENEMY_AI_ARCHETYPES.BALANCED;
+}
+
 function createIncomeTable(fundsPerBuilding) {
   return {
     sector: fundsPerBuilding,
@@ -314,10 +334,12 @@ export function createBattleStateForRun(runState) {
   const mapId = normalizedRunState.mapSequence[normalizedRunState.mapIndex % normalizedRunState.mapSequence.length];
   const mapDefinition = structuredClone(getMapById(mapId));
   const difficultyTier = normalizedRunState.mapIndex + 1;
+  const battleSeed = normalizedRunState.seed + normalizedRunState.mapIndex;
   const enemyCommanderId = pickEnemyCommander(
-    normalizedRunState.seed + normalizedRunState.mapIndex,
+    battleSeed,
     normalizedRunState.commanderId
   );
+  const enemyAiArchetype = pickEnemyAiArchetype(battleSeed, enemyCommanderId);
   const capturedBuildings = applyEnemyMapControlScaling(mapDefinition, difficultyTier);
   const playerUnits = createPlayerBattleRoster(normalizedRunState, mapDefinition);
   const enemyUnits = createEnemyBattleRoster(normalizedRunState, mapDefinition, enemyCommanderId);
@@ -348,7 +370,7 @@ export function createBattleStateForRun(runState) {
   return {
     id: createId("battle"),
     mode: BATTLE_MODES.RUN,
-    seed: normalizedRunState.seed + normalizedRunState.mapIndex,
+    seed: battleSeed,
     difficultyTier,
     map: mapDefinition,
     turn: {
@@ -364,6 +386,7 @@ export function createBattleStateForRun(runState) {
     },
     enemy: {
       commanderId: enemyCommanderId,
+      aiArchetype: enemyAiArchetype,
       funds: getEnemyStartingFunds(difficultyTier),
       charge: 0,
       recruitDiscount: 0,
@@ -394,6 +417,7 @@ export function createSkirmishBattleState({
 }) {
   const mapDefinition = structuredClone(getMapById(mapId) ?? MAP_POOL[0]);
   const incomeByType = createIncomeTable(fundsPerBuilding);
+  const battleSeed = stringToSeed(`skirmish-${mapDefinition.id}-${playerCommanderId}-${enemyCommanderId}`);
   const playerUnits = deployPersistentRoster(
     buildPersistentStarterRoster(playerCommanderId),
     TURN_SIDES.PLAYER,
@@ -405,11 +429,12 @@ export function createSkirmishBattleState({
     mapDefinition,
     enemyCommanderId
   );
+  const enemyAiArchetype = pickEnemyAiArchetype(battleSeed, enemyCommanderId);
 
   return {
     id: createId("battle"),
     mode: BATTLE_MODES.SKIRMISH,
-    seed: stringToSeed(`skirmish-${mapDefinition.id}-${playerCommanderId}-${enemyCommanderId}`),
+    seed: battleSeed,
     difficultyTier: 1,
     map: mapDefinition,
     turn: {
@@ -426,6 +451,7 @@ export function createSkirmishBattleState({
     },
     enemy: {
       commanderId: enemyCommanderId,
+      aiArchetype: enemyAiArchetype,
       funds: ENEMY_STARTING_FUNDS + startingFunds,
       charge: 0,
       recruitDiscount: 0,

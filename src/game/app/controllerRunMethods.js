@@ -398,14 +398,15 @@ export const controllerRunMethods = {
     }
   },
 
-  async debugSetCommanders({ playerCommanderId, enemyCommanderId }) {
+  async debugSetCommanders({ playerCommanderId, enemyCommanderId, enemyAiArchetype = null }) {
     if (!this.battleSystem || !this.state.debugMode) {
       return;
     }
 
     const changed = this.battleSystem.setDebugCommanders({
       [TURN_SIDES.PLAYER]: playerCommanderId,
-      [TURN_SIDES.ENEMY]: enemyCommanderId
+      [TURN_SIDES.ENEMY]: enemyCommanderId,
+      enemyAiArchetype
     });
 
     if (changed) {

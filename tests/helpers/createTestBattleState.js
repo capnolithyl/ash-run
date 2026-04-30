@@ -1,4 +1,8 @@
-import { BATTLE_MODES, TURN_SIDES } from "../../src/game/core/constants.js";
+import {
+  BATTLE_MODES,
+  ENEMY_AI_ARCHETYPES,
+  TURN_SIDES
+} from "../../src/game/core/constants.js";
 import { createBattlefield } from "../../src/game/content/mapFactory.js";
 import { createUnitFromType } from "../../src/game/simulation/unitFactory.js";
 
@@ -60,6 +64,7 @@ export function createTestBattleState({
     },
     enemy: {
       commanderId: "rook",
+      aiArchetype: ENEMY_AI_ARCHETYPES.BALANCED,
       funds: 900,
       charge: 0,
       recruitDiscount: 0,
