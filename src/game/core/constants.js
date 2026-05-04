@@ -51,6 +51,7 @@ export const SCREEN_IDS = {
   LOAD_SLOT: "load-slot",
   OPTIONS: "options",
   PROGRESSION: "progression",
+  MAP_EDITOR: "map-editor",
   BATTLE: "battle"
 };
 

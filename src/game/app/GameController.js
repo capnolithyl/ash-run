@@ -40,6 +40,7 @@ export class GameController {
       runStatus: null,
       battleUi: createBattleUiState(),
       skirmishSetup: createDefaultSkirmishSetupState(),
+      mapEditor: { zoom: 1, mapData: null, brush: "terrain", terrainId: "plain", buildingType: "command", buildingOwner: "neutral" },
       runLoadout: createDefaultRunLoadoutState()
     };
   }

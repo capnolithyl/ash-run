@@ -3,7 +3,10 @@ import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import * as generatedUnitSpriteSheetsModule from "./generated/unitSpriteSheets.js";
 
-const generatedUnitSpriteSheetsFallback = Reflect.get(generatedUnitSpriteSheetsModule, "default");
+const generatedUnitSpriteSheetsFallback = Reflect.get(
+  generatedUnitSpriteSheetsModule,
+  "default",
+);
 const GENERATED_UNIT_SPRITE_SHEETS =
   generatedUnitSpriteSheetsModule.GENERATED_UNIT_SPRITE_SHEETS ??
   generatedUnitSpriteSheetsFallback?.GENERATED_UNIT_SPRITE_SHEETS ??
@@ -17,18 +20,19 @@ export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
 export const MUSIC_TRACK_IDS = {
   MENU: "menu",
   ALLY_TURN: "ally-turn",
-  ENEMY_TURN: "enemy-turn"
+  ENEMY_TURN: "enemy-turn",
 };
 
-function createSpriteAsset(group, id, owner = null) {
+function createSpriteAsset(group, id, owner = null, extension = "svg") {
   return {
     group,
     id,
     owner,
+    type: extension === "png" ? "image" : "svg",
     key: owner ? `sprite:${group}:${owner}:${id}` : `sprite:${group}:${id}`,
     url: owner
-      ? `${SPRITE_ASSET_ROOT}/${group}/${owner}/${id}.svg`
-      : `${SPRITE_ASSET_ROOT}/${group}/${id}.svg`
+      ? `${SPRITE_ASSET_ROOT}/${group}/${owner}/${id}.${extension}`
+      : `${SPRITE_ASSET_ROOT}/${group}/${id}.${extension}`,
   };
 }
 
@@ -38,17 +42,24 @@ const UNIT_SPRITES = Object.fromEntries(
     Object.fromEntries(
       UNIT_OWNER_VARIANTS.map((owner) => [
         owner,
-        createSpriteAsset("units", unitTypeId, owner)
-      ])
-    )
-  ])
+        createSpriteAsset("units", unitTypeId, owner),
+      ]),
+    ),
+  ]),
 );
+
+const TERRAIN_PNG_OVERRIDES = new Set(["mountain"]);
 
 const TERRAIN_SPRITES = Object.fromEntries(
   Object.keys(TERRAIN_LIBRARY).map((terrainId) => [
     terrainId,
-    createSpriteAsset("terrain", terrainId)
-  ])
+    createSpriteAsset(
+      "terrain",
+      terrainId,
+      null,
+      TERRAIN_PNG_OVERRIDES.has(terrainId) ? "png" : "svg",
+    ),
+  ]),
 );
 
 const BUILDING_SPRITES = Object.fromEntries(
@@ -57,37 +68,39 @@ const BUILDING_SPRITES = Object.fromEntries(
     Object.fromEntries(
       BUILDING_OWNER_VARIANTS.map((owner) => [
         owner,
-        createSpriteAsset("buildings", buildingTypeId, owner)
-      ])
-    )
-  ])
+        createSpriteAsset("buildings", buildingTypeId, owner),
+      ]),
+    ),
+  ]),
 );
 
 const MUSIC_TRACKS = {
   [MUSIC_TRACK_IDS.MENU]: {
     id: MUSIC_TRACK_IDS.MENU,
     key: "music:menu",
-    url: `${AUDIO_ASSET_ROOT}/music/Theme.mp3`
+    url: `${AUDIO_ASSET_ROOT}/music/Theme.mp3`,
   },
   [MUSIC_TRACK_IDS.ALLY_TURN]: {
     id: MUSIC_TRACK_IDS.ALLY_TURN,
     key: "music:ally-turn",
-    url: `${AUDIO_ASSET_ROOT}/music/Ally Theme.mp3`
+    url: `${AUDIO_ASSET_ROOT}/music/Ally Theme.mp3`,
   },
   [MUSIC_TRACK_IDS.ENEMY_TURN]: {
     id: MUSIC_TRACK_IDS.ENEMY_TURN,
     key: "music:enemy-turn",
-    url: `${AUDIO_ASSET_ROOT}/music/Enemy Theme.mp3`
-  }
+    url: `${AUDIO_ASSET_ROOT}/music/Enemy Theme.mp3`,
+  },
 };
 
 export const SPRITE_ASSETS = [
   ...Object.values(UNIT_SPRITES).flatMap((variants) => Object.values(variants)),
   ...Object.values(GENERATED_UNIT_SPRITE_SHEETS).flatMap((variants) =>
-    Object.values(variants).map((asset) => ({ ...asset, type: "spritesheet" }))
+    Object.values(variants).map((asset) => ({ ...asset, type: "spritesheet" })),
   ),
   ...Object.values(TERRAIN_SPRITES),
-  ...Object.values(BUILDING_SPRITES).flatMap((variants) => Object.values(variants))
+  ...Object.values(BUILDING_SPRITES).flatMap((variants) =>
+    Object.values(variants),
+  ),
 ];
 
 export const MUSIC_ASSETS = Object.values(MUSIC_TRACKS);
@@ -98,12 +111,14 @@ export function preloadSpriteAssets(scene) {
       if (asset.type === "spritesheet") {
         scene.load.spritesheet(asset.key, asset.url, {
           frameWidth: asset.frameWidth,
-          frameHeight: asset.frameHeight
+          frameHeight: asset.frameHeight,
         });
+      } else if (asset.type === "image") {
+        scene.load.image(asset.key, asset.url);
       } else {
         scene.load.svg(asset.key, asset.url, {
           width: SPRITE_SOURCE_SIZE,
-          height: SPRITE_SOURCE_SIZE
+          height: SPRITE_SOURCE_SIZE,
         });
       }
     }
@@ -123,11 +138,18 @@ export function getMusicTrackKey(trackId) {
 }
 
 export function getUnitSpriteKey(unitTypeId, owner = "player") {
-  return UNIT_SPRITES[unitTypeId]?.[owner]?.key ?? UNIT_SPRITES[unitTypeId]?.player?.key ?? null;
+  return (
+    UNIT_SPRITES[unitTypeId]?.[owner]?.key ??
+    UNIT_SPRITES[unitTypeId]?.player?.key ??
+    null
+  );
 }
 
 export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
-  const fallbackAsset = UNIT_SPRITES[unitTypeId]?.[owner] ?? UNIT_SPRITES[unitTypeId]?.player ?? null;
+  const fallbackAsset =
+    UNIT_SPRITES[unitTypeId]?.[owner] ??
+    UNIT_SPRITES[unitTypeId]?.player ??
+    null;
   const fallbackKey = fallbackAsset?.key ?? null;
   const sheet = GENERATED_UNIT_SPRITE_SHEETS[unitTypeId]?.[owner];
 
@@ -135,7 +157,7 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
     return {
       ...sheet,
       type: "spritesheet",
-      fallbackKey
+      fallbackKey,
     };
   }
 
@@ -143,7 +165,7 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
     ? {
         type: "image",
         key: fallbackKey,
-        url: fallbackAsset?.url ?? null
+        url: fallbackAsset?.url ?? null,
       }
     : null;
 }

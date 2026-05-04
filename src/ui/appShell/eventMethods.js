@@ -62,6 +62,9 @@ export const appShellEventMethods = {
       case "open-tutorial":
         this.controller.openTutorial();
         break;
+      case "open-map-editor":
+        this.controller.openMapEditor();
+        break;
       case "open-options":
         this.controller.openOptions();
         break;
@@ -191,6 +194,25 @@ export const appShellEventMethods = {
       case "start-skirmish":
         await this.controller.startSkirmish();
         break;
+      case "map-editor-paint": {
+        const x = Number(trigger.dataset.x); const y = Number(trigger.dataset.y);
+        const map = this.latestState?.mapEditor?.mapData;
+        if (!map || !Number.isFinite(x) || !Number.isFinite(y)) break;
+        map.tiles[y][x] = map.tiles[y][x] === "plain" ? "forest" : "plain";
+        this.controller.state.mapEditor.mapData = map;
+        this.controller.emit();
+        break;
+      }
+      case "map-editor-export": {
+        const map = this.latestState?.mapEditor?.mapData;
+        if (!map) break;
+        const blob = new Blob([JSON.stringify(map, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `${map.id}.json`; a.click();
+        URL.revokeObjectURL(url);
+        break;
+      }
       case "load-slot":
         await this.controller.loadSlot(slotId);
         break;
@@ -312,6 +334,17 @@ export const appShellEventMethods = {
       await this.controller.updateSkirmishSetup({
         [skirmishField]: Number(event.target.value)
       });
+      return;
+    }
+
+
+    if (event.target.dataset.action === "map-editor-import") {
+      const file = event.target.files?.[0];
+      if (file) {
+        const text = await file.text();
+        this.controller.state.mapEditor.mapData = JSON.parse(text);
+        this.controller.emit();
+      }
       return;
     }
 

@@ -107,6 +107,25 @@ export const controllerFlowMethods = {
     this.emit();
   },
 
+
+
+  openMapEditor() {
+    const width = 16;
+    const height = 12;
+    const terrain = ["plain", "road", "forest", "mountain", "water", "ridge"];
+    const tiles = Array.from({ length: height }, () =>
+      Array.from({ length: width }, () => terrain[Math.floor(Math.random() * terrain.length)])
+    );
+    this.state.mapEditor = {
+      ...this.state.mapEditor,
+      mapData: { id: `custom-${Date.now()}`, name: "Custom Map", theme: "ash", width, height, tiles, buildings: [], playerSpawns: [{x:1,y:1}], enemySpawns:[{x:width-2,y:height-2}] }
+    };
+    this.state.screen = SCREEN_IDS.MAP_EDITOR;
+    this.state.banner = "Map editor active.";
+    this.resetBattleUi();
+    this.emit();
+  },
+
   openTutorial() {
     this.state.screen = SCREEN_IDS.TUTORIAL;
     this.state.banner = "";

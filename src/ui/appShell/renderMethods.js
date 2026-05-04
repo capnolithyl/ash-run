@@ -8,6 +8,7 @@ import { titleCaseSlot } from "../formatters.js";
 import { renderBattleHudView } from "../views/battleHudView.js";
 import { renderCommanderSelectView } from "../views/commanderSelectView.js";
 import { renderOptionsView } from "../views/optionsView.js";
+import { renderMapEditorView } from "../views/mapEditorView.js";
 import { renderProgressionView } from "../views/progressionView.js";
 import { renderRunLoadoutView } from "../views/runLoadoutView.js";
 import { renderSaveSlotView } from "../views/saveSlotView.js";
@@ -43,6 +44,12 @@ export const appShellRenderMethods = {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderOptionsView(state);
+        this.syncControllerFocusAfterRender();
+        return;
+      case SCREEN_IDS.MAP_EDITOR:
+        this.resetBattleUiTimers();
+        this.previousBattleSnapshot = null;
+        this.root.innerHTML = renderMapEditorView(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.PROGRESSION:

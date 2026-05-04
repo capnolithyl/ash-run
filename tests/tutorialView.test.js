@@ -21,6 +21,7 @@ test("title screen links to the tutorial", () => {
   const html = renderTitleView(createTitleState());
 
   assert.match(html, /data-action="open-tutorial"/);
+  assert.match(html, /data-action="open-map-editor"/);
   assert.match(html, /Tutorial/);
   assert.match(html, /data-action="open-progression"/);
   assert.match(html, /data-action="open-options"[\s\S]*aria-label="Options"/);
