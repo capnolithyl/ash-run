@@ -9,6 +9,7 @@ import {
 import {
   renderActionPrompt,
   renderCommandFeed,
+  renderMedpackPrompt,
   renderRecruitPanel,
   renderSupportPrompt,
   renderTargetingPrompt,
@@ -103,7 +104,6 @@ export function renderBattleHudView(state, options = {}) {
           isActive: playerPowerActive
         })}
         ${renderSelectionDetails(playerFocusTile, {
-          title: "Player Selection",
           emptyTitle: "Player Intel",
           emptyBody: "Select a friendly unit, building, or tile to pin player-side intel here."
         })}
@@ -121,7 +121,6 @@ export function renderBattleHudView(state, options = {}) {
         })}
         ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
         ${renderSelectionDetails(enemyFocusTile, {
-          title: "Enemy Selection",
           emptyTitle: "Enemy Intel",
           emptyBody: "Enemy scans and hostile unit details will appear here."
         })}
@@ -132,6 +131,7 @@ export function renderBattleHudView(state, options = {}) {
       ${renderUnloadPrompt(battleSnapshot)}
       ${renderTransportPrompt(battleSnapshot)}
       ${renderSupportPrompt(battleSnapshot)}
+      ${renderMedpackPrompt(battleSnapshot)}
       ${renderBattleNotice(state.battleUi?.notice)}
       ${renderTurnBanner(turnBanner)}
       ${renderPowerOverlay(state.battleUi?.powerOverlay)}

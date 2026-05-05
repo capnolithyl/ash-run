@@ -8,6 +8,7 @@ import {
   TURN_SIDES
 } from "../src/game/core/constants.js";
 import { COMMANDERS, getCommanderPowerMax } from "../src/game/content/commanders.js";
+import { ARMOR_CLASSES, WEAPON_CLASSES } from "../src/game/content/weaponClasses.js";
 import { BUILDING_RECRUITMENT } from "../src/game/content/unitCatalog.js";
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
@@ -27,9 +28,41 @@ import {
 } from "../src/game/simulation/combatResolver.js";
 import { pickBestFavorableAttack } from "../src/game/simulation/enemyAi.js";
 import { getXpThreshold } from "../src/game/simulation/progression.js";
-import { canUnitAttackTarget, getReachableTiles, getUnitAt } from "../src/game/simulation/selectors.js";
+import {
+  canUnitAttackTarget,
+  getReachableTiles,
+  getUnitAt,
+  getUnitAttackProfile
+} from "../src/game/simulation/selectors.js";
 import { canLoadUnit } from "../src/game/simulation/transportRules.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
+
+function setNeutralCommanders(state) {
+  state.player.commanderId = null;
+  state.enemy.commanderId = null;
+  return state;
+}
+
+function createNeutralBattleState(options = {}) {
+  return setNeutralCommanders(createTestBattleState(options));
+}
+
+function createNeutralForecast(attacker, defender, { seed = 1337 } = {}) {
+  const battleState = createNeutralBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender],
+    seed
+  });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.map.buildings = [];
+
+  return {
+    battleState,
+    forecast: getAttackForecast(battleState, attacker, defender)
+  };
+}
 
 test("selectNextReadyUnit cycles through player units that have not moved", () => {
   const alpha = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
@@ -524,12 +557,11 @@ test("enemy echo units stay put after attacking when their current tile is the b
 test("enemy echo units reposition after attacking when a safer slipstream tile is available", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3, {
     current: {
-      hp: 18
+      hp: 100
     }
   });
   player.stats.luck = 0;
   const enemy = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 5, 3);
-  enemy.stats.attack = 8;
   enemy.stats.luck = 0;
   const battleState = createTestBattleState({
     width: 6,
@@ -716,7 +748,7 @@ test("combat can deal zero damage when defense fully absorbs the hit", () => {
   });
   attacker.stats.luck = 0;
   defender.stats.luck = 0;
-  const battleState = createTestBattleState({
+  const battleState = createNeutralBattleState({
     playerUnits: [attacker],
     enemyUnits: [defender],
     seed: 3
@@ -746,6 +778,109 @@ test("combat can deal zero damage when defense fully absorbs the hit", () => {
   assert.equal(forecast.dealt.min, 0);
   assert.equal(forecast.dealt.max, 0);
   assert.equal(actualDamage, 0);
+});
+
+test("secondary fire uses the rifle weapon profile", () => {
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      ammo: 0
+    }
+  });
+  const gunship = createPlacedUnit("gunship", TURN_SIDES.ENEMY, 2, 1);
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
+  const attackProfile = getUnitAttackProfile(runner);
+
+  assert.equal(attackProfile.type, "secondary");
+  assert.equal(attackProfile.weaponClass, WEAPON_CLASSES.RIFLE);
+  assert.equal(canUnitAttackTarget(runner, gunship), false);
+  assert.equal(canUnitAttackTarget(runner, bruiser), true);
+});
+
+test("breaker uses light, medium, and heavy armor class profiles", () => {
+  const breaker = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 1, 1);
+  const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 2, 1);
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
+  const juggernaut = createPlacedUnit("juggernaut", TURN_SIDES.ENEMY, 2, 1);
+  breaker.stats.luck = 0;
+  runner.stats.luck = 0;
+  bruiser.stats.luck = 0;
+  juggernaut.stats.luck = 0;
+
+  assert.equal(createNeutralForecast(breaker, runner).forecast.dealt.min, 73);
+  assert.equal(createNeutralForecast(breaker, runner).forecast.dealt.max, 73);
+  assert.equal(createNeutralForecast(breaker, bruiser).forecast.dealt.min, 46);
+  assert.equal(createNeutralForecast(breaker, bruiser).forecast.dealt.max, 46);
+  assert.equal(createNeutralForecast(breaker, juggernaut).forecast.dealt.min, 17);
+  assert.equal(createNeutralForecast(breaker, juggernaut).forecast.dealt.max, 17);
+});
+
+test("hp scaling happens after armor is subtracted", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 2, 1);
+  attacker.stats.luck = 0;
+  defender.stats.luck = 0;
+
+  let result = createNeutralForecast(attacker, defender).forecast;
+  assert.equal(result.dealt.min, 11);
+  assert.equal(result.dealt.max, 11);
+
+  attacker.current.hp = 50;
+  result = createNeutralForecast(attacker, defender).forecast;
+  assert.equal(result.dealt.min, 6);
+  assert.equal(result.dealt.max, 6);
+});
+
+test("luck does not scale down with low hp", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      hp: 1
+    }
+  });
+  const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 2, 1);
+  attacker.stats.luck = 3;
+  defender.stats.luck = 0;
+
+  const forecast = createNeutralForecast(attacker, defender).forecast;
+
+  assert.equal(forecast.dealt.min, 0);
+  assert.equal(forecast.dealt.max, 3);
+});
+
+test("neutral threshold smoke tests match the new weapon and armor profiles", () => {
+  const cases = [
+    { attacker: "grunt", defender: "grunt", dealt: [56, 59], received: [23, 28], distance: 1 },
+    { attacker: "breaker", defender: "runner", dealt: [73, 76], received: [16, 21], distance: 1 },
+    { attacker: "breaker", defender: "juggernaut", dealt: [17, 20], received: [86, 92], distance: 1 },
+    { attacker: "longshot", defender: "grunt", dealt: [68, 71], received: null, distance: 2 },
+    { attacker: "bruiser", defender: "bruiser", dealt: [55, 58], received: [23, 28], distance: 1 },
+    { attacker: "juggernaut", defender: "juggernaut", dealt: [54, 56], received: [24, 27], distance: 1 },
+    { attacker: "siege-gun", defender: "juggernaut", dealt: [50, 53], received: null, distance: 2 },
+    { attacker: "skyguard", defender: "gunship", dealt: [119, 122], received: null, distance: 1 },
+    { attacker: "gunship", defender: "skyguard", dealt: [63, 66], received: [40, 47], distance: 1 },
+    { attacker: "interceptor", defender: "interceptor", dealt: [61, 64], received: [22, 27], distance: 1 }
+  ];
+
+  for (const entry of cases) {
+    const attacker = createPlacedUnit(entry.attacker, TURN_SIDES.PLAYER, 1, 1);
+    const defender = createPlacedUnit(entry.defender, TURN_SIDES.ENEMY, 1 + entry.distance, 1);
+    const forecast = createNeutralForecast(attacker, defender).forecast;
+
+    assert.deepEqual(
+      [forecast.dealt.min, forecast.dealt.max],
+      entry.dealt,
+      `${entry.attacker} vs ${entry.defender} dealt`
+    );
+
+    if (entry.received === null) {
+      assert.equal(forecast.received, null, `${entry.attacker} vs ${entry.defender} should not receive counter damage`);
+    } else {
+      assert.deepEqual(
+        [forecast.received.min, forecast.received.max],
+        entry.received,
+        `${entry.attacker} vs ${entry.defender} received`
+      );
+    }
+  }
 });
 
 test("movement spends stamina equal to the path cost used", () => {
@@ -999,18 +1134,16 @@ test("hospitals restore infantry once per owner and do not service vehicles", ()
   assert.equal(vehicleSystem.canCaptureWithPendingUnit(), false);
 });
 
-test("breaker halves only vehicle base armor for its own attack", () => {
+test("weapon armor multipliers apply only to base armor before terrain and building armor", () => {
   const breaker = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 1, 1);
   const bruiser = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
   breaker.stats.luck = 0;
   bruiser.stats.luck = 0;
-  const battleState = createTestBattleState({
+  const battleState = createNeutralBattleState({
     playerUnits: [breaker],
     enemyUnits: [bruiser],
     seed: 4
   });
-  battleState.player.commanderId = "atlas";
-  battleState.enemy.commanderId = "atlas";
   battleState.map.tiles[bruiser.y][bruiser.x] = TERRAIN_KEYS.FOREST;
   battleState.map.buildings = battleState.map.buildings.filter(
     (building) => building.x !== bruiser.x || building.y !== bruiser.y
@@ -1025,13 +1158,13 @@ test("breaker halves only vehicle base armor for its own attack", () => {
 
   assert.equal(getDefenderArmor(battleState, bruiser), bruiser.stats.armor + 3);
   assert.equal(
-    getDefenderArmor(battleState, bruiser, breaker),
-    Math.floor(bruiser.stats.armor * 0.5) + 3
+    getDefenderArmor(battleState, bruiser, breaker, getUnitAttackProfile(breaker)),
+    31
   );
 
   const forecast = getAttackForecast(battleState, breaker, bruiser);
-  assert.equal(forecast.dealt.min, 10);
-  assert.equal(forecast.dealt.max, 10);
+  assert.equal(forecast.dealt.min, 43);
+  assert.equal(forecast.dealt.max, 43);
 
   const system = new BattleSystem(battleState);
   const startingHp = bruiser.current.hp;
@@ -1041,8 +1174,7 @@ test("breaker halves only vehicle base armor for its own attack", () => {
   const afterAttack = system.getStateForSave();
   const damagedBruiser = afterAttack.enemy.units[0];
 
-  assert.equal(startingHp - damagedBruiser.current.hp, 10);
-  assert.equal(damagedBruiser.statuses.some((status) => status.type === "armor-break"), false);
+  assert.equal(startingHp - damagedBruiser.current.hp, 43);
   assert.equal(getDefenderArmor(afterAttack, damagedBruiser), bruiser.stats.armor + 3);
 });
 
@@ -1332,9 +1464,9 @@ test("enemy units choose a favorable target when one is available", () => {
 test("hyper-aggressive AI accepts a riskier runner trade that turtle rejects", () => {
   const player = createPlacedUnit("runner", TURN_SIDES.PLAYER, 4, 3);
   const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 3);
-  player.stats.attack = 10;
+  player.stats.attack = 50;
   player.stats.luck = 0;
-  enemy.stats.attack = 10;
+  enemy.stats.attack = 50;
   enemy.stats.luck = 0;
   const battleState = createTestBattleState({
     id: "archetype-trade-threshold",
@@ -1631,9 +1763,9 @@ test("combat XP uses target max-health percent, level delta, and family matchups
   const enemyGrunt = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1, { level: 1 });
   const veteranJuggernaut = createPlacedUnit("juggernaut", TURN_SIDES.PLAYER, 1, 1, { level: 10 });
 
-  assert.equal(getCombatExperience(grunt, runner, 4, false), 18);
-  assert.equal(getCombatExperience(grunt, veteranRunner, 4, false), 32);
-  assert.equal(getCombatExperience(bruiser, enemyGrunt, 4, false), 10);
+  assert.equal(getCombatExperience(grunt, runner, 4, false), 4);
+  assert.equal(getCombatExperience(grunt, veteranRunner, 4, false), 6);
+  assert.equal(getCombatExperience(bruiser, enemyGrunt, 4, false), 2);
   assert.equal(
     getCombatExperience(veteranJuggernaut, enemyGrunt, enemyGrunt.stats.maxHealth, true),
     24
@@ -1647,69 +1779,146 @@ test("xp thresholds follow the new 90 plus 30-per-level curve", () => {
   assert.equal(getXpThreshold(4), 180);
 });
 
-test("anti-air targeting allows skyguard/interceptor and AA-kit infantry only", () => {
+test("weapon target rules allow AA-kit overrides and gunship-only air skirmishes", () => {
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   grunt.gear = { slot: "gear-aa-kit" };
+  grunt.gearState = { aaKitAmmo: 1 };
+  const plainGrunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const skyguard = createPlacedUnit("skyguard", TURN_SIDES.PLAYER, 1, 1);
   const interceptor = createPlacedUnit("interceptor", TURN_SIDES.PLAYER, 1, 1);
   const gunship = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
   const payload = createPlacedUnit("payload", TURN_SIDES.PLAYER, 1, 1);
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 2, 1);
   const enemyGunship = createPlacedUnit("gunship", TURN_SIDES.ENEMY, 2, 1);
+  const enemyPayload = createPlacedUnit("payload", TURN_SIDES.ENEMY, 2, 1);
+  const enemyInterceptor = createPlacedUnit("interceptor", TURN_SIDES.ENEMY, 2, 1);
 
+  assert.equal(canUnitAttackTarget(plainGrunt, enemyGunship), false);
   assert.equal(canUnitAttackTarget(grunt, enemyGunship), true);
-  assert.equal(canUnitAttackTarget(gunship, enemyGunship), false);
-  assert.equal(canUnitAttackTarget(payload, enemyGunship), false);
   assert.equal(canUnitAttackTarget(skyguard, enemyGunship), true);
   assert.equal(canUnitAttackTarget(interceptor, enemyGunship), true);
+  assert.equal(canUnitAttackTarget(interceptor, plainGrunt), false);
+  assert.equal(canUnitAttackTarget(gunship, enemyGunship), true);
+  assert.equal(canUnitAttackTarget(payload, enemyGunship), false);
+  assert.equal(canUnitAttackTarget(gunship, enemyPayload), false);
+  assert.equal(canUnitAttackTarget(gunship, enemyInterceptor), false);
+  assert.equal(canUnitAttackTarget(gunship, bruiser), true);
+  assert.equal(canUnitAttackTarget(payload, bruiser), true);
 });
 
-test("field medpack gear heals at player turn start", () => {
+test("field medpack can heal the acting unit and is consumed on use", () => {
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 5, {
     current: {
       hp: 6
     }
   });
   grunt.gear = { slot: "gear-field-meds" };
+  grunt.gearState = {};
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
   const state = createTestBattleState({
     playerUnits: [grunt],
     enemyUnits: [enemy]
   });
-  state.map.buildings = [];
-  state.turn.activeSide = TURN_SIDES.ENEMY;
+  state.pendingAction = {
+    type: "move",
+    unitId: grunt.id,
+    mode: "menu",
+    fromX: grunt.x,
+    fromY: grunt.y,
+    fromStamina: grunt.current.stamina,
+    toX: grunt.x,
+    toY: grunt.y
+  };
   const system = new BattleSystem(state);
 
-  system.finalizeEnemyTurn();
-  const after = system.getStateForSave();
-  const updated = after.player.units[0];
-
-  assert.equal(updated.current.hp, 9);
-});
-
-test("field medpack gear only triggers once per map", () => {
-  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 5, {
-    current: {
-      hp: 6
-    }
-  });
-  grunt.gear = { slot: "gear-field-meds" };
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
-  const state = createTestBattleState({
-    playerUnits: [grunt],
-    enemyUnits: [enemy]
-  });
-  state.map.buildings = [];
-  state.turn.activeSide = TURN_SIDES.ENEMY;
-  const system = new BattleSystem(state);
-
-  system.finalizeEnemyTurn();
-  system.state.player.units[0].current.hp = 5;
-  system.state.turn.activeSide = TURN_SIDES.ENEMY;
-  system.finalizeEnemyTurn();
+  assert.equal(system.useMedpackWithPendingUnit(), true);
 
   const updated = system.getStateForSave().player.units[0];
+  assert.equal(
+    updated.current.hp,
+    Math.min(grunt.stats.maxHealth, 6 + Math.ceil(grunt.stats.maxHealth * 0.33))
+  );
+  assert.equal(updated.gear.slot, null);
+  assert.equal(updated.hasMoved, true);
+  assert.equal(updated.hasAttacked, true);
+});
 
-  assert.equal(updated.current.hp, 5);
+test("field medpack targets self or adjacent infantry allies only", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 5, {
+    current: {
+      hp: 6
+    }
+  });
+  const ally = createPlacedUnit("medic", TURN_SIDES.PLAYER, 6, 5, {
+    current: {
+      hp: 8
+    }
+  });
+  const farAlly = createPlacedUnit("mechanic", TURN_SIDES.PLAYER, 3, 3, {
+    current: {
+      hp: 8
+    }
+  });
+  grunt.gear = { slot: "gear-field-meds" };
+  grunt.gearState = {};
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const state = createTestBattleState({
+    playerUnits: [grunt, ally, farAlly],
+    enemyUnits: [enemy]
+  });
+  state.pendingAction = {
+    type: "move",
+    unitId: grunt.id,
+    mode: "menu",
+    fromX: grunt.x,
+    fromY: grunt.y,
+    fromStamina: grunt.current.stamina,
+    toX: grunt.x,
+    toY: grunt.y
+  };
+  const system = new BattleSystem(state);
+
+  assert.equal(system.useMedpackWithPendingUnit(), true);
+  assert.equal(system.getStateForSave().pendingAction.mode, "medpack");
+
+  const choosingSnapshot = system.getSnapshot();
+  assert.deepEqual(
+    new Set(choosingSnapshot.presentation.pendingAction.medpackTargetUnitIds),
+    new Set([grunt.id, ally.id])
+  );
+
+  assert.equal(system.useMedpackWithPendingUnit(ally.id), true);
+
+  const updatedAlly = system.getStateForSave().player.units.find((unit) => unit.id === ally.id);
+  const updatedGrunt = system.getStateForSave().player.units.find((unit) => unit.id === grunt.id);
+
+  assert.equal(
+    updatedAlly.current.hp,
+    Math.min(ally.stats.maxHealth, 8 + Math.ceil(ally.stats.maxHealth * 0.33))
+  );
+  assert.equal(updatedGrunt.gear.slot, null);
+});
+
+test("aa kit uses separate ammo for air attacks", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      ammo: 0
+    }
+  });
+  grunt.gear = { slot: "gear-aa-kit" };
+  grunt.gearState = { aaKitAmmo: 2 };
+  const enemyGunship = createPlacedUnit("gunship", TURN_SIDES.ENEMY, 2, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [grunt],
+    enemyUnits: [enemyGunship]
+  });
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.attackTarget(grunt.id, enemyGunship.id), true);
+
+  const updatedGrunt = system.getStateForSave().player.units[0];
+  assert.equal(updatedGrunt.current.ammo, 0);
+  assert.equal(updatedGrunt.gearState.aaKitAmmo, 1);
 });
 
 test("units only gain combat XP when they actually deal damage", () => {

@@ -242,6 +242,7 @@ export const appShellEventMethods = {
         break;
       case "cancel-transport-choice":
       case "cancel-support-choice":
+      case "cancel-medpack-choice":
       case "cancel-unload-choice":
         await this.controller.handleBattleContextAction();
         break;
@@ -250,6 +251,9 @@ export const appShellEventMethods = {
         break;
       case "use-support":
         await this.controller.useSelectedSupportAbility();
+        break;
+      case "use-medpack":
+        await this.controller.useSelectedMedpack();
         break;
       case "enter-transport":
         await this.controller.enterSelectedTransport();
@@ -265,6 +269,12 @@ export const appShellEventMethods = {
         break;
       case "select-run-reward":
         await this.controller.selectRunReward(trigger.dataset.rewardId);
+        break;
+      case "equip-run-gear":
+        await this.controller.equipPendingRunGear(trigger.dataset.unitId);
+        break;
+      case "discard-run-gear":
+        await this.controller.discardPendingRunGear();
         break;
       case "debug-spawn-unit":
         await this.controller.debugSpawnUnit({

@@ -1,5 +1,6 @@
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import { BUILDING_RECRUITMENT, UNIT_CATALOG } from "../content/unitCatalog.js";
+import { getTargetProfileForAttack, WEAPON_CLASSES } from "../content/weaponClasses.js";
 import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 
 const SECONDARY_ATTACK_RATIO = 0.55;
@@ -39,6 +40,7 @@ export function getUnitAttackProfile(unit) {
     return {
       type: "primary",
       attack: unit.stats.attack,
+      weaponClass: unit.stats.weaponClass,
       minRange: unit.stats.minRange,
       maxRange: unit.stats.maxRange,
       consumesAmmo: true
@@ -48,10 +50,41 @@ export function getUnitAttackProfile(unit) {
   return {
     type: "secondary",
     attack: Math.max(1, Math.floor(unit.stats.attack * SECONDARY_ATTACK_RATIO)),
+    weaponClass: WEAPON_CLASSES.RIFLE,
     minRange: 1,
     maxRange: 1,
     consumesAmmo: false
   };
+}
+
+export function getAntiAirGearAmmo(unit) {
+  return Math.max(0, unit?.gearState?.aaKitAmmo ?? 0);
+}
+
+export function hasUsableAntiAirKit(unit) {
+  return unit?.gear?.slot === "gear-aa-kit" && getAntiAirGearAmmo(unit) > 0;
+}
+
+export function getAttackProfileForTarget(attacker, target) {
+  if (
+    attacker &&
+    target?.family === UNIT_TAGS.AIR &&
+    hasUsableAntiAirKit(attacker) &&
+    attacker.stats?.maxRange > 0 &&
+    attacker.stats?.attack > 0
+  ) {
+    return {
+      type: "gear-aa",
+      attack: attacker.stats.attack,
+      weaponClass: null,
+      minRange: attacker.stats.minRange,
+      maxRange: attacker.stats.maxRange,
+      consumesAmmo: false,
+      consumesGearAmmo: true
+    };
+  }
+
+  return getUnitAttackProfile(attacker);
 }
 
 export function getSelectedUnit(state) {
@@ -306,31 +339,22 @@ export function canUnitAttackTarget(attacker, target) {
     !attacker ||
     !target ||
     attacker.transport?.carriedByUnitId ||
-    target.transport?.carriedByUnitId ||
-    !getUnitAttackProfile(attacker)
+    target.transport?.carriedByUnitId
   ) {
     return false;
   }
 
-  const isAirTarget = target.family === UNIT_TAGS.AIR;
+  const attackProfile = getAttackProfileForTarget(attacker, target);
 
-  if (attacker.unitTypeId === "interceptor") {
-    return isAirTarget;
+  if (!attackProfile) {
+    return false;
   }
 
-  if (attacker.unitTypeId === "gunship") {
-    return !isAirTarget;
+  if (getTargetProfileForAttack(attacker, target, attackProfile)) {
+    return true;
   }
 
-  if (attacker.unitTypeId === "payload") {
-    return !isAirTarget;
-  }
-
-  if (isAirTarget) {
-    return attacker.unitTypeId === "skyguard" || attacker.gear?.slot === "gear-aa-kit";
-  }
-
-  return true;
+  return false;
 }
 
 export function getTilesInRange(state, originX, originY, minimumRange, maximumRange) {

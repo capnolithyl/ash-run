@@ -388,6 +388,107 @@ test("selecting a reinforcement draft adds that unit to the run roster", async (
   assert.deepEqual(state.runState.pendingRewardChoices, []);
 });
 
+test("selecting a gear reward enters the equip flow instead of starting the next battle", async () => {
+  const controller = new GameController();
+  let startNextRunBattleCalls = 0;
+  let persistCalls = 0;
+
+  controller.state.runStatus = "reward";
+  controller.state.runState = {
+    id: "run-gear",
+    roster: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0)],
+    selectedRewards: [],
+    pendingRewardChoices: [
+      {
+        id: "gear-aa-kit",
+        type: "gear",
+        name: "AA Kit",
+        eligibleFamily: "infantry",
+        summary: "Equip one infantry unit to attack and counter aircraft."
+      }
+    ]
+  };
+  controller.startNextRunBattle = async () => {
+    startNextRunBattleCalls += 1;
+  };
+  controller.persistCurrentRun = async () => {
+    persistCalls += 1;
+  };
+
+  await controller.selectRunReward("gear-aa-kit");
+
+  const state = controller.getState();
+  assert.equal(state.runStatus, "reward-equip");
+  assert.equal(state.runState.pendingGearReward?.id, "gear-aa-kit");
+  assert.equal(startNextRunBattleCalls, 0);
+  assert.equal(persistCalls, 1);
+});
+
+test("equipping pending run gear writes it onto the selected roster unit", async () => {
+  const controller = new GameController();
+  let startNextRunBattleCalls = 0;
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0);
+  const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 0, 0);
+  medic.gear = { slot: "gear-field-meds" };
+
+  controller.state.runStatus = "reward-equip";
+  controller.state.runState = {
+    id: "run-gear-equip",
+    roster: [grunt, medic],
+    selectedRewards: [],
+    pendingRewardChoices: [],
+    pendingGearReward: {
+      id: "gear-aa-kit",
+      type: "gear",
+      name: "AA Kit",
+      eligibleFamily: "infantry"
+    }
+  };
+  controller.startNextRunBattle = async () => {
+    startNextRunBattleCalls += 1;
+  };
+
+  await controller.equipPendingRunGear(medic.id);
+
+  const state = controller.getState();
+  const updatedMedic = state.runState.roster.find((unit) => unit.id === medic.id);
+  assert.equal(state.runStatus, null);
+  assert.equal(state.runState.pendingGearReward, null);
+  assert.equal(updatedMedic.gear.slot, "gear-aa-kit");
+  assert.equal(startNextRunBattleCalls, 1);
+});
+
+test("discarding a pending gear reward advances without changing the roster", async () => {
+  const controller = new GameController();
+  let startNextRunBattleCalls = 0;
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 0, 0);
+
+  controller.state.runStatus = "reward-equip";
+  controller.state.runState = {
+    id: "run-gear-discard",
+    roster: [runner],
+    selectedRewards: [],
+    pendingRewardChoices: [],
+    pendingGearReward: {
+      id: "gear-field-meds",
+      type: "gear",
+      name: "Field Medpack",
+      eligibleFamily: "infantry"
+    }
+  };
+  controller.startNextRunBattle = async () => {
+    startNextRunBattleCalls += 1;
+  };
+
+  await controller.discardPendingRunGear();
+
+  const state = controller.getState();
+  assert.equal(state.runStatus, null);
+  assert.equal(state.runState.pendingGearReward, null);
+  assert.equal(state.runState.roster[0].gear.slot, null);
+  assert.equal(startNextRunBattleCalls, 1);
+});
+
 test("forfeiting a run marks the battle as lost and preserves earned intel", async () => {
   const controller = new GameController();
   const runState = {

@@ -21,8 +21,10 @@ import {
 } from "./combatResolver.js";
 import {
   canUnitAttackTarget,
+  getAttackProfileForTarget,
   getBuildingAt,
   getLivingUnits,
+  getAntiAirGearAmmo,
   getReachableTiles,
   getMovementPathCost,
   getSelectedBuilding,
@@ -35,6 +37,7 @@ import {
 import { createUnitFromType } from "./unitFactory.js";
 
 const INFANTRY_RECRUIT_TYPES = new Set(["grunt", "breaker", "longshot", "medic", "mechanic"]);
+const FIELD_MEDPACK_HEAL_RATIO = 0.33;
 
 export function getSupportTargetForUnit(system, unit, { requireNeed = false } = {}) {
   return getSupportTargetsForUnit(system, unit, { requireNeed })[0]?.target ?? null;
@@ -134,6 +137,58 @@ export function applySupportAbility(system, unit, target) {
   unit.hasMoved = true;
   unit.hasAttacked = true;
   appendLog(system.state, `${unit.name} serviced ${target.name}.`);
+  return true;
+}
+
+export function getMedpackTargetsForUnit(system, unit, { requireNeed = true } = {}) {
+  if (
+    !unit ||
+    unit.family !== UNIT_TAGS.INFANTRY ||
+    unit.gear?.slot !== "gear-field-meds" ||
+    unit.transport?.carriedByUnitId
+  ) {
+    return [];
+  }
+
+  return getLivingUnits(system.state, unit.owner)
+    .filter((candidate) => {
+      if (candidate.family !== UNIT_TAGS.INFANTRY || candidate.transport?.carriedByUnitId) {
+        return false;
+      }
+
+      if (candidate.id === unit.id) {
+        return true;
+      }
+
+      return Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1;
+    })
+    .map((target) => ({
+      target,
+      needScore: Math.max(0, target.stats.maxHealth - target.current.hp)
+    }))
+    .filter((option) => !requireNeed || option.needScore > 0)
+    .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id));
+}
+
+export function applyMedpackAbility(system, unit, target) {
+  if (!unit || !target || unit.gear?.slot !== "gear-field-meds") {
+    return false;
+  }
+
+  const healAmount = Math.ceil(target.stats.maxHealth * FIELD_MEDPACK_HEAL_RATIO);
+  const nextHp = Math.min(target.stats.maxHealth, target.current.hp + healAmount);
+  const restoredHp = nextHp - target.current.hp;
+
+  if (restoredHp <= 0) {
+    return false;
+  }
+
+  target.current.hp = nextHp;
+  unit.gear = { slot: null };
+  unit.gearState = {};
+  unit.hasMoved = true;
+  unit.hasAttacked = true;
+  appendLog(system.state, `${unit.name} used a Field Medpack on ${target.id === unit.id ? "themself" : target.name}, restoring ${restoredHp} HP.`);
   return true;
 }
 
@@ -238,6 +293,16 @@ export function handleTileSelection(system, x, y) {
         : false;
       if (!changed) {
         appendLog(system.state, "Choose a highlighted unit.");
+      }
+      return changed;
+    }
+
+    if ((pendingAction.mode ?? "menu") === "medpack") {
+      const changed = unitAtTile?.owner === TURN_SIDES.PLAYER
+        ? useMedpackWithPendingUnit(system, unitAtTile.id)
+        : false;
+      if (!changed) {
+        appendLog(system.state, "Choose a highlighted infantry unit.");
       }
       return changed;
     }
@@ -356,6 +421,10 @@ export function handleContextAction(system) {
       pendingAction.mode = "menu";
       return true;
     }
+    if ((pendingAction.mode ?? "menu") === "medpack") {
+      pendingAction.mode = "menu";
+      return true;
+    }
 
     return redoPendingMove(system);
   }
@@ -406,7 +475,7 @@ export function selectNextReadyUnit(system) {
 export function attackTarget(system, attackerId, defenderId) {
   const attacker = findUnitById(system.state, attackerId);
   const defender = findUnitById(system.state, defenderId);
-  const attackProfile = getUnitAttackProfile(attacker);
+  const attackProfile = getAttackProfileForTarget(attacker, defender);
 
   if (!attacker || !defender || attacker.hasAttacked || !attackProfile) {
     return false;
@@ -429,6 +498,9 @@ export function attackTarget(system, attackerId, defenderId) {
   const primaryDamageDealt = defenderHpBefore - defender.current.hp;
   if (attackProfile.consumesAmmo) {
     attacker.current.ammo = Math.max(0, attacker.current.ammo - 1);
+  }
+  if (attackProfile.consumesGearAmmo) {
+    attacker.gearState.aaKitAmmo = Math.max(0, getAntiAirGearAmmo(attacker) - 1);
   }
   attacker.hasAttacked = true;
   attacker.hasMoved = true;
@@ -453,7 +525,7 @@ export function attackTarget(system, attackerId, defenderId) {
     primaryDamageDealt
   );
   let defenderCounterXp = 0;
-  const defenderProfile = getUnitAttackProfile(defender);
+  const defenderProfile = getAttackProfileForTarget(defender, attacker);
 
   if (defender.current.hp > 0 && defenderProfile) {
     const counterRange = getAttackRangeCap(system.state, defender, defenderProfile);
@@ -469,6 +541,9 @@ export function attackTarget(system, attackerId, defenderId) {
       const counterDamageDealt = attackerHpBefore - attacker.current.hp;
       if (defenderProfile.consumesAmmo) {
         defender.current.ammo = Math.max(0, defender.current.ammo - 1);
+      }
+      if (defenderProfile.consumesGearAmmo) {
+        defender.gearState.aaKitAmmo = Math.max(0, getAntiAirGearAmmo(defender) - 1);
       }
 
       appendLog(
@@ -684,6 +759,39 @@ export function useSupportAbilityWithPendingUnit(system, targetId = null) {
   }
 
   system.applySupportAbility(unit, target);
+  system.clearPendingAction();
+  system.clearSelection();
+  return true;
+}
+
+export function useMedpackWithPendingUnit(system, targetId = null) {
+  const pendingAction = system.state.pendingAction;
+
+  if (!pendingAction) {
+    return false;
+  }
+
+  const unit = findUnitById(system.state, pendingAction.unitId);
+
+  if (!unit || unit.gear?.slot !== "gear-field-meds") {
+    return false;
+  }
+
+  const validTargets = getMedpackTargetsForUnit(system, unit);
+  const target = targetId
+    ? validTargets.find((option) => option.target.id === targetId)?.target
+    : validTargets[0]?.target ?? null;
+
+  if (!target) {
+    return false;
+  }
+
+  if (!targetId && validTargets.length > 1) {
+    pendingAction.mode = "medpack";
+    return true;
+  }
+
+  system.applyMedpackAbility(unit, target);
   system.clearPendingAction();
   system.clearSelection();
   return true;

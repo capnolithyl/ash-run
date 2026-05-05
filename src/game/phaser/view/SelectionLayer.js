@@ -237,6 +237,24 @@ export class SelectionLayer {
         drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
       }
 
+      for (const unitId of presentation.medpackTargetUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
+
+        if (!target) {
+          continue;
+        }
+
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.fillStyle(0x9fffa8, 0.18);
+        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.graphics.lineStyle(3, 0x9fffa8, 0.96);
+        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xfefae0, 0.9);
+      }
+
       drawMovementPath(this.graphics, layout, hoveredMovementPath);
     }
 

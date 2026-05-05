@@ -59,6 +59,7 @@ function renderCommanderPowerControl(
 ) {
   const powerMax = getCommanderPowerMax(sideState.commanderId);
   const powerRatio = Math.min(1, sideState.charge / powerMax);
+  const meterValue = isActive ? "ACTIVE" : `${Math.floor(sideState.charge)}/${powerMax}`;
   const statusLabel =
     isActive
       ? "Active This Turn"
@@ -70,11 +71,17 @@ function renderCommanderPowerControl(
 
   if (side !== TURN_SIDES.PLAYER) {
     return `
-      <div class="meter commander-meter">
-        <span>Power: ${commander.active.name ?? "Power"} | ${isActive ? "ACTIVE" : `${Math.floor(sideState.charge)}/${powerMax}`}</span>
-        <div class="meter__bar">
-          <div class="${isActive ? "commander-meter__fill--active" : ""}" style="width:${isActive ? 100 : powerRatio * 100}%"></div>
+      <div
+        class="commander-power-button commander-power-button--readonly ${isCharged ? "commander-power-button--charged" : ""} ${isActive ? "commander-power-button--active" : ""}"
+        aria-disabled="true"
+      >
+        <div class="meter commander-meter commander-meter--interactive">
+          <div class="meter__bar">
+            <div class="${isActive ? "commander-meter__fill--active" : ""}" style="width:${isActive ? 100 : powerRatio * 100}%"></div>
+            <span class="commander-meter__value">${meterValue}</span>
+          </div>
         </div>
+        <small>${isActive ? "Active This Turn" : isCharged ? "Charged" : "Charging"}</small>
       </div>
     `;
   }
@@ -85,13 +92,10 @@ function renderCommanderPowerControl(
       data-action="activate-power"
       ${canActivatePower ? "" : "disabled"}
     >
-      <div class="commander-power-button__header">
-        <span>Power: ${commander.active.name ?? "Power"}</span>
-        <strong>${isActive ? "ACTIVE" : `${Math.floor(sideState.charge)}/${powerMax}`}</strong>
-      </div>
       <div class="meter commander-meter commander-meter--interactive">
         <div class="meter__bar">
           <div class="${isActive ? "commander-meter__fill--active" : ""}" style="width:${isActive ? 100 : powerRatio * 100}%"></div>
+          <span class="commander-meter__value">${meterValue}</span>
         </div>
       </div>
       <small>${statusLabel}</small>

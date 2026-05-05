@@ -3,6 +3,7 @@ import {
   BATTLE_TURN_BANNER_SETTLE_MS,
   TURN_SIDES
 } from "../core/constants.js";
+import { canUnitEquipRunUpgrade, isGearUpgrade } from "../content/runUpgrades.js";
 import { getBattleSnapshotTransitionDurationMs } from "../phaser/view/battleAnimationEvents.js";
 import {
   addRunIntel,
@@ -24,6 +25,10 @@ import {
   getFundsGainFromSnapshots,
   unlockNextCommander
 } from "./controllerShared.js";
+
+function getEligibleGearRosterUnits(runState, reward) {
+  return (runState?.roster ?? []).filter((unit) => canUnitEquipRunUpgrade(unit, reward));
+}
 
 export const controllerRunMethods = {
   async advanceRun() {
@@ -94,7 +99,7 @@ export const controllerRunMethods = {
     const nextRunState = {
       ...this.state.runState,
       selectedRewards:
-        reward.type === "unit"
+        reward.type === "unit" || isGearUpgrade(reward)
           ? [...(this.state.runState.selectedRewards ?? [])]
           : [...(this.state.runState.selectedRewards ?? []), reward],
       roster:
@@ -104,9 +109,62 @@ export const controllerRunMethods = {
               createPersistentUnitSnapshot(createUnitFromType(reward.unitTypeId, TURN_SIDES.PLAYER))
             ]
           : [...(this.state.runState.roster ?? [])],
-      pendingRewardChoices: []
+      pendingRewardChoices: [],
+      pendingGearReward: isGearUpgrade(reward) ? reward : null
     };
     this.state.runState = normalizeRunState(nextRunState);
+    this.state.runStatus = isGearUpgrade(reward) ? "reward-equip" : null;
+
+    if (isGearUpgrade(reward)) {
+      await this.persistCurrentRun();
+      return;
+    }
+
+    await this.startNextRunBattle();
+  },
+
+  async equipPendingRunGear(unitId) {
+    if (!this.state.runState || this.state.runStatus !== "reward-equip") {
+      return;
+    }
+
+    const reward = this.state.runState.pendingGearReward;
+    const eligibleUnits = getEligibleGearRosterUnits(this.state.runState, reward);
+    const targetIndex = eligibleUnits.findIndex((unit) => unit.id === unitId);
+
+    if (!reward || targetIndex < 0) {
+      return;
+    }
+
+    const nextRoster = (this.state.runState.roster ?? []).map((unit) =>
+      unit.id === unitId
+        ? {
+            ...structuredClone(unit),
+            gear: {
+              slot: reward.id
+            }
+          }
+        : unit
+    );
+
+    this.state.runState = normalizeRunState({
+      ...this.state.runState,
+      roster: nextRoster,
+      pendingGearReward: null
+    });
+    this.state.runStatus = null;
+    await this.startNextRunBattle();
+  },
+
+  async discardPendingRunGear() {
+    if (!this.state.runState || this.state.runStatus !== "reward-equip") {
+      return;
+    }
+
+    this.state.runState = normalizeRunState({
+      ...this.state.runState,
+      pendingGearReward: null
+    });
     this.state.runStatus = null;
     await this.startNextRunBattle();
   },

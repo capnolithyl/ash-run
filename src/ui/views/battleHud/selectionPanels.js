@@ -3,15 +3,12 @@ import {
   TERRAIN_KEYS,
   TURN_SIDES
 } from "../../../game/core/constants.js";
-import { RUN_UPGRADES } from "../../../game/content/runUpgrades.js";
+import { getBuildingArmorBonusForType } from "../../../game/content/buildings.js";
+import { getWeaponClassProfile } from "../../../game/content/weaponClasses.js";
 import { getArmorModifier } from "../../../game/simulation/commanderEffects.js";
 import { getPositionArmorBonus } from "../../../game/simulation/combatResolver.js";
 import { buildFocusedTile } from "../../../game/simulation/battlePresentation.js";
 import { formatRangeLabel, renderSelectionIcon } from "../../shared/unitStatPresentation.js";
-
-function formatCostLabel(cost) {
-  return cost >= 99 ? "Blocked" : `${cost}`;
-}
 
 function getMeterWidthPercent(current, maximum) {
   if (!Number.isFinite(current) || !Number.isFinite(maximum) || maximum <= 0) {
@@ -69,6 +66,49 @@ function renderStatCell(iconName, label, value) {
         <span>${label}</span>
       </span>
       <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function formatProfileName(value, fallback = "Unknown") {
+  if (!value) {
+    return fallback;
+  }
+
+  return value
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function getArmorProfileSummary(unit) {
+  if (!unit?.armorClass) {
+    return "No armor profile available.";
+  }
+
+  const familyLabel = unit.family
+    ? `${unit.family.charAt(0).toUpperCase() + unit.family.slice(1)} unit`
+    : "Combat unit";
+
+  return `${familyLabel} using ${formatProfileName(unit.armorClass)} armor matchups.`;
+}
+
+function renderProfileSummary(unit) {
+  const weaponProfile = getWeaponClassProfile(unit.weaponClass);
+  const armorName = unit?.armorClass
+    ? `${formatProfileName(unit.armorClass)} Armor`
+    : "Unarmored";
+
+  return `
+    <div class="selection-profile-grid">
+      <div class="selection-profile-card">
+        <strong>${formatProfileName(unit.weaponClass, "Unarmed")}</strong>
+        <p>${weaponProfile?.role ?? "This unit has no active weapon profile."}</p>
+      </div>
+      <div class="selection-profile-card">
+        <strong>${armorName}</strong>
+        <p>${getArmorProfileSummary(unit)}</p>
+      </div>
     </div>
   `;
 }
@@ -132,20 +172,20 @@ function renderExperienceBar(unit) {
 }
 
 function renderUnitSummary(unit, { showExperience = false } = {}) {
-  const attachedGear = unit.gear?.slot
-    ? RUN_UPGRADES.find((upgrade) => upgrade.id === unit.gear.slot) ?? { name: unit.gear.slot, summary: "" }
-    : null;
+  const attachedGear = unit.gear ?? null;
 
   return `
-    <div class="selection-section" data-selection-unit-card="${unit.id ?? ""}">
+    <div class="selection-section selection-section--unit" data-selection-unit-card="${unit.id ?? ""}">
       <div class="selection-unit-heading">
         <div class="selection-unit-heading__title">
           <strong>${unit.name}</strong>
           <span class="selection-level-badge" aria-label="Level ${unit.level}">${unit.level}</span>
         </div>
       </div>
+      ${showExperience ? renderExperienceBar(unit) : ""}
       ${renderHealthBar(unit)}
       ${renderUnitStatGrid(unit)}
+      ${renderProfileSummary(unit)}
       ${
         attachedGear
           ? `
@@ -153,12 +193,16 @@ function renderUnitSummary(unit, { showExperience = false } = {}) {
               <strong>Gear</strong>
               <span>${attachedGear.name}</span>
             </div>
-            ${attachedGear.summary ? `<p>${attachedGear.summary}</p>` : ""}
+            ${(attachedGear.detailLines ?? []).map((line) => `<p>${line}</p>`).join("")}
+            ${
+              Number.isFinite(attachedGear.ammo)
+                ? `<p><strong>AA Ammo:</strong> ${attachedGear.ammo}</p>`
+                : ""
+            }
           `
           : ""
       }
     </div>
-    ${showExperience ? renderExperienceBar(unit) : ""}
   `;
 }
 
@@ -176,18 +220,6 @@ function renderFeatureSection(iconName, title, lines, modifierClass = "") {
   `;
 }
 
-function getTerrainTraversalText(terrain) {
-  if (terrain.blocksGround) {
-    return "Ground units cannot cross this tile.";
-  }
-
-  if (terrain.blockedFamilies?.length) {
-    return `${terrain.blockedFamilies.join(", ")} units cannot cross this tile.`;
-  }
-
-  return "Ground units can traverse this tile.";
-}
-
 export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyBody } = {}) {
   if (!selectedTile) {
     return `
@@ -203,9 +235,6 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
 
   return `
     <div class="card-block">
-      <div class="selection-header">
-        <h3>${title ?? "Selection"}</h3>
-      </div>
       ${unit ? renderUnitSummary(unit, { showExperience: true }) : ""}
       ${
         building
@@ -214,25 +243,22 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
               building.name,
               [
                 `Owner: ${building.ownerLabel}`,
-                building.summary,
-                building.canRecruit
-                  ? `Function: Produces ${building.recruitmentFamilies.length} unit types.`
-                  : "",
+                `Armor bonus: +${building.armorBonus ?? getBuildingArmorBonusForType(building.type)}`,
                 building.income > 0 ? `Income: +${building.income} funds each turn.` : ""
               ].filter(Boolean)
             )
           : ""
       }
-      ${renderFeatureSection(
-        getTerrainIconName(selectedTile.terrain.id),
-        selectedTile.terrain.label,
-        [
-          `Infantry cost ${formatCostLabel(selectedTile.terrain.moveCost)} | Vehicles cost ${formatCostLabel(selectedTile.terrain.vehicleMoveCost)}`,
-          `Armor bonus: +${selectedTile.terrain.armorBonus ?? 0}`,
-          getTerrainTraversalText(selectedTile.terrain)
-        ],
-        "selection-section--terrain"
-      )}
+      ${
+        building
+          ? ""
+          : renderFeatureSection(
+              getTerrainIconName(selectedTile.terrain.id),
+              selectedTile.terrain.label,
+              [`Armor bonus: +${selectedTile.terrain.armorBonus ?? 0}`],
+              "selection-section--terrain"
+            )
+      }
     </div>
   `;
 }
@@ -309,6 +335,9 @@ export function renderTargetReference(battleSnapshot, hoveredTile) {
     : "0";
   const targetView = {
     name: target.name,
+    family: target.family,
+    armorClass: target.stats.armorClass,
+    weaponClass: target.stats.weaponClass,
     level: target.level,
     hp: target.current.hp,
     maxHealth: target.stats.maxHealth,

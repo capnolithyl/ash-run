@@ -7,6 +7,7 @@ import {
 } from "../src/game/core/constants.js";
 import { RUN_CARD_TYPES } from "../src/game/content/runUpgrades.js";
 import { MAP_POOL } from "../src/game/content/maps.js";
+import { ARMOR_CLASSES, WEAPON_CLASSES } from "../src/game/content/weaponClasses.js";
 import {
   applyBattleVictoryToRun,
   createBattleStateForRun,
@@ -33,6 +34,16 @@ function createRunState(overrides = {}) {
 function uniquePositionCount(units) {
   return new Set(units.map((unit) => `${unit.x},${unit.y}`)).size;
 }
+
+test("createUnitFromType preserves armor and weapon classes in the new stat model", () => {
+  const breaker = createUnitFromType("breaker", TURN_SIDES.PLAYER);
+
+  assert.equal(breaker.stats.maxHealth, 100);
+  assert.equal(breaker.stats.armorClass, ARMOR_CLASSES.INFANTRY);
+  assert.equal(breaker.stats.weaponClass, WEAPON_CLASSES.BREAKER_CHARGE);
+  assert.equal(breaker.armorClass, ARMOR_CLASSES.INFANTRY);
+  assert.equal(breaker.weaponClass, WEAPON_CLASSES.BREAKER_CHARGE);
+});
 
 test("createBattleStateForRun restores persistent survivors without run-mode player funds", () => {
   const veteran = createUnitFromType("grunt", TURN_SIDES.PLAYER);
@@ -222,6 +233,40 @@ test("non-forced reward choices stay within unlocked unowned upgrades", () => {
   );
   assert.deepEqual(
     new Set(firstRewards.map((choice) => choice.id)),
+    new Set(["passive-plating", "gear-aa-kit", "gear-field-meds"])
+  );
+});
+
+test("gear rewards stay repeatable even after earlier gear picks", () => {
+  const baseRunState = createRunState({
+    availableRunCardIds: ["passive-drill", "passive-plating", "gear-aa-kit", "gear-field-meds"],
+    selectedRewards: [{ id: "passive-drill", type: RUN_CARD_TYPES.PASSIVE }]
+  });
+  const battleState = createBattleStateForRun(baseRunState);
+  const nextRunState = applyBattleVictoryToRun(
+    {
+      ...baseRunState,
+      pendingGearReward: null
+    },
+    battleState
+  );
+
+  assert.ok(nextRunState.pendingRewardChoices.some((choice) => choice.id === "gear-aa-kit"));
+  assert.ok(nextRunState.pendingRewardChoices.some((choice) => choice.id === "gear-field-meds"));
+});
+
+test("gear rewards can still appear when the surviving roster has no infantry", () => {
+  const runner = createPersistentUnitSnapshot(createUnitFromType("runner", TURN_SIDES.PLAYER));
+  const bruiser = createPersistentUnitSnapshot(createUnitFromType("bruiser", TURN_SIDES.PLAYER));
+  const runState = createRunState({
+    roster: [runner, bruiser],
+    availableRunCardIds: ["passive-plating", "gear-aa-kit", "gear-field-meds"]
+  });
+  const battleState = createBattleStateForRun(runState);
+  const nextRunState = applyBattleVictoryToRun(runState, battleState);
+
+  assert.deepEqual(
+    new Set(nextRunState.pendingRewardChoices.map((choice) => choice.id)),
     new Set(["passive-plating", "gear-aa-kit", "gear-field-meds"])
   );
 });

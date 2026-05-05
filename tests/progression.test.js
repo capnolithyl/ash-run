@@ -15,9 +15,9 @@ test("level ups can increase multiple stats from independent growth rolls", () =
     levelUp.statGains.map((gain) => gain.stat),
     ["armor", "maxHealth", "ammoMax"]
   );
-  assert.equal(result.unit.stats.armor, 2);
-  assert.equal(result.unit.stats.maxHealth, 20);
-  assert.equal(result.unit.current.hp, 20);
+  assert.equal(result.unit.stats.armor, 7);
+  assert.equal(result.unit.stats.maxHealth, 102);
+  assert.equal(result.unit.current.hp, 102);
   assert.equal(result.unit.stats.ammoMax, 8);
   assert.equal(result.unit.current.ammo, 8);
 });

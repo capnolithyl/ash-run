@@ -329,6 +329,18 @@ export const controllerBattleMethods = {
     }
   },
 
+  async useSelectedMedpack() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    const changed = this.battleSystem.useMedpackWithPendingUnit();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  },
+
   async enterSelectedTransport() {
     if (!this.battleSystem || this.isBattleInputLocked()) {
       return;

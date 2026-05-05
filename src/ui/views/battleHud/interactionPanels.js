@@ -50,6 +50,7 @@ export function renderActionPrompt(battleSnapshot) {
     pendingAction.isTargeting ||
     pendingAction.isChoosingTransport ||
     pendingAction.isChoosingSupport ||
+    pendingAction.isChoosingMedpack ||
     pendingAction.isUnloading
   ) {
     return "";
@@ -75,7 +76,12 @@ export function renderActionPrompt(battleSnapshot) {
           }
           ${
             pendingAction.canSupport
-              ? '<button class="battle-command-prompt__action" data-action="use-support">Support</button>'
+              ? `<button class="battle-command-prompt__action" data-action="use-support">${pendingAction.supportActionLabel ?? "Support"}</button>`
+              : ""
+          }
+          ${
+            pendingAction.canUseMedpack
+              ? '<button class="battle-command-prompt__action" data-action="use-medpack">Medpack</button>'
               : ""
           }
           ${
@@ -133,6 +139,25 @@ export function renderSupportPrompt(battleSnapshot) {
         <span>Select a highlighted ally or cancel.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-support-choice">Cancel</button>
+    </div>
+  `;
+}
+
+export function renderMedpackPrompt(battleSnapshot) {
+  const pendingAction = battleSnapshot.presentation?.pendingAction;
+
+  if (!pendingAction?.isChoosingMedpack) {
+    return "";
+  }
+
+  return `
+    <div class="battle-targeting-hint">
+      <div class="battle-targeting-hint__copy">
+        <p class="eyebrow">Medpack Mode</p>
+        <strong>${pendingAction.unitName} ready to use a medpack</strong>
+        <span>Select the acting unit or a highlighted infantry ally.</span>
+      </div>
+      <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-medpack-choice">Cancel</button>
     </div>
   `;
 }

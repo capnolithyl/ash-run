@@ -30,6 +30,7 @@ import {
   getUnitAttackProfile
 } from "./selectors.js";
 import { canLoadUnit } from "./transportRules.js";
+import { getTargetProfileForAttack } from "../content/weaponClasses.js";
 
 const ANTI_AIR_RECRUITS = new Set(["skyguard", "interceptor"]);
 const ENEMY_AIR_RECRUITS = new Set(["gunship", "payload", "interceptor", "carrier"]);
@@ -391,7 +392,8 @@ function scoreAttackTrade(state, attacker, defender) {
   const attackProfile = getUnitAttackProfile(attacker);
   const attackDistance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
   const isRangedAttack = Boolean(attackProfile && attackDistance > 1);
-  const isEffective = attacker.effectiveAgainstTags.includes(defender.family);
+  const targetProfile = getTargetProfileForAttack(attacker, defender, attackProfile);
+  const isEffective = Boolean(targetProfile?.isEffective);
   const canCounter = Boolean(forecast.received);
   const netDamage = dealtAverage - receivedAverage;
   const attackThreatMargin = getPlayerAttackThreatMargin(state, attacker, { x: attacker.x, y: attacker.y });

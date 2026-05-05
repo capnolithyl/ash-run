@@ -366,7 +366,7 @@ export const appShellRenderMethods = {
       }
 
       const hpFill = card.querySelector('[data-meter-fill="hp"]');
-      const xpFill = card.parentElement?.querySelector?.('.selection-section--xp [data-meter-fill="xp"]');
+      const xpFill = card.querySelector('.selection-section--xp [data-meter-fill="xp"]');
 
       meterState.set(unitId, {
         hp: Number(hpFill?.dataset.meterValue),

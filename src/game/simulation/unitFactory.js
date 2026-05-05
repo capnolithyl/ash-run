@@ -1,17 +1,20 @@
 import { createId } from "../core/id.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
+import { createInitialGearState } from "../content/runUpgrades.js";
 
 function cloneStats(unitType) {
   return {
     maxHealth: unitType.maxHealth,
     attack: unitType.attack,
     armor: unitType.armor,
+    armorClass: unitType.armorClass,
     movement: unitType.movement,
     minRange: unitType.minRange,
     maxRange: unitType.maxRange,
     staminaMax: unitType.staminaMax,
     ammoMax: unitType.ammoMax,
-    luck: unitType.luck
+    luck: unitType.luck,
+    weaponClass: unitType.weaponClass
   };
 }
 
@@ -25,13 +28,15 @@ export function createUnitFromType(unitTypeId, owner, level = 1) {
     owner,
     family: unitType.family,
     name: unitType.name,
+    armorClass: unitType.armorClass,
+    weaponClass: unitType.weaponClass,
     level,
     experience: 0,
-    effectiveAgainstTags: [...unitType.effectiveAgainstTags],
     cost: unitType.cost,
     gear: {
       slot: null
     },
+    gearState: {},
     stats,
     current: {
       hp: stats.maxHealth,
@@ -60,9 +65,10 @@ export function createPersistentUnitSnapshot(unit) {
     owner: unit.owner,
     family: unit.family,
     name: unit.name,
+    armorClass: unit.armorClass,
+    weaponClass: unit.weaponClass,
     level: unit.level,
     experience: unit.experience,
-    effectiveAgainstTags: unit.effectiveAgainstTags,
     cost: unit.cost,
     stats: unit.stats,
     gear: unit.gear ?? { slot: null }
@@ -70,9 +76,13 @@ export function createPersistentUnitSnapshot(unit) {
 }
 
 export function deployPersistentUnit(persistentUnit, owner, spawnPoint) {
+  const gear = structuredClone(persistentUnit.gear ?? { slot: null });
+
   return {
     ...structuredClone(persistentUnit),
     owner,
+    gear,
+    gearState: createInitialGearState(gear.slot),
     x: spawnPoint.x,
     y: spawnPoint.y,
     current: {

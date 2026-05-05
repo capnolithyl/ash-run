@@ -4,6 +4,7 @@ import {
   ENEMY_AI_ARCHETYPE_ORDER,
   TURN_SIDES
 } from "../core/constants.js";
+import { createInitialGearState } from "../content/runUpgrades.js";
 import { pushLevelUpEvents, appendLog } from "./battleLog.js";
 import { findUnitById } from "./battleUnits.js";
 import { buildBattlePresentation } from "./battlePresentation.js";
@@ -37,7 +38,11 @@ export class BattleSystem {
     for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
       for (const unit of this.state[side].units) {
         unit.cooldowns ??= {};
-        unit.gearState ??= {};
+        unit.gear ??= { slot: null };
+        unit.gearState = {
+          ...createInitialGearState(unit.gear.slot),
+          ...(unit.gearState ?? {})
+        };
         unit.transport ??= {
           carryingUnitId: null,
           carriedByUnitId: null,
@@ -142,6 +147,14 @@ export class BattleSystem {
     return playerActions.applySupportAbility(this, unit, target);
   }
 
+  getMedpackTargetsForUnit(unit, options) {
+    return playerActions.getMedpackTargetsForUnit(this, unit, options);
+  }
+
+  applyMedpackAbility(unit, target) {
+    return playerActions.applyMedpackAbility(this, unit, target);
+  }
+
   handleTileSelection(x, y) {
     return playerActions.handleTileSelection(this, x, y);
   }
@@ -184,6 +197,10 @@ export class BattleSystem {
 
   useSupportAbilityWithPendingUnit(targetId = null) {
     return playerActions.useSupportAbilityWithPendingUnit(this, targetId);
+  }
+
+  useMedpackWithPendingUnit(targetId = null) {
+    return playerActions.useMedpackWithPendingUnit(this, targetId);
   }
 
   waitWithPendingUnit() {

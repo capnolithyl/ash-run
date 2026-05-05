@@ -46,6 +46,25 @@ const BUILDING_LIBRARY = {
   }
 };
 
+export function getBuildingArmorBonusForType(buildingType) {
+  if (buildingType === BUILDING_KEYS.COMMAND) {
+    return 4;
+  }
+
+  if (
+    buildingType === BUILDING_KEYS.BARRACKS ||
+    buildingType === BUILDING_KEYS.MOTOR_POOL ||
+    buildingType === BUILDING_KEYS.AIRFIELD ||
+    buildingType === BUILDING_KEYS.SECTOR ||
+    buildingType === BUILDING_KEYS.HOSPITAL ||
+    buildingType === BUILDING_KEYS.REPAIR_STATION
+  ) {
+    return 3;
+  }
+
+  return 0;
+}
+
 function titleCaseOwner(owner) {
   if (!owner) {
     return "Neutral";
@@ -85,6 +104,7 @@ export function describeBuilding(building) {
     owner: building.owner,
     ownerLabel: titleCaseOwner(building.owner),
     type: building.type,
+    armorBonus: getBuildingArmorBonusForType(building.type),
     ...metadata
   };
 }

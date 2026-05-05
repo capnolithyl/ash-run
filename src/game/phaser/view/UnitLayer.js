@@ -3,6 +3,7 @@ import {
   BATTLE_ATTACK_IMPACT_DELAY_MS,
   BATTLE_MOVE_SEGMENT_DURATION_MS
 } from "../../core/constants.js";
+import { getGearBadgeLabel } from "../../content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
 
@@ -132,9 +133,19 @@ export class UnitLayer {
       .setPadding(3, 1, 3, 1)
       .setOrigin(0.5)
       .setVisible(false);
+    const gearIcon = this.scene.add
+      .text(0, -layout.cellSize * 0.34, "", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: `${Math.max(8, Math.floor(layout.cellSize * 0.14))}px`,
+        color: "#fefae0",
+        backgroundColor: "#16334d"
+      })
+      .setPadding(4, 1, 4, 1)
+      .setOrigin(0.5)
+      .setVisible(false);
     const children = fallbackLabel
-      ? [glow, aura, visual, healthRing, fallbackLabel, transportIcon]
-      : [glow, aura, shadow, visual, healthRing, transportIcon];
+      ? [glow, aura, visual, healthRing, fallbackLabel, transportIcon, gearIcon]
+      : [glow, aura, shadow, visual, healthRing, transportIcon, gearIcon];
 
     const container = this.scene.add.container(0, 0, children);
     container.setDepth(28);
@@ -165,7 +176,8 @@ export class UnitLayer {
       awaitingDeploy: false,
       awaitingDestroy: false,
       destroyTimer: null,
-      transportIcon
+      transportIcon,
+      gearIcon
     };
   }
 
@@ -684,6 +696,9 @@ export class UnitLayer {
 
       this.drawHealthRing(entity);
       entity.transportIcon?.setVisible(Boolean(unit.transport?.carryingUnitId));
+      const gearBadgeLabel = getGearBadgeLabel(unit.gear?.slot);
+      entity.gearIcon?.setText(gearBadgeLabel ?? "");
+      entity.gearIcon?.setVisible(Boolean(gearBadgeLabel));
       const dimmed =
         unit.hasMoved ||
         unit.hasAttacked ||

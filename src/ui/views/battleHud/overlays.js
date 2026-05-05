@@ -1,4 +1,8 @@
 import { BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../../game/core/constants.js";
+import {
+  canUnitEquipRunUpgrade,
+  getRunUpgradeById
+} from "../../../game/content/runUpgrades.js";
 import { renderOptionFields } from "../optionFieldsView.js";
 import { renderDebugControls } from "./interactionPanels.js";
 
@@ -201,6 +205,49 @@ export function renderOutcomeOverlay(state, battleSnapshot) {
                   `
                 )
                 .join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (state.runStatus === "reward-equip") {
+      const pendingGearReward = state.runState?.pendingGearReward
+        ? getRunUpgradeById(state.runState.pendingGearReward.id) ?? state.runState.pendingGearReward
+        : null;
+      const eligibleUnits = (state.runState?.roster ?? []).filter((unit) =>
+        canUnitEquipRunUpgrade(unit, pendingGearReward)
+      );
+
+      return `
+        <div class="battle-overlay">
+          <div class="overlay-card">
+            <p class="eyebrow">Battle Won</p>
+            <h2>Equip ${pendingGearReward?.name ?? "Gear"}</h2>
+            <p>${
+              pendingGearReward?.summary ??
+              "Choose a surviving squad unit to carry this gear into the next map."
+            }</p>
+            ${
+              eligibleUnits.length > 0
+                ? `
+                  <div class="battle-actions battle-actions--stack">
+                    ${eligibleUnits
+                      .map((unit) => `
+                        <button class="menu-button" data-action="equip-run-gear" data-unit-id="${unit.id}">
+                          <strong>${unit.name}</strong><br />
+                          <small>Level ${unit.level}${unit.gear?.slot ? ` | Replaces ${getRunUpgradeById(unit.gear.slot)?.name ?? unit.gear.slot}` : ""}</small>
+                        </button>
+                      `)
+                      .join("")}
+                  </div>
+                `
+                : `
+                  <p>No infantry survivors can equip this reward, so it will be lost if you continue.</p>
+                `
+            }
+            <div class="battle-actions">
+              <button class="ghost-button" data-action="discard-run-gear">${eligibleUnits.length > 0 ? "Skip Gear" : "Continue"}</button>
             </div>
           </div>
         </div>

@@ -1,5 +1,7 @@
 import { BATTLE_MODES, TURN_SIDES } from "../core/constants.js";
+import { getRunUpgradeById } from "../content/runUpgrades.js";
 import { describeBuilding } from "../content/buildings.js";
+import { getArmorClassForUnit, getWeaponClassForUnit } from "../content/weaponClasses.js";
 import {
   getArmorModifier,
   getAttackModifier,
@@ -19,6 +21,8 @@ import {
 import { findUnitById } from "./battleUnits.js";
 import {
   getBuildingAt,
+  getAntiAirGearAmmo,
+  getAttackProfileForTarget,
   getReachableTiles,
   getRecruitmentOptions,
   getLivingUnits,
@@ -90,6 +94,7 @@ function describeUnit(state, unit) {
 
   const experience = getLevelProgress(unit);
   const positionArmorBonus = getPositionArmorBonus(state, unit);
+  const gearUpgrade = unit.gear?.slot ? getRunUpgradeById(unit.gear.slot) : null;
 
   return {
     id: unit.id,
@@ -97,6 +102,8 @@ function describeUnit(state, unit) {
     ownerLabel: formatSelectionOwner(unit.owner),
     name: unit.name,
     family: unit.family,
+    armorClass: getArmorClassForUnit(unit),
+    weaponClass: getWeaponClassForUnit(unit),
     level: unit.level,
     hp: unit.current.hp,
     maxHealth: unit.stats.maxHealth,
@@ -115,7 +122,15 @@ function describeUnit(state, unit) {
     ammoMax: unit.stats.ammoMax,
     luck: unit.stats.luck,
     hasMoved: unit.hasMoved,
-    hasAttacked: unit.hasAttacked
+    hasAttacked: unit.hasAttacked,
+    gear: gearUpgrade
+      ? {
+          slot: gearUpgrade.id,
+          name: gearUpgrade.name,
+          detailLines: [...(gearUpgrade.detailLines ?? [])],
+          ammo: gearUpgrade.id === "gear-aa-kit" ? getAntiAirGearAmmo(unit) : null
+        }
+      : null
   };
 }
 
@@ -222,6 +237,27 @@ function createPendingActionView(state) {
         .filter((option) => option.needScore > 0)
         .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id))
     : [];
+  const medpackTargets =
+    unit.gear?.slot === "gear-field-meds" && !isSlipstream
+      ? getLivingUnitsForSide(state, unit.owner)
+          .filter((candidate) => {
+            if (candidate.family !== "infantry" || candidate.transport?.carriedByUnitId) {
+              return false;
+            }
+
+            if (candidate.id === unit.id) {
+              return true;
+            }
+
+            return Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1;
+          })
+          .map((target) => ({
+            target,
+            needScore: Math.max(0, target.stats.maxHealth - target.current.hp)
+          }))
+          .filter((option) => option.needScore > 0)
+          .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id))
+      : [];
   const adjacentRunners = !isSlipstream && unit.family === "infantry"
     ? getLivingUnitsForSide(state, unit.owner)
         .filter((candidate) =>
@@ -238,6 +274,9 @@ function createPendingActionView(state) {
   const supportTargetUnitIds = mode === "support"
     ? supportTargets.map((option) => option.target.id)
     : [];
+  const medpackTargetUnitIds = mode === "medpack"
+    ? medpackTargets.map((option) => option.target.id)
+    : [];
   const canUnloadTransport =
     unit.unitTypeId === "runner" &&
     Boolean(unit.transport?.carryingUnitId) &&
@@ -252,17 +291,21 @@ function createPendingActionView(state) {
     canCapture: !isSlipstream && canCaptureBuilding(unit, building),
     canFire: !isSlipstream && attackableUnitIds.length > 0,
     canSupport: supportTargets.length > 0,
+    supportActionLabel: unit.unitTypeId === "medic" ? "Heal" : "Support",
     supportCooldown: unit.cooldowns?.support ?? 0,
+    canUseMedpack: medpackTargets.length > 0,
     canEnterTransport,
     canUnloadTransport,
     isSlipstream,
     isTargeting: mode === "fire",
     isChoosingTransport: mode === "transport",
     isChoosingSupport: mode === "support",
+    isChoosingMedpack: mode === "medpack",
     isUnloading: mode === "unload",
     unloadPreviewTiles,
     transportTargetUnitIds,
     supportTargetUnitIds,
+    medpackTargetUnitIds,
     attackableUnitIds,
     building: building ? describeBuilding(building) : null
   };
@@ -280,7 +323,14 @@ export function buildBattlePresentation(snapshot) {
     const requestedMovementBudget =
       isSlipstream ? 1 : selectedUnit.stats.movement + getMovementModifier(snapshot, selectedUnit);
     const movementBudget = getUnitMovementAllowance(selectedUnit, requestedMovementBudget);
-    const rangeCap = getAttackRangeCap(snapshot, selectedUnit, attackProfile);
+    const aaAttackProfile =
+      selectedUnit.gear?.slot === "gear-aa-kit"
+        ? getAttackProfileForTarget(selectedUnit, { family: "air" })
+        : null;
+    const rangeCap = Math.max(
+      getAttackRangeCap(snapshot, selectedUnit, attackProfile),
+      aaAttackProfile ? getAttackRangeCap(snapshot, selectedUnit, aaAttackProfile) : 0
+    );
     const attackableUnitIds = getAttackableUnitIds(snapshot, selectedUnit);
     const shouldRevealAttackTargets =
       !pendingAction ||
@@ -317,6 +367,8 @@ export function buildBattlePresentation(snapshot) {
         pendingAction?.unitId === selectedUnit.id ? pendingAction.transportTargetUnitIds ?? [] : [],
       supportTargetUnitIds:
         pendingAction?.unitId === selectedUnit.id ? pendingAction.supportTargetUnitIds ?? [] : [],
+      medpackTargetUnitIds:
+        pendingAction?.unitId === selectedUnit.id ? pendingAction.medpackTargetUnitIds ?? [] : [],
       reachableTiles:
         selectedUnit.owner === TURN_SIDES.PLAYER &&
         snapshot.turn.activeSide === TURN_SIDES.PLAYER &&

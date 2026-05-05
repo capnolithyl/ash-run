@@ -1,4 +1,6 @@
-import { BUILDING_KEYS, TERRAIN_KEYS, TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
+import { TERRAIN_KEYS, TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
+import { getBuildingArmorBonusForType } from "../content/buildings.js";
+import { getTargetProfileForAttack } from "../content/weaponClasses.js";
 import { randomInt } from "../core/random.js";
 import {
   getArmorModifier,
@@ -7,14 +9,14 @@ import {
   getRangeModifier
 } from "./commanderEffects.js";
 import {
+  getAttackProfileForTarget,
   canUnitAttackTarget,
   getBuildingAt,
+  getLivingUnits,
   getTargetsInRange,
   getTerrainAt,
   getUnitAttackProfile
 } from "./selectors.js";
-
-const EFFECTIVE_ATTACK_BONUS = 6;
 
 function getTerrainArmorBonus(state, unit) {
   if (unit.family === UNIT_TAGS.AIR) {
@@ -36,11 +38,7 @@ function getBuildingArmorBonus(state, unit) {
     return 0;
   }
 
-  if (building.type === BUILDING_KEYS.COMMAND) {
-    return 4;
-  }
-
-  return 3;
+  return getBuildingArmorBonusForType(building.type);
 }
 
 export function getPositionArmorBonus(state, unit) {
@@ -53,16 +51,16 @@ export function getPositionArmorBonus(state, unit) {
   return getTerrainArmorBonus(state, unit);
 }
 
-function getArmorBreakMultiplier(attacker, defender) {
-  return attacker?.unitTypeId === "breaker" && defender.family === UNIT_TAGS.VEHICLE ? 0.5 : 1;
+function getProfiledBaseArmor(state, defender, attacker, attackProfile) {
+  const targetProfile = attacker
+    ? getTargetProfileForAttack(attacker, defender, attackProfile)
+    : null;
+  const armorMultiplier = targetProfile?.armorMultiplier ?? 1;
+  return Math.round(defender.stats.armor * armorMultiplier);
 }
 
-function getEffectivenessBonus(attacker, defender) {
-  return attacker.effectiveAgainstTags.includes(defender.family) ? EFFECTIVE_ATTACK_BONUS : 0;
-}
-
-export function getDefenderArmor(state, defender, attacker = null) {
-  const baseArmor = Math.floor(defender.stats.armor * getArmorBreakMultiplier(attacker, defender));
+export function getDefenderArmor(state, defender, attacker = null, attackProfile = null) {
+  const baseArmor = getProfiledBaseArmor(state, defender, attacker, attackProfile);
 
   return (
     baseArmor +
@@ -92,45 +90,74 @@ export function getAttackRangeCap(state, unit, attackProfile = getUnitAttackProf
 }
 
 export function getTargetsForUnit(state, unit) {
-  const attackProfile = getUnitAttackProfile(unit);
-
-  if (!attackProfile) {
+  if (!unit || unit.hasAttacked) {
     return [];
   }
 
-  return getTargetsInRange(
-    state,
-    unit,
-    attackProfile.minRange,
-    getAttackRangeCap(state, unit, attackProfile)
-  );
+  const enemySide = unit.owner === TURN_SIDES.PLAYER ? TURN_SIDES.ENEMY : TURN_SIDES.PLAYER;
+
+  return getLivingUnits(state, enemySide).filter((target) => {
+    const attackProfile = getAttackProfileForTarget(unit, target);
+
+    if (!attackProfile || !canUnitAttackTarget(unit, target)) {
+      return false;
+    }
+
+    const distance = Math.abs(unit.x - target.x) + Math.abs(unit.y - target.y);
+    const rangeCap = getAttackRangeCap(state, unit, attackProfile);
+    return distance >= attackProfile.minRange && distance <= rangeCap;
+  });
 }
 
-export function getDamageResult(state, attacker, defender, attackProfile = getUnitAttackProfile(attacker)) {
-  const attackerAttack = attackProfile.attack + getAttackModifier(state, attacker);
-  const defenderArmor = getDefenderArmor(state, defender, attacker);
-  const effectivenessBonus = getEffectivenessBonus(attacker, defender);
+export function getDamageResult(state, attacker, defender, attackProfile = getAttackProfileForTarget(attacker, defender)) {
+  const targetProfile = getTargetProfileForAttack(attacker, defender, attackProfile);
+
+  if (!attackProfile || !targetProfile) {
+    return {
+      damage: 0,
+      isEffective: false,
+      weaponType: attackProfile?.type ?? null
+    };
+  }
+
+  const modifiedAttack = attackProfile.attack + getAttackModifier(state, attacker);
+  const profiledAttack = Math.round(modifiedAttack * targetProfile.powerMultiplier);
+  const defenderArmor = getDefenderArmor(state, defender, attacker, attackProfile);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
 
-  const attackRoll = randomInt(state.seed, 0, Math.max(0, attacker.stats.luck + getLuckModifier(state, attacker)));
+  const luckMax = Math.max(0, attacker.stats.luck + getLuckModifier(state, attacker));
+  const attackRoll = randomInt(state.seed, 0, luckMax);
   state.seed = attackRoll.seed;
 
-  const scaledAttack = Math.round((attackerAttack + effectivenessBonus) * healthRatio);
   const antiAirGearPenalty =
     attacker.gear?.slot === "gear-aa-kit" && defender.family === UNIT_TAGS.AIR ? 0.6 : 1;
-  const damage = Math.max(0, Math.round((scaledAttack + attackRoll.value - defenderArmor) * antiAirGearPenalty));
+  const damage = calculateDamageAmount({
+    attack: profiledAttack,
+    armor: defenderArmor,
+    hp: attacker.current.hp,
+    maxHealth: attacker.stats.maxHealth,
+    luck: attackRoll.value,
+    antiAirGearPenalty
+  });
 
   return {
     damage,
-    isEffective: effectivenessBonus > 0,
+    isEffective: Boolean(targetProfile.isEffective),
     weaponType: attackProfile.type
   };
 }
 
-function getDamageAmount(attackerAttack, defenderArmor, effectivenessBonus, hp, maxHealth, luckRoll) {
-  const healthRatio = Math.max(0, hp / maxHealth);
-  const scaledAttack = Math.round((attackerAttack + effectivenessBonus) * healthRatio);
-  return Math.max(0, scaledAttack + luckRoll - defenderArmor);
+function calculateDamageAmount({
+  attack,
+  armor,
+  hp,
+  maxHealth,
+  luck,
+  antiAirGearPenalty
+}) {
+  const fullHpBaseDamage = Math.max(0, attack - armor);
+  const scaledDamage = Math.round(fullHpBaseDamage * Math.max(0, hp / maxHealth));
+  return Math.max(0, Math.round((scaledDamage + luck) * antiAirGearPenalty));
 }
 
 function getDamageRange(
@@ -139,41 +166,51 @@ function getDamageRange(
   defender,
   hpMin,
   hpMax,
-  attackProfile = getUnitAttackProfile(attacker)
+  attackProfile = getAttackProfileForTarget(attacker, defender)
 ) {
-  const attackerAttack = attackProfile.attack + getAttackModifier(state, attacker);
-  const defenderArmor = getDefenderArmor(state, defender, attacker);
-  const effectivenessBonus = getEffectivenessBonus(attacker, defender);
+  const targetProfile = getTargetProfileForAttack(attacker, defender, attackProfile);
   const normalizedHpMin = Math.max(0, Math.min(hpMin, hpMax));
   const normalizedHpMax = Math.max(0, Math.max(hpMin, hpMax));
+
+  if (!attackProfile || !targetProfile) {
+    return {
+      min: 0,
+      max: 0,
+      isEffective: false
+    };
+  }
+
+  const modifiedAttack = attackProfile.attack + getAttackModifier(state, attacker);
+  const profiledAttack = Math.round(modifiedAttack * targetProfile.powerMultiplier);
+  const defenderArmor = getDefenderArmor(state, defender, attacker, attackProfile);
   const luckMin = 0;
   const luckMax = Math.max(0, attacker.stats.luck + getLuckModifier(state, attacker));
   const antiAirGearPenalty =
     attacker.gear?.slot === "gear-aa-kit" && defender.family === UNIT_TAGS.AIR ? 0.6 : 1;
 
   return {
-    min: Math.round(getDamageAmount(
-      attackerAttack,
-      defenderArmor,
-      effectivenessBonus,
-      normalizedHpMin,
-      attacker.stats.maxHealth,
-      luckMin
-    ) * antiAirGearPenalty),
-    max: Math.round(getDamageAmount(
-      attackerAttack,
-      defenderArmor,
-      effectivenessBonus,
-      normalizedHpMax,
-      attacker.stats.maxHealth,
-      luckMax
-    ) * antiAirGearPenalty),
-    isEffective: effectivenessBonus > 0
+    min: calculateDamageAmount({
+      attack: profiledAttack,
+      armor: defenderArmor,
+      hp: normalizedHpMin,
+      maxHealth: attacker.stats.maxHealth,
+      luck: luckMin,
+      antiAirGearPenalty
+    }),
+    max: calculateDamageAmount({
+      attack: profiledAttack,
+      armor: defenderArmor,
+      hp: normalizedHpMax,
+      maxHealth: attacker.stats.maxHealth,
+      luck: luckMax,
+      antiAirGearPenalty
+    }),
+    isEffective: Boolean(targetProfile.isEffective)
   };
 }
 
 export function getAttackForecast(state, attacker, defender) {
-  const attackerProfile = getUnitAttackProfile(attacker);
+  const attackerProfile = getAttackProfileForTarget(attacker, defender);
   const dealt = getDamageRange(
     state,
     attacker,
@@ -185,7 +222,7 @@ export function getAttackForecast(state, attacker, defender) {
   const defenderHpAfterHitMin = Math.max(0, defender.current.hp - dealt.max);
   const defenderHpAfterHitMax = Math.max(0, defender.current.hp - dealt.min);
   const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
-  const defenderProfile = getUnitAttackProfile(defender);
+  const defenderProfile = getAttackProfileForTarget(defender, attacker);
   const defenderRangeCap = getAttackRangeCap(state, defender, defenderProfile);
   const canCounter =
     defenderProfile &&
@@ -300,13 +337,9 @@ export function getCombatExperience(attacker, defender, damageDealt, killed = fa
 }
 
 export function getAttackableUnitIds(state, unit) {
-  const attackProfile = getUnitAttackProfile(unit);
-
-  if (!unit || unit.hasAttacked || !attackProfile) {
+  if (!unit || unit.hasAttacked) {
     return [];
   }
 
-  const rangeCap = getAttackRangeCap(state, unit, attackProfile);
-
-  return getTargetsInRange(state, unit, attackProfile.minRange, rangeCap).map((target) => target.id);
+  return getTargetsForUnit(state, unit).map((target) => target.id);
 }

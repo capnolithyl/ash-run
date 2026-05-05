@@ -83,9 +83,9 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
   assert.match(html, /<h3>Target<\/h3>/);
   assert.match(html, /Runner/);
   assert.match(html, /selection-level-badge[^>]*>1<\/span>/);
-  assert.match(html, /selection-health__value">20\/20<\/span>/);
+  assert.match(html, /selection-health__value">100\/100<\/span>/);
   assert.match(html, /selection-stat-grid/);
-  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>1<\/strong>/);
+  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>45 \(\+3\)<\/strong>/);
   assert.match(html, /AMMO/);
   assert.match(html, /STA/);
   assert.match(html, /Forecast/);
@@ -101,7 +101,7 @@ test("battle HUD shows terrain armor bonuses next to the armor stat", () => {
 
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>1 \(\+2\)<\/strong>/);
+  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>6 \(\+2\)<\/strong>/);
 });
 
 test("battle HUD shows building armor bonuses instead of stacking terrain under any building", () => {
@@ -124,8 +124,8 @@ test("battle HUD shows building armor bonuses instead of stacking terrain under 
 
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>1 \(\+3\)<\/strong>/);
-  assert.doesNotMatch(html, />ARM<\/span>\s*<\/span>\s*<strong>1 \(\+5\)<\/strong>/);
+  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>6 \(\+3\)<\/strong>/);
+  assert.doesNotMatch(html, />ARM<\/span>\s*<\/span>\s*<strong>6 \(\+5\)<\/strong>/);
 });
 
 test("battle HUD replaces unload command menu with a cancellable unload prompt", () => {
@@ -193,11 +193,14 @@ test("battle HUD shows building ownership in the selection sidebar", () => {
   const battleState = createTestBattleState();
   const building = battleState.map.buildings[0];
   building.owner = TURN_SIDES.ENEMY;
+  battleState.map.tiles[building.y][building.x] = TERRAIN_KEYS.FOREST;
   battleState.selection = { type: "building", id: building.id, x: building.x, y: building.y };
 
   const html = renderHudForBattleState(battleState);
 
   assert.match(html, /Owner: Enemy/);
+  assert.match(html, /Armor bonus: \+4/);
+  assert.doesNotMatch(html, /<strong>Forest<\/strong>/);
 });
 
 test("battle HUD keeps player and enemy intel in separate sidebars", () => {
@@ -229,8 +232,10 @@ test("battle HUD keeps player and enemy intel in separate sidebars", () => {
     banner: ""
   });
 
-  assert.match(html, /battle-rail--left[\s\S]*?Player Selection[\s\S]*?Bruiser/);
-  assert.match(html, /battle-rail--right[\s\S]*?Enemy Selection[\s\S]*?Runner/);
+  assert.match(html, /battle-rail--left[\s\S]*?Player Intel[\s\S]*?Bruiser/);
+  assert.match(html, /battle-rail--right[\s\S]*?Enemy Intel[\s\S]*?Runner/);
+  assert.doesNotMatch(html, /Player Selection/);
+  assert.doesNotMatch(html, /Enemy Selection/);
 });
 
 test("battle HUD shows hovered tile coordinates in the command feed instead of the selection card header", () => {
@@ -293,7 +298,7 @@ test("battle HUD only shows enemy selection details while an enemy is actively s
     banner: ""
   });
 
-  assert.match(html, /battle-rail--left[\s\S]*?Player Selection[\s\S]*?Grunt/);
+  assert.match(html, /battle-rail--left[\s\S]*?Player Intel[\s\S]*?Grunt/);
   assert.match(html, /battle-rail--right[\s\S]*?Enemy Intel[\s\S]*?Enemy scans and hostile unit details will appear here\./);
   assert.doesNotMatch(html, /battle-rail--right[\s\S]*?Enemy Selection[\s\S]*?Runner/);
 });
@@ -392,7 +397,12 @@ test("battle HUD turns the power meter into the activation control", () => {
   const chargingButton = getActionButton(renderHudForBattleState(chargingState), "activate-power");
 
   assert.match(chargingButton, /disabled/);
-  assert.match(chargingButton, /Power: Shock Doctrine|Power: Blitz Surge|Power:/);
+  assert.match(
+    chargingButton,
+    new RegExp(
+      `commander-meter__value\">${chargingState.player.charge}\\/${getCommanderPowerMax(chargingState.player.commanderId)}<`
+    )
+  );
 
   const readyState = createTestBattleState();
   readyState.player.charge = getCommanderPowerMax(readyState.player.commanderId);
@@ -409,6 +419,7 @@ test("battle HUD turns the power meter into the activation control", () => {
   const enemyTurnButton = getActionButton(renderHudForBattleState(enemyTurnState), "activate-power");
 
   assert.match(enemyTurnButton, /disabled/);
+  assert.match(renderHudForBattleState(enemyTurnState), /commander-power-button--readonly/);
 });
 
 test("battle HUD keeps the power meter visually active for the rest of the activation turn", () => {
@@ -441,7 +452,7 @@ test("battle HUD keeps the power meter visually active for the rest of the activ
   });
 
   assert.match(html, /commander-power-button--active/);
-  assert.match(html, />ACTIVE<\/strong>/);
+  assert.match(html, /<span class="commander-meter__value">ACTIVE<\/span>/);
   assert.match(html, /Active This Turn/);
 });
 
@@ -528,6 +539,118 @@ test("run-lost overlay shows preserved intel and progression access after a forf
   assert.match(html, /Run Lost/);
   assert.match(html, /earned Intel Credits were preserved/i);
   assert.match(html, /data-action="open-progression"/);
+});
+
+test("reward-equip overlay shows eligible squad units and skip control", () => {
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN
+  });
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Route secured."
+  };
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0);
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 0, 0);
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 1,
+      targetMapCount: 10,
+      roster: [grunt, runner],
+      pendingGearReward: {
+        id: "gear-aa-kit",
+        type: "gear",
+        name: "AA Kit",
+        eligibleFamily: "infantry",
+        summary: "Equip one infantry unit to attack and counter aircraft."
+      }
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: "reward-equip",
+    banner: ""
+  });
+
+  assert.match(html, /Equip AA Kit/);
+  assert.match(html, /data-action="equip-run-gear"/);
+  assert.match(html, /Grunt/);
+  assert.doesNotMatch(html, /Runner<\/strong><br \/>/);
+  assert.match(html, /data-action="discard-run-gear"/);
+});
+
+test("battle HUD shows gear details and AA ammo in the selection sidebar", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  unit.gear = { slot: "gear-aa-kit" };
+  unit.gearState = { aaKitAmmo: 4 };
+  const battleState = createTestBattleState({
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /<strong>Gear<\/strong>/);
+  assert.match(html, /AA Kit/);
+  assert.match(html, /AA Ammo:<\/strong> 4/);
+});
+
+test("battle HUD places experience above HP and shows weapon and armor profiles for selected units", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(
+    html,
+    /<strong>Grunt<\/strong>[\s\S]*?<strong>Experience<\/strong>[\s\S]*?selection-health__label">HP<\/span>/
+  );
+  assert.match(html, /<strong>Rifle<\/strong>/);
+  assert.match(html, /<strong>Infantry Armor<\/strong>/);
+  assert.doesNotMatch(html, /Weapon Profile/);
+  assert.doesNotMatch(html, /Armor Profile/);
+});
+
+test("medics with field medpacks show separate heal and medpack actions", () => {
+  const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 2, 2);
+  medic.gear = { slot: "gear-field-meds" };
+  medic.gearState = {};
+  const ally = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 3, 2, {
+    current: {
+      hp: 10
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [medic, ally],
+    enemyUnits: [enemy]
+  });
+  battleState.selection = { type: "unit", id: medic.id, x: medic.x, y: medic.y };
+  battleState.pendingAction = {
+    type: "move",
+    unitId: medic.id,
+    mode: "menu",
+    fromX: medic.x,
+    fromY: medic.y,
+    fromStamina: medic.current.stamina,
+    toX: medic.x,
+    toY: medic.y
+  };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /data-action="use-support">Heal<\/button>/);
+  assert.match(html, /data-action="use-medpack">Medpack<\/button>/);
 });
 
 test("debug pause menu groups tools into accordion sections", () => {

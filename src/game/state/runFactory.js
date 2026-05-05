@@ -18,6 +18,7 @@ import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import {
   RUN_CARD_TYPES,
   RUN_UPGRADES,
+  isGearUpgrade,
   getRunRewardTypeForMap
 } from "../content/runUpgrades.js";
 import { MAP_POOL, RUN_MAP_POOL, getMapById } from "../content/maps.js";
@@ -118,6 +119,7 @@ export function normalizeRunState(runState) {
     availableDraftUnitIds: [...(runState.availableDraftUnitIds ?? [])],
     selectedRewards: [...(runState.selectedRewards ?? [])],
     pendingRewardChoices: [...(runState.pendingRewardChoices ?? [])],
+    pendingGearReward: runState.pendingGearReward ? structuredClone(runState.pendingGearReward) : null,
     intelLedger: normalizeIntelLedger(runState.intelLedger)
   };
 }
@@ -190,17 +192,6 @@ function applyRunRewardsToUnits(runState, units) {
 
       if (reward.id === "passive-plating" && nextUnit.family === UNIT_TAGS.VEHICLE) {
         nextUnit.stats.armor += 1;
-      }
-
-      if (
-        reward.type === RUN_CARD_TYPES.GEAR &&
-        Array.isArray(reward.unitIds) &&
-        reward.unitIds.includes(nextUnit.unitTypeId) &&
-        nextUnit.gear?.slot === null
-      ) {
-        nextUnit.gear = {
-          slot: reward.id
-        };
       }
     }
 
@@ -325,6 +316,7 @@ export function createNewRunState({ slotId, commanderId }) {
     availableDraftUnitIds: [],
     selectedRewards: [],
     pendingRewardChoices: [],
+    pendingGearReward: null,
     intelLedger: createEmptyIntelLedger()
   };
 }
@@ -527,7 +519,9 @@ function buildRunRewardChoices(runState, battleState, forcedType) {
     (runState.availableRunCardIds?.length ? runState.availableRunCardIds : RUN_UPGRADES.map((upgrade) => upgrade.id))
   );
   const eligibleUpgrades = RUN_UPGRADES.filter(
-    (upgrade) => unlockedRewardIds.has(upgrade.id) && !selectedRewardIds.has(upgrade.id)
+    (upgrade) =>
+      unlockedRewardIds.has(upgrade.id) &&
+      (isGearUpgrade(upgrade) || !selectedRewardIds.has(upgrade.id))
   );
   const shuffledEligible = shuffle(
     stringToSeed(`${runState.seed}-${battleState.id}-${runState.mapIndex + 1}-rewards`),

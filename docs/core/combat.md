@@ -2,111 +2,83 @@
 
 ## Damage Flow
 
-Current combat damage is based on:
+Combat now uses weapon classes against armor classes instead of flat family effectiveness.
 
-1. Attacker base attack plus commander/status modifiers.
-2. Flat effectiveness bonus when the attacker has the right matchup.
-3. HP scaling by attacker health ratio.
-4. Luck roll from `0` through the attacker's luck value.
-5. Defender armor plus commander/status and one positional armor bonus.
+Damage is driven by:
 
-Minimum final damage is 0.
+1. Weapon attack plus commander/status attack modifiers.
+2. Weapon-class `powerMultiplier` for the defender's armor class.
+3. Defender base armor multiplied by the weapon profile's `armorMultiplier`.
+4. Defender commander/status armor plus one positional armor bonus.
+5. Attacker HP scaling.
+6. Small additive luck that does not scale with HP.
+7. Final AA-kit air penalty when applicable.
 
-## Exact Damage Formula
+Minimum final damage is `0`.
+
+## Exact Formula
 
 Given attacker **A** and defender **D**:
 
-1. `attack = activeWeapon.attack + attackModifier(A)`
-2. `effectiveBonus = A.effectiveAgainstTags includes D.family ? 6 : 0`
-3. `baseArmor = D.stats.armor`
-4. `if A is Breaker and D is a vehicle, baseArmor = floor(baseArmor / 2)`
+1. `targetProfile = weaponProfile(A.weaponClass, D.armorClass)`
+2. `modifiedAttack = activeWeapon.attack + attackModifier(A)`
+3. `profiledAttack = round(modifiedAttack * targetProfile.powerMultiplier)`
+4. `baseArmor = round(D.stats.armor * targetProfile.armorMultiplier)`
 5. `positionArmor = buildingArmor(D) > 0 ? buildingArmor(D) : terrainArmor(D)`
 6. `armor = baseArmor + armorModifier(D) + positionArmor`
-7. `hpRatio = max(0, A.current.hp / A.stats.maxHealth)`
-8. `roll = randomInt(0, A.stats.luck)` inclusive
-9. `scaledAttack = round((attack + effectiveBonus) * hpRatio)`
-10. `damage = max(0, scaledAttack + roll - armor)`
+7. `fullHpBaseDamage = max(0, profiledAttack - armor)`
+8. `scaledDamage = round(fullHpBaseDamage * max(0, A.current.hp / A.stats.maxHealth))`
+9. `roll = randomInt(0, A.stats.luck + luckModifier(A))` inclusive
+10. `damage = round((scaledDamage + roll) * antiAirGearPenalty)`
+11. `finalDamage = max(0, damage)`
 
-Player mental model:
+Key rules:
 
-- Attack
-- Scale by HP
-- Add luck
-- Subtract defense
+- Armor is subtracted before HP scaling.
+- Luck is added after HP scaling.
+- Luck does not scale down with low HP.
+- Weapon armor multipliers only affect `defender.stats.armor`.
+- Terrain, building, commander, and status armor are added after profiling.
 
-Primary weapons still use full listed attack and consume ammo. Empty-ammo units switch to weaker secondary fire with 55% base attack, 1 range, and no ammo cost. Effectiveness is always a flat `+6`; there are no hidden multipliers in the current model.
+## Weapons and Targeting
 
-Buildings override terrain defense instead of stacking with it. Any building gives `+3` armor, and command posts give `+4`, regardless of ownership.
+- Primary attacks use the unit's listed `weaponClass` and consume ammo.
+- Empty-ammo units switch to secondary fire with:
+  - `attack = floor(primaryAttack * 0.55)`, minimum `1`
+  - range `1`
+  - no ammo cost
+  - `WEAPON_CLASSES.RIFLE` for targeting and matchup rules
+- Longshot and Siege Gun still use min-range indirect fire on primary attacks.
+- Longshot and Siege Gun can counter ranged attacks if the attacker is inside their legal range band.
+- Longshot and Siege Gun do not counter melee attackers because melee range is below their primary `minRange`.
 
-## Counterattacks
+## Position Armor
 
-- Defenders can counter if the attacker is in legal range and the defender has either primary ammo or secondary fire.
-- Counter damage uses the same core formula.
-- Counterattacks naturally weaken when the defender has already lost HP because they use the defender's post-hit `hpRatio`.
+- Buildings override terrain armor instead of stacking with it.
+- Any building gives `+3` armor.
+- Command posts give `+4` armor.
+- Air units ignore terrain and building armor.
 
-## Ammo / Stamina
+## Air Rules
 
-- Primary attacks consume ammo.
-- Empty-ammo units can still make weak secondary attacks.
-- Movement spends stamina equal to the actual path cost paid to reach the destination tile.
-- Sectors heal `10%` max HP and resupply ammo/stamina.
-- Command posts resupply ammo/stamina without restoring HP.
-
-## Effectiveness
-
-Current effectiveness tags:
-
-| Unit        | Effective Against                       |
-| ----------- | --------------------------------------- |
-| Longshots   | All Infantry                            |
-| Breakers    | All Vehicles                            |
-| Runners     | All Infantry                            |
-| Bruisers    | All Infantry                            |
-| Juggernauts | All Infantry and Vehicles               |
-| Medics      | No special effectiveness                |
-| Mechanics   | No special effectiveness                |
-| Siege Gun   | All Vehicles                            |
-| Skyguard    | All Air Units                           |
-| Gunship     | All Infantry                            |
-| Payload     | All Infantry and Vehicles               |
-| Interceptor | All Air Units                           |
-| Carrier     | Cannot attack                           |
-
-Breaker is the only special case beyond the shared `+6` rule: against vehicles, it also halves the defender's base armor before terrain/building/status cover is added.
+- Ground weapons only attack air if their weapon profile supports it.
+- AA Kit still lets equipped infantry target air with reduced final damage.
+- Skyguard attacks ground and air.
+- Interceptor attacks air only.
+- Payload attacks ground only.
+- Gunship attacks ground and other Gunships, but not Payloads or Interceptors.
 
 ## Support Actions
 
-- Medics can support adjacent infantry.
-- Mechanics can support adjacent vehicles.
+- Medics support adjacent infantry.
+- Mechanics support adjacent vehicles.
 - Support restores 50% max HP, full ammo, and full stamina.
 - Medics receive a 2-turn support cooldown; mechanics receive a 3-turn support cooldown.
 
 ## Combat Outcomes
 
-- Units at 0 HP are removed.
-- Combat XP is only awarded to units that actually deal damage, including counterattacks.
-- Damage XP is based on `damageDealt / defender.stats.maxHealth`, scaled from a 60 XP full-bar baseline.
-- Level difference matters through a clamped multiplier: `1 + (defender.level - attacker.level) * 0.25`, limited to `0.4` through `1.8`.
-- Family matchups also scale XP:
-  - Infantry -> Infantry `x1.0`
-  - Infantry -> Vehicle `x1.5`
-  - Vehicle -> Infantry `x0.75`
-  - Vehicle -> Vehicle `x1.0`
-  - Vehicle -> Air `x1.25`
-  - Air -> Infantry `x0.75`
-  - Air -> Vehicle `x0.9`
-  - Air -> Air `x1.0`
-- Kills add a flat 20 XP bonus before the same level and matchup multipliers are applied.
-- Zero-damage attacks grant 0 XP, and any damaging hit grants at least 2 XP after rounding.
-- Siege Gun can move and attack in the current prototype.
-
-## Air Targeting
-
-- Aircraft are only threatened by dedicated anti-air units right now: Skyguard and Interceptor.
-- Gunship and Payload attack ground targets only.
-
-## Enemy Repair Behavior
-
-- Wounded enemy units may enter repair mode instead of falling back aimlessly.
-- Repairing enemies path toward the nearest owned sector or, for vehicles, an unused owned repair station.
-- Units in repair mode spend their action holding on the service tile long enough to receive start-of-turn servicing before rejoining the fight.
+- Units at `0` HP are removed.
+- Combat XP is based on `damageDealt / defender.stats.maxHealth`.
+- Kills add a flat bonus before matchup and level-delta multipliers are applied.
+- Zero-damage attacks grant `0` XP.
+- Siege Gun can still move and attack in the current prototype.

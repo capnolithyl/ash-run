@@ -1,37 +1,35 @@
-import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { TERRAIN_KEYS, TURN_SIDES } from "../src/game/core/constants.js";
-import { randomInt } from "../src/game/core/random.js";
+import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
+import { getAttackForecast } from "../src/game/simulation/combatResolver.js";
+import { canUnitAttackTarget } from "../src/game/simulation/selectors.js";
 import { createUnitFromType } from "../src/game/simulation/unitFactory.js";
 
-function expectedDamage({ seed, attacker, defender, attackModifier = 0, armorModifier = 0 }) {
-  const attackRoll = randomInt(seed, 0, attacker.stats.luck);
-  const attackerAttack = attacker.stats.attack + attackModifier;
-  const effectivenessBonus = attacker.effectiveAgainstTags.includes(defender.family) ? 6 : 0;
-  const armorBreak = attacker.unitTypeId === "breaker" && defender.family === "vehicle" ? 0.5 : 1;
-  const defenderArmor = Math.floor(defender.stats.armor * armorBreak) + armorModifier;
-  const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
-  const scaledAttack = Math.round((attackerAttack + effectivenessBonus) * healthRatio);
-  const damage = Math.max(0, scaledAttack + attackRoll.value - defenderArmor);
-
-  return { damage, isEffective: effectivenessBonus > 0, roll: attackRoll.value, nextSeed: attackRoll.seed };
-}
-
-function makeState(seed, attacker, defender) {
+function createNeutralState(attacker, defender) {
   return {
-    id: "test-battle",
-    seed,
+    id: "damage-threshold-test",
+    mode: "skirmish",
+    seed: 12345,
     map: {
-      width: 3,
-      height: 3,
-      tiles: Array.from({ length: 3 }, () => Array.from({ length: 3 }, () => TERRAIN_KEYS.ROAD)),
-      buildings: [
-        { id: "pc", type: "command", owner: TURN_SIDES.PLAYER, x: 0, y: 0 },
-        { id: "ec", type: "command", owner: TURN_SIDES.ENEMY, x: 2, y: 2 }
-      ]
+      width: 8,
+      height: 4,
+      tiles: Array.from({ length: 4 }, () => Array.from({ length: 8 }, () => TERRAIN_KEYS.ROAD)),
+      buildings: []
     },
     turn: { number: 1, activeSide: TURN_SIDES.PLAYER },
-    player: { commanderId: "rook", funds: 0, charge: 0, recruitDiscount: 0, units: [attacker] },
-    enemy: { commanderId: "rook", funds: 0, charge: 0, recruitDiscount: 0, units: [defender] },
+    player: {
+      commanderId: null,
+      funds: 0,
+      charge: 0,
+      recruitDiscount: 0,
+      units: [attacker]
+    },
+    enemy: {
+      commanderId: null,
+      funds: 0,
+      charge: 0,
+      recruitDiscount: 0,
+      units: [defender]
+    },
     selection: { type: null, id: null, x: null, y: null },
     pendingAction: null,
     enemyTurn: null,
@@ -41,43 +39,50 @@ function makeState(seed, attacker, defender) {
   };
 }
 
-function runCase(name, { seed, attackerType, defenderType, attackerHp }) {
-  const attacker = createUnitFromType(attackerType, TURN_SIDES.PLAYER);
-  const defender = createUnitFromType(defenderType, TURN_SIDES.ENEMY);
-
-  attacker.x = 1;
-  attacker.y = 1;
-  defender.x = 2;
-  defender.y = 1;
-  attacker.current.hp = attackerHp;
-
-  const expected = expectedDamage({ seed, attacker, defender });
-  const system = new BattleSystem(makeState(seed, attacker, defender));
-  const hpBefore = defender.current.hp;
-  const changed = system.attackTarget(attacker.id, defender.id);
-  const hpAfter = system.state.enemy.units[0]?.current.hp ?? 0;
-  const actualDamage = hpBefore - hpAfter;
-  const pass = changed && actualDamage === expected.damage;
-
-  console.log(
-    `${pass ? "PASS" : "FAIL"} ${name} | roll=${expected.roll} | expected=${expected.damage} | actual=${actualDamage} | effective=${expected.isEffective}`
-  );
-
-  if (!pass) {
-    process.exitCode = 1;
+function getPreferredAttackDistance(unit) {
+  if (unit.stats.minRange > 1) {
+    return unit.stats.minRange;
   }
+
+  return 1;
 }
 
-runCase("base attack", {
-  seed: 12345,
-  attackerType: "grunt",
-  defenderType: "runner",
-  attackerHp: 18
-});
+function placeUnits(attacker, defender, distance) {
+  attacker.x = 1;
+  attacker.y = 1;
+  defender.x = attacker.x + distance;
+  defender.y = attacker.y;
+}
 
-runCase("effective + hp scaling + zero floor", {
-  seed: 777,
-  attackerType: "breaker",
-  defenderType: "juggernaut",
-  attackerHp: 8
-});
+function formatRange(range) {
+  return `${range.min}% - ${range.max}%`;
+}
+
+function describeForecast(attackerTypeId, defenderTypeId) {
+  const attacker = createUnitFromType(attackerTypeId, TURN_SIDES.PLAYER);
+  const defender = createUnitFromType(defenderTypeId, TURN_SIDES.ENEMY);
+  const distance = getPreferredAttackDistance(attacker);
+  placeUnits(attacker, defender, distance);
+
+  if (!canUnitAttackTarget(attacker, defender)) {
+    return "N/A";
+  }
+
+  const forecast = getAttackForecast(createNeutralState(attacker, defender), attacker, defender);
+
+  if (!forecast.received) {
+    return `${formatRange(forecast.dealt)} vs 0%`;
+  }
+
+  return `${formatRange(forecast.dealt)} vs ${formatRange(forecast.received)}`;
+}
+
+for (const attackerTypeId of Object.keys(UNIT_CATALOG)) {
+  console.log(`\n${UNIT_CATALOG[attackerTypeId].name}`);
+
+  for (const defenderTypeId of Object.keys(UNIT_CATALOG)) {
+    console.log(
+      `  vs ${UNIT_CATALOG[defenderTypeId].name}: ${describeForecast(attackerTypeId, defenderTypeId)}`
+    );
+  }
+}
