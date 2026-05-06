@@ -65,6 +65,45 @@ function ensureUnitAnimation(scene, animationSpec, rangeName = "default", repeat
   return animationKey;
 }
 
+const HEALTH_WEDGE_COLOR_STOPS = [
+  { ratio: 0, color: 0xff4747 },
+  { ratio: 0.35, color: 0xff9f43 },
+  { ratio: 0.62, color: 0xffe65c },
+  { ratio: 1, color: 0x5dff38 }
+];
+
+function blendHexColors(startColor, endColor, weight) {
+  const clampedWeight = Math.max(0, Math.min(1, weight));
+  const startRed = (startColor >> 16) & 0xff;
+  const startGreen = (startColor >> 8) & 0xff;
+  const startBlue = startColor & 0xff;
+  const endRed = (endColor >> 16) & 0xff;
+  const endGreen = (endColor >> 8) & 0xff;
+  const endBlue = endColor & 0xff;
+  const red = Math.round(startRed + (endRed - startRed) * clampedWeight);
+  const green = Math.round(startGreen + (endGreen - startGreen) * clampedWeight);
+  const blue = Math.round(startBlue + (endBlue - startBlue) * clampedWeight);
+  return (red << 16) | (green << 8) | blue;
+}
+
+function getHealthWedgeColor(hpRatio) {
+  if (hpRatio <= HEALTH_WEDGE_COLOR_STOPS[0].ratio) {
+    return HEALTH_WEDGE_COLOR_STOPS[0].color;
+  }
+
+  for (let index = 1; index < HEALTH_WEDGE_COLOR_STOPS.length; index += 1) {
+    const previousStop = HEALTH_WEDGE_COLOR_STOPS[index - 1];
+    const nextStop = HEALTH_WEDGE_COLOR_STOPS[index];
+
+    if (hpRatio <= nextStop.ratio) {
+      const localWeight = (hpRatio - previousStop.ratio) / (nextStop.ratio - previousStop.ratio);
+      return blendHexColors(previousStop.color, nextStop.color, localWeight);
+    }
+  }
+
+  return HEALTH_WEDGE_COLOR_STOPS[HEALTH_WEDGE_COLOR_STOPS.length - 1].color;
+}
+
 export class UnitLayer {
   constructor(scene) {
     this.scene = scene;
@@ -129,7 +168,7 @@ export class UnitLayer {
         .setOrigin(0.5);
     }
 
-    const healthRing = this.scene.add.graphics();
+    const healthMeter = this.scene.add.graphics();
     const transportIcon = this.scene.add
       .text(layout.cellSize * 0.2, layout.cellSize * 0.2, "IN", {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
@@ -151,8 +190,8 @@ export class UnitLayer {
       .setOrigin(0.5)
       .setVisible(false);
     const children = fallbackLabel
-      ? [glow, aura, visual, healthRing, fallbackLabel, transportIcon, gearIcon]
-      : [glow, aura, shadow, visual, healthRing, transportIcon, gearIcon];
+      ? [glow, aura, visual, healthMeter, fallbackLabel, transportIcon, gearIcon]
+      : [glow, aura, shadow, visual, healthMeter, transportIcon, gearIcon];
 
     const container = this.scene.add.container(0, 0, children);
     container.setDepth(28);
@@ -163,7 +202,7 @@ export class UnitLayer {
       container,
       glow,
       aura,
-      healthRing,
+      healthMeter,
       shadow,
       visual,
       visualSpec,
@@ -346,32 +385,46 @@ export class UnitLayer {
     );
   }
 
-  drawHealthRing(entity) {
-    const ringYOffset = -this.cellSize * 0.42;
-    const ringRadius = this.cellSize * 0.12;
+  drawHealthMeter(entity) {
     const hpRatio = Math.max(0, Math.min(1, entity.displayedHp / Math.max(1, entity.maxHealth)));
-    entity.healthRing.clear();
-    entity.healthRing.lineStyle(3, 0x11081c, 0.95);
-    entity.healthRing.strokeCircle(0, ringYOffset, ringRadius);
-    entity.healthRing.lineStyle(2.5, 0xffffff, 0.18);
-    entity.healthRing.beginPath();
-    entity.healthRing.arc(0, ringYOffset, ringRadius, -Math.PI / 2, Math.PI * 1.5, false);
-    entity.healthRing.strokePath();
-    entity.healthRing.lineStyle(
-      3,
-      hpRatio > 0.5 ? 0x7dffbf : hpRatio > 0.25 ? 0xffd166 : 0xff6b8c,
-      0.95
+    const wedgeSize = Math.max(8, Math.round(this.cellSize * 0.22));
+    const wedgeX = -Math.round(this.cellSize * 0.34);
+    const wedgeY = -Math.round(this.cellSize * 0.45);
+    const wedgeColor = getHealthWedgeColor(hpRatio);
+    const innerInset = Math.max(1, Math.round(wedgeSize * 0.16));
+    const foldLength = Math.max(2, Math.round(wedgeSize * 0.42));
+
+    entity.healthMeter.clear();
+    entity.healthMeter.fillStyle(0x100816, 0.92);
+    entity.healthMeter.fillTriangle(
+      wedgeX,
+      wedgeY,
+      wedgeX + wedgeSize,
+      wedgeY,
+      wedgeX,
+      wedgeY + wedgeSize
     );
-    entity.healthRing.beginPath();
-    entity.healthRing.arc(
-      0,
-      ringYOffset,
-      ringRadius,
-      -Math.PI / 2,
-      -Math.PI / 2 + Math.PI * 2 * hpRatio,
-      false
+    entity.healthMeter.fillStyle(wedgeColor, 0.98);
+    entity.healthMeter.fillTriangle(
+      wedgeX + innerInset,
+      wedgeY + innerInset,
+      wedgeX + wedgeSize - innerInset,
+      wedgeY + innerInset,
+      wedgeX + innerInset,
+      wedgeY + wedgeSize - innerInset
     );
-    entity.healthRing.strokePath();
+    entity.healthMeter.lineStyle(1.4, 0xfdfbff, 0.98);
+    entity.healthMeter.beginPath();
+    entity.healthMeter.moveTo(wedgeX + 0.5, wedgeY + 0.5);
+    entity.healthMeter.lineTo(wedgeX + wedgeSize + 0.5, wedgeY + 0.5);
+    entity.healthMeter.lineTo(wedgeX + 0.5, wedgeY + wedgeSize + 0.5);
+    entity.healthMeter.closePath();
+    entity.healthMeter.strokePath();
+    entity.healthMeter.lineStyle(1, 0x120816, 0.95);
+    entity.healthMeter.beginPath();
+    entity.healthMeter.moveTo(wedgeX + foldLength, wedgeY + 1.5);
+    entity.healthMeter.lineTo(wedgeX + 1.5, wedgeY + foldLength);
+    entity.healthMeter.strokePath();
   }
 
   resetEntityEffects(entity) {
@@ -669,11 +722,11 @@ export class UnitLayer {
         onUpdate: (tween) => {
           hpTweenState.hp = tween.getValue();
           entity.displayedHp = hpTweenState.hp;
-          this.drawHealthRing(entity);
+          this.drawHealthMeter(entity);
         },
         onComplete: () => {
           entity.displayedHp = damageFromHp;
-          this.drawHealthRing(entity);
+          this.drawHealthMeter(entity);
         }
       });
     }
@@ -787,7 +840,7 @@ export class UnitLayer {
         entity.displayedHp = unit.current.hp;
       }
 
-      this.drawHealthRing(entity);
+      this.drawHealthMeter(entity);
       entity.transportIcon?.setVisible(Boolean(unit.transport?.carryingUnitId));
       const gearBadgeLabel = getGearBadgeLabel(unit.gear?.slot);
       entity.gearIcon?.setText(gearBadgeLabel ?? "");
