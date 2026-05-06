@@ -22,10 +22,14 @@ function getLoadoutCounts(units = []) {
 
 function renderUnitPreview(unitTypeId, unitName) {
   const spriteDefinition = getUnitSpriteDefinition(unitTypeId, "player");
+  const idleAnimation = spriteDefinition?.idle ?? null;
+  const idleFrameCount = idleAnimation?.ranges?.default
+    ? idleAnimation.ranges.default.end - idleAnimation.ranges.default.start + 1
+    : 0;
 
-  if (spriteDefinition?.type === "spritesheet") {
+  if (idleAnimation && idleFrameCount > 0) {
     const durationSeconds = Math.max(
-      spriteDefinition.frameCount / Math.max(spriteDefinition.frameRate ?? 1, 1),
+      idleFrameCount / Math.max(idleAnimation.frameRate ?? 1, 1),
       0.45
     ).toFixed(2);
 
@@ -37,12 +41,12 @@ function renderUnitPreview(unitTypeId, unitName) {
       >
         <div
           class="run-unit-card__preview-strip"
-          style="--frame-count:${spriteDefinition.frameCount}; --sheet-duration:${durationSeconds}s"
+          style="--frame-count:${idleFrameCount}; --sheet-duration:${durationSeconds}s"
           aria-hidden="true"
         >
           <img
             class="run-unit-card__preview-sheet-image"
-            src="${spriteDefinition.url}"
+            src="${idleAnimation.url}"
             alt=""
             loading="lazy"
             decoding="async"
@@ -52,11 +56,11 @@ function renderUnitPreview(unitTypeId, unitName) {
     `;
   }
 
-  if (spriteDefinition?.url) {
+  if (spriteDefinition?.fallbackUrl) {
     return `
       <img
         class="run-unit-card__preview-image"
-        src="${spriteDefinition.url}"
+        src="${spriteDefinition.fallbackUrl}"
         alt="${unitName} battlefield preview"
         loading="lazy"
         decoding="async"

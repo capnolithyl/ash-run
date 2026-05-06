@@ -8,7 +8,11 @@ import { getWeaponClassProfile } from "../../../game/content/weaponClasses.js";
 import { getArmorModifier } from "../../../game/simulation/commanderEffects.js";
 import { getPositionArmorBonus } from "../../../game/simulation/combatResolver.js";
 import { buildFocusedTile } from "../../../game/simulation/battlePresentation.js";
-import { formatRangeLabel, renderSelectionIcon } from "../../shared/unitStatPresentation.js";
+import {
+  formatRangeLabel,
+  getBattleHudWeaponIconUrl,
+  renderSelectionIcon
+} from "../../shared/unitStatPresentation.js";
 
 function getMeterWidthPercent(current, maximum) {
   if (!Number.isFinite(current) || !Number.isFinite(maximum) || maximum <= 0) {
@@ -60,12 +64,15 @@ function getTerrainIconName(terrainId) {
 
 function renderStatCell(iconName, label, value) {
   return `
-    <div class="selection-stat">
-      <span class="selection-stat__label">
-        <span class="selection-icon selection-icon--stat" aria-hidden="true">${renderSelectionIcon(iconName)}</span>
-        <span>${label}</span>
-      </span>
-      <strong>${value}</strong>
+    <div class="selection-stat" aria-label="${label} ${value}">
+      <span
+        class="selection-icon selection-icon--stat selection-stat__icon"
+        aria-hidden="true"
+      >${renderSelectionIcon(iconName)}</span>
+      <div class="selection-stat__content">
+        <span class="selection-stat__label">${label}</span>
+        <strong>${value}</strong>
+      </div>
     </div>
   `;
 }
@@ -93,17 +100,36 @@ function getArmorProfileSummary(unit) {
   return `${familyLabel} using ${formatProfileName(unit.armorClass)} armor matchups.`;
 }
 
+function getWeaponClassIconFileName(weaponClass) {
+  switch (weaponClass) {
+    case "rifle":
+      return "rifle.png";
+    default:
+      return null;
+  }
+}
+
 function renderProfileSummary(unit) {
   const weaponProfile = getWeaponClassProfile(unit.weaponClass);
   const armorName = unit?.armorClass
     ? `${formatProfileName(unit.armorClass)} Armor`
     : "Unarmored";
+  const weaponIconFileName = getWeaponClassIconFileName(unit.weaponClass);
 
   return `
     <div class="selection-profile-grid">
       <div class="selection-profile-card">
-        <strong>${formatProfileName(unit.weaponClass, "Unarmed")}</strong>
-        <p>${weaponProfile?.role ?? "This unit has no active weapon profile."}</p>
+        <div class="selection-profile-card__lead">
+          ${
+            weaponIconFileName
+              ? `<img class="selection-profile-card__icon" src="${getBattleHudWeaponIconUrl(weaponIconFileName)}" alt="" loading="lazy" decoding="async" />`
+              : ""
+          }
+          <div class="selection-profile-card__copy">
+            <strong>${formatProfileName(unit.weaponClass, "Unarmed")}</strong>
+            <p>${weaponProfile?.role ?? "This unit has no active weapon profile."}</p>
+          </div>
+        </div>
       </div>
       <div class="selection-profile-card">
         <strong>${armorName}</strong>
@@ -243,8 +269,7 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
               building.name,
               [
                 `Owner: ${building.ownerLabel}`,
-                `Armor bonus: +${building.armorBonus ?? getBuildingArmorBonusForType(building.type)}`,
-                building.income > 0 ? `Income: +${building.income} funds each turn.` : ""
+                `Armor bonus: +${building.armorBonus ?? getBuildingArmorBonusForType(building.type)}`
               ].filter(Boolean)
             )
           : ""

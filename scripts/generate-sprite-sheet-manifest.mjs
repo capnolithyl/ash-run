@@ -1,12 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import zlib from "node:zlib";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 
 const UNIT_OWNER_VARIANTS = ["player", "enemy"];
-const UNIT_SPRITE_FRAME_SIZE = 64;
-const GENERATED_MANIFEST_PATH = "src/game/phaser/generated/unitSpriteSheets.js";
+const GENERATED_MANIFEST_PATH = "src/game/phaser/generated/unitSpriteAnimations.js";
+const SUPPORTED_ANIMATION_IDS = ["idle", "walk", "attack"];
 
 function readPngMetadata(buffer, filePath) {
   const isPng =
@@ -34,175 +33,39 @@ function readPngMetadata(buffer, filePath) {
   };
 }
 
-function paethPredictor(left, up, upLeft) {
-  const estimate = left + up - upLeft;
-  const leftDistance = Math.abs(estimate - left);
-  const upDistance = Math.abs(estimate - up);
-  const upLeftDistance = Math.abs(estimate - upLeft);
-
-  if (leftDistance <= upDistance && leftDistance <= upLeftDistance) {
-    return left;
-  }
-
-  return upDistance <= upLeftDistance ? up : upLeft;
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function getPngIdatData(buffer, filePath) {
-  const chunks = [];
-  let offset = 8;
-
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.toString("ascii", offset + 4, offset + 8);
-    const dataStart = offset + 8;
-    const dataEnd = dataStart + length;
-
-    if (dataEnd > buffer.length) {
-      throw new Error(`PNG chunk extends beyond file length: ${filePath}`);
-    }
-
-    if (type === "IDAT") {
-      chunks.push(buffer.subarray(dataStart, dataEnd));
-    }
-
-    if (type === "IEND") {
-      break;
-    }
-
-    offset = dataEnd + 4;
+function assertInteger(value, label) {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`${label} must be a non-negative integer.`);
   }
-
-  if (chunks.length === 0) {
-    throw new Error(`PNG has no image data: ${filePath}`);
-  }
-
-  return Buffer.concat(chunks);
 }
 
-function decodeRgbaPng(buffer, metadata, filePath) {
-  if (
-    metadata.bitDepth !== 8 ||
-    metadata.colorType !== 6 ||
-    metadata.compression !== 0 ||
-    metadata.filter !== 0 ||
-    metadata.interlace !== 0
-  ) {
-    return null;
-  }
-
-  const bytesPerPixel = 4;
-  const rowStride = metadata.width * bytesPerPixel;
-  const inflated = zlib.inflateSync(getPngIdatData(buffer, filePath));
-  const pixels = new Uint8Array(metadata.width * metadata.height * bytesPerPixel);
-  let readOffset = 0;
-
-  for (let row = 0; row < metadata.height; row += 1) {
-    const filterType = inflated[readOffset];
-    readOffset += 1;
-
-    for (let columnByte = 0; columnByte < rowStride; columnByte += 1) {
-      const writeOffset = row * rowStride + columnByte;
-      const raw = inflated[readOffset];
-      const left = columnByte >= bytesPerPixel ? pixels[writeOffset - bytesPerPixel] : 0;
-      const up = row > 0 ? pixels[writeOffset - rowStride] : 0;
-      const upLeft =
-        row > 0 && columnByte >= bytesPerPixel
-          ? pixels[writeOffset - rowStride - bytesPerPixel]
-          : 0;
-
-      readOffset += 1;
-
-      switch (filterType) {
-        case 0:
-          pixels[writeOffset] = raw;
-          break;
-        case 1:
-          pixels[writeOffset] = (raw + left) & 0xff;
-          break;
-        case 2:
-          pixels[writeOffset] = (raw + up) & 0xff;
-          break;
-        case 3:
-          pixels[writeOffset] = (raw + Math.floor((left + up) / 2)) & 0xff;
-          break;
-        case 4:
-          pixels[writeOffset] = (raw + paethPredictor(left, up, upLeft)) & 0xff;
-          break;
-        default:
-          throw new Error(`Unsupported PNG filter ${filterType}: ${filePath}`);
-      }
-    }
-  }
-
-  return pixels;
-}
-
-function isFrameVisible(pixels, metadata, frameIndex) {
-  const frameColumns = metadata.width / UNIT_SPRITE_FRAME_SIZE;
-  const frameX = (frameIndex % frameColumns) * UNIT_SPRITE_FRAME_SIZE;
-  const frameY = Math.floor(frameIndex / frameColumns) * UNIT_SPRITE_FRAME_SIZE;
-  const bytesPerPixel = 4;
-
-  for (let y = frameY; y < frameY + UNIT_SPRITE_FRAME_SIZE; y += 1) {
-    for (let x = frameX; x < frameX + UNIT_SPRITE_FRAME_SIZE; x += 1) {
-      const alphaOffset = (y * metadata.width + x) * bytesPerPixel + 3;
-
-      if (pixels[alphaOffset] > 0) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function countRenderableFrames(buffer, metadata, filePath) {
-  const totalFrames =
-    (metadata.width / UNIT_SPRITE_FRAME_SIZE) *
-    (metadata.height / UNIT_SPRITE_FRAME_SIZE);
-  const pixels = decodeRgbaPng(buffer, metadata, filePath);
-
-  if (!pixels) {
-    return totalFrames;
-  }
-
-  let lastVisibleFrameIndex = totalFrames - 1;
-
-  while (lastVisibleFrameIndex >= 0 && !isFrameVisible(pixels, metadata, lastVisibleFrameIndex)) {
-    lastVisibleFrameIndex -= 1;
-  }
-
-  if (lastVisibleFrameIndex < 0) {
-    throw new Error(`Unit sprite sheet has no visible frames: ${filePath}`);
-  }
-
-  return lastVisibleFrameIndex + 1;
-}
-
-async function readSheetSpec(root, owner, unitTypeId) {
-  const relativePath = `assets/sprites/units/${owner}/${unitTypeId}/${unitTypeId}.png`;
-  const filePath = path.resolve(root, relativePath);
+async function readAnimationMetadata(root, unitTypeId) {
+  const metadataPath = path.resolve(root, "assets/sprites/units", `${unitTypeId}.animations.json`);
 
   try {
-    const buffer = await fs.readFile(filePath);
-    const metadata = readPngMetadata(buffer, filePath);
-    const { width, height } = metadata;
+    const raw = await fs.readFile(metadataPath, "utf8");
+    const parsed = JSON.parse(raw);
 
-    if (width % UNIT_SPRITE_FRAME_SIZE !== 0 || height % UNIT_SPRITE_FRAME_SIZE !== 0) {
-      throw new Error(
-        `Unit sprite sheet frames must be ${UNIT_SPRITE_FRAME_SIZE}x${UNIT_SPRITE_FRAME_SIZE}: ${relativePath}`
-      );
+    if (!isPlainObject(parsed)) {
+      throw new Error(`Animation metadata must be an object: ${metadataPath}`);
     }
 
-    return {
-      key: `spritesheet:units:${owner}:${unitTypeId}`,
-      url: `./${relativePath}`,
-      frameWidth: UNIT_SPRITE_FRAME_SIZE,
-      frameHeight: UNIT_SPRITE_FRAME_SIZE,
-      frameCount: countRenderableFrames(buffer, metadata, filePath),
-      animationKey: `animation:units:${owner}:${unitTypeId}:idle`,
-      frameRate: 5
-    };
+    assertInteger(parsed.frameWidth, `${unitTypeId} frameWidth`);
+    assertInteger(parsed.frameHeight, `${unitTypeId} frameHeight`);
+
+    if (parsed.frameWidth <= 0 || parsed.frameHeight <= 0) {
+      throw new Error(`Animation frame dimensions must be greater than zero: ${metadataPath}`);
+    }
+
+    if (!isPlainObject(parsed.animations)) {
+      throw new Error(`Animation metadata must include an animations object: ${metadataPath}`);
+    }
+
+    return parsed;
   } catch (error) {
     if (error?.code === "ENOENT") {
       return null;
@@ -212,12 +75,116 @@ async function readSheetSpec(root, owner, unitTypeId) {
   }
 }
 
+function normalizeRanges(animationId, ranges, totalFrames, unitTypeId) {
+  if (!isPlainObject(ranges)) {
+    throw new Error(`${unitTypeId} ${animationId} ranges must be an object.`);
+  }
+
+  const normalizedRanges = {};
+
+  for (const [rangeName, range] of Object.entries(ranges)) {
+    if (!isPlainObject(range)) {
+      throw new Error(`${unitTypeId} ${animationId} ${rangeName} range must be an object.`);
+    }
+
+    assertInteger(range.start, `${unitTypeId} ${animationId} ${rangeName} start`);
+    assertInteger(range.end, `${unitTypeId} ${animationId} ${rangeName} end`);
+
+    if (range.end < range.start) {
+      throw new Error(`${unitTypeId} ${animationId} ${rangeName} range end must be >= start.`);
+    }
+
+    if (range.end >= totalFrames) {
+      throw new Error(
+        `${unitTypeId} ${animationId} ${rangeName} range exceeds frame count (${totalFrames}).`
+      );
+    }
+
+    normalizedRanges[rangeName] = {
+      start: range.start,
+      end: range.end,
+    };
+  }
+
+  return normalizedRanges;
+}
+
+async function readOwnerAnimationSpec(root, owner, unitTypeId, animationMetadata) {
+  if (!animationMetadata) {
+    return null;
+  }
+
+  const { frameWidth, frameHeight } = animationMetadata;
+  const ownerSpec = {
+    frameWidth,
+    frameHeight,
+    animations: {},
+  };
+
+  for (const animationId of SUPPORTED_ANIMATION_IDS) {
+    const animationSpec = animationMetadata.animations?.[animationId];
+
+    if (!animationSpec) {
+      continue;
+    }
+
+    if (!isPlainObject(animationSpec)) {
+      throw new Error(`${unitTypeId} ${animationId} animation metadata must be an object.`);
+    }
+
+    if (typeof animationSpec.file !== "string" || animationSpec.file.length === 0) {
+      throw new Error(`${unitTypeId} ${animationId} animation metadata must include a file.`);
+    }
+
+    const relativePath = `assets/sprites/units/${owner}/${unitTypeId}/${animationSpec.file}`;
+    const filePath = path.resolve(root, relativePath);
+
+    try {
+      const buffer = await fs.readFile(filePath);
+      const metadata = readPngMetadata(buffer, filePath);
+      const { width, height } = metadata;
+
+      if (width % frameWidth !== 0 || height % frameHeight !== 0) {
+        throw new Error(
+          `${unitTypeId} ${animationId} sheet must be divisible by ${frameWidth}x${frameHeight}: ${relativePath}`
+        );
+      }
+
+      const totalFrames = (width / frameWidth) * (height / frameHeight);
+      const normalizedRanges = normalizeRanges(
+        animationId,
+        animationSpec.ranges,
+        totalFrames,
+        unitTypeId,
+      );
+      const frameCount = Math.max(...Object.values(normalizedRanges).map((range) => range.end)) + 1;
+
+      ownerSpec.animations[animationId] = {
+        key: `spritesheet:units:${owner}:${unitTypeId}:${animationId}`,
+        url: `./${relativePath}`,
+        frameRate: Number.isFinite(animationSpec.frameRate) ? animationSpec.frameRate : 5,
+        frameCount,
+        animationKeyBase: `animation:units:${owner}:${unitTypeId}:${animationId}`,
+        ranges: normalizedRanges,
+      };
+    } catch (error) {
+      if (error?.code !== "ENOENT") {
+        throw error;
+      }
+    }
+  }
+
+  return Object.keys(ownerSpec.animations).length > 0 ? ownerSpec : null;
+}
+
 export async function generateUnitSpriteSheetManifest({ root = process.cwd() } = {}) {
   const manifest = {};
 
   for (const unitTypeId of Object.keys(UNIT_CATALOG)) {
+    const animationMetadata = await readAnimationMetadata(root, unitTypeId);
+
     for (const owner of UNIT_OWNER_VARIANTS) {
-      const sheetSpec = await readSheetSpec(root, owner, unitTypeId);
+      const sheetSpec = await readOwnerAnimationSpec(root, owner, unitTypeId, animationMetadata);
 
       if (!sheetSpec) {
         continue;
@@ -232,7 +199,7 @@ export async function generateUnitSpriteSheetManifest({ root = process.cwd() } =
     "// This file is generated by scripts/generate-sprite-sheet-manifest.mjs.",
     "// Do not edit by hand.",
     "",
-    `export const GENERATED_UNIT_SPRITE_SHEETS = ${JSON.stringify(manifest, null, 2)};`,
+    `export const GENERATED_UNIT_SPRITE_ANIMATIONS = ${JSON.stringify(manifest, null, 2)};`,
     ""
   ].join("\n");
   const manifestPath = path.resolve(root, GENERATED_MANIFEST_PATH);

@@ -85,9 +85,9 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
   assert.match(html, /selection-level-badge[^>]*>1<\/span>/);
   assert.match(html, /selection-health__value">100\/100<\/span>/);
   assert.match(html, /selection-stat-grid/);
-  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>45 \(\+3\)<\/strong>/);
-  assert.match(html, /AMMO/);
-  assert.match(html, /STA/);
+  assert.match(html, /aria-label="ARM 45 \(\+3\)"/);
+  assert.match(html, /aria-label="AMMO 7\/7"/);
+  assert.match(html, /aria-label="STA 80\/80"/);
   assert.match(html, /Forecast/);
 });
 
@@ -101,7 +101,7 @@ test("battle HUD shows terrain armor bonuses next to the armor stat", () => {
 
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>6 \(\+2\)<\/strong>/);
+  assert.match(html, /aria-label="ARM 6 \(\+2\)"/);
 });
 
 test("battle HUD shows building armor bonuses instead of stacking terrain under any building", () => {
@@ -124,8 +124,8 @@ test("battle HUD shows building armor bonuses instead of stacking terrain under 
 
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, />ARM<\/span>\s*<\/span>\s*<strong>6 \(\+3\)<\/strong>/);
-  assert.doesNotMatch(html, />ARM<\/span>\s*<\/span>\s*<strong>6 \(\+5\)<\/strong>/);
+  assert.match(html, /aria-label="ARM 6 \(\+3\)"/);
+  assert.doesNotMatch(html, /aria-label="ARM 6 \(\+5\)"/);
 });
 
 test("battle HUD replaces unload command menu with a cancellable unload prompt", () => {
@@ -200,6 +200,7 @@ test("battle HUD shows building ownership in the selection sidebar", () => {
 
   assert.match(html, /Owner: Enemy/);
   assert.match(html, /Armor bonus: \+4/);
+  assert.doesNotMatch(html, /Income:/);
   assert.doesNotMatch(html, /<strong>Forest<\/strong>/);
 });
 

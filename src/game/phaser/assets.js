@@ -1,15 +1,17 @@
 import { BUILDING_KEYS } from "../core/constants.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
-import * as generatedUnitSpriteSheetsModule from "./generated/unitSpriteSheets.js";
+import { GENERATED_BUILDING_SPRITE_PNG_OWNERS } from "./generated/buildingSpritePngOwners.js";
+import { GENERATED_TERRAIN_SPRITE_PNG_IDS } from "./generated/terrainSpritePngIds.js";
+import * as generatedUnitSpriteAnimationsModule from "./generated/unitSpriteAnimations.js";
 
-const generatedUnitSpriteSheetsFallback = Reflect.get(
-  generatedUnitSpriteSheetsModule,
+const generatedUnitSpriteAnimationsFallback = Reflect.get(
+  generatedUnitSpriteAnimationsModule,
   "default",
 );
-const GENERATED_UNIT_SPRITE_SHEETS =
-  generatedUnitSpriteSheetsModule.GENERATED_UNIT_SPRITE_SHEETS ??
-  generatedUnitSpriteSheetsFallback?.GENERATED_UNIT_SPRITE_SHEETS ??
+const GENERATED_UNIT_SPRITE_ANIMATIONS =
+  generatedUnitSpriteAnimationsModule.GENERATED_UNIT_SPRITE_ANIMATIONS ??
+  generatedUnitSpriteAnimationsFallback?.GENERATED_UNIT_SPRITE_ANIMATIONS ??
   {};
 
 const SPRITE_ASSET_ROOT = "./assets/sprites";
@@ -22,6 +24,8 @@ export const MUSIC_TRACK_IDS = {
   ALLY_TURN: "ally-turn",
   ENEMY_TURN: "enemy-turn",
 };
+
+const UNIT_ANIMATION_IDS = ["idle", "walk", "attack"];
 
 function createSpriteAsset(group, id, owner = null, extension = "svg") {
   return {
@@ -48,7 +52,7 @@ const UNIT_SPRITES = Object.fromEntries(
   ]),
 );
 
-const TERRAIN_PNG_OVERRIDES = new Set(["mountain"]);
+const TERRAIN_PNG_OVERRIDES = new Set(GENERATED_TERRAIN_SPRITE_PNG_IDS);
 
 const TERRAIN_SPRITES = Object.fromEntries(
   Object.keys(TERRAIN_LIBRARY).map((terrainId) => [
@@ -62,13 +66,25 @@ const TERRAIN_SPRITES = Object.fromEntries(
   ]),
 );
 
+const BUILDING_PNG_OVERRIDES = Object.fromEntries(
+  Object.entries(GENERATED_BUILDING_SPRITE_PNG_OWNERS).map(([buildingTypeId, owners]) => [
+    buildingTypeId,
+    new Set(owners),
+  ]),
+);
+
 const BUILDING_SPRITES = Object.fromEntries(
   Object.values(BUILDING_KEYS).map((buildingTypeId) => [
     buildingTypeId,
     Object.fromEntries(
       BUILDING_OWNER_VARIANTS.map((owner) => [
         owner,
-        createSpriteAsset("buildings", buildingTypeId, owner),
+        createSpriteAsset(
+          "buildings",
+          buildingTypeId,
+          owner,
+          BUILDING_PNG_OVERRIDES[buildingTypeId]?.has(owner) ? "png" : "svg",
+        ),
       ]),
     ),
   ]),
@@ -92,11 +108,30 @@ const MUSIC_TRACKS = {
   },
 };
 
+function flattenUnitAnimationAssets() {
+  return Object.values(GENERATED_UNIT_SPRITE_ANIMATIONS).flatMap((ownerVariants) =>
+    Object.values(ownerVariants).flatMap((ownerSpec) =>
+      UNIT_ANIMATION_IDS.flatMap((animationId) => {
+        const animationSpec = ownerSpec?.animations?.[animationId];
+
+        if (!animationSpec) {
+          return [];
+        }
+
+        return [{
+          ...animationSpec,
+          type: "spritesheet",
+          frameWidth: ownerSpec.frameWidth,
+          frameHeight: ownerSpec.frameHeight,
+        }];
+      }),
+    ),
+  );
+}
+
 export const SPRITE_ASSETS = [
   ...Object.values(UNIT_SPRITES).flatMap((variants) => Object.values(variants)),
-  ...Object.values(GENERATED_UNIT_SPRITE_SHEETS).flatMap((variants) =>
-    Object.values(variants).map((asset) => ({ ...asset, type: "spritesheet" })),
-  ),
+  ...flattenUnitAnimationAssets(),
   ...Object.values(TERRAIN_SPRITES),
   ...Object.values(BUILDING_SPRITES).flatMap((variants) =>
     Object.values(variants),
@@ -151,23 +186,27 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
     UNIT_SPRITES[unitTypeId]?.player ??
     null;
   const fallbackKey = fallbackAsset?.key ?? null;
-  const sheet = GENERATED_UNIT_SPRITE_SHEETS[unitTypeId]?.[owner];
+  const animationBundle = GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[owner] ?? null;
+  const idleAnimation = animationBundle?.animations?.idle ?? null;
 
-  if (sheet) {
-    return {
-      ...sheet,
-      type: "spritesheet",
-      fallbackKey,
-    };
+  if (!fallbackKey && !animationBundle) {
+    return null;
   }
 
-  return fallbackKey
-    ? {
-        type: "image",
-        key: fallbackKey,
-        url: fallbackAsset?.url ?? null,
-      }
-    : null;
+  return {
+    type: idleAnimation ? "spritesheet" : "image",
+    key: idleAnimation?.key ?? fallbackKey,
+    url: idleAnimation?.url ?? fallbackAsset?.url ?? null,
+    frameCount: idleAnimation?.ranges?.default
+      ? idleAnimation.ranges.default.end - idleAnimation.ranges.default.start + 1
+      : 1,
+    frameRate: idleAnimation?.frameRate ?? null,
+    fallbackKey,
+    fallbackUrl: fallbackAsset?.url ?? null,
+    idle: idleAnimation,
+    walk: animationBundle?.animations?.walk ?? null,
+    attack: animationBundle?.animations?.attack ?? null,
+  };
 }
 
 export function getTerrainSpriteKey(terrainId) {

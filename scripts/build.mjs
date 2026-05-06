@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { build } from "esbuild";
+import { generateBuildingSpriteManifest } from "./generate-building-sprite-manifest.mjs";
+import { generateTerrainSpriteManifest } from "./generate-terrain-sprite-manifest.mjs";
 import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifest.mjs";
 
 const root = process.cwd();
@@ -13,6 +15,8 @@ const assetsRoot = path.join(distRoot, "assets");
  */
 await fs.rm(distRoot, { recursive: true, force: true });
 await fs.mkdir(assetsRoot, { recursive: true });
+await generateBuildingSpriteManifest({ root });
+await generateTerrainSpriteManifest({ root });
 await generateUnitSpriteSheetManifest({ root });
 
 await build({

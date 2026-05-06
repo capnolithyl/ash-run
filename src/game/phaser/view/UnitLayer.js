@@ -6,6 +6,14 @@ import {
 import { getGearBadgeLabel } from "../../content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
+import {
+  getAnimationRange,
+  getAnimationRangeFrameCount,
+  getAttackAnimationPlayback,
+  getOwnerIdleFlipX,
+  getUnitAttackRangeName,
+  getUnitDefaultTexture,
+} from "./unitAnimationHelpers.js";
 
 function getPointDistance(left, right) {
   return Phaser.Math.Distance.Between(left.x, left.y, right.x, right.y);
@@ -14,42 +22,47 @@ function getPointDistance(left, right) {
 function getUnitVisualSpec(scene, unit) {
   const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, unit.owner);
 
-  if (spriteDefinition?.type === "spritesheet" && scene.textures.exists(spriteDefinition.key)) {
+  if (!spriteDefinition) {
+    return null;
+  }
+
+  const hasLoadedAnimation = [spriteDefinition.idle, spriteDefinition.walk, spriteDefinition.attack].some(
+    (animationSpec) => animationSpec && scene.textures.exists(animationSpec.key)
+  );
+
+  if (hasLoadedAnimation) {
     return spriteDefinition;
   }
 
-  if (spriteDefinition?.fallbackKey && scene.textures.exists(spriteDefinition.fallbackKey)) {
-    return {
-      type: "image",
-      key: spriteDefinition.fallbackKey
-    };
-  }
-
-  if (spriteDefinition?.type === "image" && scene.textures.exists(spriteDefinition.key)) {
+  if (spriteDefinition.fallbackKey && scene.textures.exists(spriteDefinition.fallbackKey)) {
     return spriteDefinition;
   }
 
   return null;
 }
 
-function ensureUnitIdleAnimation(scene, visualSpec) {
-  if (visualSpec?.type !== "spritesheet" || visualSpec.frameCount <= 1) {
+function ensureUnitAnimation(scene, animationSpec, rangeName = "default", repeat = -1) {
+  const range = getAnimationRange(animationSpec, rangeName);
+
+  if (!animationSpec?.key || !range || getAnimationRangeFrameCount(range) <= 1) {
     return null;
   }
 
-  if (!scene.anims.exists(visualSpec.animationKey)) {
+  const animationKey = `${animationSpec.animationKeyBase}:${rangeName}:${repeat}`;
+
+  if (!scene.anims.exists(animationKey)) {
     scene.anims.create({
-      key: visualSpec.animationKey,
-      frames: scene.anims.generateFrameNumbers(visualSpec.key, {
-        start: 0,
-        end: visualSpec.frameCount - 1
+      key: animationKey,
+      frames: scene.anims.generateFrameNumbers(animationSpec.key, {
+        start: range.start,
+        end: range.end
       }),
-      frameRate: visualSpec.frameRate,
-      repeat: -1
+      frameRate: animationSpec.frameRate,
+      repeat
     });
   }
 
-  return visualSpec.animationKey;
+  return animationKey;
 }
 
 export class UnitLayer {
@@ -65,6 +78,7 @@ export class UnitLayer {
       entity.afterMoveCallbacks = [];
       this.stopMoveTween(entity);
       this.stopDestroyTimer(entity);
+      this.stopAnimationTimer(entity);
       for (const tween of entity.effectTweens) {
         tween.stop();
       }
@@ -90,26 +104,19 @@ export class UnitLayer {
     let fallbackLabel = null;
 
     if (visualSpec) {
-      const textureFrame = visualSpec.type === "spritesheet" ? 0 : undefined;
+      const defaultTexture = getUnitDefaultTexture(visualSpec, unit.owner);
+      const textureKey = defaultTexture?.key ?? visualSpec.fallbackKey ?? visualSpec.key;
+      const textureFrame = defaultTexture?.frame;
       shadow = this.scene.add
-        .image(layout.cellSize * 0.04, layout.cellSize * 0.05, visualSpec.key, textureFrame)
+        .image(layout.cellSize * 0.04, layout.cellSize * 0.05, textureKey, textureFrame)
         .setOrigin(0.5)
         .setDisplaySize(layout.cellSize * 0.92, layout.cellSize * 0.92)
         .setTint(0x08040f)
         .setAlpha(0.64);
-      visual =
-        visualSpec.type === "spritesheet"
-          ? this.scene.add.sprite(0, -layout.cellSize * 0.03, visualSpec.key, 0)
-          : this.scene.add.image(0, -layout.cellSize * 0.03, visualSpec.key);
+      visual = this.scene.add.sprite(0, -layout.cellSize * 0.03, textureKey, textureFrame);
       visual.setOrigin(0.5).setDisplaySize(layout.cellSize * 0.88, layout.cellSize * 0.88);
-      shadow.setFlipX(unit.owner === "enemy");
-      visual.setFlipX(unit.owner === "enemy");
-
-      const animationKey = ensureUnitIdleAnimation(this.scene, visualSpec);
-
-      if (animationKey) {
-        visual.play(animationKey);
-      }
+      shadow.setFlipX(defaultTexture?.flipX ?? getOwnerIdleFlipX(unit.owner));
+      visual.setFlipX(defaultTexture?.flipX ?? getOwnerIdleFlipX(unit.owner));
     } else {
       visual = this.scene.add.circle(0, 0, layout.cellSize * 0.28, color, 0.95);
       visual.setStrokeStyle(2, 0xfff2fc, 0.78);
@@ -152,17 +159,18 @@ export class UnitLayer {
 
     return {
       unitId: unit.id,
+      owner: unit.owner,
       container,
       glow,
       aura,
       healthRing,
       shadow,
       visual,
+      visualSpec,
       visualBaseScaleX: visual.scaleX,
       visualBaseScaleY: visual.scaleY,
       fallbackLabel,
       textureKey: visualSpec?.key ?? null,
-      visualType: visualSpec?.type ?? "fallback",
       moveTween: null,
       effectTweens: [],
       targetX: 0,
@@ -176,6 +184,7 @@ export class UnitLayer {
       awaitingDeploy: false,
       awaitingDestroy: false,
       destroyTimer: null,
+      animationTimer: null,
       transportIcon,
       gearIcon
     };
@@ -211,6 +220,15 @@ export class UnitLayer {
 
     entity.destroyTimer.remove(false);
     entity.destroyTimer = null;
+  }
+
+  stopAnimationTimer(entity) {
+    if (!entity?.animationTimer) {
+      return;
+    }
+
+    entity.animationTimer.remove(false);
+    entity.animationTimer = null;
   }
 
   runAfterMoveCallbacks(entity) {
@@ -286,6 +304,7 @@ export class UnitLayer {
     );
     const tweens = [];
     entity.container.setPosition(worldPoints[0].x, worldPoints[0].y);
+    this.playWalkAnimation(entity);
 
     for (let index = 1; index < worldPoints.length; index += 1) {
       const point = worldPoints[index];
@@ -301,6 +320,7 @@ export class UnitLayer {
     if (tweens.length === 0) {
       entity.container.setPosition(entity.targetX, entity.targetY);
       entity.moveTween = null;
+      this.playIdleAnimation(entity);
       this.runAfterMoveCallbacks(entity);
       this.playQueuedAttack(entity);
       return;
@@ -312,6 +332,7 @@ export class UnitLayer {
       onComplete: () => {
         entity.moveTween = null;
         entity.container.setPosition(entity.targetX, entity.targetY);
+        this.playIdleAnimation(entity);
         this.runAfterMoveCallbacks(entity);
         this.playQueuedAttack(entity);
       }
@@ -365,6 +386,70 @@ export class UnitLayer {
     entity.shadow?.setAlpha(0.64);
   }
 
+  setVisualTexture(entity, textureKey, frame, flipX = getOwnerIdleFlipX(entity.owner)) {
+    entity.visual.setTexture?.(textureKey, frame);
+    entity.visual.setFlipX?.(flipX);
+  }
+
+  syncShadowTexture(entity) {
+    if (!entity.shadow || !entity.visualSpec) {
+      return;
+    }
+
+    const defaultTexture = getUnitDefaultTexture({
+      ...entity.visualSpec,
+      owner: entity.owner,
+    });
+
+    if (!defaultTexture?.key) {
+      return;
+    }
+
+    entity.shadow.setTexture?.(defaultTexture.key, defaultTexture.frame);
+    entity.shadow.setFlipX?.(defaultTexture.flipX ?? getOwnerIdleFlipX(entity.owner));
+  }
+
+  playIdleAnimation(entity) {
+    this.stopAnimationTimer(entity);
+
+    const idleAnimation = entity.visualSpec?.idle;
+    const idleAnimationKey = ensureUnitAnimation(this.scene, idleAnimation, "default", -1);
+
+    if (idleAnimationKey) {
+      const range = getAnimationRange(idleAnimation, "default");
+      this.setVisualTexture(entity, idleAnimation.key, range.start, false);
+      this.syncShadowTexture(entity);
+      entity.visual.play?.(idleAnimationKey);
+      return;
+    }
+
+    entity.visual.stop?.();
+    if (entity.visualSpec?.fallbackKey) {
+      this.setVisualTexture(
+        entity,
+        entity.visualSpec.fallbackKey,
+        undefined,
+        getOwnerIdleFlipX(entity.owner),
+      );
+      this.syncShadowTexture(entity);
+    }
+  }
+
+  playWalkAnimation(entity) {
+    const walkAnimation = entity.visualSpec?.walk;
+    const walkAnimationKey = ensureUnitAnimation(this.scene, walkAnimation, "default", -1);
+
+    if (!walkAnimationKey) {
+      return;
+    }
+
+    this.stopAnimationTimer(entity);
+    const range = getAnimationRange(walkAnimation, "default");
+    this.setVisualTexture(entity, walkAnimation.key, range.start, false);
+    this.syncShadowTexture(entity);
+    entity.visual.play?.(walkAnimationKey);
+  }
+
   stopEffectTweens(entity) {
     for (const tween of entity.effectTweens) {
       tween.stop();
@@ -394,6 +479,7 @@ export class UnitLayer {
     entity.awaitingDestroy = false;
     this.stopMoveTween(entity);
     this.stopDestroyTimer(entity);
+    this.stopAnimationTimer(entity);
 
     this.stopEffectTweens(entity);
 
@@ -499,6 +585,14 @@ export class UnitLayer {
 
     callbacks.onStart?.();
     this.stopEffectTweens(entity);
+    this.stopAnimationTimer(entity);
+
+    const attackRangeName = getUnitAttackRangeName(entity.owner, directionX);
+    const attackAnimation = entity.visualSpec?.attack;
+    const attackPlayback = getAttackAnimationPlayback(entity.owner, attackAnimation, directionX);
+    const attackRange = attackPlayback?.range ?? null;
+    const attackAnimationKey = ensureUnitAnimation(this.scene, attackAnimation, attackRangeName, 0);
+    const hasAttackAnimation = Boolean(attackAnimationKey && attackRange);
 
     const offsetX = Math.sign(directionX) * Math.max(5, (this.cellSize ?? 40) * 0.12);
     const offsetY = Math.sign(directionY) * Math.max(5, (this.cellSize ?? 40) * 0.12);
@@ -508,7 +602,7 @@ export class UnitLayer {
       targets: entity.container,
       x: entity.targetX + offsetX,
       y: entity.targetY + offsetY,
-      duration: 120,
+      duration: hasAttackAnimation ? 90 : 120,
       yoyo: true,
       ease: "Sine.InOut",
       onComplete: () => {
@@ -517,9 +611,9 @@ export class UnitLayer {
     }));
     this.trackEffectTween(entity, this.scene.tweens.add({
       targets: entity.visual,
-      scaleX: entity.visualBaseScaleX * 1.14,
-      scaleY: entity.visualBaseScaleY * 1.14,
-      duration: 110,
+      scaleX: entity.visualBaseScaleX * (hasAttackAnimation ? 1.08 : 1.14),
+      scaleY: entity.visualBaseScaleY * (hasAttackAnimation ? 1.08 : 1.14),
+      duration: hasAttackAnimation ? 90 : 110,
       yoyo: true,
       ease: "Sine.InOut",
       onComplete: () => {
@@ -528,14 +622,26 @@ export class UnitLayer {
     }));
     this.trackEffectTween(entity, this.scene.tweens.add({
       targets: [entity.glow, entity.aura],
-      scale: 1.24,
-      duration: 180,
+      scale: hasAttackAnimation ? 1.16 : 1.24,
+      duration: hasAttackAnimation ? 150 : 180,
       yoyo: true,
       ease: "Sine.InOut",
       onComplete: () => {
         this.resetEntityEffects(entity);
       }
     }));
+
+    if (hasAttackAnimation) {
+      this.setVisualTexture(entity, attackAnimation.key, attackPlayback.startFrame, false);
+      entity.visual.play?.(attackAnimationKey);
+      entity.animationTimer = this.scene.time.delayedCall(
+        attackPlayback.durationMs,
+        () => {
+          entity.animationTimer = null;
+          this.playIdleAnimation(entity);
+        }
+      );
+    }
 
     if (callbacks.onImpact) {
       this.scene.time.delayedCall(BATTLE_ATTACK_IMPACT_DELAY_MS, callbacks.onImpact);
@@ -662,29 +768,16 @@ export class UnitLayer {
 
       const color = getOwnerColor(unit.owner);
       const visualSpec = getUnitVisualSpec(this.scene, unit);
+      entity.owner = unit.owner;
+      entity.visualSpec = visualSpec;
       entity.glow.setFillStyle(color, 0.13);
       entity.aura.setFillStyle(color, 0.18);
       if (
         visualSpec &&
-        entity.textureKey !== visualSpec.key &&
-        entity.shadow &&
-        entity.visual.setTexture
+        entity.textureKey !== visualSpec.key
       ) {
-        const textureFrame = visualSpec.type === "spritesheet" ? 0 : undefined;
-        entity.shadow.setTexture(visualSpec.key, textureFrame);
-        entity.visual.setTexture(visualSpec.key, textureFrame);
         entity.textureKey = visualSpec.key;
-        entity.visualType = visualSpec.type;
       }
-      if (visualSpec?.type === "spritesheet" && entity.visual.play) {
-        const animationKey = ensureUnitIdleAnimation(this.scene, visualSpec);
-
-        if (animationKey && entity.visual.anims?.currentAnim?.key !== animationKey) {
-          entity.visual.play(animationKey);
-        }
-      }
-      entity.visual.setFlipX?.(unit.owner === "enemy");
-      entity.shadow?.setFlipX?.(unit.owner === "enemy");
       entity.fallbackLabel?.setText(unit.name.slice(0, 2).toUpperCase());
       const pendingDamage = damageByUnitId.get(unit.id);
       entity.maxHealth = unit.stats.maxHealth;
@@ -727,6 +820,7 @@ export class UnitLayer {
         } else if (movementEvent?.path?.length > 1) {
           this.playPathMovement(entity, layout, movementEvent.path);
         } else {
+          this.playWalkAnimation(entity);
           const renderedDistance = getPointDistance(
             { x: entity.container.x, y: entity.container.y },
             nextPosition
@@ -740,11 +834,16 @@ export class UnitLayer {
             onComplete: () => {
               entity.moveTween = null;
               entity.container.setPosition(entity.targetX, entity.targetY);
+              this.playIdleAnimation(entity);
               this.runAfterMoveCallbacks(entity);
               this.playQueuedAttack(entity);
             }
           });
         }
+      }
+
+      if (!entity.moveTween && !entity.animationTimer) {
+        this.playIdleAnimation(entity);
       }
     }
 

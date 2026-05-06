@@ -1,0 +1,16 @@
+{
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "animations": {
+    "idle": {
+      "file": "bruiser-idle.png",
+      "frameRate": 5,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 2
+        }
+      }
+    }
+  }
+}

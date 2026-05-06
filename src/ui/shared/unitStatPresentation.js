@@ -4,49 +4,39 @@ export function formatRangeLabel(minimumRange, maximumRange) {
     : `${minimumRange}-${maximumRange}`;
 }
 
+function getBattleHudStatIconUrl(fileName) {
+  return `./assets/img/icons/battle-hud/stats/${encodeURIComponent(fileName)}`;
+}
+
+export function getBattleHudWeaponIconUrl(fileName) {
+  return `./assets/img/icons/battle-hud/weapons/${encodeURIComponent(fileName)}`;
+}
+
 export function renderSelectionIcon(iconName) {
   switch (iconName) {
     case "attack":
       return `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 18L18 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-          <path d="M13 5h6v6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M5 13l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <img src="${getBattleHudStatIconUrl("atk.png")}" alt="" loading="lazy" decoding="async" />
       `;
     case "armor":
       return `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 4l6 2.5v5.3c0 4.1-2.4 6.8-6 8.7-3.6-1.9-6-4.6-6-8.7V6.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-        </svg>
+        <img src="${getBattleHudStatIconUrl("arm.png")}" alt="" loading="lazy" decoding="async" />
       `;
     case "movement":
       return `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 15l3-3 3 1 2-5 4 1" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M8 18.5a1.4 1.4 0 110-2.8 1.4 1.4 0 010 2.8zm8 0a1.4 1.4 0 110-2.8 1.4 1.4 0 010 2.8z" fill="currentColor"/>
-        </svg>
+        <img src="${getBattleHudStatIconUrl("mov.png")}" alt="" loading="lazy" decoding="async" />
       `;
     case "range":
       return `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 4v3M12 17v3M4 12h3M17 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
-        </svg>
+        <img src="${getBattleHudStatIconUrl("rng.png")}" alt="" loading="lazy" decoding="async" />
       `;
     case "ammo":
       return `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M10 5h4v3.2l1.7 1.8V18a2 2 0 01-2 2h-3.4a2 2 0 01-2-2V10l1.7-1.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M10 8h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <img src="${getBattleHudStatIconUrl("ammo.png")}" alt="" loading="lazy" decoding="async" />
       `;
     case "stamina":
       return `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M13 3L7 13h4l-1 8 7-11h-4l0-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-        </svg>
+        <img src="${getBattleHudStatIconUrl("sta.png")}" alt="" loading="lazy" decoding="async" />
       `;
     case "command":
       return `

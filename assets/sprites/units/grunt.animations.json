@@ -1,0 +1,30 @@
+{
+  "frameWidth": 102,
+  "frameHeight": 128,
+  "animations": {
+    "idle": {
+      "file": "grunt-idle.png",
+      "frameRate": 5,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 1
+        }
+      }
+    },
+    "attack": {
+      "file": "grunt-attack.png",
+      "frameRate": 5,
+      "ranges": {
+        "left": {
+          "start": 0,
+          "end": 2
+        },
+        "right": {
+          "start": 3,
+          "end": 5
+        }
+      }
+    }
+  }
+}

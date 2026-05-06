@@ -41,7 +41,7 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /data-action="run-loadout-remove"/);
   assert.match(html, /data-action="back-to-commander-select"/);
   assert.match(html, /assets\/sprites\/units\/player\/grunt\.svg/);
-  assert.match(html, /assets\/sprites\/units\/player\/bruiser\/bruiser\.png/);
+  assert.match(html, /assets\/sprites\/units\/player\/bruiser\/bruiser-idle\.png/);
   assert.match(html, /run-unit-card__preview-image--sheet/);
   assert.match(html, /selection-icon selection-icon--stat/);
   assert.match(html, /Count/);
