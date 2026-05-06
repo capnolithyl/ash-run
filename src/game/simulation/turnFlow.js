@@ -6,6 +6,7 @@ import {
 } from "../core/constants.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
 import { describeBuilding } from "../content/buildings.js";
+import { getCommanderById } from "../content/commanders.js";
 import { appendLog } from "./battleLog.js";
 import { serviceUnitsOnSectors } from "./battleServicing.js";
 import { findUnitById } from "./battleUnits.js";
@@ -132,6 +133,7 @@ function moveEnemyUnit(system, unit, tile, movementBudget) {
   if (moved) {
     unit.x = tile.x;
     unit.y = tile.y;
+    unit.movedThisTurn = true;
     unit.current.stamina = Math.max(0, unit.current.stamina - moveCost);
     if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
       unit.transport.canUnloadAfterMove = true;
@@ -199,6 +201,7 @@ function performQueuedEnemySlipstreamMove(system) {
 
   unit.x = queuedSlipstream.x;
   unit.y = queuedSlipstream.y;
+  unit.movedThisTurn = true;
   unit.hasMoved = true;
   if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
     system.syncTransportCargoPosition(unit);
@@ -506,7 +509,21 @@ export function shouldEnemyUsePower(system) {
     return false;
   }
 
-  return hasEnemyAttackOpportunity(system.state);
+  const commander = getCommanderById(system.state.enemy.commanderId);
+  const alwaysUseTypes = new Set([
+    "atlas-overhaul",
+    "viper-blitz-surge",
+    "rook-hostile-takeover",
+    "echo-disruption",
+    "blaze-ignition",
+    "knox-fortress-protocol",
+    "falcon-reinforcements",
+    "graves-execution-window",
+    "nova-overload",
+    "sable-lucky-seven"
+  ]);
+
+  return alwaysUseTypes.has(commander?.active?.type) || hasEnemyAttackOpportunity(system.state);
 }
 
 export function finalizeEnemyTurn(system) {
@@ -575,6 +592,7 @@ export function resetActions(system, side) {
   for (const unit of getLivingUnits(system.state, side)) {
     unit.hasMoved = false;
     unit.hasAttacked = false;
+    unit.movedThisTurn = false;
   }
 }
 

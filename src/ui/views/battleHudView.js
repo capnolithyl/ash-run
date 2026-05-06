@@ -9,6 +9,7 @@ import {
 import {
   renderActionPrompt,
   renderCommandFeed,
+  renderExtinguishPrompt,
   renderMedpackPrompt,
   renderRecruitPanel,
   renderSupportPrompt,
@@ -132,6 +133,7 @@ export function renderBattleHudView(state, options = {}) {
       ${renderTransportPrompt(battleSnapshot)}
       ${renderSupportPrompt(battleSnapshot)}
       ${renderMedpackPrompt(battleSnapshot)}
+      ${renderExtinguishPrompt(battleSnapshot)}
       ${renderBattleNotice(state.battleUi?.notice)}
       ${renderTurnBanner(turnBanner)}
       ${renderPowerOverlay(state.battleUi?.powerOverlay)}

@@ -22,6 +22,7 @@ export class BattleSystem {
     this.state.pendingAction ??= null;
     this.state.enemyTurn ??= null;
     this.state.levelUpQueue ??= [];
+    this.state.lastPowerResult ??= null;
     if (this.state.enemyTurn && !("pendingAttack" in this.state.enemyTurn)) {
       this.state.enemyTurn.pendingAttack = null;
     }
@@ -36,6 +37,7 @@ export class BattleSystem {
     }
     this.state.enemy.recruitsBuiltThisMap ??= 0;
     for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
+      this.state[side].effects ??= [];
       for (const unit of this.state[side].units) {
         unit.cooldowns ??= {};
         unit.gear ??= { slot: null };
@@ -50,6 +52,8 @@ export class BattleSystem {
           hasLockedUnload: false
         };
         unit.statuses ??= [];
+        unit.movedThisTurn ??= false;
+        unit.temporary ??= null;
       }
     }
     this.state.player.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.PLAYER);
@@ -203,6 +207,10 @@ export class BattleSystem {
     return playerActions.useMedpackWithPendingUnit(this, targetId);
   }
 
+  useExtinguishAbilityWithPendingUnit(targetId = null) {
+    return playerActions.useExtinguishAbilityWithPendingUnit(this, targetId);
+  }
+
   waitWithPendingUnit() {
     return playerActions.waitWithPendingUnit(this);
   }
@@ -225,6 +233,10 @@ export class BattleSystem {
 
   activatePower() {
     return playerActions.activatePower(this);
+  }
+
+  getLastPowerResult() {
+    return structuredClone(this.state.lastPowerResult);
   }
 
   spawnDebugUnit(unitTypeId, owner, x, y, statOverrides = {}) {

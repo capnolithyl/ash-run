@@ -9,8 +9,11 @@ import {
   activateCommanderPower,
   applyChargeFromCombat,
   canSlipstreamAfterAttack,
+  canUsePreemptiveCounter,
   canResupplyUnit,
-  getMovementModifier
+  getExperienceModifier,
+  getMovementModifier,
+  shouldPreventCombatDamage
 } from "./commanderEffects.js";
 import {
   getAttackRangeCap,
@@ -192,6 +195,39 @@ export function applyMedpackAbility(system, unit, target) {
   return true;
 }
 
+export function getExtinguishTargetsForUnit(system, unit) {
+  if (!unit || unit.family !== UNIT_TAGS.INFANTRY || unit.transport?.carriedByUnitId) {
+    return [];
+  }
+
+  return getLivingUnits(system.state, unit.owner)
+    .filter(
+      (candidate) =>
+        candidate.id !== unit.id &&
+        (candidate.statuses ?? []).some((status) => status.type === "burn") &&
+        Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1
+    )
+    .sort((left, right) => left.y - right.y || left.x - right.x || left.id.localeCompare(right.id));
+}
+
+export function applyExtinguishAbility(system, unit, target) {
+  if (!unit || !target) {
+    return false;
+  }
+
+  const hadBurn = (target.statuses ?? []).some((status) => status.type === "burn");
+
+  if (!hadBurn) {
+    return false;
+  }
+
+  target.statuses = target.statuses.filter((status) => status.type !== "burn");
+  unit.hasMoved = true;
+  unit.hasAttacked = true;
+  appendLog(system.state, `${unit.name} extinguished ${target.name}.`);
+  return true;
+}
+
 export function handleTileSelection(system, x, y) {
   if (system.state.victory) {
     return false;
@@ -250,6 +286,7 @@ export function handleTileSelection(system, x, y) {
 
       pendingUnit.x = x;
       pendingUnit.y = y;
+      pendingUnit.movedThisTurn = true;
       if (pendingUnit.unitTypeId === "runner" && pendingUnit.transport?.carryingUnitId) {
         system.syncTransportCargoPosition(pendingUnit);
       }
@@ -307,6 +344,16 @@ export function handleTileSelection(system, x, y) {
       return changed;
     }
 
+    if ((pendingAction.mode ?? "menu") === "extinguish") {
+      const changed = unitAtTile?.owner === TURN_SIDES.PLAYER
+        ? useExtinguishAbilityWithPendingUnit(system, unitAtTile.id)
+        : false;
+      if (!changed) {
+        appendLog(system.state, "Choose a highlighted burned ally.");
+      }
+      return changed;
+    }
+
     return false;
   }
 
@@ -344,6 +391,7 @@ export function handleTileSelection(system, x, y) {
         ) ?? 0;
         selectedUnit.x = x;
         selectedUnit.y = y;
+        selectedUnit.movedThisTurn = true;
         selectedUnit.current.stamina = Math.max(0, selectedUnit.current.stamina - spentStamina);
         if (selectedUnit.unitTypeId === "runner" && selectedUnit.transport?.carryingUnitId) {
           selectedUnit.transport.canUnloadAfterMove = true;
@@ -425,6 +473,10 @@ export function handleContextAction(system) {
       pendingAction.mode = "menu";
       return true;
     }
+    if ((pendingAction.mode ?? "menu") === "extinguish") {
+      pendingAction.mode = "menu";
+      return true;
+    }
 
     return redoPendingMove(system);
   }
@@ -472,6 +524,75 @@ export function selectNextReadyUnit(system) {
   return true;
 }
 
+function consumeAttackResources(unit, attackProfile) {
+  if (attackProfile.consumesAmmo) {
+    unit.current.ammo = Math.max(0, unit.current.ammo - 1);
+  }
+
+  if (attackProfile.consumesGearAmmo) {
+    unit.gearState.aaKitAmmo = Math.max(0, getAntiAirGearAmmo(unit) - 1);
+  }
+}
+
+function appendStrikeLog(state, attacker, defender, strike, damageDealt, verb = "hit") {
+  const qualityParts = [];
+
+  if (strike.weaponType === "secondary") {
+    qualityParts.push("with secondary fire");
+  }
+
+  if (strike.isEffective) {
+    qualityParts.push("effective");
+  }
+
+  if (strike.isCrit) {
+    qualityParts.push("critical");
+  }
+
+  if (strike.isGlance) {
+    qualityParts.push("glancing");
+  }
+
+  appendLog(
+    state,
+    `${attacker.name} ${verb} ${defender.name}${qualityParts.length ? ` ${qualityParts.join(" ")}` : ""} for ${damageDealt} damage.`
+  );
+}
+
+function canDefenderCounter(state, attacker, defender, distance) {
+  const defenderProfile = getAttackProfileForTarget(defender, attacker);
+
+  if (!defenderProfile || defender.current.hp <= 0) {
+    return { canCounter: false, defenderProfile: null };
+  }
+
+  const counterRange = getAttackRangeCap(state, defender, defenderProfile);
+  const canCounter =
+    distance >= defenderProfile.minRange &&
+    distance <= counterRange &&
+    canUnitAttackTarget(defender, attacker);
+
+  return {
+    canCounter,
+    defenderProfile
+  };
+}
+
+function awardCombatXpToUnit(system, unit, target, damageDealt, killed) {
+  let xpGain = getCombatExperience(unit, target, damageDealt, killed);
+  xpGain = Math.round(xpGain * (1 + getExperienceModifier(system.state, unit, { killed })));
+
+  if (xpGain <= 0) {
+    return;
+  }
+
+  const nextUnit = awardExperience(unit, xpGain, system.state.seed);
+  system.state.seed = nextUnit.seed;
+  Object.assign(unit, nextUnit.unit);
+  nextUnit.notes.forEach((note) => appendLog(system.state, note));
+  pushLevelUpEvents(system.state, unit, nextUnit.levelUps);
+}
+
 export function attackTarget(system, attackerId, defenderId) {
   const attacker = findUnitById(system.state, attackerId);
   const defender = findUnitById(system.state, defenderId);
@@ -492,113 +613,69 @@ export function attackTarget(system, attackerId, defenderId) {
     return false;
   }
 
-  const defenderHpBefore = defender.current.hp;
-  const primaryStrike = getDamageResult(system.state, attacker, defender, attackProfile);
-  defender.current.hp = Math.max(0, defender.current.hp - primaryStrike.damage);
-  const primaryDamageDealt = defenderHpBefore - defender.current.hp;
-  if (attackProfile.consumesAmmo) {
-    attacker.current.ammo = Math.max(0, attacker.current.ammo - 1);
-  }
-  if (attackProfile.consumesGearAmmo) {
-    attacker.gearState.aaKitAmmo = Math.max(0, getAntiAirGearAmmo(attacker) - 1);
-  }
+  const zeroDamageCombat = shouldPreventCombatDamage(system.state, attacker.owner, defender.owner);
+  const { canCounter, defenderProfile } = canDefenderCounter(system.state, attacker, defender, distance);
+  const usesPreemptiveCounter = canCounter && canUsePreemptiveCounter(system.state, defender.owner);
+  let primaryDamageDealt = 0;
+  let counterDamageDealt = 0;
+
   attacker.hasAttacked = true;
   attacker.hasMoved = true;
   if (attacker.unitTypeId === "runner" && attacker.transport?.carryingUnitId) {
     attacker.transport.hasLockedUnload = true;
   }
 
-  appendLog(
-    system.state,
-    `${attacker.name} hit ${defender.name}${
-      primaryStrike.weaponType === "secondary" ? " with secondary fire" : ""
-    } for ${primaryDamageDealt}${
-      primaryStrike.isEffective ? " effective" : ""
-    } damage.`
-  );
+  if (usesPreemptiveCounter) {
+    const attackerHpBefore = attacker.current.hp;
+    const preemptiveStrike = zeroDamageCombat
+      ? { damage: 0, weaponType: defenderProfile.type, isEffective: false, isCrit: false, isGlance: false }
+      : getDamageResult(system.state, defender, attacker, defenderProfile);
 
-  applyChargeFromCombat(
-    system.state,
-    attacker.owner,
-    defender.owner,
-    primaryDamageDealt,
-    primaryDamageDealt
-  );
-  let defenderCounterXp = 0;
-  const defenderProfile = getAttackProfileForTarget(defender, attacker);
-
-  if (defender.current.hp > 0 && defenderProfile) {
-    const counterRange = getAttackRangeCap(system.state, defender, defenderProfile);
-
-    if (
-      distance >= defenderProfile.minRange &&
-      distance <= counterRange &&
-      canUnitAttackTarget(defender, attacker)
-    ) {
-      const attackerHpBefore = attacker.current.hp;
-      const counterStrike = getDamageResult(system.state, defender, attacker, defenderProfile);
-      attacker.current.hp = Math.max(0, attacker.current.hp - counterStrike.damage);
-      const counterDamageDealt = attackerHpBefore - attacker.current.hp;
-      if (defenderProfile.consumesAmmo) {
-        defender.current.ammo = Math.max(0, defender.current.ammo - 1);
-      }
-      if (defenderProfile.consumesGearAmmo) {
-        defender.gearState.aaKitAmmo = Math.max(0, getAntiAirGearAmmo(defender) - 1);
-      }
-
-      appendLog(
-        system.state,
-        `${defender.name} countered${
-          counterStrike.weaponType === "secondary" ? " with secondary fire" : ""
-        } for ${counterDamageDealt} damage.`
-      );
-
-      applyChargeFromCombat(
-        system.state,
-        defender.owner,
-        attacker.owner,
-        counterDamageDealt,
-        counterDamageDealt
-      );
-      defenderCounterXp = getCombatExperience(
-        defender,
-        attacker,
-        counterDamageDealt,
-        attacker.current.hp <= 0
-      );
-    }
+    attacker.current.hp = Math.max(0, attacker.current.hp - preemptiveStrike.damage);
+    counterDamageDealt = attackerHpBefore - attacker.current.hp;
+    consumeAttackResources(defender, defenderProfile);
+    appendStrikeLog(system.state, defender, attacker, preemptiveStrike, counterDamageDealt, "countered");
+    applyChargeFromCombat(system.state, defender.owner, attacker.owner, counterDamageDealt, counterDamageDealt);
   }
 
-  const attackerXpGain = getCombatExperience(
-    attacker,
-    defender,
-    primaryDamageDealt,
-    defender.current.hp <= 0
-  );
-  const attackerAfterXp = awardExperience(
-    attacker,
-    attackerXpGain,
-    system.state.seed
-  );
-  system.state.seed = attackerAfterXp.seed;
-  Object.assign(attacker, attackerAfterXp.unit);
-  attackerAfterXp.notes.forEach((note) => appendLog(system.state, note));
-  pushLevelUpEvents(system.state, attacker, attackerAfterXp.levelUps);
+  if (attacker.current.hp > 0) {
+    const defenderHpBefore = defender.current.hp;
+    const primaryStrike = zeroDamageCombat
+      ? { damage: 0, weaponType: attackProfile.type, isEffective: false, isCrit: false, isGlance: false }
+      : getDamageResult(system.state, attacker, defender, attackProfile);
 
-  if (defender.current.hp > 0 && defenderCounterXp > 0) {
-    const defenderAfterXp = awardExperience(
-      defender,
-      defenderCounterXp,
-      system.state.seed
-    );
-    system.state.seed = defenderAfterXp.seed;
-    Object.assign(defender, defenderAfterXp.unit);
-    defenderAfterXp.notes.forEach((note) => appendLog(system.state, note));
-    pushLevelUpEvents(system.state, defender, defenderAfterXp.levelUps);
+    defender.current.hp = Math.max(0, defender.current.hp - primaryStrike.damage);
+    primaryDamageDealt = defenderHpBefore - defender.current.hp;
+    consumeAttackResources(attacker, attackProfile);
+    appendStrikeLog(system.state, attacker, defender, primaryStrike, primaryDamageDealt);
+    applyChargeFromCombat(system.state, attacker.owner, defender.owner, primaryDamageDealt, primaryDamageDealt);
+  }
+
+  if (attacker.current.hp > 0 && defender.current.hp > 0 && canCounter && !usesPreemptiveCounter) {
+    const attackerHpBefore = attacker.current.hp;
+    const counterStrike = zeroDamageCombat
+      ? { damage: 0, weaponType: defenderProfile.type, isEffective: false, isCrit: false, isGlance: false }
+      : getDamageResult(system.state, defender, attacker, defenderProfile);
+
+    attacker.current.hp = Math.max(0, attacker.current.hp - counterStrike.damage);
+    counterDamageDealt = attackerHpBefore - attacker.current.hp;
+    consumeAttackResources(defender, defenderProfile);
+    appendStrikeLog(system.state, defender, attacker, counterStrike, counterDamageDealt, "countered");
+    applyChargeFromCombat(system.state, defender.owner, attacker.owner, counterDamageDealt, counterDamageDealt);
+  }
+
+  awardCombatXpToUnit(system, attacker, defender, primaryDamageDealt, defender.current.hp <= 0);
+
+  if (defender.current.hp > 0) {
+    awardCombatXpToUnit(system, defender, attacker, counterDamageDealt, attacker.current.hp <= 0);
   }
 
   if (defender.current.hp <= 0) {
     appendLog(system.state, `${defender.name} was destroyed.`);
+  }
+
+  if (attacker.current.hp <= 0) {
+    appendLog(system.state, `${attacker.name} was destroyed.`);
   }
 
   removeDeadUnits(system.state);
@@ -697,6 +774,7 @@ export function unloadTransportWithPendingUnit(system, x, y) {
   carried.transport.carriedByUnitId = null;
   carried.x = x;
   carried.y = y;
+  carried.movedThisTurn = true;
   carried.hasMoved = true;
   carried.hasAttacked = true;
   runner.transport.carryingUnitId = null;
@@ -797,6 +875,44 @@ export function useMedpackWithPendingUnit(system, targetId = null) {
   return true;
 }
 
+export function useExtinguishAbilityWithPendingUnit(system, targetId = null) {
+  const pendingAction = system.state.pendingAction;
+
+  if (!pendingAction) {
+    return false;
+  }
+
+  const unit = findUnitById(system.state, pendingAction.unitId);
+
+  if (!unit || unit.family !== UNIT_TAGS.INFANTRY) {
+    return false;
+  }
+
+  const validTargets = getExtinguishTargetsForUnit(system, unit);
+  const target = targetId
+    ? validTargets.find((candidate) => candidate.id === targetId)
+    : validTargets[0] ?? null;
+
+  if (!target) {
+    return false;
+  }
+
+  if (!targetId && validTargets.length > 1) {
+    pendingAction.mode = "extinguish";
+    return true;
+  }
+
+  const changed = applyExtinguishAbility(system, unit, target);
+
+  if (!changed) {
+    return false;
+  }
+
+  system.clearPendingAction();
+  system.clearSelection();
+  return true;
+}
+
 export function waitWithPendingUnit(system) {
   const pendingAction = system.state.pendingAction;
 
@@ -855,6 +971,7 @@ export function redoPendingMove(system) {
 
   unit.x = pendingAction.fromX;
   unit.y = pendingAction.fromY;
+  unit.movedThisTurn = false;
   system.syncTransportCargoPosition(unit);
   unit.current.stamina = pendingAction.fromStamina;
   system.clearPendingAction();
@@ -927,6 +1044,7 @@ export function recruitUnit(system, unitTypeId) {
 export function activatePower(system) {
   const result = activateCommanderPower(system.state, system.state.turn.activeSide, system.state.seed);
 
+  system.state.lastPowerResult = structuredClone(result);
   system.state.seed = result.seed;
   result.notes.forEach((note) => appendLog(system.state, note));
   system.updateVictoryState();

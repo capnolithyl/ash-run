@@ -3,11 +3,12 @@ import { getRunUpgradeById } from "../content/runUpgrades.js";
 import { describeBuilding } from "../content/buildings.js";
 import { getArmorClassForUnit, getWeaponClassForUnit } from "../content/weaponClasses.js";
 import {
-  getArmorModifier,
-  getAttackModifier,
   canResupplyUnit,
-  getMovementModifier,
-  getRangeModifier
+  getDisplayedUnitAttack,
+  getDisplayedUnitArmor,
+  getDisplayedUnitLuck,
+  getDisplayedUnitMovement,
+  getDisplayedUnitRangeCap,
 } from "./commanderEffects.js";
 import { getLevelProgress } from "./progression.js";
 import { canCaptureBuilding } from "./captureRules.js";
@@ -23,6 +24,8 @@ import {
   getBuildingAt,
   getAntiAirGearAmmo,
   getAttackProfileForTarget,
+  getEffectiveCurrentAmmo,
+  getEffectiveCurrentStamina,
   getReachableTiles,
   getRecruitmentOptions,
   getLivingUnits,
@@ -61,6 +64,8 @@ function createEmptyPresentation() {
     unloadPreviewTiles: [],
     transportTargetUnitIds: [],
     supportTargetUnitIds: [],
+    medpackTargetUnitIds: [],
+    extinguishTargetUnitIds: [],
     attackableUnitIds: [],
     movementBudget: null,
     recruitOptions: []
@@ -87,7 +92,7 @@ function describeTerrain(terrain, terrainId = null) {
   };
 }
 
-function describeUnit(state, unit) {
+export function describeUnit(state, unit) {
   if (!unit) {
     return null;
   }
@@ -107,20 +112,20 @@ function describeUnit(state, unit) {
     level: unit.level,
     hp: unit.current.hp,
     maxHealth: unit.stats.maxHealth,
-    attack: unit.stats.attack + getAttackModifier(state, unit),
-    armor: unit.stats.armor + getArmorModifier(state, unit),
+    attack: getDisplayedUnitAttack(state, unit),
+    armor: getDisplayedUnitArmor(state, unit),
     positionArmorBonus,
-    movement: unit.stats.movement + getMovementModifier(state, unit),
+    movement: getDisplayedUnitMovement(state, unit),
     minRange: unit.stats.minRange,
-    maxRange: unit.stats.maxRange + getRangeModifier(state, unit) + getElevationRangeBonus(state, unit),
+    maxRange: getDisplayedUnitRangeCap(state, unit) + getElevationRangeBonus(state, unit),
     experience: experience.current,
     experienceToNextLevel: experience.threshold,
     experienceRatio: experience.ratio,
-    stamina: unit.current.stamina,
+    stamina: getEffectiveCurrentStamina(unit),
     staminaMax: unit.stats.staminaMax,
-    ammo: unit.current.ammo,
+    ammo: getEffectiveCurrentAmmo(unit),
     ammoMax: unit.stats.ammoMax,
-    luck: unit.stats.luck,
+    luck: getDisplayedUnitLuck(state, unit),
     hasMoved: unit.hasMoved,
     hasAttacked: unit.hasAttacked,
     gear: gearUpgrade
@@ -277,6 +282,19 @@ function createPendingActionView(state) {
   const medpackTargetUnitIds = mode === "medpack"
     ? medpackTargets.map((option) => option.target.id)
     : [];
+  const extinguishTargets = !isSlipstream && unit.family === "infantry"
+    ? getLivingUnitsForSide(state, unit.owner)
+        .filter(
+          (candidate) =>
+            candidate.id !== unit.id &&
+            (candidate.statuses ?? []).some((status) => status.type === "burn") &&
+            Math.abs(candidate.x - unit.x) + Math.abs(candidate.y - unit.y) === 1
+        )
+        .sort((left, right) => left.y - right.y || left.x - right.x || left.id.localeCompare(right.id))
+    : [];
+  const extinguishTargetUnitIds = mode === "extinguish"
+    ? extinguishTargets.map((target) => target.id)
+    : [];
   const canUnloadTransport =
     unit.unitTypeId === "runner" &&
     Boolean(unit.transport?.carryingUnitId) &&
@@ -294,6 +312,7 @@ function createPendingActionView(state) {
     supportActionLabel: unit.unitTypeId === "medic" ? "Heal" : "Support",
     supportCooldown: unit.cooldowns?.support ?? 0,
     canUseMedpack: medpackTargets.length > 0,
+    canExtinguish: extinguishTargets.length > 0,
     canEnterTransport,
     canUnloadTransport,
     isSlipstream,
@@ -301,11 +320,13 @@ function createPendingActionView(state) {
     isChoosingTransport: mode === "transport",
     isChoosingSupport: mode === "support",
     isChoosingMedpack: mode === "medpack",
+    isChoosingExtinguish: mode === "extinguish",
     isUnloading: mode === "unload",
     unloadPreviewTiles,
     transportTargetUnitIds,
     supportTargetUnitIds,
     medpackTargetUnitIds,
+    extinguishTargetUnitIds,
     attackableUnitIds,
     building: building ? describeBuilding(building) : null
   };
@@ -321,7 +342,7 @@ export function buildBattlePresentation(snapshot) {
     const attackProfile = getUnitAttackProfile(selectedUnit);
     const isSlipstream = pendingAction?.unitId === selectedUnit.id && pendingAction?.isSlipstream;
     const requestedMovementBudget =
-      isSlipstream ? 1 : selectedUnit.stats.movement + getMovementModifier(snapshot, selectedUnit);
+      isSlipstream ? 1 : getDisplayedUnitMovement(snapshot, selectedUnit);
     const movementBudget = getUnitMovementAllowance(selectedUnit, requestedMovementBudget);
     const aaAttackProfile =
       selectedUnit.gear?.slot === "gear-aa-kit"
@@ -344,7 +365,7 @@ export function buildBattlePresentation(snapshot) {
           );
     const attackPreviewTiles =
       attackProfile && rangeCap > 0 && shouldRevealAttackTargets
-        ? getTilesInRange(
+      ? getTilesInRange(
             snapshot,
             selectedUnit.x,
             selectedUnit.y,

@@ -48,3 +48,19 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /run-loadout-start-button/);
   assert.match(html, /title-button__icon/);
 });
+
+test("run loadout commander summary keeps blaze and echo status text concise", () => {
+  const blazeHtml = renderRunLoadoutView({
+    ...createRunLoadoutState(),
+    selectedCommanderId: "blaze"
+  });
+  const echoHtml = renderRunLoadoutView({
+    ...createRunLoadoutState(),
+    selectedCommanderId: "echo"
+  });
+
+  assert.match(blazeHtml, /All enemies take 10% damage and Burn for 1 turn\./);
+  assert.doesNotMatch(blazeHtml, /halves attack/i);
+  assert.match(echoHtml, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
+  assert.doesNotMatch(echoHtml, /randomly halves one visible stat/i);
+});

@@ -4,9 +4,12 @@ import { getTargetProfileForAttack } from "../content/weaponClasses.js";
 import { randomInt } from "../core/random.js";
 import {
   getArmorModifier,
-  getAttackModifier,
+  getAttackPowerForProfile,
   getLuckModifier,
-  getRangeModifier
+  getPositionArmorMultiplier,
+  getRangeModifier,
+  getStrikeOutcomeRange,
+  rollStrikeOutcome
 } from "./commanderEffects.js";
 import {
   getAttackProfileForTarget,
@@ -43,12 +46,11 @@ function getBuildingArmorBonus(state, unit) {
 
 export function getPositionArmorBonus(state, unit) {
   const buildingArmorBonus = getBuildingArmorBonus(state, unit);
+  const rawBonus = buildingArmorBonus > 0
+    ? buildingArmorBonus
+    : getTerrainArmorBonus(state, unit);
 
-  if (buildingArmorBonus > 0) {
-    return buildingArmorBonus;
-  }
-
-  return getTerrainArmorBonus(state, unit);
+  return Math.round(rawBonus * getPositionArmorMultiplier(state, unit));
 }
 
 function getProfiledBaseArmor(state, defender, attacker, attackProfile) {
@@ -120,7 +122,7 @@ export function getDamageResult(state, attacker, defender, attackProfile = getAt
     };
   }
 
-  const modifiedAttack = attackProfile.attack + getAttackModifier(state, attacker);
+  const modifiedAttack = getAttackPowerForProfile(state, attacker, attackProfile);
   const profiledAttack = Math.round(modifiedAttack * targetProfile.powerMultiplier);
   const defenderArmor = getDefenderArmor(state, defender, attacker, attackProfile);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
@@ -139,11 +141,14 @@ export function getDamageResult(state, attacker, defender, attackProfile = getAt
     luck: attackRoll.value,
     antiAirGearPenalty
   });
+  const outcome = rollStrikeOutcome(state, attacker, defender, damage);
 
   return {
-    damage,
+    damage: outcome.damage,
     isEffective: Boolean(targetProfile.isEffective),
-    weaponType: attackProfile.type
+    weaponType: attackProfile.type,
+    isCrit: outcome.isCrit,
+    isGlance: outcome.isGlance
   };
 }
 
@@ -180,7 +185,7 @@ function getDamageRange(
     };
   }
 
-  const modifiedAttack = attackProfile.attack + getAttackModifier(state, attacker);
+  const modifiedAttack = getAttackPowerForProfile(state, attacker, attackProfile);
   const profiledAttack = Math.round(modifiedAttack * targetProfile.powerMultiplier);
   const defenderArmor = getDefenderArmor(state, defender, attacker, attackProfile);
   const luckMin = 0;
@@ -188,7 +193,7 @@ function getDamageRange(
   const antiAirGearPenalty =
     attacker.gear?.slot === "gear-aa-kit" && defender.family === UNIT_TAGS.AIR ? 0.6 : 1;
 
-  return {
+  return getStrikeOutcomeRange(state, attacker, defender, {
     min: calculateDamageAmount({
       attack: profiledAttack,
       armor: defenderArmor,
@@ -204,9 +209,8 @@ function getDamageRange(
       maxHealth: attacker.stats.maxHealth,
       luck: luckMax,
       antiAirGearPenalty
-    }),
-    isEffective: Boolean(targetProfile.isEffective)
-  };
+    })
+  });
 }
 
 export function getAttackForecast(state, attacker, defender) {

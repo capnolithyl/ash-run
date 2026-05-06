@@ -17,6 +17,24 @@ function getAllUnits(state) {
   return [...state.player.units, ...state.enemy.units];
 }
 
+function hasCorruptedStat(unit, stat) {
+  return (unit?.statuses ?? []).some((status) => status.type === "corrupted" && status.stat === stat);
+}
+
+function halveVisibleStat(value) {
+  return Math.max(0, Math.ceil(value * 0.5));
+}
+
+export function getEffectiveCurrentAmmo(unit) {
+  const ammo = Math.max(0, unit?.current?.ammo ?? 0);
+  return hasCorruptedStat(unit, "ammo") ? halveVisibleStat(ammo) : ammo;
+}
+
+export function getEffectiveCurrentStamina(unit) {
+  const stamina = Math.max(0, unit?.current?.stamina ?? 0);
+  return hasCorruptedStat(unit, "stamina") ? halveVisibleStat(stamina) : stamina;
+}
+
 export function getUnitAt(state, x, y) {
   return getAllUnits(state).find(
     (unit) =>
@@ -36,7 +54,7 @@ export function getUnitAttackProfile(unit) {
     return null;
   }
 
-  if (unit.current?.ammo > 0) {
+  if (getEffectiveCurrentAmmo(unit) > 0) {
     return {
       type: "primary",
       attack: unit.stats.attack,
@@ -146,7 +164,7 @@ function getMovementCost(unit, terrain) {
 
 export function getUnitMovementAllowance(unit, movementBudget) {
   const requestedBudget = Math.max(0, Math.floor(movementBudget ?? 0));
-  const currentStamina = Math.max(0, Math.floor(unit?.current?.stamina ?? requestedBudget));
+  const currentStamina = Math.max(0, Math.floor(getEffectiveCurrentStamina(unit) ?? requestedBudget));
   return Math.min(requestedBudget, currentStamina);
 }
 

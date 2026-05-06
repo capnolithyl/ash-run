@@ -488,7 +488,7 @@ export function createSlotRecord(runState, battleState) {
 
 function extractRosterFromBattle(battleState) {
   return battleState.player.units
-    .filter((unit) => unit.current.hp > 0)
+    .filter((unit) => unit.current.hp > 0 && !unit.temporary?.battleLocalOnly)
     .map((unit) => createPersistentUnitSnapshot(unit));
 }
 

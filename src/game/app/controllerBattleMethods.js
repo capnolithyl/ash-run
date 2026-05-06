@@ -341,6 +341,18 @@ export const controllerBattleMethods = {
     }
   },
 
+  async useSelectedExtinguish() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    const changed = this.battleSystem.useExtinguishAbilityWithPendingUnit();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  },
+
   async enterSelectedTransport() {
     if (!this.battleSystem || this.isBattleInputLocked()) {
       return;
@@ -445,6 +457,9 @@ export const controllerBattleMethods = {
     if (changed) {
       await this.playPowerOverlay(TURN_SIDES.PLAYER);
       await this.persistCurrentRun();
+      return;
     }
+
+    this.syncBattleState();
   }
 };

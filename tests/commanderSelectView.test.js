@@ -46,4 +46,8 @@ test("commander select renders carousel controls and a reachable deployment acti
   assert.match(html, /"If it still rolls, it can still win\."/);
   assert.match(html, /2x Grunt/);
   assert.match(html, /Bruiser/);
+  assert.match(html, /All enemies take 10% damage and Burn for 1 turn\./);
+  assert.match(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
+  assert.doesNotMatch(html, /halves attack/i);
+  assert.doesNotMatch(html, /randomly halves one visible stat/i);
 });

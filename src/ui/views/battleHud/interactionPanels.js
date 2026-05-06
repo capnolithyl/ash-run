@@ -51,6 +51,7 @@ export function renderActionPrompt(battleSnapshot) {
     pendingAction.isChoosingTransport ||
     pendingAction.isChoosingSupport ||
     pendingAction.isChoosingMedpack ||
+    pendingAction.isChoosingExtinguish ||
     pendingAction.isUnloading
   ) {
     return "";
@@ -82,6 +83,11 @@ export function renderActionPrompt(battleSnapshot) {
           ${
             pendingAction.canUseMedpack
               ? '<button class="battle-command-prompt__action" data-action="use-medpack">Medpack</button>'
+              : ""
+          }
+          ${
+            pendingAction.canExtinguish
+              ? '<button class="battle-command-prompt__action" data-action="use-extinguish">Extinguish</button>'
               : ""
           }
           ${
@@ -158,6 +164,25 @@ export function renderMedpackPrompt(battleSnapshot) {
         <span>Select the acting unit or a highlighted infantry ally.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-medpack-choice">Cancel</button>
+    </div>
+  `;
+}
+
+export function renderExtinguishPrompt(battleSnapshot) {
+  const pendingAction = battleSnapshot.presentation?.pendingAction;
+
+  if (!pendingAction?.isChoosingExtinguish) {
+    return "";
+  }
+
+  return `
+    <div class="battle-targeting-hint">
+      <div class="battle-targeting-hint__copy">
+        <p class="eyebrow">Extinguish Mode</p>
+        <strong>${pendingAction.unitName} is ready to put out a fire</strong>
+        <span>Select a highlighted burned ally or cancel.</span>
+      </div>
+      <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-extinguish-choice">Cancel</button>
     </div>
   `;
 }

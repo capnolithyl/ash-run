@@ -165,14 +165,27 @@ test("battle HUD shows commander funds inside the commander panels without a top
   assert.match(html, /Power: Blitz Surge/);
   assert.match(html, /Passive: Estate Claim/);
   assert.match(html, /Power: Hostile Takeover/);
-  assert.match(html, /Infantry and Runners gain \+2 attack; other units gain -2 attack/);
-  assert.match(html, /Reserved for a future redesign/);
+  assert.match(html, /Infantry and Runners gain 20% attack; other units lose 20% attack\./);
+  assert.match(html, /Units gain 30% attack while standing on an owned property\./);
+  assert.match(html, /For 1 turn, units gain 5% attack and armor per owned property\./);
   assert.match(html, /assets\/img\/commanders\/viper\/Viper%20-%20Portrait\.png/);
   assert.match(html, /assets\/img\/commanders\/rook\/Rook%20-%20Portrait\.png/);
   assert.match(html, /commander-panel--player[\s\S]*?<h2>Viper<\/h2>[\s\S]*?data-funds-panel="player"/);
   assert.match(html, /commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>[\s\S]*?data-funds-panel="enemy"/);
   assert.doesNotMatch(html, /commander-panel__sigil/);
   assert.doesNotMatch(html, /battle-topbar/);
+});
+
+test("battle HUD commander rails keep blaze and echo summaries concise", () => {
+  const battleState = createTestBattleState();
+  battleState.player.commanderId = "blaze";
+  battleState.enemy.commanderId = "echo";
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /All enemies take 10% damage and Burn for 1 turn\./);
+  assert.match(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
+  assert.doesNotMatch(html, /halves attack/i);
+  assert.doesNotMatch(html, /randomly halves one visible stat/i);
 });
 
 test("battle HUD hides funds and recruitment in run mode", () => {

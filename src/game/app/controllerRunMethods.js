@@ -322,6 +322,8 @@ export const controllerRunMethods = {
         await this.persistCurrentRun();
         return;
       }
+    } else if ((this.battleSystem?.getLastPowerResult?.()?.notes?.length ?? 0) > 0) {
+      this.syncBattleState();
     }
 
     while (this.battleSystem?.hasPendingEnemyTurn()) {

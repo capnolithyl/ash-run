@@ -5,9 +5,8 @@ import {
 } from "../../../game/core/constants.js";
 import { getBuildingArmorBonusForType } from "../../../game/content/buildings.js";
 import { getWeaponClassProfile } from "../../../game/content/weaponClasses.js";
-import { getArmorModifier } from "../../../game/simulation/commanderEffects.js";
 import { getPositionArmorBonus } from "../../../game/simulation/combatResolver.js";
-import { buildFocusedTile } from "../../../game/simulation/battlePresentation.js";
+import { buildFocusedTile, describeUnit } from "../../../game/simulation/battlePresentation.js";
 import {
   formatRangeLabel,
   getBattleHudArmorIconUrl,
@@ -369,23 +368,8 @@ export function renderTargetReference(battleSnapshot, hoveredTile) {
     ? `${forecast.received.min}-${forecast.received.max}`
     : "0";
   const targetView = {
-    name: target.name,
-    family: target.family,
-    armorClass: target.stats.armorClass,
-    weaponClass: target.stats.weaponClass,
-    level: target.level,
-    hp: target.current.hp,
-    maxHealth: target.stats.maxHealth,
-    attack: target.stats.attack,
-    armor: target.stats.armor + getArmorModifier(battleSnapshot, target),
-    positionArmorBonus: getPositionArmorBonus(battleSnapshot, target),
-    movement: target.stats.movement,
-    minRange: target.stats.minRange,
-    maxRange: target.stats.maxRange,
-    stamina: target.current.stamina,
-    staminaMax: target.stats.staminaMax,
-    ammo: target.current.ammo,
-    ammoMax: target.stats.ammoMax
+    ...describeUnit(battleSnapshot, target),
+    positionArmorBonus: getPositionArmorBonus(battleSnapshot, target)
   };
 
   return `

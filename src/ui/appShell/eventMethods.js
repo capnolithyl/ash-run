@@ -243,6 +243,7 @@ export const appShellEventMethods = {
       case "cancel-transport-choice":
       case "cancel-support-choice":
       case "cancel-medpack-choice":
+      case "cancel-extinguish-choice":
       case "cancel-unload-choice":
         await this.controller.handleBattleContextAction();
         break;
@@ -254,6 +255,9 @@ export const appShellEventMethods = {
         break;
       case "use-medpack":
         await this.controller.useSelectedMedpack();
+        break;
+      case "use-extinguish":
+        await this.controller.useSelectedExtinguish();
         break;
       case "enter-transport":
         await this.controller.enterSelectedTransport();

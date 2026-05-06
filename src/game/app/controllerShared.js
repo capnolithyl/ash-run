@@ -107,10 +107,7 @@ export function getFocusSideForSelection(snapshot, selection) {
 }
 
 export function getCommanderPowerTitle(commander) {
-  const summary = commander?.active?.summary ?? "Commander Power";
-  const [title] = summary.split(":");
-
-  return title?.trim() || "Commander Power";
+  return commander?.active?.name ?? "Commander Power";
 }
 
 export function delay(ms) {
