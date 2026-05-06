@@ -679,6 +679,7 @@ test("unimplemented commanders use explicit future effect names without old gene
 test("echo disruption can corrupt ammo or stamina stats and persists through the enemy turn", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 7, 4);
+  enemy.id = "echo-a";
   const battleState = createTestBattleState({
     playerUnits: [player],
     enemyUnits: [enemy],
@@ -697,6 +698,7 @@ test("echo disruption can corrupt ammo or stamina stats and persists through the
   assert.equal(corruptedStatus?.stat, "stamina");
   assert.equal(getMovementModifier(system.getStateForSave(), updatedEnemy), -1);
   assert.equal(getEffectiveCurrentStamina(updatedEnemy), 40);
+  assert.equal(updatedEnemy.statuses.some((status) => status.type === "corrupted"), true);
   assert.notEqual(system.getStateForSave().seed, 6);
 
   assert.equal(system.endTurn(), true);
@@ -709,6 +711,35 @@ test("echo disruption can corrupt ammo or stamina stats and persists through the
   updatedEnemy = system.getStateForSave().enemy.units[0];
   assert.equal(updatedEnemy.statuses.some((status) => status.type === "corrupted"), false);
   assert.equal(getEffectiveCurrentStamina(updatedEnemy), 80);
+});
+
+test("echo disruption rolls corrupted stats independently per enemy unit", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemies = [
+    createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4),
+    createPlacedUnit("runner", TURN_SIDES.ENEMY, 7, 5),
+    createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 7, 6)
+  ];
+  enemies[0].id = "echo-0";
+  enemies[1].id = "echo-1";
+  enemies[2].id = "echo-3";
+  const battleState = createTestBattleState({
+    playerUnits: [player],
+    enemyUnits: enemies,
+    seed: 6
+  });
+  battleState.player.commanderId = "echo";
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+
+  const corruptedStats = system.getStateForSave().enemy.units.map(
+    (unit) => unit.statuses.find((status) => status.type === "corrupted")?.stat ?? null
+  );
+
+  assert.deepEqual(corruptedStats, ["attack", "ammo", "armor"]);
 });
 
 test("blaze ignition applies burn damage, halves attack while burning, and expires after the burned turn", () => {

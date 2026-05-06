@@ -42,6 +42,12 @@ export function renderSelectionIcon(iconName) {
       return `
         <img src="${getBattleHudStatIconUrl("sta.png")}" alt="" loading="lazy" decoding="async" />
       `;
+    case "luck":
+      return `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 4l2.2 4.5 5 .7-3.6 3.5.9 4.9-4.5-2.4-4.5 2.4.9-4.9L4.8 9.2l5-.7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      `;
     case "command":
       return `
         <svg viewBox="0 0 24 24" aria-hidden="true">

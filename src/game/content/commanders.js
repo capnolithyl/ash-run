@@ -18,7 +18,7 @@ export const COMMANDERS = [
     title: "The Mechanic",
     quote: "\"If it still rolls, it can still win.\"",
     accent: "#f3a55a",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 300,
     enemyAiWeights: [25, 5, 45, 20, 5],
     passive: {
       name: "Field Repairs",
@@ -41,7 +41,7 @@ export const COMMANDERS = [
     title: "Femme Fatale",
     quote: "\"Hit first, smile last, leave them guessing in between.\"",
     accent: "#ec775e",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 250,
     enemyAiWeights: [25, 40, 5, 15, 15],
     passive: {
       name: "Shock Doctrine",
@@ -67,7 +67,7 @@ export const COMMANDERS = [
     title: "The Inheritor",
     quote: "\"A clean ledger wins dirtier wars.\"",
     accent: "#d2bc62",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 325,
     enemyAiWeights: [20, 5, 20, 40, 15],
     passive: {
       name: "Estate Claim",
@@ -89,7 +89,7 @@ export const COMMANDERS = [
     title: "The Control Freak",
     quote: "\"The battle is over the moment I decide where you stand.\"",
     accent: "#70d3c5",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 325,
     enemyAiWeights: [35, 20, 20, 5, 20],
     passive: {
       name: "Slipstream",
@@ -110,7 +110,7 @@ export const COMMANDERS = [
     title: "The Pyromaniac",
     quote: "\"If they wanted mercy, they should've brought rain.\"",
     accent: "#ff8c42",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 350,
     enemyAiWeights: [20, 45, 5, 5, 25],
     passive: {
       name: "Scorched Earth",
@@ -132,7 +132,7 @@ export const COMMANDERS = [
     title: "The Bulwark",
     quote: "\"Let them break themselves on the wall.\"",
     accent: "#95a7c7",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 275,
     enemyAiWeights: [25, 5, 50, 15, 5],
     passive: {
       name: "Shield Wall",
@@ -153,7 +153,7 @@ export const COMMANDERS = [
     title: "The Ace",
     quote: "\"Own the sky and the ground starts asking permission.\"",
     accent: "#71b5ff",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 350,
     enemyAiWeights: [25, 25, 5, 5, 40],
     passive: {
       name: "Air Superiority",
@@ -175,7 +175,7 @@ export const COMMANDERS = [
     title: "The Reaper",
     quote: "\"Make it count. Then make sure they stay down.\"",
     accent: "#b68f6e",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 250,
     enemyAiWeights: [20, 40, 5, 5, 30],
     passive: {
       name: "Kill Confirm",
@@ -194,7 +194,7 @@ export const COMMANDERS = [
     title: "The Glass Cannon",
     quote: "\"If you're going to burn bright, make sure they have to look away.\"",
     accent: "#f086d9",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 300,
     enemyAiWeights: [20, 45, 5, 5, 25],
     passive: {
       name: "Full Magazine",
@@ -215,7 +215,7 @@ export const COMMANDERS = [
     title: "Lady Luck",
     quote: "\"Chance is just another weapon if you know how to hold it.\"",
     accent: "#8ac79b",
-    powerMax: COMMANDER_POWER_MAX,
+    powerMax: 300,
     enemyAiWeights: [40, 20, 15, 15, 10],
     passive: {
       name: "Loaded Dice",

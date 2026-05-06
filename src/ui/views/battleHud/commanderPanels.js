@@ -2,6 +2,9 @@ import { TURN_SIDES } from "../../../game/core/constants.js";
 import { getCommanderPortraitImageUrl } from "../../../game/content/commanderArt.js";
 import { getCommanderPowerMax } from "../../../game/content/commanders.js";
 
+const COMMANDER_POWER_SEGMENT_VALUE = 25;
+const COMMANDER_POWER_SEGMENT_HALF_STEPS = 2;
+
 function renderFundsPanel(label, value, side, modifierClass = "", fundsGain = null) {
   const isGaining = fundsGain?.side === side;
   const displayValue = isGaining ? fundsGain.from : value;
@@ -51,6 +54,67 @@ export function isPlayerPowerCharged(battleSnapshot) {
   return battleSnapshot.player.charge >= getCommanderPowerMax(battleSnapshot.player.commanderId);
 }
 
+function getCommanderPowerSegmentCount(powerMax) {
+  return Math.max(1, Math.ceil(powerMax / COMMANDER_POWER_SEGMENT_VALUE));
+}
+
+function getCommanderPowerHalfSteps(charge, powerMax, isActive = false) {
+  const segmentCount = getCommanderPowerSegmentCount(powerMax);
+
+  if (isActive) {
+    return segmentCount * COMMANDER_POWER_SEGMENT_HALF_STEPS;
+  }
+
+  const clampedCharge = Math.max(0, Math.min(powerMax, Number(charge) || 0));
+
+  return Math.max(
+    0,
+    Math.min(
+      segmentCount * COMMANDER_POWER_SEGMENT_HALF_STEPS,
+      Math.floor(
+        (clampedCharge / COMMANDER_POWER_SEGMENT_VALUE) * COMMANDER_POWER_SEGMENT_HALF_STEPS + Number.EPSILON
+      )
+    )
+  );
+}
+
+function renderCommanderPowerSegments(sideState, powerMax, { isActive = false } = {}) {
+  const segmentCount = getCommanderPowerSegmentCount(powerMax);
+  const filledHalfSteps = getCommanderPowerHalfSteps(sideState.charge, powerMax, isActive);
+  const displayCharge = Math.max(0, Math.min(powerMax, Math.floor(Number(sideState.charge) || 0)));
+  const segments = Array.from({ length: segmentCount }, (_, index) => {
+    const segmentHalfSteps = Math.max(
+      0,
+      Math.min(COMMANDER_POWER_SEGMENT_HALF_STEPS, filledHalfSteps - index * COMMANDER_POWER_SEGMENT_HALF_STEPS)
+    );
+    const segmentState =
+      segmentHalfSteps >= COMMANDER_POWER_SEGMENT_HALF_STEPS
+        ? "full"
+        : segmentHalfSteps === 1
+          ? "half"
+          : "empty";
+
+    return `<span class="commander-meter__segment commander-meter__segment--${segmentState}" aria-hidden="true"></span>`;
+  }).join("");
+  const ariaLabel = isActive
+    ? "Commander power active. Meter is fully charged."
+    : `Commander power ${displayCharge} of ${powerMax}. Each segment is worth ${COMMANDER_POWER_SEGMENT_VALUE} points.`;
+
+  return `
+    <div
+      class="meter__bar commander-meter__segments ${isActive ? "commander-meter__segments--active" : ""}"
+      style="--meter-segment-count:${segmentCount}"
+      data-segment-count="${segmentCount}"
+      data-segment-value="${COMMANDER_POWER_SEGMENT_VALUE}"
+      data-filled-half-steps="${filledHalfSteps}"
+      role="img"
+      aria-label="${ariaLabel}"
+    >
+      ${segments}
+    </div>
+  `;
+}
+
 function renderCommanderPowerControl(
   commander,
   sideState,
@@ -58,8 +122,6 @@ function renderCommanderPowerControl(
   { canActivatePower = false, isCharged = false, isActive = false } = {}
 ) {
   const powerMax = getCommanderPowerMax(sideState.commanderId);
-  const powerRatio = Math.min(1, sideState.charge / powerMax);
-  const meterValue = isActive ? "ACTIVE" : `${Math.floor(sideState.charge)}/${powerMax}`;
   const statusLabel =
     isActive
       ? "Active This Turn"
@@ -76,10 +138,7 @@ function renderCommanderPowerControl(
         aria-disabled="true"
       >
         <div class="meter commander-meter commander-meter--interactive">
-          <div class="meter__bar">
-            <div class="${isActive ? "commander-meter__fill--active" : ""}" style="width:${isActive ? 100 : powerRatio * 100}%"></div>
-            <span class="commander-meter__value">${meterValue}</span>
-          </div>
+          ${renderCommanderPowerSegments(sideState, powerMax, { isActive })}
         </div>
         <small>${isActive ? "Active This Turn" : isCharged ? "Charged" : "Charging"}</small>
       </div>
@@ -93,10 +152,7 @@ function renderCommanderPowerControl(
       ${canActivatePower ? "" : "disabled"}
     >
       <div class="meter commander-meter commander-meter--interactive">
-        <div class="meter__bar">
-          <div class="${isActive ? "commander-meter__fill--active" : ""}" style="width:${isActive ? 100 : powerRatio * 100}%"></div>
-          <span class="commander-meter__value">${meterValue}</span>
-        </div>
+        ${renderCommanderPowerSegments(sideState, powerMax, { isActive })}
       </div>
       <small>${statusLabel}</small>
     </button>

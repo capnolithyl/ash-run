@@ -62,9 +62,51 @@ function getTerrainIconName(terrainId) {
   }
 }
 
-function renderStatCell(iconName, label, value) {
+const CORRUPTED_ICON_URL = "./assets/img/icons/battle-hud/conditions/corrupted.png";
+const SLOW_ICON_URL = "./assets/img/icons/battle-hud/conditions/slow.png";
+const BURN_ICON_URL = "./assets/img/icons/battle-hud/conditions/burn.png";
+
+function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed = false } = {}) {
+  const conditionLabels = [];
+
+  if (isCorrupted) {
+    conditionLabels.push("corrupted");
+  }
+
+  if (isSlowed) {
+    conditionLabels.push("slowed");
+  }
+
+  const ariaLabel = `${label} ${value}${conditionLabels.length ? ` ${conditionLabels.join(" ")}` : ""}`;
+  const conditionIcon = isCorrupted
+    ? {
+        src: CORRUPTED_ICON_URL,
+        alt: "Corrupted",
+        className: "selection-stat__condition-icon selection-stat__condition-icon--corrupted"
+      }
+    : isSlowed
+      ? {
+          src: SLOW_ICON_URL,
+          alt: "Slowed",
+          className: "selection-stat__condition-icon selection-stat__condition-icon--slow"
+        }
+      : null;
+
   return `
-    <div class="selection-stat" aria-label="${label} ${value}">
+    <div class="selection-stat${isCorrupted ? " selection-stat--corrupted" : ""}${isSlowed ? " selection-stat--slowed" : ""}" aria-label="${ariaLabel}">
+      ${
+        conditionIcon
+          ? `
+            <img
+              class="${conditionIcon.className}"
+              src="${conditionIcon.src}"
+              alt="${conditionIcon.alt}"
+              loading="lazy"
+              decoding="async"
+            />
+          `
+          : ""
+      }
       <span
         class="selection-icon selection-icon--stat selection-stat__icon"
         aria-hidden="true"
@@ -174,12 +216,18 @@ function renderUnitStatGrid(unit) {
 
   return `
     <div class="selection-stat-grid">
-      ${renderStatCell("attack", "ATK", unit.attack)}
-      ${renderStatCell("armor", "ARM", armorLabel)}
-      ${renderStatCell("movement", "MOV", unit.movement)}
-      ${renderStatCell("range", "RNG", formatRangeLabel(unit.minRange, unit.maxRange))}
-      ${renderStatCell("ammo", "AMMO", `${unit.ammo}/${unit.ammoMax}`)}
-      ${renderStatCell("stamina", "STA", `${unit.stamina}/${unit.staminaMax}`)}
+      ${renderStatCell("attack", "ATK", unit.attack, { isCorrupted: unit.corruptedStat === "attack" })}
+      ${renderStatCell("armor", "ARM", armorLabel, { isCorrupted: unit.corruptedStat === "armor" })}
+      ${renderStatCell("movement", "MOV", unit.movement, { isSlowed: unit.isSlowed })}
+      ${renderStatCell("range", "RNG", formatRangeLabel(unit.minRange, unit.maxRange), {
+        isCorrupted: unit.corruptedStat === "range"
+      })}
+      ${renderStatCell("ammo", "AMMO", `${unit.ammo}/${unit.ammoMax}`, {
+        isCorrupted: unit.corruptedStat === "ammo"
+      })}
+      ${renderStatCell("stamina", "STA", `${unit.stamina}/${unit.staminaMax}`, {
+        isCorrupted: unit.corruptedStat === "stamina"
+      })}
     </div>
   `;
 }
@@ -215,6 +263,19 @@ function renderUnitSummary(unit, { showExperience = false } = {}) {
         <div class="selection-unit-heading__title">
           <strong>${unit.name}</strong>
           <span class="selection-level-badge" aria-label="Level ${unit.level}">${unit.level}</span>
+          ${
+            unit.isBurned
+              ? `
+                <img
+                  class="selection-unit-heading__condition-icon"
+                  src="${BURN_ICON_URL}"
+                  alt="Burning"
+                  loading="lazy"
+                  decoding="async"
+                />
+              `
+              : ""
+          }
         </div>
       </div>
       ${showExperience ? renderExperienceBar(unit) : ""}

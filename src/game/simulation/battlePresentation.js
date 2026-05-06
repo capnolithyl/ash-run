@@ -126,6 +126,12 @@ export function describeUnit(state, unit) {
     ammo: getEffectiveCurrentAmmo(unit),
     ammoMax: unit.stats.ammoMax,
     luck: getDisplayedUnitLuck(state, unit),
+    corruptedStat:
+      (unit.statuses ?? []).find((status) => status.type === "corrupted")?.stat ?? null,
+    isBurned: (unit.statuses ?? []).some((status) => status.type === "burn"),
+    isSlowed: (unit.statuses ?? []).some(
+      (status) => status.type === "mobility" && (Number(status.value) || 0) < 0
+    ),
     hasMoved: unit.hasMoved,
     hasAttacked: unit.hasAttacked,
     gear: gearUpgrade

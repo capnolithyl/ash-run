@@ -43,6 +43,10 @@ function getActionButton(html, action) {
   );
 }
 
+function countMatches(text, pattern) {
+  return text.match(pattern)?.length ?? 0;
+}
+
 test("battle HUD shows hovered enemy stats while targeting", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 2);
@@ -186,6 +190,44 @@ test("battle HUD commander rails keep blaze and echo summaries concise", () => {
   assert.match(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
   assert.doesNotMatch(html, /halves attack/i);
   assert.doesNotMatch(html, /randomly halves one visible stat/i);
+});
+
+test("battle HUD marks corrupted stats on the unit sidebar", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    statuses: [{ type: "corrupted", stat: "attack", turnsRemaining: 1, negative: true }]
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit]
+  });
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /selection-stat--corrupted/);
+  assert.match(html, /aria-label="ATK 37 corrupted"/);
+  assert.match(html, /assets\/img\/icons\/battle-hud\/conditions\/corrupted\.png/);
+  assert.doesNotMatch(html, /LCK/);
+});
+
+test("battle HUD marks slowed movement and burned units prominently", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    statuses: [
+      { type: "mobility", value: -1, turnsRemaining: 1, negative: true },
+      { type: "burn", tickDamageRatio: 0.1, negative: true }
+    ]
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit]
+  });
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /selection-stat--slowed/);
+  assert.match(html, /aria-label="MOV 3 slowed"/);
+  assert.match(html, /assets\/img\/icons\/battle-hud\/conditions\/slow\.png/);
+  assert.match(html, /selection-unit-heading__condition-icon/);
+  assert.match(html, /assets\/img\/icons\/battle-hud\/conditions\/burn\.png/);
 });
 
 test("battle HUD hides funds and recruitment in run mode", () => {
@@ -409,21 +451,24 @@ test("battle HUD turns the power meter into the activation control", () => {
   const chargingState = createTestBattleState();
   chargingState.player.charge = getCommanderPowerMax(chargingState.player.commanderId) - 1;
   const chargingButton = getActionButton(renderHudForBattleState(chargingState), "activate-power");
+  const chargingSegmentCount = Math.ceil(getCommanderPowerMax(chargingState.player.commanderId) / 25);
 
   assert.match(chargingButton, /disabled/);
-  assert.match(
-    chargingButton,
-    new RegExp(
-      `commander-meter__value\">${chargingState.player.charge}\\/${getCommanderPowerMax(chargingState.player.commanderId)}<`
-    )
-  );
+  assert.match(chargingButton, new RegExp(`data-segment-count="${chargingSegmentCount}"`));
+  assert.match(chargingButton, /data-segment-value="25"/);
+  assert.equal(countMatches(chargingButton, /commander-meter__segment--full/g), chargingSegmentCount - 1);
+  assert.equal(countMatches(chargingButton, /commander-meter__segment--half/g), 1);
+  assert.doesNotMatch(chargingButton, /commander-meter__value/);
 
   const readyState = createTestBattleState();
   readyState.player.charge = getCommanderPowerMax(readyState.player.commanderId);
   const readyButton = getActionButton(renderHudForBattleState(readyState), "activate-power");
+  const readySegmentCount = Math.ceil(getCommanderPowerMax(readyState.player.commanderId) / 25);
 
   assert.doesNotMatch(readyButton, /disabled/);
   assert.match(readyButton, /commander-power-button--charged/);
+  assert.equal(countMatches(readyButton, /commander-meter__segment--full/g), readySegmentCount);
+  assert.equal(countMatches(readyButton, /commander-meter__segment--half/g), 0);
   assert.doesNotMatch(renderHudForBattleState(readyState), /Use Commander Power/);
 
   const enemyTurnState = createTestBattleState({
@@ -442,6 +487,7 @@ test("battle HUD keeps the power meter visually active for the rest of the activ
     enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2)]
   });
   battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+  const segmentCount = Math.ceil(getCommanderPowerMax(battleState.player.commanderId) / 25);
   const system = new BattleSystem(battleState);
 
   assert.equal(system.activatePower(), true);
@@ -466,7 +512,9 @@ test("battle HUD keeps the power meter visually active for the rest of the activ
   });
 
   assert.match(html, /commander-power-button--active/);
-  assert.match(html, /<span class="commander-meter__value">ACTIVE<\/span>/);
+  assert.match(html, /commander-meter__segments--active/);
+  assert.equal(countMatches(html, /commander-meter__segment--full/g), segmentCount);
+  assert.equal(countMatches(html, /commander-meter__segment--half/g), 0);
   assert.match(html, /Active This Turn/);
 });
 
