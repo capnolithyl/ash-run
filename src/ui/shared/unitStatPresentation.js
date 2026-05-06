@@ -12,6 +12,10 @@ export function getBattleHudWeaponIconUrl(fileName) {
   return `./assets/img/icons/battle-hud/weapons/${encodeURIComponent(fileName)}`;
 }
 
+export function getBattleHudArmorIconUrl(fileName) {
+  return `./assets/img/icons/battle-hud/armor/${encodeURIComponent(fileName)}`;
+}
+
 export function renderSelectionIcon(iconName) {
   switch (iconName) {
     case "attack":

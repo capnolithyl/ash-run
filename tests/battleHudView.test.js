@@ -617,9 +617,24 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
     /<strong>Grunt<\/strong>[\s\S]*?<strong>Experience<\/strong>[\s\S]*?selection-health__label">HP<\/span>/
   );
   assert.match(html, /<strong>Rifle<\/strong>/);
+  assert.match(html, /assets\/img\/icons\/battle-hud\/weapons\/rifle\.png/);
   assert.match(html, /<strong>Infantry Armor<\/strong>/);
+  assert.match(html, /assets\/img\/icons\/battle-hud\/armor\/infantry\.png/);
   assert.doesNotMatch(html, /Weapon Profile/);
   assert.doesNotMatch(html, /Armor Profile/);
+});
+
+test("battle HUD shows the matching weapon icon for non-rifle weapon classes", () => {
+  const unit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /<strong>Autocannon<\/strong>/);
+  assert.match(html, /assets\/img\/icons\/battle-hud\/weapons\/autocannon\.png/);
 });
 
 test("medics with field medpacks show separate heal and medpack actions", () => {

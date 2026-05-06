@@ -10,6 +10,7 @@ import { getPositionArmorBonus } from "../../../game/simulation/combatResolver.j
 import { buildFocusedTile } from "../../../game/simulation/battlePresentation.js";
 import {
   formatRangeLabel,
+  getBattleHudArmorIconUrl,
   getBattleHudWeaponIconUrl,
   renderSelectionIcon
 } from "../../shared/unitStatPresentation.js";
@@ -101,12 +102,11 @@ function getArmorProfileSummary(unit) {
 }
 
 function getWeaponClassIconFileName(weaponClass) {
-  switch (weaponClass) {
-    case "rifle":
-      return "rifle.png";
-    default:
-      return null;
-  }
+  return weaponClass ? `${weaponClass.replaceAll("_", "-")}.png` : null;
+}
+
+function getArmorClassIconFileName(armorClass) {
+  return armorClass ? `${armorClass.replaceAll("_", "-")}.png` : null;
 }
 
 function renderProfileSummary(unit) {
@@ -115,6 +115,7 @@ function renderProfileSummary(unit) {
     ? `${formatProfileName(unit.armorClass)} Armor`
     : "Unarmored";
   const weaponIconFileName = getWeaponClassIconFileName(unit.weaponClass);
+  const armorIconFileName = getArmorClassIconFileName(unit.armorClass);
 
   return `
     <div class="selection-profile-grid">
@@ -132,8 +133,17 @@ function renderProfileSummary(unit) {
         </div>
       </div>
       <div class="selection-profile-card">
-        <strong>${armorName}</strong>
-        <p>${getArmorProfileSummary(unit)}</p>
+        <div class="selection-profile-card__lead">
+          ${
+            armorIconFileName
+              ? `<img class="selection-profile-card__icon" src="${getBattleHudArmorIconUrl(armorIconFileName)}" alt="" loading="lazy" decoding="async" />`
+              : ""
+          }
+          <div class="selection-profile-card__copy">
+            <strong>${armorName}</strong>
+            <p>${getArmorProfileSummary(unit)}</p>
+          </div>
+        </div>
       </div>
     </div>
   `;
