@@ -41,6 +41,7 @@ function renderSceneMarkup(sceneId, state) {
       return renderOptionsView(state);
     case "progression":
       return renderProgressionView(state);
+    case "battle-commander-layout":
     case "battle-targeting":
     case "battle-pause":
     case "battle-reward":

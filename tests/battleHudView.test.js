@@ -159,7 +159,7 @@ test("battle HUD replaces unload command menu with a cancellable unload prompt",
   assert.doesNotMatch(html, /data-action="wait-unit"/);
 });
 
-test("battle HUD shows compact commander strips without ability summaries or funds", () => {
+test("battle HUD shows compact commander strips with hover-only commander tooltips and no funds", () => {
   const battleState = createTestBattleState();
   const html = renderHudForBattleState(battleState);
 
@@ -167,7 +167,10 @@ test("battle HUD shows compact commander strips without ability summaries or fun
   assert.match(html, /assets\/img\/commanders\/rook\/Rook%20-%20Portrait\.png/);
   assert.match(html, /battle-commanders[\s\S]*?commander-panel--player[\s\S]*?<h2>Viper<\/h2>/);
   assert.match(html, /battle-commanders[\s\S]*?commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>/);
-  assert.match(html, /<small>Charging<\/small>/);
+  assert.equal(countMatches(html, /role="tooltip"/g), 4);
+  assert.equal(countMatches(html, /data-tooltip-trigger="trait"/g), 2);
+  assert.equal(countMatches(html, /data-tooltip-trigger="active"/g), 2);
+  assert.doesNotMatch(html, /Charging/);
   assert.doesNotMatch(html, /Passive:/);
   assert.doesNotMatch(html, /Power:/);
   assert.doesNotMatch(html, /data-funds-panel=/);
@@ -175,7 +178,7 @@ test("battle HUD shows compact commander strips without ability summaries or fun
   assert.doesNotMatch(html, /battle-topbar/);
 });
 
-test("battle HUD commander strips omit blaze and echo ability summaries", () => {
+test("battle HUD keeps blaze and echo ability summaries inside commander tooltips", () => {
   const battleState = createTestBattleState();
   battleState.player.commanderId = "blaze";
   battleState.enemy.commanderId = "echo";
@@ -183,10 +186,11 @@ test("battle HUD commander strips omit blaze and echo ability summaries", () => 
 
   assert.match(html, /<h2>Blaze<\/h2>/);
   assert.match(html, /<h2>Echo<\/h2>/);
-  assert.doesNotMatch(html, /All enemies take 10% damage and Burn for 1 turn\./);
-  assert.doesNotMatch(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
+  assert.match(html, /All enemies take 10% damage and Burn for 1 turn\./);
+  assert.match(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
   assert.doesNotMatch(html, /halves attack/i);
   assert.doesNotMatch(html, /randomly halves one visible stat/i);
+  assert.match(html, /data-tooltip-panel="active"/);
 });
 
 test("battle HUD marks corrupted stats on the unit sidebar", () => {
@@ -512,7 +516,7 @@ test("battle HUD keeps the power meter visually active for the rest of the activ
   assert.match(html, /commander-meter__segments--active/);
   assert.equal(countMatches(html, /commander-meter__segment--full/g), segmentCount);
   assert.equal(countMatches(html, /commander-meter__segment--half/g), 0);
-  assert.match(html, /Active This Turn/);
+  assert.doesNotMatch(html, /Active This Turn/);
 });
 
 test("run-complete overlay includes intel breakdown and a progression button", () => {

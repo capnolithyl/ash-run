@@ -5,6 +5,45 @@ import { getCommanderPowerMax } from "../../../game/content/commanders.js";
 const COMMANDER_POWER_SEGMENT_VALUE = 25;
 const COMMANDER_POWER_SEGMENT_HALF_STEPS = 2;
 
+function getCommanderTooltipSlot(systemKey) {
+  return systemKey === "passive" ? "trait" : "active";
+}
+
+function renderCommanderSystem(system, systemKey) {
+  const systemLabel = systemKey === "passive" ? "Trait" : "Ability";
+  const tooltipSlot = getCommanderTooltipSlot(systemKey);
+
+  return `
+    <button
+      type="button"
+      class="commander-panel__system"
+      data-tooltip-trigger="${tooltipSlot}"
+      aria-label="${systemLabel}: ${system.name}. ${system.summary}"
+    >
+      <span>${systemLabel}</span>
+      <strong>${system.name}</strong>
+    </button>
+  `;
+}
+
+function renderCommanderSystemTooltip(system, systemKey) {
+  const systemLabel = systemKey === "passive" ? "Trait" : "Ability";
+  const tooltipSlot = getCommanderTooltipSlot(systemKey);
+
+  return `
+    <div
+      class="commander-panel__tooltip"
+      data-tooltip-panel="${tooltipSlot}"
+      role="tooltip"
+      aria-hidden="true"
+    >
+      <span class="commander-panel__tooltip-label">${systemLabel}</span>
+      <strong class="commander-panel__tooltip-name">${system.name}</strong>
+      <p class="commander-panel__tooltip-summary">${system.summary}</p>
+    </div>
+  `;
+}
+
 export function canSelectNextReadyUnit(battleSnapshot) {
   if (
     !battleSnapshot ||
@@ -105,14 +144,6 @@ function renderCommanderPowerControl(
   { canActivatePower = false, isCharged = false, isActive = false } = {}
 ) {
   const powerMax = getCommanderPowerMax(sideState.commanderId);
-  const statusLabel =
-    isActive
-      ? "Active This Turn"
-      : canActivatePower
-        ? "Activate Power"
-        : isCharged
-          ? "Ready Next Turn"
-          : "Charging";
 
   if (side !== TURN_SIDES.PLAYER) {
     return `
@@ -123,7 +154,6 @@ function renderCommanderPowerControl(
         <div class="meter commander-meter commander-meter--interactive">
           ${renderCommanderPowerSegments(sideState, powerMax, { isActive })}
         </div>
-        <small>${isActive ? "Active This Turn" : isCharged ? "Charged" : "Charging"}</small>
       </div>
     `;
   }
@@ -137,7 +167,6 @@ function renderCommanderPowerControl(
       <div class="meter commander-meter commander-meter--interactive">
         ${renderCommanderPowerSegments(sideState, powerMax, { isActive })}
       </div>
-      <small>${statusLabel}</small>
     </button>
   `;
 }
@@ -152,29 +181,42 @@ export function renderCommanderPanel(
   const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
 
   return `
-    <div class="commander-panel commander-panel--${side}" style="--accent:${commander.accent}">
-      <div class="commander-panel__identity">
-        ${
-          portraitImageUrl
-            ? `
-              <img
-                class="commander-panel__portrait"
-                src="${portraitImageUrl}"
-                alt="${commander.name} portrait"
-                loading="lazy"
-                decoding="async"
-              />
-            `
-            : ""
-        }
-      </div>
-      <div class="commander-panel__summary">
-        <p class="eyebrow">${sideLabel}</p>
-        <h2>${commander.name}</h2>
-        <div class="commander-panel__charge-row">
-          ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged, isActive })}
+    <div class="commander-panel-shell commander-panel-shell--${side}" style="--accent:${commander.accent}">
+      <div class="commander-panel commander-panel--${side}">
+        <div class="commander-panel__identity">
+          ${
+            portraitImageUrl
+              ? `
+                <img
+                  class="commander-panel__portrait"
+                  src="${portraitImageUrl}"
+                  alt="${commander.name} portrait"
+                  loading="lazy"
+                  decoding="async"
+                />
+              `
+              : ""
+          }
+        </div>
+        <div class="commander-panel__summary">
+          <p class="eyebrow">${sideLabel}</p>
+          <div class="commander-panel__details">
+            <div class="commander-panel__nameplate">
+              <h2>${commander.name}</h2>
+              <span class="commander-panel__title">${commander.title ?? "Commander"}</span>
+            </div>
+            <div class="commander-panel__systems">
+              ${renderCommanderSystem(commander.passive, "passive")}
+              ${renderCommanderSystem(commander.active, "active")}
+            </div>
+          </div>
+          <div class="commander-panel__charge-row">
+            ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged, isActive })}
+          </div>
         </div>
       </div>
+      ${renderCommanderSystemTooltip(commander.passive, "passive")}
+      ${renderCommanderSystemTooltip(commander.active, "active")}
     </div>
   `;
 }

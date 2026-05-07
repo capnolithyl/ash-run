@@ -254,6 +254,52 @@ function createBattleTargetingState() {
   return state;
 }
 
+function createBattleCommanderLayoutState() {
+  const playerUnit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 4, {
+    level: 1,
+    current: {
+      stamina: 8
+    }
+  });
+  const enemyUnit = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 1, {
+    level: 1
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = 275;
+  battleState.enemy.commanderId = "graves";
+  battleState.enemy.charge = 200;
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+
+  const system = new BattleSystem(battleState);
+
+  return {
+    screen: SCREEN_IDS.BATTLE,
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      notice: null,
+      powerOverlay: null,
+      hoveredTile: null,
+      playerFocus: { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y },
+      enemyFocus: { type: "unit", id: enemyUnit.id, x: enemyUnit.x, y: enemyUnit.y }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: "",
+    metaState: createBaseMetaState()
+  };
+}
+
 function createBattlePauseState() {
   const state = createBaseBattleScreenState();
   const playerUnit = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2, {
@@ -390,6 +436,7 @@ export const UI_HARNESS_SCENES = [
   { id: "skirmish-map", label: "Skirmish Map", locator: "#ui-root" },
   { id: "options", label: "Options", locator: "#ui-root" },
   { id: "progression", label: "Progression", locator: "#ui-root" },
+  { id: "battle-commander-layout", label: "Battle Commander Layout", locator: ".battle-shell" },
   { id: "battle-targeting", label: "Battle HUD Targeting", locator: ".battle-shell" },
   { id: "battle-pause", label: "Battle HUD Pause", locator: ".battle-shell" },
   { id: "battle-reward", label: "Battle Reward", locator: ".battle-shell" },
@@ -434,6 +481,11 @@ export function createUiHarnessScene(sceneId) {
       return {
         sceneId,
         state: createBattleTargetingState()
+      };
+    case "battle-commander-layout":
+      return {
+        sceneId,
+        state: createBattleCommanderLayoutState()
       };
     case "battle-pause":
       return {

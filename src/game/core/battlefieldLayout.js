@@ -6,7 +6,7 @@ export function getBattlefieldLayout({
 }) {
   const isCompact = viewportWidth <= 1024;
   const isShort = viewportHeight <= 520;
-  const reservedTop = isCompact ? (isShort ? 76 : 118) : 158;
+  const reservedTop = isCompact ? (isShort ? 76 : 118) : 188;
   const reservedBottom = isCompact ? (isShort ? 94 : viewportWidth <= 560 ? 152 : 128) : 112;
   const availableHeight = Math.max(180, viewportHeight - reservedTop - reservedBottom);
   // Desktop rails are fixed-width, so fit the board to the center lane instead of
