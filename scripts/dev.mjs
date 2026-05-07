@@ -3,7 +3,8 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 const root = process.cwd();
-const devPort = parseDevPort(process.env.ASH_RUN_84_DEV_PORT);
+const requestedDevPort = parseDevPort(process.env.ASH_RUN_84_DEV_PORT);
+const devPort = await resolveDevPort(requestedDevPort);
 const sharedEnv = {
   ...process.env,
   ASH_RUN_84_DEV_PORT: String(devPort)
@@ -93,6 +94,31 @@ function parseDevPort(rawPort) {
   return parsedPort;
 }
 
+async function resolveDevPort(preferredPort) {
+  const maxPortChecks = 20;
+
+  for (let offset = 0; offset < maxPortChecks; offset += 1) {
+    const candidatePort = preferredPort + offset;
+
+    if (candidatePort > 65535) {
+      break;
+    }
+
+    if (await canListen(candidatePort)) {
+      if (candidatePort !== preferredPort) {
+        console.log(`Port ${preferredPort} is busy. Using port ${candidatePort} for the dev server instead.`);
+      }
+
+      return candidatePort;
+    }
+  }
+
+  throw new Error(
+    `Unable to find an open dev port starting at ${preferredPort}. ` +
+      `Set ASH_RUN_84_DEV_PORT to an available port and try again.`
+  );
+}
+
 async function waitForPort(port, childProcess, timeoutMs = 15000) {
   const startTime = Date.now();
 
@@ -109,6 +135,24 @@ async function waitForPort(port, childProcess, timeoutMs = 15000) {
   }
 
   throw new Error(`Timed out waiting for the Vite dev server on port ${port}.`);
+}
+
+function canListen(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.once("error", () => {
+      server.close(() => {
+        resolve(false);
+      });
+    });
+
+    server.listen(port, "127.0.0.1", () => {
+      server.close(() => {
+        resolve(true);
+      });
+    });
+  });
 }
 
 function canConnect(port) {

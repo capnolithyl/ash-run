@@ -42,7 +42,9 @@
     "directories": {
       "buildResources": "build"
     },
+    "icon": "build/icon.png",
     "win": {
+      "icon": "build/icon.png",
       "target": "nsis",
       "signAndEditExecutable": false
     }

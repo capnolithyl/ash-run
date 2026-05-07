@@ -5,6 +5,8 @@ const path = require("node:path");
 const DIST_PATH = path.resolve(__dirname, "../dist/index.html");
 const DEV_SERVER_PORT = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
 const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
+const DEV_WINDOW_ICON_PATH = path.resolve(__dirname, "../assets/img/logos/logo.png");
+const PACKAGED_WINDOW_ICON_PATH = path.resolve(__dirname, "../dist/assets/img/logos/logo.png");
 const SLOT_IDS = ["slot-1", "slot-2", "slot-3"];
 const META_FILE_NAME = "meta.json";
 const USE_DEV_SERVER = !app.isPackaged && process.env.ASH_RUN_84_DEV_SERVER === "1";
@@ -73,6 +75,7 @@ async function createWindow() {
     backgroundColor: "#09110f",
     title: "Ash Run '84",
     autoHideMenuBar: true,
+    icon: app.isPackaged ? PACKAGED_WINDOW_ICON_PATH : DEV_WINDOW_ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

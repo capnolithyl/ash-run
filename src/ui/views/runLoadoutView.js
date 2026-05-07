@@ -2,7 +2,7 @@ import { getCommanderById } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 import { getUnitSpriteDefinition } from "../../game/phaser/assets.js";
-import { formatRangeLabel, renderSelectionIcon } from "../shared/unitStatPresentation.js";
+import { formatRangeLabel, getBattleHudStatIconUrl } from "../shared/unitStatPresentation.js";
 
 const UNIT_FAMILY_LABELS = {
   infantry: "Infantry",
@@ -86,14 +86,36 @@ function renderSelectedSquad(counts) {
   `;
 }
 
+function getLoadoutStatBackgroundUrl(iconName) {
+  switch (iconName) {
+    case "attack":
+      return getBattleHudStatIconUrl("atk.png");
+    case "armor":
+      return getBattleHudStatIconUrl("arm.png");
+    case "movement":
+      return getBattleHudStatIconUrl("mov.png");
+    case "range":
+      return getBattleHudStatIconUrl("rng.png");
+    case "ammo":
+      return getBattleHudStatIconUrl("ammo.png");
+    case "stamina":
+      return getBattleHudStatIconUrl("sta.png");
+    default:
+      return "";
+  }
+}
+
 function renderLoadoutStatCell(iconName, label, value) {
   return `
-    <div class="selection-stat run-loadout-stat">
-      <span class="selection-stat__label">
-        <span class="selection-icon selection-icon--stat" aria-hidden="true">${renderSelectionIcon(iconName)}</span>
-        <span>${label}</span>
-      </span>
-      <strong>${value}</strong>
+    <div
+      class="selection-stat run-loadout-stat"
+      aria-label="${label} ${value}"
+      style="--stat-bg-image:url('${getLoadoutStatBackgroundUrl(iconName)}')"
+    >
+      <div class="selection-stat__content">
+        <span class="selection-stat__label">${label}</span>
+        <strong>${value}</strong>
+      </div>
     </div>
   `;
 }
