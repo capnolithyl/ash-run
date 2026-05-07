@@ -7,10 +7,9 @@ Ash Run '84 currently defines **10 commanders** in data.
 Commander copy has been updated in the data layer and commander-select overlay first.
 
 - The quotes, passive names, active names, and brief text below match the current design brief.
-- Not every mechanic described below is implemented in simulation yet.
-- Commander mechanics will be updated one by one in later passes.
-- Atlas, Viper, and Echo now match their current passive and active designs in simulation.
-- Rook, Blaze, Knox, Falcon, Graves, Nova, and Sable use explicit future effect IDs that are safe no-ops until their mechanics are implemented.
+- The entries below should be treated as current-state commander reference for the prototype.
+- Commander behavior is live in simulation; if a commander changes, this doc should be updated alongside the code.
+- Rook still represents its current placeholder redesign values rather than a final long-term kit.
 
 ## Starting Availability
 
@@ -96,7 +95,7 @@ Charge behavior in the current prototype:
 
 - **Graves** - _The Reaper_
   - Quote: "Make it count. Then make sure they stay down."
-  - Passive: **Kill Confirm** - Units gain 50% extra EXP when killing an enemy.
+  - Passive: **Kill Confirm** - Units gain 50% extra combat EXP.
   - Active: **Execution Window** - Units counterattack before being attacked for 1 turn.
   - Starting squad: 2x Grunt, Breaker
 

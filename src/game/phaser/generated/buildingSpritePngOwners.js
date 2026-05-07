@@ -2,7 +2,13 @@
 // Do not edit by hand.
 
 export const GENERATED_BUILDING_SPRITE_PNG_OWNERS = {
+  "command": [
+    "enemy",
+    "player"
+  ],
   "hospital": [
-    "neutral"
+    "enemy",
+    "neutral",
+    "player"
   ]
 };

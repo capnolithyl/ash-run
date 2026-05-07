@@ -268,9 +268,9 @@ function createBattleCommanderLayoutState() {
     playerUnits: [playerUnit],
     enemyUnits: [enemyUnit]
   });
-  battleState.player.commanderId = "falcon";
+  battleState.player.commanderId = "atlas";
   battleState.player.charge = 275;
-  battleState.enemy.commanderId = "graves";
+  battleState.enemy.commanderId = "echo";
   battleState.enemy.charge = 200;
   battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
 

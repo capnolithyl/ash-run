@@ -34,7 +34,8 @@ export class AppShell {
     this.activeFundsGainId = null;
     this.battleDrawers = {
       intel: false,
-      command: false
+      command: false,
+      intelTab: "selected"
     };
     this.runLoadoutTableScroll = {
       top: 0,

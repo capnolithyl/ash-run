@@ -2,7 +2,10 @@ import { BUILDING_KEYS } from "../core/constants.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import { GENERATED_BUILDING_SPRITE_PNG_OWNERS } from "./generated/buildingSpritePngOwners.js";
-import { GENERATED_TERRAIN_SPRITE_PNG_IDS } from "./generated/terrainSpritePngIds.js";
+import {
+  GENERATED_TERRAIN_ANIMATED_IDS,
+  GENERATED_TERRAIN_SPRITE_PNG_IDS
+} from "./generated/terrainSpritePngIds.js";
 import * as generatedUnitSpriteAnimationsModule from "./generated/unitSpriteAnimations.js";
 
 const generatedUnitSpriteAnimationsFallback = Reflect.get(
@@ -17,6 +20,8 @@ const GENERATED_UNIT_SPRITE_ANIMATIONS =
 const SPRITE_ASSET_ROOT = "./assets/sprites";
 const AUDIO_ASSET_ROOT = "./assets/audio";
 const SPRITE_SOURCE_SIZE = 64;
+const TERRAIN_SOURCE_SIZE = 128;
+const TERRAIN_ANIMATION_FRAME_RATE = 10;
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
 export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
 export const MUSIC_TRACK_IDS = {
@@ -53,16 +58,37 @@ const UNIT_SPRITES = Object.fromEntries(
 );
 
 const TERRAIN_PNG_OVERRIDES = new Set(GENERATED_TERRAIN_SPRITE_PNG_IDS);
+const TERRAIN_ANIMATED_OVERRIDES = new Set(GENERATED_TERRAIN_ANIMATED_IDS);
+
+function createTerrainAnimationAsset(terrainId) {
+  return {
+    group: "terrain",
+    id: terrainId,
+    owner: null,
+    type: "spritesheet",
+    key: `spritesheet:terrain:${terrainId}`,
+    url: `${SPRITE_ASSET_ROOT}/terrain/${terrainId}/${terrainId}.png`,
+    frameWidth: TERRAIN_SOURCE_SIZE,
+    frameHeight: TERRAIN_SOURCE_SIZE,
+    frameRate: TERRAIN_ANIMATION_FRAME_RATE,
+    animationKey: `animation:terrain:${terrainId}:default`
+  };
+}
 
 const TERRAIN_SPRITES = Object.fromEntries(
   Object.keys(TERRAIN_LIBRARY).map((terrainId) => [
     terrainId,
-    createSpriteAsset(
-      "terrain",
-      terrainId,
-      null,
-      TERRAIN_PNG_OVERRIDES.has(terrainId) ? "png" : "svg",
-    ),
+    {
+      fallback: createSpriteAsset(
+        "terrain",
+        terrainId,
+        null,
+        TERRAIN_PNG_OVERRIDES.has(terrainId) ? "png" : "svg",
+      ),
+      animated: TERRAIN_ANIMATED_OVERRIDES.has(terrainId)
+        ? createTerrainAnimationAsset(terrainId)
+        : null,
+    },
   ]),
 );
 
@@ -132,7 +158,9 @@ function flattenUnitAnimationAssets() {
 export const SPRITE_ASSETS = [
   ...Object.values(UNIT_SPRITES).flatMap((variants) => Object.values(variants)),
   ...flattenUnitAnimationAssets(),
-  ...Object.values(TERRAIN_SPRITES),
+  ...Object.values(TERRAIN_SPRITES).flatMap(({ fallback, animated }) =>
+    animated ? [fallback, animated] : [fallback]
+  ),
   ...Object.values(BUILDING_SPRITES).flatMap((variants) =>
     Object.values(variants),
   ),
@@ -210,7 +238,28 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
 }
 
 export function getTerrainSpriteKey(terrainId) {
-  return TERRAIN_SPRITES[terrainId]?.key ?? null;
+  return (
+    TERRAIN_SPRITES[terrainId]?.animated?.key ??
+    TERRAIN_SPRITES[terrainId]?.fallback?.key ??
+    null
+  );
+}
+
+export function getTerrainSpriteDefinition(terrainId) {
+  const spriteBundle = TERRAIN_SPRITES[terrainId];
+
+  if (!spriteBundle) {
+    return null;
+  }
+
+  return {
+    type: spriteBundle.animated ? "spritesheet" : spriteBundle.fallback.type,
+    key: spriteBundle.animated?.key ?? spriteBundle.fallback.key,
+    url: spriteBundle.animated?.url ?? spriteBundle.fallback.url,
+    fallbackKey: spriteBundle.fallback.key,
+    fallbackUrl: spriteBundle.fallback.url,
+    animated: spriteBundle.animated
+  };
 }
 
 export function getBuildingSpriteKey(buildingTypeId, owner = "neutral") {

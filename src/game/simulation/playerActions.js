@@ -9,10 +9,10 @@ import {
   activateCommanderPower,
   applyChargeFromCombat,
   canSlipstreamAfterAttack,
-  canUsePreemptiveCounter,
   canResupplyUnit,
   getExperienceModifier,
   getMovementModifier,
+  shouldDefenderPreemptCombat,
   shouldPreventCombatDamage
 } from "./commanderEffects.js";
 import {
@@ -580,7 +580,7 @@ function canDefenderCounter(state, attacker, defender, distance) {
 
 function awardCombatXpToUnit(system, unit, target, damageDealt, killed) {
   let xpGain = getCombatExperience(unit, target, damageDealt, killed);
-  xpGain = Math.round(xpGain * (1 + getExperienceModifier(system.state, unit, { killed })));
+  xpGain = Math.round(xpGain * (1 + getExperienceModifier(system.state, unit, { combatXp: xpGain > 0, killed })));
 
   if (xpGain <= 0) {
     return;
@@ -615,7 +615,7 @@ export function attackTarget(system, attackerId, defenderId) {
 
   const zeroDamageCombat = shouldPreventCombatDamage(system.state, attacker.owner, defender.owner);
   const { canCounter, defenderProfile } = canDefenderCounter(system.state, attacker, defender, distance);
-  const usesPreemptiveCounter = canCounter && canUsePreemptiveCounter(system.state, defender.owner);
+  const usesPreemptiveCounter = shouldDefenderPreemptCombat(system.state, attacker, defender, { canCounter });
   let primaryDamageDealt = 0;
   let counterDamageDealt = 0;
 

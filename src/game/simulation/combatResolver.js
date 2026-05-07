@@ -8,6 +8,7 @@ import {
   getLuckModifier,
   getPositionArmorMultiplier,
   getRangeModifier,
+  shouldDefenderPreemptCombat,
   getStrikeOutcomeRange,
   rollStrikeOutcome
 } from "./commanderEffects.js";
@@ -215,7 +216,16 @@ function getDamageRange(
 
 export function getAttackForecast(state, attacker, defender) {
   const attackerProfile = getAttackProfileForTarget(attacker, defender);
-  const dealt = getDamageRange(
+  const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
+  const defenderProfile = getAttackProfileForTarget(defender, attacker);
+  const defenderRangeCap = getAttackRangeCap(state, defender, defenderProfile);
+  const canCounter =
+    defenderProfile &&
+    distance >= defenderProfile.minRange &&
+    distance <= defenderRangeCap &&
+    canUnitAttackTarget(defender, attacker);
+  const defenderPreempts = shouldDefenderPreemptCombat(state, attacker, defender, { canCounter });
+  let dealt = getDamageRange(
     state,
     attacker,
     defender,
@@ -223,27 +233,49 @@ export function getAttackForecast(state, attacker, defender) {
     attacker.current.hp,
     attackerProfile
   );
-  const defenderHpAfterHitMin = Math.max(0, defender.current.hp - dealt.max);
-  const defenderHpAfterHitMax = Math.max(0, defender.current.hp - dealt.min);
-  const distance = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
-  const defenderProfile = getAttackProfileForTarget(defender, attacker);
-  const defenderRangeCap = getAttackRangeCap(state, defender, defenderProfile);
-  const canCounter =
-    defenderProfile &&
-    defenderHpAfterHitMax > 0 &&
-    distance >= defenderProfile.minRange &&
-    distance <= defenderRangeCap &&
-    canUnitAttackTarget(defender, attacker);
-  const received = canCounter
-    ? getDamageRange(
-        state,
-        defender,
-        attacker,
-        Math.max(1, defenderHpAfterHitMin),
-        defenderHpAfterHitMax,
-        defenderProfile
-      )
-    : null;
+  let received = null;
+  let defenderHpAfterHitMin = Math.max(0, defender.current.hp - dealt.max);
+  let defenderHpAfterHitMax = Math.max(0, defender.current.hp - dealt.min);
+
+  if (defenderPreempts) {
+    received = getDamageRange(
+      state,
+      defender,
+      attacker,
+      defender.current.hp,
+      defender.current.hp,
+      defenderProfile
+    );
+
+    const attackerHpAfterHitMin = Math.max(0, attacker.current.hp - received.max);
+    const attackerHpAfterHitMax = Math.max(0, attacker.current.hp - received.min);
+
+    dealt = attackerHpAfterHitMax > 0
+      ? getDamageRange(
+          state,
+          attacker,
+          defender,
+          Math.max(1, attackerHpAfterHitMin),
+          attackerHpAfterHitMax,
+          attackerProfile
+        )
+      : {
+          min: 0,
+          max: 0,
+          isEffective: false
+        };
+    defenderHpAfterHitMin = Math.max(0, defender.current.hp - dealt.max);
+    defenderHpAfterHitMax = Math.max(0, defender.current.hp - dealt.min);
+  } else if (canCounter && defenderHpAfterHitMax > 0) {
+    received = getDamageRange(
+      state,
+      defender,
+      attacker,
+      Math.max(1, defenderHpAfterHitMin),
+      defenderHpAfterHitMax,
+      defenderProfile
+    );
+  }
 
   return {
     attackerId: attacker.id,

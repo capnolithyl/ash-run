@@ -44,6 +44,63 @@ function renderBattleMeta(battleSnapshot) {
   `;
 }
 
+function renderCompactIntelSheet(playerFocusTile, battleSnapshot, hoveredTile, enemyFocusTile) {
+  return `
+    <input
+      class="battle-intel-tab-toggle"
+      id="battle-intel-tab-selected"
+      name="battle-intel-tab"
+      type="radio"
+      value="selected"
+      checked
+      aria-hidden="true"
+    />
+    <input
+      class="battle-intel-tab-toggle"
+      id="battle-intel-tab-target"
+      name="battle-intel-tab"
+      type="radio"
+      value="target"
+      aria-hidden="true"
+    />
+    <input
+      class="battle-intel-tab-toggle"
+      id="battle-intel-tab-feed"
+      name="battle-intel-tab"
+      type="radio"
+      value="feed"
+      aria-hidden="true"
+    />
+    <aside class="battle-compact-sheet" aria-label="Battle Intel">
+      <div class="battle-drawer-header battle-drawer-header--compact">
+        <span>Intel</span>
+        <label class="ghost-button ghost-button--small" for="battle-intel-drawer">Close</label>
+      </div>
+      <div class="battle-compact-sheet__tabs" role="tablist" aria-label="Battle Intel Tabs">
+        <label class="battle-compact-sheet__tab" for="battle-intel-tab-selected">Selected Unit</label>
+        <label class="battle-compact-sheet__tab" for="battle-intel-tab-target">Target Intel</label>
+        <label class="battle-compact-sheet__tab" for="battle-intel-tab-feed">Command Feed</label>
+      </div>
+      <div class="battle-compact-sheet__panels">
+        <section class="battle-compact-sheet__panel battle-compact-sheet__panel--selected">
+          ${renderSelectionDetails(playerFocusTile, {
+            title: "Selected Unit",
+            emptyTitle: "Selected Unit",
+            emptyBody: "Select a friendly unit, building, or tile to inspect it here."
+          })}
+          ${renderRecruitPanel(battleSnapshot)}
+        </section>
+        <section class="battle-compact-sheet__panel battle-compact-sheet__panel--target">
+          ${renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)}
+        </section>
+        <section class="battle-compact-sheet__panel battle-compact-sheet__panel--feed">
+          ${renderCommandFeed(battleSnapshot.log, hoveredTile)}
+        </section>
+      </div>
+    </aside>
+  `;
+}
+
 export function renderBattleHudView(state, options = {}) {
   const battleSnapshot = state.battleSnapshot;
   const suppressLevelUpOverlay = options.suppressLevelUpOverlay ?? false;
@@ -140,6 +197,12 @@ export function renderBattleHudView(state, options = {}) {
         ${renderTargetIntelPanel(battleSnapshot, state.battleUi?.hoveredTile, enemyFocusTile)}
         ${renderCommandFeed(battleSnapshot.log, state.battleUi?.hoveredTile)}
       </aside>
+      ${renderCompactIntelSheet(
+        playerFocusTile,
+        battleSnapshot,
+        state.battleUi?.hoveredTile,
+        enemyFocusTile
+      )}
       ${renderActionPrompt(battleSnapshot)}
       ${renderTargetingPrompt(battleSnapshot)}
       ${renderUnloadPrompt(battleSnapshot)}

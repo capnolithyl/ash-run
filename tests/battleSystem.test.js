@@ -913,34 +913,170 @@ test("falcon power fails cleanly without spending charge when HQ and adjacent ti
   assert.equal(system.getLastPowerResult().applied, false);
 });
 
-test("graves only gains bonus experience on kills and execution window preempts the first counter", () => {
-  const defender = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2);
-  const attacker = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2, {
+test("graves gains 50 percent bonus combat xp on kills and nonlethal attacks", () => {
+  const modifierUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const modifierState = createTestBattleState({
+    playerUnits: [modifierUnit],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  modifierState.player.commanderId = "graves";
+
+  assert.equal(getExperienceModifier(modifierState, modifierUnit, { combatXp: false, killed: false }), 0);
+  assert.equal(getExperienceModifier(modifierState, modifierUnit, { combatXp: true, killed: false }), 0.5);
+  assert.equal(getExperienceModifier(modifierState, modifierUnit, { combatXp: true, killed: true }), 0.5);
+
+  const nonlethalAttacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    experience: 0
+  });
+  const nonlethalDefender = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);
+  const nonlethalState = createTestBattleState({
+    playerUnits: [nonlethalAttacker],
+    enemyUnits: [nonlethalDefender]
+  });
+  nonlethalState.player.commanderId = "graves";
+  const nonlethalSystem = new BattleSystem(nonlethalState);
+  const nonlethalBefore = nonlethalSystem.getStateForSave();
+
+  assert.equal(nonlethalSystem.attackTarget(nonlethalAttacker.id, nonlethalDefender.id), true);
+
+  const nonlethalAfter = nonlethalSystem.getStateForSave();
+  const updatedNonlethalAttacker = nonlethalAfter.player.units[0];
+  const updatedNonlethalDefender = nonlethalAfter.enemy.units[0];
+  const nonlethalDamage = nonlethalBefore.enemy.units[0].current.hp - updatedNonlethalDefender.current.hp;
+  const nonlethalBaseXp = getCombatExperience(
+    nonlethalBefore.player.units[0],
+    nonlethalBefore.enemy.units[0],
+    nonlethalDamage,
+    false
+  );
+
+  assert.equal(updatedNonlethalAttacker.experience, Math.round(nonlethalBaseXp * 1.5));
+
+  const killAttacker = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2, {
+    experience: 0
+  });
+  const killDefender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2, {
     current: {
       hp: 10
     }
   });
-  const battleState = createTestBattleState({
-    playerUnits: [defender],
-    enemyUnits: [attacker]
+  const killState = createTestBattleState({
+    playerUnits: [killAttacker],
+    enemyUnits: [killDefender]
   });
-  battleState.player.commanderId = "graves";
-  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+  killState.player.commanderId = "graves";
+  const killSystem = new BattleSystem(killState);
+  const killBefore = killSystem.getStateForSave();
 
-  assert.equal(getExperienceModifier(battleState, defender, { killed: false }), 0);
-  assert.equal(getExperienceModifier(battleState, defender, { killed: true }), 0.5);
+  assert.equal(killSystem.attackTarget(killAttacker.id, killDefender.id), true);
 
-  const system = new BattleSystem(battleState);
+  const killAfter = killSystem.getStateForSave();
+  const updatedKillAttacker = killAfter.player.units[0];
+  const killDamage = killBefore.enemy.units[0].current.hp;
+  const killBaseXp = getCombatExperience(
+    killBefore.player.units[0],
+    killBefore.enemy.units[0],
+    killDamage,
+    true
+  );
 
-  assert.equal(system.activatePower(), true);
-  assert.equal(system.endTurn(), true);
-  assert.equal(system.startEnemyTurnActions().changed, true);
-  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  assert.equal(killAfter.enemy.units.length, 0);
+  assert.equal(updatedKillAttacker.experience, Math.round(killBaseXp * 1.5));
+});
 
-  const afterCombat = system.getStateForSave();
+test("graves execution window lets defenders strike first when attacked", () => {
+  const makeState = () => {
+    const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+    const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);
+    return createTestBattleState({
+      playerUnits: [defender],
+      enemyUnits: [attacker]
+    });
+  };
 
-  assert.equal(afterCombat.player.units[0].current.hp, defender.current.hp);
-  assert.equal(afterCombat.enemy.units.length, 0);
+  const baselineState = makeState();
+  baselineState.player.commanderId = "graves";
+  const baselineSystem = new BattleSystem(baselineState);
+  baselineSystem.endTurn();
+  baselineSystem.startEnemyTurnActions();
+  assert.equal(
+    baselineSystem.attackTarget(
+      baselineSystem.getStateForSave().enemy.units[0].id,
+      baselineSystem.getStateForSave().player.units[0].id
+    ),
+    true
+  );
+  const baselineAfter = baselineSystem.getStateForSave();
+
+  const poweredState = makeState();
+  poweredState.player.commanderId = "graves";
+  poweredState.player.charge = getCommanderPowerMax("graves");
+  const poweredSystem = new BattleSystem(poweredState);
+
+  assert.equal(poweredSystem.activatePower(), true);
+  assert.equal(poweredSystem.endTurn(), true);
+  assert.equal(poweredSystem.startEnemyTurnActions().changed, true);
+  assert.equal(
+    poweredSystem.attackTarget(
+      poweredSystem.getStateForSave().enemy.units[0].id,
+      poweredSystem.getStateForSave().player.units[0].id
+    ),
+    true
+  );
+
+  const poweredAfter = poweredSystem.getStateForSave();
+
+  assert.ok(poweredAfter.player.units[0].current.hp > baselineAfter.player.units[0].current.hp);
+  assert.ok(poweredAfter.enemy.units[0].current.hp < baselineAfter.enemy.units[0].current.hp);
+});
+
+test("graves execution window mirror match cancels back to normal combat order", () => {
+  const makeState = () => {
+    const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+    const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);
+    return createTestBattleState({
+      playerUnits: [defender],
+      enemyUnits: [attacker]
+    });
+  };
+
+  const baselineState = makeState();
+  baselineState.player.commanderId = "graves";
+  const baselineSystem = new BattleSystem(baselineState);
+  baselineSystem.endTurn();
+  baselineSystem.startEnemyTurnActions();
+  assert.equal(
+    baselineSystem.attackTarget(
+      baselineSystem.getStateForSave().enemy.units[0].id,
+      baselineSystem.getStateForSave().player.units[0].id
+    ),
+    true
+  );
+  const baselineAfter = baselineSystem.getStateForSave();
+
+  const mirrorState = makeState();
+  mirrorState.player.commanderId = "graves";
+  mirrorState.player.charge = getCommanderPowerMax("graves");
+  mirrorState.enemy.commanderId = "graves";
+  mirrorState.enemy.charge = getCommanderPowerMax("graves");
+  const mirrorSystem = new BattleSystem(mirrorState);
+
+  assert.equal(mirrorSystem.activatePower(), true);
+  assert.equal(mirrorSystem.endTurn(), true);
+  assert.equal(mirrorSystem.startEnemyTurnActions().changed, true);
+  assert.equal(mirrorSystem.activatePower(), true);
+  assert.equal(
+    mirrorSystem.attackTarget(
+      mirrorSystem.getStateForSave().enemy.units[0].id,
+      mirrorSystem.getStateForSave().player.units[0].id
+    ),
+    true
+  );
+
+  const mirrorAfter = mirrorSystem.getStateForSave();
+
+  assert.equal(mirrorAfter.player.units[0].current.hp, baselineAfter.player.units[0].current.hp);
+  assert.equal(mirrorAfter.enemy.units[0].current.hp, baselineAfter.enemy.units[0].current.hp);
 });
 
 test("nova passive checks full ammo and overload spends ammo for a same-turn attack buff", () => {

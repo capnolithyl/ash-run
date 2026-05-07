@@ -1,6 +1,81 @@
 import Phaser from "phaser";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "../../content/terrain.js";
-import { getTerrainSpriteKey } from "../assets.js";
+import { getTerrainSpriteDefinition } from "../assets.js";
+
+function getTerrainFrameIndices(scene, animationSpec) {
+  const texture = scene.textures.get(animationSpec?.key);
+
+  if (!texture) {
+    return [];
+  }
+
+  return texture
+    .getFrameNames()
+    .filter((frameName) => frameName !== "__BASE")
+    .map((frameName) => Number(frameName))
+    .filter((frameName) => Number.isInteger(frameName))
+    .sort((left, right) => left - right);
+}
+
+function frameHasVisiblePixels(scene, animationSpec, frameName) {
+  for (let y = 0; y < animationSpec.frameHeight; y += 1) {
+    for (let x = 0; x < animationSpec.frameWidth; x += 1) {
+      const alpha = typeof scene.textures.getPixelAlpha === "function"
+        ? scene.textures.getPixelAlpha(x, y, animationSpec.key, frameName)
+        : scene.textures.getPixel(x, y, animationSpec.key, frameName)?.alpha ?? 0;
+
+      if (alpha > 0) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function getTerrainPlayableFrames(scene, animationSpec) {
+  const frameIndices = getTerrainFrameIndices(scene, animationSpec);
+  let lastVisibleFrameIndex = -1;
+
+  for (const frameName of frameIndices) {
+    if (frameHasVisiblePixels(scene, animationSpec, frameName)) {
+      lastVisibleFrameIndex = frameName;
+    }
+  }
+
+  return lastVisibleFrameIndex >= 0
+    ? frameIndices.filter((frameName) => frameName <= lastVisibleFrameIndex)
+    : [];
+}
+
+function ensureTerrainAnimation(scene, animationSpec) {
+  if (!animationSpec?.key || !scene.textures.exists(animationSpec.key)) {
+    return null;
+  }
+
+  const animationKey = `${animationSpec.animationKey}:loop`;
+
+  if (!scene.anims.exists(animationKey)) {
+    const frames = getTerrainPlayableFrames(scene, animationSpec);
+
+    if (frames.length <= 1) {
+      return null;
+    }
+
+    scene.anims.create({
+      key: animationKey,
+      frames: frames.map((frame) => ({
+        key: animationSpec.key,
+        frame
+      })),
+      frameRate: animationSpec.frameRate,
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  return animationKey;
+}
 
 export class GridLayer {
   constructor(scene) {
@@ -52,11 +127,17 @@ export class GridLayer {
     for (let row = 0; row < snapshot.map.height; row += 1) {
       for (let column = 0; column < snapshot.map.width; column += 1) {
         const terrainId = snapshot.map.tiles[row][column];
-        const textureKey = getTerrainSpriteKey(terrainId);
+        const terrainSprite = getTerrainSpriteDefinition(terrainId);
+        const animatedTextureKey = terrainSprite?.animated?.key ?? null;
+        const fallbackTextureKey = terrainSprite?.fallbackKey ?? null;
+        const textureKey =
+          (animatedTextureKey && this.scene.textures.exists(animatedTextureKey) && animatedTextureKey) ||
+          (fallbackTextureKey && this.scene.textures.exists(fallbackTextureKey) && fallbackTextureKey) ||
+          null;
         const x = layout.originX + column * layout.cellSize;
         const y = layout.originY + row * layout.cellSize;
 
-        if (!textureKey || !this.scene.textures.exists(textureKey)) {
+        if (!textureKey) {
           const terrain = TERRAIN_LIBRARY[terrainId];
           this.graphics.fillStyle(Phaser.Display.Color.HexStringToColor(terrain.color).color, 0.96);
           this.graphics.fillRect(x, y, layout.cellSize, layout.cellSize);
@@ -64,9 +145,19 @@ export class GridLayer {
         }
 
         const sprite = this.scene.add
-          .image(x + layout.cellSize / 2, y + layout.cellSize / 2, textureKey)
+          .sprite(x + layout.cellSize / 2, y + layout.cellSize / 2, textureKey)
           .setDepth(4)
           .setDisplaySize(layout.cellSize, layout.cellSize);
+
+        if (terrainSprite?.animated?.key === textureKey) {
+          const animationKey = ensureTerrainAnimation(this.scene, terrainSprite.animated);
+
+          if (animationKey) {
+            sprite.play(animationKey);
+          } else {
+            sprite.setFrame(0);
+          }
+        }
 
         this.terrainSprites.push(sprite);
       }

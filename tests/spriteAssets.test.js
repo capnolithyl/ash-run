@@ -10,6 +10,7 @@ import {
   SPRITE_ASSETS,
   UNIT_OWNER_VARIANTS,
   getBuildingSpriteKey,
+  getTerrainSpriteDefinition,
   getTerrainSpriteKey,
   getUnitSpriteDefinition,
   getUnitSpriteKey
@@ -74,6 +75,19 @@ function isTerrainFormatFallbackSprite(filePath) {
   const pngPath = path.resolve(process.cwd(), "assets/sprites", "terrain", `${terrainId}.png`);
 
   return fs.existsSync(svgPath) && fs.existsSync(pngPath);
+}
+
+function isTerrainAnimationSprite(filePath) {
+  const relativePath = path.relative(path.resolve(process.cwd(), "assets/sprites"), filePath);
+  const parts = relativePath.split(path.sep);
+
+  if (parts.length !== 3 || parts[0] !== "terrain" || path.extname(parts[2]) !== ".png") {
+    return false;
+  }
+
+  const terrainId = parts[1];
+
+  return terrainId in TERRAIN_LIBRARY && parts[2] === `${terrainId}.png`;
 }
 
 function isBuildingFormatFallbackSprite(filePath) {
@@ -142,15 +156,27 @@ test("terrain sprites prefer png when both png and svg exist", () => {
   for (const terrainId of Object.keys(TERRAIN_LIBRARY)) {
     const pngPath = path.resolve(process.cwd(), "assets/sprites/terrain", `${terrainId}.png`);
     const svgPath = path.resolve(process.cwd(), "assets/sprites/terrain", `${terrainId}.svg`);
-    const asset = SPRITE_ASSETS.find((candidate) => candidate.group === "terrain" && candidate.id === terrainId);
+    const terrainSprite = getTerrainSpriteDefinition(terrainId);
 
-    assert.ok(asset, `missing terrain asset for ${terrainId}`);
+    assert.ok(terrainSprite, `missing terrain asset for ${terrainId}`);
 
     if (fs.existsSync(pngPath) && fs.existsSync(svgPath)) {
-      assert.equal(asset.type, "image");
-      assert.equal(asset.url, `./assets/sprites/terrain/${terrainId}.png`);
+      assert.equal(terrainSprite.fallbackKey, `sprite:terrain:${terrainId}`);
+      assert.equal(terrainSprite.fallbackUrl, `./assets/sprites/terrain/${terrainId}.png`);
     }
   }
+});
+
+test("terrain animation folders take priority over the static fallback", () => {
+  const terrainSprite = getTerrainSpriteDefinition("road");
+
+  assert.ok(terrainSprite);
+  assert.equal(terrainSprite.type, "spritesheet");
+  assert.equal(getTerrainSpriteKey("road"), "spritesheet:terrain:road");
+  assert.equal(terrainSprite.fallbackKey, "sprite:terrain:road");
+  assert.equal(terrainSprite.animated?.frameWidth, 128);
+  assert.equal(terrainSprite.animated?.frameHeight, 128);
+  assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/road/road.png");
 });
 
 test("building sprites prefer png when both png and svg exist", () => {
@@ -223,6 +249,7 @@ test("sprite folders only contain manifest assets or documented source masters",
       manifestPaths.has(filePath) ||
         isSourceMasterSprite(filePath) ||
         isTerrainFormatFallbackSprite(filePath) ||
+        isTerrainAnimationSprite(filePath) ||
         isBuildingFormatFallbackSprite(filePath) ||
         isWorkingSpriteSource(filePath),
       `untracked sprite file: ${path.relative(process.cwd(), filePath)}`

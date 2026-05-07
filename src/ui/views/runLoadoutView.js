@@ -108,6 +108,13 @@ function renderDeploymentIcon() {
   `;
 }
 
+function renderCommanderSummaryLines(commander) {
+  return `
+    <p><span>Passive:</span> ${commander?.passive?.summary ?? "No passive summary available."}</p>
+    <p><span>Power:</span> ${commander?.active?.summary ?? "No power summary available."}</p>
+  `;
+}
+
 export function renderRunLoadoutView(state) {
   const commander = getCommanderById(state.selectedCommanderId);
   const commanderPortraitUrl = commander ? getCommanderPortraitImageUrl(commander.id) : null;
@@ -145,8 +152,15 @@ export function renderRunLoadoutView(state) {
               <div class="run-loadout-commander__body">
                 <strong>${commander?.name ?? "Commander"}</strong>
                 <span>${commander?.title ?? "Doctrine"}</span>
-                <p><span>Passive:</span> ${commander?.passive?.summary ?? "No passive summary available."}</p>
-                <p><span>Power:</span> ${commander?.active?.summary ?? "No power summary available."}</p>
+                <div class="run-loadout-commander__summary">
+                  ${renderCommanderSummaryLines(commander)}
+                </div>
+                <details class="run-loadout-commander__details">
+                  <summary>Commander Details</summary>
+                  <div class="run-loadout-commander__details-copy">
+                    ${renderCommanderSummaryLines(commander)}
+                  </div>
+                </details>
               </div>
               ${commanderPortraitUrl
                 ? `

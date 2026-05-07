@@ -5,7 +5,10 @@ import {
 } from "../../core/constants.js";
 import { getXpThreshold } from "../../simulation/progression.js";
 import { getMovementPath } from "../../simulation/selectors.js";
-import { getMovementModifier } from "../../simulation/commanderEffects.js";
+import {
+  getMovementModifier,
+  shouldDefenderPreemptCombat
+} from "../../simulation/commanderEffects.js";
 
 function getUnits(snapshot) {
   return [...snapshot.player.units, ...snapshot.enemy.units];
@@ -22,6 +25,10 @@ function manhattanDistance(left, right) {
 function isWithinRange(unit, target) {
   const distance = manhattanDistance(unit, target);
   return distance >= unit.stats.minRange && distance <= unit.stats.maxRange;
+}
+
+function getAttackPairKey(leftId, rightId) {
+  return [leftId, rightId].sort().join("::");
 }
 
 function isPendingMoveRollback(previousSnapshot, unitId, previousUnit, nextUnit) {
@@ -386,6 +393,47 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
     });
     existingAttackPairs.add(counterKey);
   }
+
+  const attackPairs = new Map();
+
+  attacks.forEach((event) => {
+    const pairKey = getAttackPairKey(event.attackerId, event.targetId);
+    const pair = attackPairs.get(pairKey) ?? [];
+    pair.push(event);
+    attackPairs.set(pairKey, pair);
+  });
+
+  attackPairs.forEach((pair) => {
+    if (pair.length !== 2) {
+      return;
+    }
+
+    const initiatingEvent = pair.find((event) =>
+      didUnitStartAttack(previousUnits.get(event.attackerId), nextUnits.get(event.attackerId))
+    );
+
+    if (!initiatingEvent) {
+      return;
+    }
+
+    const counterEvent = pair.find((event) => event !== initiatingEvent);
+    const previousInitiator = previousUnits.get(initiatingEvent.attackerId);
+    const previousCounter = previousUnits.get(counterEvent?.attackerId);
+
+    if (!counterEvent || !previousInitiator || !previousCounter) {
+      return;
+    }
+
+    const defenderPreempts = shouldDefenderPreemptCombat(
+      previousSnapshot,
+      previousInitiator,
+      previousCounter,
+      { canCounter: true }
+    );
+
+    initiatingEvent.isInitiator = !defenderPreempts;
+    counterEvent.isInitiator = defenderPreempts;
+  });
 
   for (const [buildingId, nextBuilding] of nextBuildings.entries()) {
     const previousBuilding = previousBuildings.get(buildingId);

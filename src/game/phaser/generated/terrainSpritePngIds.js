@@ -6,3 +6,6 @@ export const GENERATED_TERRAIN_SPRITE_PNG_IDS = [
   "plain",
   "road"
 ];
+export const GENERATED_TERRAIN_ANIMATED_IDS = [
+  "road"
+];

@@ -180,7 +180,7 @@ export const COMMANDERS = [
     passive: {
       name: "Kill Confirm",
       type: "graves-kill-confirm",
-      summary: "Units gain 50% extra EXP when killing an enemy.",
+      summary: "Units gain 50% extra combat EXP.",
     },
     active: {
       name: "Execution Window",

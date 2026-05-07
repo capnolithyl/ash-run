@@ -437,6 +437,13 @@ test("battle HUD includes drawer toggles and footer turn controls", () => {
 
   assert.match(html, /id="battle-intel-drawer"/);
   assert.match(html, /id="battle-command-drawer"/);
+  assert.match(html, /id="battle-intel-tab-selected"/);
+  assert.match(html, /id="battle-intel-tab-target"/);
+  assert.match(html, /id="battle-intel-tab-feed"/);
+  assert.match(html, /Battle Intel Tabs/);
+  assert.match(html, /Selected Unit<\/label>/);
+  assert.match(html, /Target Intel<\/label>/);
+  assert.match(html, /Command Feed<\/label>/);
   assert.match(html, /class="battle-footer-actions"/);
   assert.match(html, /battle-footer-button--pause/);
   assert.match(html, /battle-footer-button--next/);

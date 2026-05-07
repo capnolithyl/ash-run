@@ -479,7 +479,7 @@ export function getIncomeBonus(_state, _side) {
 export function getExperienceModifier(state, unit, options = {}) {
   const commander = getCommanderForSide(state, unit.owner);
 
-  if (commander?.passive?.type === "graves-kill-confirm" && options.killed) {
+  if (commander?.passive?.type === "graves-kill-confirm" && options.combatXp) {
     return 0.5;
   }
 
@@ -790,6 +790,14 @@ export function shouldPreventCombatDamage(state, attackerOwner, defenderOwner) {
   return false;
 }
 
-export function canUsePreemptiveCounter(state, side) {
-  return hasSideEffect(state, side, "graves-execution-window");
+export function shouldDefenderPreemptCombat(state, attacker, defender, { canCounter = true } = {}) {
+  if (!canCounter || !attacker || !defender) {
+    return false;
+  }
+
+  const attackerHasExecutionWindow = hasSideEffect(state, attacker.owner, "graves-execution-window");
+  const defenderHasExecutionWindow = hasSideEffect(state, defender.owner, "graves-execution-window");
+
+  // Mirror matches cancel back to normal attacker-first combat.
+  return defenderHasExecutionWindow && !attackerHasExecutionWindow;
 }

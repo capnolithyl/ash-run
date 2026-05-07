@@ -129,6 +129,7 @@ export const appShellRenderMethods = {
     this.activeFundsGainId = null;
     this.battleDrawers.intel = false;
     this.battleDrawers.command = false;
+    this.battleDrawers.intelTab = "selected";
   },
 
   resetCommanderSliderState() {
@@ -142,6 +143,7 @@ export const appShellRenderMethods = {
   captureBattleDrawerState() {
     const intelDrawer = this.root.querySelector("#battle-intel-drawer");
     const commandDrawer = this.root.querySelector("#battle-command-drawer");
+    const selectedIntelTab = this.root.querySelector('[name="battle-intel-tab"]:checked');
 
     if (intelDrawer) {
       this.battleDrawers.intel = intelDrawer.checked;
@@ -150,11 +152,18 @@ export const appShellRenderMethods = {
     if (commandDrawer) {
       this.battleDrawers.command = commandDrawer.checked;
     }
+
+    if (selectedIntelTab?.value) {
+      this.battleDrawers.intelTab = selectedIntelTab.value;
+    }
   },
 
   applyBattleDrawerState() {
     const intelDrawer = this.root.querySelector("#battle-intel-drawer");
     const commandDrawer = this.root.querySelector("#battle-command-drawer");
+    const selectedIntelTab = this.root.querySelector(
+      `[name="battle-intel-tab"][value="${this.battleDrawers.intelTab ?? "selected"}"]`
+    );
 
     if (intelDrawer) {
       intelDrawer.checked = this.battleDrawers.intel;
@@ -162,6 +171,10 @@ export const appShellRenderMethods = {
 
     if (commandDrawer) {
       commandDrawer.checked = this.battleDrawers.command;
+    }
+
+    if (selectedIntelTab) {
+      selectedIntelTab.checked = true;
     }
   },
 

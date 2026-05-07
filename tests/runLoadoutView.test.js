@@ -47,6 +47,8 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /Count/);
   assert.match(html, /run-loadout-start-button/);
   assert.match(html, /title-button__icon/);
+  assert.match(html, /run-loadout-commander__details/);
+  assert.match(html, /Commander Details/);
 });
 
 test("run loadout commander summary keeps blaze and echo status text concise", () => {
