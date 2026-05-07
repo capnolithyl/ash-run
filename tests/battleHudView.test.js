@@ -86,7 +86,7 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
 
   assert.match(html, /<h3>Target Intel<\/h3>/);
   assert.match(html, /Runner/);
-  assert.match(html, /selection-level-badge[^>]*>Lv\. 1<\/span>/);
+  assert.match(html, /selection-level-badge[^>]*>1<\/span>/);
   assert.match(html, /selection-health__value">100\/100<\/span>/);
   assert.match(html, /<span>Armor<\/span>[\s\S]*?<strong>Light<\/strong>/);
   assert.match(html, /<span>Terrain<\/span>[\s\S]*?<strong>Road<\/strong>/);

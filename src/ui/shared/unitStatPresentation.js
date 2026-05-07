@@ -4,7 +4,7 @@ export function formatRangeLabel(minimumRange, maximumRange) {
     : `${minimumRange}-${maximumRange}`;
 }
 
-function getBattleHudStatIconUrl(fileName) {
+export function getBattleHudStatIconUrl(fileName) {
   return `./assets/img/icons/battle-hud/stats/${encodeURIComponent(fileName)}`;
 }
 

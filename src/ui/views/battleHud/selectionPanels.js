@@ -9,6 +9,7 @@ import { buildFocusedTile, describeUnit } from "../../../game/simulation/battleP
 import {
   formatRangeLabel,
   getBattleHudArmorIconUrl,
+  getBattleHudStatIconUrl,
   getBattleHudWeaponIconUrl,
   renderSelectionIcon
 } from "../../shared/unitStatPresentation.js";
@@ -65,6 +66,25 @@ const CORRUPTED_ICON_URL = "./assets/img/icons/battle-hud/conditions/corrupted.p
 const SLOW_ICON_URL = "./assets/img/icons/battle-hud/conditions/slow.png";
 const BURN_ICON_URL = "./assets/img/icons/battle-hud/conditions/burn.png";
 
+function getStatBackgroundUrl(iconName) {
+  switch (iconName) {
+    case "attack":
+      return getBattleHudStatIconUrl("atk.png");
+    case "armor":
+      return getBattleHudStatIconUrl("arm.png");
+    case "movement":
+      return getBattleHudStatIconUrl("mov.png");
+    case "range":
+      return getBattleHudStatIconUrl("rng.png");
+    case "ammo":
+      return getBattleHudStatIconUrl("ammo.png");
+    case "stamina":
+      return getBattleHudStatIconUrl("sta.png");
+    default:
+      return "";
+  }
+}
+
 function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed = false } = {}) {
   const conditionLabels = [];
 
@@ -92,7 +112,11 @@ function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed 
       : null;
 
   return `
-    <div class="selection-stat${isCorrupted ? " selection-stat--corrupted" : ""}${isSlowed ? " selection-stat--slowed" : ""}" aria-label="${ariaLabel}">
+    <div
+      class="selection-stat${isCorrupted ? " selection-stat--corrupted" : ""}${isSlowed ? " selection-stat--slowed" : ""}"
+      aria-label="${ariaLabel}"
+      style="--stat-bg-image:url('${getStatBackgroundUrl(iconName)}')"
+    >
       ${
         conditionIcon
           ? `
@@ -106,10 +130,6 @@ function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed 
           `
           : ""
       }
-      <span
-        class="selection-icon selection-icon--stat selection-stat__icon"
-        aria-hidden="true"
-      >${renderSelectionIcon(iconName)}</span>
       <div class="selection-stat__content">
         <span class="selection-stat__label">${label}</span>
         <strong>${value}</strong>
@@ -246,7 +266,7 @@ function renderUnitSummary(unit, { showExperience = false, showLoadout = true } 
       <div class="selection-unit-heading">
       <div class="selection-unit-heading__title">
         <strong>${unit.name}</strong>
-        <span class="selection-level-badge" aria-label="Level ${unit.level}">Lv. ${unit.level}</span>
+        <span class="selection-level-badge" aria-label="Level ${unit.level}">${unit.level}</span>
         ${
           unit.isBurned
             ? `
