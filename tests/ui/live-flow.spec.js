@@ -5,6 +5,9 @@ test("new run flow reaches battle from the live app", async ({ page }) => {
 
   await page.locator('[data-action="open-new-run"]').click({ force: true });
   await expect(page.locator('[data-screen-id="commander-select"]')).toBeVisible();
+  await page
+    .locator('[data-action="select-commander"][data-commander-id="atlas"][data-copy-index="1"]')
+    .click({ force: true });
 
   await page.locator('[data-action="open-run-loadout"]').click({ force: true });
   await expect(page.locator('[data-screen-id="run-loadout"]')).toBeVisible();
