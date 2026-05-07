@@ -25,13 +25,20 @@ await build({
   entryPoints: [path.resolve(root, "src/main.js")],
   outdir: assetsRoot,
   entryNames: "main",
+  assetNames: "static/[name]-[hash]",
   bundle: true,
   format: "esm",
   minify: false,
   platform: "browser",
   sourcemap: true,
   loader: {
-    ".css": "css"
+    ".css": "css",
+    ".png": "file",
+    ".jpg": "file",
+    ".jpeg": "file",
+    ".gif": "file",
+    ".svg": "file",
+    ".webp": "file"
   }
 });
 
