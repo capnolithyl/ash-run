@@ -2,8 +2,10 @@ import Phaser from "phaser";
 import {
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
-  BATTLE_TURN_BANNER_SETTLE_MS
+  BATTLE_TURN_BANNER_SETTLE_MS,
+  SCREEN_IDS
 } from "../../core/constants.js";
+import { createMapEditorSnapshot } from "../../content/mapEditor.js";
 import { getBattlefieldLayout } from "../../core/battlefieldLayout.js";
 import { getMovementPath, getSelectedUnit } from "../../simulation/selectors.js";
 import { preloadSpriteAssets } from "../assets.js";
@@ -15,7 +17,27 @@ import { SelectionLayer } from "../view/SelectionLayer.js";
 import { UnitLayer } from "../view/UnitLayer.js";
 
 function isBattleScreen(state) {
-  return state?.screen === "battle" && state?.battleSnapshot;
+  return state?.screen === SCREEN_IDS.BATTLE && state?.battleSnapshot;
+}
+
+function isMapEditorScreen(state) {
+  return state?.screen === SCREEN_IDS.MAP_EDITOR && state?.mapEditor?.mapData;
+}
+
+function isBoardScreen(state) {
+  return isBattleScreen(state) || isMapEditorScreen(state);
+}
+
+function getBoardSnapshot(state) {
+  if (isBattleScreen(state)) {
+    return state.battleSnapshot;
+  }
+
+  if (isMapEditorScreen(state)) {
+    return createMapEditorSnapshot(state.mapEditor.mapData, state.mapEditor.selectedTile);
+  }
+
+  return null;
 }
 
 function isRightClick(pointer) {
@@ -132,6 +154,8 @@ export class BattleScene extends Phaser.Scene {
     this.cameraZoomTween = null;
     this.cameraTargetZoom = 1;
     this.suppressTouchClickUntil = 0;
+    this.mapEditorPaintPointerId = null;
+    this.lastPaintedTileKey = null;
     this.gamepadCursorTile = null;
     this.gamepadMoveDirection = null;
     this.gamepadNextMoveAt = 0;
@@ -199,11 +223,15 @@ export class BattleScene extends Phaser.Scene {
     });
 
     this.input.on("pointerdown", async (pointer) => {
-      if (!isBattleScreen(this.latestState) || this.latestState?.battleUi?.pauseMenuOpen) {
+      if (!isBoardScreen(this.latestState)) {
         return;
       }
 
-      if (isRightClick(pointer)) {
+      if (isBattleScreen(this.latestState) && this.latestState?.battleUi?.pauseMenuOpen) {
+        return;
+      }
+
+      if (isBattleScreen(this.latestState) && isRightClick(pointer)) {
         await this.controller.handleBattleContextAction();
         return;
       }
@@ -223,6 +251,20 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
 
+      if (isMapEditorScreen(this.latestState)) {
+        const tile = this.getTileFromScreenPoint(pointer.x, pointer.y);
+
+        if (!tile) {
+          return;
+        }
+
+        this.mapEditorPaintPointerId = getPointerId(pointer);
+        this.lastPaintedTileKey = null;
+        this.controller.startMapEditorPaint?.();
+        this.paintEditorTile(tile);
+        return;
+      }
+
       this.clickCandidate = {
         pointerId: getPointerId(pointer),
         x: pointer.x,
@@ -233,7 +275,7 @@ export class BattleScene extends Phaser.Scene {
     });
 
     this.input.on("pointermove", (pointer) => {
-      if (!isBattleScreen(this.latestState)) {
+      if (!isBoardScreen(this.latestState)) {
         return;
       }
 
@@ -269,6 +311,17 @@ export class BattleScene extends Phaser.Scene {
         }
       }
 
+      if (
+        isMapEditorScreen(this.latestState) &&
+        this.mapEditorPaintPointerId === getPointerId(pointer)
+      ) {
+        const tile = this.getTileFromScreenPoint(pointer.x, pointer.y);
+
+        if (tile) {
+          this.paintEditorTile(tile);
+        }
+      }
+
       this.updateHoveredTileFromScreenPoint(pointer.x, pointer.y);
     });
 
@@ -290,6 +343,13 @@ export class BattleScene extends Phaser.Scene {
           this.clickCandidate = null;
           return;
         }
+      }
+
+      if (isMapEditorScreen(this.latestState) && this.mapEditorPaintPointerId === pointerId) {
+        this.mapEditorPaintPointerId = null;
+        this.lastPaintedTileKey = null;
+        this.controller.stopMapEditorPaint?.();
+        return;
       }
 
       const clickCandidate = this.clickCandidate;
@@ -329,11 +389,20 @@ export class BattleScene extends Phaser.Scene {
       if (this.clickCandidate?.pointerId === pointerId) {
         this.clickCandidate = null;
       }
+
+      if (this.mapEditorPaintPointerId === pointerId) {
+        this.mapEditorPaintPointerId = null;
+        this.lastPaintedTileKey = null;
+        this.controller.stopMapEditorPaint?.();
+      }
     });
   }
 
   canUseBattlefieldCamera() {
-    return isBattleScreen(this.latestState) && !this.latestState?.battleUi?.pauseMenuOpen;
+    return (
+      isBoardScreen(this.latestState) &&
+      (!isBattleScreen(this.latestState) || !this.latestState?.battleUi?.pauseMenuOpen)
+    );
   }
 
   getCameraZoomRange() {
@@ -374,12 +443,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   clampBattlefieldCamera() {
-    if (!isBattleScreen(this.latestState)) {
+    const snapshot = getBoardSnapshot(this.latestState);
+
+    if (!snapshot) {
       return;
     }
 
     const camera = this.cameras.main;
-    const snapshot = this.latestState.battleSnapshot;
     const layout = this.getBoardLayout(snapshot);
     const bounds = this.getBoardBounds(snapshot, layout);
     const viewportWidth = this.scale.width / camera.zoom;
@@ -410,6 +480,8 @@ export class BattleScene extends Phaser.Scene {
     this.touchGesture = null;
     this.touchPointers.clear();
     this.clickCandidate = null;
+    this.mapEditorPaintPointerId = null;
+    this.lastPaintedTileKey = null;
   }
 
   stopBattlefieldZoomTween() {
@@ -568,12 +640,25 @@ export class BattleScene extends Phaser.Scene {
     this.touchGesture.midpoint = midpoint;
   }
 
+  paintEditorTile(tile) {
+    const tileKey = `${tile.x},${tile.y}`;
+
+    if (this.lastPaintedTileKey === tileKey) {
+      return;
+    }
+
+    this.lastPaintedTileKey = tileKey;
+    this.controller.applyMapEditorToolAt?.(tile.x, tile.y);
+  }
+
   getTileFromScreenPoint(screenX, screenY) {
-    if (!isBattleScreen(this.latestState)) {
+    const snapshot = getBoardSnapshot(this.latestState);
+
+    if (!snapshot) {
       return null;
     }
 
-    const layout = this.getBoardLayout(this.latestState.battleSnapshot);
+    const layout = this.getBoardLayout(snapshot);
     const worldPoint = this.getWorldPointFromScreen(screenX, screenY);
     const tileX = Math.floor((worldPoint.x - layout.originX) / layout.cellSize);
     const tileY = Math.floor((worldPoint.y - layout.originY) / layout.cellSize);
@@ -581,8 +666,8 @@ export class BattleScene extends Phaser.Scene {
     const isInsideBoard =
       tileX >= 0 &&
       tileY >= 0 &&
-      tileX < this.latestState.battleSnapshot.map.width &&
-      tileY < this.latestState.battleSnapshot.map.height;
+      tileX < snapshot.map.width &&
+      tileY < snapshot.map.height;
 
     return isInsideBoard ? { x: tileX, y: tileY } : null;
   }
@@ -595,7 +680,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (hoveredChanged) {
       this.hoveredTile = nextHoveredTile;
-      if (this.controller.setBattleHoverTile) {
+      if (isBattleScreen(this.latestState) && this.controller.setBattleHoverTile) {
         this.controller.setBattleHoverTile(nextHoveredTile);
       } else {
         this.renderBattle();
@@ -613,7 +698,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   renderBattle() {
-    if (!isBattleScreen(this.latestState)) {
+    const snapshot = getBoardSnapshot(this.latestState);
+
+    if (!snapshot) {
       this.resetBattlefieldCamera();
       this.cameraBattleKey = null;
       this.gridLayer.clear();
@@ -626,15 +713,30 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    const snapshot = this.latestState.battleSnapshot;
+    const isBattle = isBattleScreen(this.latestState);
     const layout = this.getBoardLayout(snapshot);
-    const battleKey = `${snapshot.id}:${snapshot.map.id}`;
+    const battleKey = `${this.latestState.screen}:${snapshot.id}:${snapshot.map.id}`;
 
     if (this.cameraBattleKey !== battleKey) {
       this.cameraBattleKey = battleKey;
       this.resetBattlefieldCamera();
     } else {
       this.clampBattlefieldCamera();
+    }
+
+    if (!isBattle) {
+      this.fxLayer.clear();
+      this.gridLayer.render(snapshot, layout);
+      this.selectionLayer.render(snapshot, layout, false, this.hoveredTile, [], null, {
+        editorSpawns: {
+          player: snapshot.map.playerSpawns,
+          enemy: snapshot.map.enemySpawns
+        }
+      });
+      this.buildingLayer.render(snapshot, layout);
+      this.unitLayer.render(snapshot, layout, []);
+      this.previousSnapshot = null;
+      return;
     }
 
     const showGrid = this.latestState.metaState.options.showGrid;

@@ -1,0 +1,403 @@
+{
+  "id": "meridian-flats",
+  "name": "Meridian Flats",
+  "theme": "ash",
+  "layout": "center-ring",
+  "width": 18,
+  "height": 12,
+  "tiles": [
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "ridge",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "forest",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "mountain",
+      "mountain",
+      "mountain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "forest",
+      "forest",
+      "plain",
+      "forest",
+      "plain",
+      "road",
+      "plain",
+      "forest",
+      "plain",
+      "road",
+      "plain",
+      "mountain",
+      "mountain",
+      "road",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "forest",
+      "forest",
+      "road",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "forest",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "mountain",
+      "mountain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "mountain",
+      "mountain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "forest",
+      "forest",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "forest",
+      "plain",
+      "plain",
+      "road",
+      "forest",
+      "forest",
+      "ridge",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "road",
+      "forest",
+      "road",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "ridge",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "mountain",
+      "mountain",
+      "road",
+      "road",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "mountain",
+      "mountain",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ]
+  ],
+  "playerSpawns": [
+    {
+      "x": 9,
+      "y": 6
+    },
+    {
+      "x": 8,
+      "y": 6
+    },
+    {
+      "x": 10,
+      "y": 6
+    },
+    {
+      "x": 9,
+      "y": 5
+    },
+    {
+      "x": 9,
+      "y": 7
+    },
+    {
+      "x": 7,
+      "y": 7
+    },
+    {
+      "x": 11,
+      "y": 5
+    }
+  ],
+  "enemySpawns": [
+    {
+      "x": 16,
+      "y": 1
+    },
+    {
+      "x": 15,
+      "y": 2
+    },
+    {
+      "x": 1,
+      "y": 1
+    },
+    {
+      "x": 2,
+      "y": 10
+    },
+    {
+      "x": 16,
+      "y": 9
+    },
+    {
+      "x": 1,
+      "y": 8
+    },
+    {
+      "x": 14,
+      "y": 4
+    }
+  ],
+  "buildings": [
+    {
+      "id": "meridian-flats-command",
+      "type": "command",
+      "owner": "player",
+      "x": 9,
+      "y": 6
+    },
+    {
+      "id": "meridian-flats-production-a",
+      "type": "airfield",
+      "owner": "player",
+      "x": 7,
+      "y": 6
+    },
+    {
+      "id": "meridian-flats-production-b",
+      "type": "motor-pool",
+      "owner": "player",
+      "x": 11,
+      "y": 6
+    },
+    {
+      "id": "meridian-flats-sector-home",
+      "type": "sector",
+      "owner": "player",
+      "x": 9,
+      "y": 8
+    },
+    {
+      "id": "meridian-flats-enemy-command",
+      "type": "command",
+      "owner": "enemy",
+      "x": 15,
+      "y": 2
+    },
+    {
+      "id": "meridian-flats-enemy-production-a",
+      "type": "barracks",
+      "owner": "enemy",
+      "x": 2,
+      "y": 1
+    },
+    {
+      "id": "meridian-flats-enemy-production-b",
+      "type": "motor-pool",
+      "owner": "enemy",
+      "x": 15,
+      "y": 9
+    },
+    {
+      "id": "meridian-flats-enemy-sector-forward",
+      "type": "sector",
+      "owner": "enemy",
+      "x": 2,
+      "y": 10
+    },
+    {
+      "id": "meridian-sector",
+      "type": "sector",
+      "owner": "neutral",
+      "x": 7,
+      "y": 5
+    },
+    {
+      "id": "meridian-flats-neutral-sector-northwest",
+      "type": "sector",
+      "owner": "neutral",
+      "x": 4,
+      "y": 3
+    },
+    {
+      "id": "meridian-flats-neutral-sector-southeast",
+      "type": "sector",
+      "owner": "neutral",
+      "x": 14,
+      "y": 9
+    },
+    {
+      "id": "meridian-flats-hospital",
+      "type": "hospital",
+      "owner": "neutral",
+      "x": 5,
+      "y": 8
+    },
+    {
+      "id": "meridian-flats-repair-station",
+      "type": "repair-station",
+      "owner": "neutral",
+      "x": 13,
+      "y": 4
+    }
+  ]
+}

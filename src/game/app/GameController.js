@@ -10,7 +10,9 @@ import {
 } from "./controllerShared.js";
 import { controllerFlowMethods } from "./controllerFlowMethods.js";
 import { controllerBattleMethods } from "./controllerBattleMethods.js";
+import { controllerMapEditorMethods } from "./controllerMapEditorMethods.js";
 import { controllerRunMethods } from "./controllerRunMethods.js";
+import { createBlankMapDefinition, createDefaultMapEditorState } from "../content/mapEditor.js";
 
 /**
  * The controller owns app flow and save orchestration.
@@ -40,7 +42,7 @@ export class GameController {
       runStatus: null,
       battleUi: createBattleUiState(),
       skirmishSetup: createDefaultSkirmishSetupState(),
-      mapEditor: { zoom: 1, mapData: null, brush: "terrain", terrainId: "plain", buildingType: "command", buildingOwner: "neutral" },
+      mapEditor: createDefaultMapEditorState(createBlankMapDefinition()),
       runLoadout: createDefaultRunLoadoutState()
     };
   }
@@ -91,4 +93,5 @@ export class GameController {
 
 Object.assign(GameController.prototype, controllerFlowMethods);
 Object.assign(GameController.prototype, controllerBattleMethods);
+Object.assign(GameController.prototype, controllerMapEditorMethods);
 Object.assign(GameController.prototype, controllerRunMethods);
