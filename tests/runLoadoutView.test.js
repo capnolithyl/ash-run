@@ -43,7 +43,9 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /assets\/sprites\/units\/player\/grunt\.svg/);
   assert.match(html, /assets\/sprites\/units\/player\/bruiser\/bruiser-idle\.png/);
   assert.match(html, /run-unit-card__preview-image--sheet/);
-  assert.match(html, /selection-icon selection-icon--stat/);
+  assert.match(html, /class="selection-stat run-loadout-stat"/);
+  assert.match(html, /class="selection-stat__content"/);
+  assert.match(html, /--stat-bg-image:url\('\.\/assets\/img\/icons\/battle-hud\/stats\/atk\.png'\)/);
   assert.match(html, /Count/);
   assert.match(html, /run-loadout-start-button/);
   assert.match(html, /title-button__icon/);

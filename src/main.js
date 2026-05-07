@@ -9,5 +9,3 @@ const uiRoot = document.getElementById("ui-root");
 const controller = new GameController();
 new AppShell(uiRoot, controller);
 createGame(gameRoot, controller);
-
-controller.initialize();

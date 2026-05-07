@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { BootScene } from "./scenes/BootScene.js";
 import { BattleScene } from "./scenes/BattleScene.js";
 import { ShellScene } from "./scenes/ShellScene.js";
 
@@ -32,7 +33,7 @@ export function createGame(parent, controller) {
       width: parent.clientWidth,
       height: parent.clientHeight
     },
-    scene: [ShellScene, BattleScene]
+    scene: [BootScene, ShellScene, BattleScene]
   });
 
   return game;

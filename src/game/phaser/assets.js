@@ -19,11 +19,16 @@ const GENERATED_UNIT_SPRITE_ANIMATIONS =
 
 const SPRITE_ASSET_ROOT = "./assets/sprites";
 const AUDIO_ASSET_ROOT = "./assets/audio";
+const IMAGE_ASSET_ROOT = "./assets/img";
 const SPRITE_SOURCE_SIZE = 64;
 const TERRAIN_SOURCE_SIZE = 128;
 const TERRAIN_ANIMATION_FRAME_RATE = 10;
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
 export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
+export const SPLASH_ASSET_IDS = {
+  STUDIO_LOGO: "studio-logo",
+  GAME_LOGO: "game-logo"
+};
 export const MUSIC_TRACK_IDS = {
   MENU: "menu",
   ALLY_TURN: "ally-turn",
@@ -134,6 +139,17 @@ const MUSIC_TRACKS = {
   },
 };
 
+const SPLASH_ASSETS = {
+  [SPLASH_ASSET_IDS.STUDIO_LOGO]: {
+    key: "image:splash:studio-logo",
+    url: `${IMAGE_ASSET_ROOT}/logos/articus.png`
+  },
+  [SPLASH_ASSET_IDS.GAME_LOGO]: {
+    key: "image:splash:game-logo",
+    url: `${IMAGE_ASSET_ROOT}/logos/logo.png`
+  }
+};
+
 function flattenUnitAnimationAssets() {
   return Object.values(GENERATED_UNIT_SPRITE_ANIMATIONS).flatMap((ownerVariants) =>
     Object.values(ownerVariants).flatMap((ownerSpec) =>
@@ -194,6 +210,18 @@ export function preloadMusicAssets(scene) {
       scene.load.audio(asset.key, asset.url);
     }
   }
+}
+
+export function preloadSplashAssets(scene) {
+  for (const asset of Object.values(SPLASH_ASSETS)) {
+    if (!scene.textures.exists(asset.key)) {
+      scene.load.image(asset.key, asset.url);
+    }
+  }
+}
+
+export function getSplashAssetKey(assetId) {
+  return SPLASH_ASSETS[assetId]?.key ?? null;
 }
 
 export function getMusicTrackKey(trackId) {

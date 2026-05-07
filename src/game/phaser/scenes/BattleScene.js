@@ -137,7 +137,16 @@ function getHoveredAttackForecast(snapshot, hoveredTile) {
     return null;
   }
 
-  return presentation.attackForecasts?.[hoveredEnemy.id] ?? null;
+  const forecast = presentation.attackForecasts?.[hoveredEnemy.id] ?? null;
+
+  if (!forecast) {
+    return null;
+  }
+
+  return {
+    ...forecast,
+    targetName: hoveredEnemy.name
+  };
 }
 
 export class BattleScene extends Phaser.Scene {

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { buildForecastTooltipLabel } from "./selectionTooltip.js";
 
 const SELECTION_DEPTH = 24;
 const CURSOR_DEPTH = 34;
@@ -335,11 +336,7 @@ export class SelectionLayer {
     }
 
     if (hoveredAttackForecast) {
-      const dealt = hoveredAttackForecast.dealt;
-      const received = hoveredAttackForecast.received;
-      const label = `Damage ${dealt.min}-${dealt.max}\nCounter ${
-        received ? `${received.min}-${received.max}` : "0"
-      }`;
+      const label = buildForecastTooltipLabel(hoveredAttackForecast);
       const margin = Math.max(10, Math.floor(layout.cellSize * 0.2));
       const width = Math.max(150, Math.floor(layout.cellSize * 3.2));
       const x = Phaser.Math.Clamp(
