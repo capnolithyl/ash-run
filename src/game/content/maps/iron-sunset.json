@@ -1,0 +1,343 @@
+{
+  "id": "iron-sunset",
+  "name": "Iron Sunset",
+  "theme": "ash",
+  "layout": "east-west",
+  "width": 16,
+  "height": 10,
+  "tiles": [
+    [
+      "plain",
+      "plain",
+      "forest",
+      "forest",
+      "forest",
+      "forest",
+      "plain",
+      "ridge",
+      "plain",
+      "plain",
+      "plain",
+      "mountain",
+      "mountain",
+      "mountain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "forest",
+      "forest",
+      "forest",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "mountain",
+      "mountain",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "forest",
+      "road",
+      "road",
+      "forest",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road"
+    ],
+    [
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "forest",
+      "road",
+      "road",
+      "forest",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road"
+    ],
+    [
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "forest",
+      "forest",
+      "forest",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "forest",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "forest",
+      "forest",
+      "forest",
+      "plain",
+      "plain",
+      "plain",
+      "road",
+      "plain",
+      "plain",
+      "forest",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain",
+      "plain"
+    ]
+  ],
+  "playerSpawns": [
+    {
+      "x": 1,
+      "y": 2
+    },
+    {
+      "x": 1,
+      "y": 4
+    },
+    {
+      "x": 1,
+      "y": 6
+    },
+    {
+      "x": 2,
+      "y": 8
+    },
+    {
+      "x": 2,
+      "y": 7
+    },
+    {
+      "x": 3,
+      "y": 3
+    },
+    {
+      "x": 4,
+      "y": 8
+    }
+  ],
+  "enemySpawns": [
+    {
+      "x": 14,
+      "y": 2
+    },
+    {
+      "x": 14,
+      "y": 4
+    },
+    {
+      "x": 14,
+      "y": 6
+    },
+    {
+      "x": 14,
+      "y": 8
+    },
+    {
+      "x": 13,
+      "y": 7
+    },
+    {
+      "x": 12,
+      "y": 3
+    },
+    {
+      "x": 11,
+      "y": 8
+    }
+  ],
+  "buildings": [
+    {
+      "id": "iron-sunset-command",
+      "type": "command",
+      "owner": "player",
+      "x": 1,
+      "y": 5
+    },
+    {
+      "id": "iron-sunset-production-a",
+      "type": "airfield",
+      "owner": "player",
+      "x": 2,
+      "y": 3
+    },
+    {
+      "id": "iron-sunset-production-b",
+      "type": "motor-pool",
+      "owner": "player",
+      "x": 3,
+      "y": 7
+    },
+    {
+      "id": "iron-sunset-sector-home",
+      "type": "sector",
+      "owner": "player",
+      "x": 4,
+      "y": 5
+    },
+    {
+      "id": "iron-sunset-enemy-command",
+      "type": "command",
+      "owner": "enemy",
+      "x": 14,
+      "y": 5
+    },
+    {
+      "id": "iron-sunset-enemy-production-a",
+      "type": "barracks",
+      "owner": "enemy",
+      "x": 13,
+      "y": 6
+    },
+    {
+      "id": "iron-sunset-enemy-production-b",
+      "type": "motor-pool",
+      "owner": "enemy",
+      "x": 12,
+      "y": 3
+    },
+    {
+      "id": "iron-sunset-enemy-sector-forward",
+      "type": "sector",
+      "owner": "enemy",
+      "x": 10,
+      "y": 5
+    },
+    {
+      "id": "sunset-sector-b",
+      "type": "sector",
+      "owner": "neutral",
+      "x": 7,
+      "y": 5
+    },
+    {
+      "id": "iron-sunset-neutral-sector-west",
+      "type": "sector",
+      "owner": "neutral",
+      "x": 5,
+      "y": 2
+    },
+    {
+      "id": "iron-sunset-neutral-sector-east",
+      "type": "sector",
+      "owner": "neutral",
+      "x": 10,
+      "y": 8
+    },
+    {
+      "id": "iron-sunset-hospital",
+      "type": "hospital",
+      "owner": "neutral",
+      "x": 7,
+      "y": 4
+    },
+    {
+      "id": "iron-sunset-repair-station",
+      "type": "repair-station",
+      "owner": "neutral",
+      "x": 9,
+      "y": 6
+    }
+  ]
+}

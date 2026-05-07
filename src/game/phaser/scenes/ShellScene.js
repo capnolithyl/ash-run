@@ -39,7 +39,8 @@ export class ShellScene extends Phaser.Scene {
   }
 
   updateBackdropVisibility() {
-    this.showBackdrop = this.latestState?.screen !== "battle";
+    this.showBackdrop =
+      this.latestState?.screen !== "battle" && this.latestState?.screen !== "map-editor";
     this.backdropLayer.graphics.setVisible(this.showBackdrop);
     this.backdropLayer.scanLine.setVisible(this.showBackdrop);
   }

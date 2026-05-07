@@ -1,5 +1,6 @@
 import { createServer } from "vite";
 import { generateBuildingSpriteManifest } from "./generate-building-sprite-manifest.mjs";
+import { generateMapManifest } from "./generate-map-manifest.shared.mjs";
 import { generateTerrainSpriteManifest } from "./generate-terrain-sprite-manifest.mjs";
 import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifest.mjs";
 
@@ -7,6 +8,7 @@ const root = process.cwd();
 const port = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
 
 await generateBuildingSpriteManifest({ root });
+await generateMapManifest({ root });
 await generateTerrainSpriteManifest({ root });
 await generateUnitSpriteSheetManifest({ root });
 

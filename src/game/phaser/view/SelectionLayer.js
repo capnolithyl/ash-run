@@ -109,6 +109,37 @@ function drawMovementPath(graphics, layout, path) {
   graphics.strokePath();
 }
 
+function drawSpawnMarker(graphics, layout, spawn, color, label) {
+  const center = getTileCenter(layout, spawn);
+  const radius = Math.max(8, layout.cellSize * 0.16);
+
+  graphics.fillStyle(0x12061f, 0.9);
+  graphics.fillCircle(center.x, center.y, radius + 3);
+  graphics.fillStyle(color, 0.92);
+  graphics.fillCircle(center.x, center.y, radius);
+  graphics.lineStyle(2, 0xfff2d4, 0.95);
+  graphics.strokeCircle(center.x, center.y, radius + 1);
+  graphics.fillStyle(0xfff8ef, 0.96);
+  graphics.fillRoundedRect(center.x - radius * 0.55, center.y - radius * 0.7, radius * 1.1, radius * 1.3, 4);
+  graphics.lineStyle(1.5, 0x12061f, 0.7);
+  graphics.strokeRoundedRect(center.x - radius * 0.55, center.y - radius * 0.7, radius * 1.1, radius * 1.3, 4);
+  graphics.lineStyle(2.2, 0x12061f, 0.92);
+  graphics.strokeLineShape(
+    new Phaser.Geom.Line(center.x, center.y + radius * 0.65, center.x, center.y + radius * 1.65)
+  );
+
+  const text = graphics.scene.add
+    .text(center.x, center.y - 1, label, {
+      fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+      fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.18))}px`,
+      color: "#12061f"
+    })
+    .setOrigin(0.5)
+    .setDepth(CURSOR_DEPTH + 1);
+
+  return text;
+}
+
 export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
@@ -129,11 +160,14 @@ export class SelectionLayer {
       .setVisible(false);
     this.tooltipBackground.setDepth(TOOLTIP_BACKGROUND_DEPTH);
     this.tooltipLabel.setDepth(TOOLTIP_LABEL_DEPTH);
+    this.markerLabels = [];
   }
 
   clear() {
     this.graphics.clear();
     this.cursorGraphics.clear();
+    this.markerLabels.forEach((label) => label.destroy());
+    this.markerLabels = [];
     this.tooltipBackground.setVisible(false);
     this.tooltipLabel.setVisible(false);
   }
@@ -144,9 +178,11 @@ export class SelectionLayer {
     showGridHighlights,
     hoveredTile,
     hoveredMovementPath = [],
-    hoveredAttackForecast = null
+    hoveredAttackForecast = null,
+    options = {}
   ) {
     this.clear();
+    const markerLabels = [];
 
     const presentation = snapshot.presentation ?? {};
     const unloadTiles =
@@ -276,6 +312,14 @@ export class SelectionLayer {
       drawMovementPath(this.graphics, layout, hoveredMovementPath);
     }
 
+    for (const spawn of options.editorSpawns?.player ?? []) {
+      markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, 0x66ffbf, "P"));
+    }
+
+    for (const spawn of options.editorSpawns?.enemy ?? []) {
+      markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, 0xff8a3d, "E"));
+    }
+
     if (presentation.selectedTile) {
       const x = layout.originX + presentation.selectedTile.x * layout.cellSize;
       const y = layout.originY + presentation.selectedTile.y * layout.cellSize;
@@ -316,5 +360,7 @@ export class SelectionLayer {
         .setSize(bounds.width + 20, bounds.height + 18)
         .setVisible(true);
     }
+
+    this.markerLabels = markerLabels;
   }
 }

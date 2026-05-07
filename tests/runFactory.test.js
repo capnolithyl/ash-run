@@ -83,16 +83,14 @@ test("createBattleStateForRun deploys carried roster across unique spawn tiles",
 test("createBattleStateForRun scales enemy opening pressure on later maps", () => {
   const firstMap = createBattleStateForRun(createRunState({ mapIndex: 0 }));
   const fourthMap = createBattleStateForRun(createRunState({ mapIndex: 3 }));
+  const firstEnemyBuildings = firstMap.map.buildings.filter((building) => building.owner === TURN_SIDES.ENEMY);
+  const fourthEnemyBuildings = fourthMap.map.buildings.filter((building) => building.owner === TURN_SIDES.ENEMY);
 
   assert.ok(fourthMap.enemy.funds > firstMap.enemy.funds);
   assert.ok(fourthMap.enemy.units.length > firstMap.enemy.units.length);
   assert.ok(fourthMap.enemy.units.every((unit) => unit.level >= 2));
   assert.equal(uniquePositionCount(fourthMap.enemy.units), fourthMap.enemy.units.length);
-  assert.ok(
-    fourthMap.map.buildings.some(
-      (building) => building.owner === TURN_SIDES.ENEMY && building.id.includes("neutral")
-    )
-  );
+  assert.ok(fourthEnemyBuildings.length > firstEnemyBuildings.length);
   assert.ok(fourthMap.log.includes("Enemy pressure increased to tier 4."));
 });
 

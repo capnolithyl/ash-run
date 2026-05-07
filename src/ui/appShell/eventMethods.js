@@ -194,22 +194,28 @@ export const appShellEventMethods = {
       case "start-skirmish":
         await this.controller.startSkirmish();
         break;
-      case "map-editor-paint": {
-        const x = Number(trigger.dataset.x); const y = Number(trigger.dataset.y);
-        const map = this.latestState?.mapEditor?.mapData;
-        if (!map || !Number.isFinite(x) || !Number.isFinite(y)) break;
-        map.tiles[y][x] = map.tiles[y][x] === "plain" ? "forest" : "plain";
-        this.controller.state.mapEditor.mapData = map;
-        this.controller.emit();
+      case "map-editor-new":
+        this.controller.resetMapEditor();
         break;
-      }
+      case "map-editor-select-tool":
+        this.controller.setMapEditorTool(trigger.dataset.mapEditorTool);
+        break;
+      case "map-editor-select-terrain":
+        this.controller.selectMapEditorTerrain(trigger.dataset.terrainId);
+        break;
+      case "map-editor-select-building":
+        this.controller.selectMapEditorBuildingType(trigger.dataset.buildingType);
+        break;
+      case "map-editor-select-building-owner":
+        this.controller.selectMapEditorBuildingOwner(trigger.dataset.buildingOwner);
+        break;
       case "map-editor-export": {
-        const map = this.latestState?.mapEditor?.mapData;
-        if (!map) break;
-        const blob = new Blob([JSON.stringify(map, null, 2)], { type: "application/json" });
+        const exportedMap = this.controller.exportMapEditorMap();
+        if (!exportedMap) break;
+        const blob = new Blob([exportedMap.text], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url; a.download = `${map.id}.json`; a.click();
+        a.href = url; a.download = exportedMap.filename; a.click();
         URL.revokeObjectURL(url);
         break;
       }
@@ -356,9 +362,15 @@ export const appShellEventMethods = {
       const file = event.target.files?.[0];
       if (file) {
         const text = await file.text();
-        this.controller.state.mapEditor.mapData = JSON.parse(text);
-        this.controller.emit();
+        this.controller.importMapEditorMap(JSON.parse(text));
       }
+      return;
+    }
+
+    const mapEditorField = event.target.dataset.mapEditorField;
+
+    if (mapEditorField) {
+      this.controller.updateMapEditorField(mapEditorField, event.target.value);
       return;
     }
 
@@ -384,14 +396,22 @@ export const appShellEventMethods = {
   handleInput(event) {
     const skirmishField = event.target.dataset.skirmishField;
 
-    if (!skirmishField) {
+    if (skirmishField) {
+      const output = this.root.querySelector(`[data-skirmish-output="${skirmishField}"]`);
+
+      if (output) {
+        output.textContent = event.target.value;
+      }
+
       return;
     }
 
-    const output = this.root.querySelector(`[data-skirmish-output="${skirmishField}"]`);
+    const mapEditorField = event.target.dataset.mapEditorField;
 
-    if (output) {
-      output.textContent = event.target.value;
+    if (!mapEditorField) {
+      return;
     }
+
+    this.controller.updateMapEditorField(mapEditorField, event.target.value);
   }
 };
