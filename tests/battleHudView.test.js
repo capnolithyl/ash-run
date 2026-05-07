@@ -84,14 +84,12 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
   };
   const html = renderBattleHudView(state);
 
-  assert.match(html, /<h3>Target<\/h3>/);
+  assert.match(html, /<h3>Target Intel<\/h3>/);
   assert.match(html, /Runner/);
-  assert.match(html, /selection-level-badge[^>]*>1<\/span>/);
+  assert.match(html, /selection-level-badge[^>]*>Lv\. 1<\/span>/);
   assert.match(html, /selection-health__value">100\/100<\/span>/);
-  assert.match(html, /selection-stat-grid/);
-  assert.match(html, /aria-label="ARM 45 \(\+3\)"/);
-  assert.match(html, /aria-label="AMMO 7\/7"/);
-  assert.match(html, /aria-label="STA 80\/80"/);
+  assert.match(html, /<span>Armor<\/span>[\s\S]*?<strong>Light<\/strong>/);
+  assert.match(html, /<span>Terrain<\/span>[\s\S]*?<strong>Road<\/strong>/);
   assert.match(html, /Forecast/);
 });
 
@@ -161,33 +159,32 @@ test("battle HUD replaces unload command menu with a cancellable unload prompt",
   assert.doesNotMatch(html, /data-action="wait-unit"/);
 });
 
-test("battle HUD shows commander funds inside the commander panels without a top bar", () => {
+test("battle HUD shows compact commander strips without ability summaries or funds", () => {
   const battleState = createTestBattleState();
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, /Passive: Shock Doctrine/);
-  assert.match(html, /Power: Blitz Surge/);
-  assert.match(html, /Passive: Estate Claim/);
-  assert.match(html, /Power: Hostile Takeover/);
-  assert.match(html, /Infantry and Runners gain 20% attack; other units lose 20% attack\./);
-  assert.match(html, /Units gain 30% attack while standing on an owned property\./);
-  assert.match(html, /For 1 turn, units gain 5% attack and armor per owned property\./);
   assert.match(html, /assets\/img\/commanders\/viper\/Viper%20-%20Portrait\.png/);
   assert.match(html, /assets\/img\/commanders\/rook\/Rook%20-%20Portrait\.png/);
-  assert.match(html, /commander-panel--player[\s\S]*?<h2>Viper<\/h2>[\s\S]*?data-funds-panel="player"/);
-  assert.match(html, /commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>[\s\S]*?data-funds-panel="enemy"/);
+  assert.match(html, /battle-commanders[\s\S]*?commander-panel--player[\s\S]*?<h2>Viper<\/h2>/);
+  assert.match(html, /battle-commanders[\s\S]*?commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>/);
+  assert.match(html, /<small>Charging<\/small>/);
+  assert.doesNotMatch(html, /Passive:/);
+  assert.doesNotMatch(html, /Power:/);
+  assert.doesNotMatch(html, /data-funds-panel=/);
   assert.doesNotMatch(html, /commander-panel__sigil/);
   assert.doesNotMatch(html, /battle-topbar/);
 });
 
-test("battle HUD commander rails keep blaze and echo summaries concise", () => {
+test("battle HUD commander strips omit blaze and echo ability summaries", () => {
   const battleState = createTestBattleState();
   battleState.player.commanderId = "blaze";
   battleState.enemy.commanderId = "echo";
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, /All enemies take 10% damage and Burn for 1 turn\./);
-  assert.match(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
+  assert.match(html, /<h2>Blaze<\/h2>/);
+  assert.match(html, /<h2>Echo<\/h2>/);
+  assert.doesNotMatch(html, /All enemies take 10% damage and Burn for 1 turn\./);
+  assert.doesNotMatch(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
   assert.doesNotMatch(html, /halves attack/i);
   assert.doesNotMatch(html, /randomly halves one visible stat/i);
 });
@@ -288,10 +285,10 @@ test("battle HUD keeps player and enemy intel in separate sidebars", () => {
     banner: ""
   });
 
-  assert.match(html, /battle-rail--left[\s\S]*?Player Intel[\s\S]*?Bruiser/);
-  assert.match(html, /battle-rail--right[\s\S]*?Enemy Intel[\s\S]*?Runner/);
-  assert.doesNotMatch(html, /Player Selection/);
-  assert.doesNotMatch(html, /Enemy Selection/);
+  assert.match(html, /battle-rail--left[\s\S]*?Selected Unit[\s\S]*?Bruiser/);
+  assert.match(html, /battle-rail--right[\s\S]*?Target Intel[\s\S]*?Runner/);
+  assert.doesNotMatch(html, /Player Intel/);
+  assert.doesNotMatch(html, /Enemy Intel/);
 });
 
 test("battle HUD shows hovered tile coordinates in the command feed instead of the selection card header", () => {
@@ -325,7 +322,7 @@ test("battle HUD shows hovered tile coordinates in the command feed instead of t
   assert.doesNotMatch(html, /<h3>Player Selection<\/h3>[\s\S]*?Tile 3,3/);
 });
 
-test("battle HUD only shows enemy selection details while an enemy is actively selected", () => {
+test("battle HUD keeps enemy target intel available from enemy focus while a player unit is selected", () => {
   const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 4);
   const battleState = createTestBattleState({
@@ -354,9 +351,9 @@ test("battle HUD only shows enemy selection details while an enemy is actively s
     banner: ""
   });
 
-  assert.match(html, /battle-rail--left[\s\S]*?Player Intel[\s\S]*?Grunt/);
-  assert.match(html, /battle-rail--right[\s\S]*?Enemy Intel[\s\S]*?Enemy scans and hostile unit details will appear here\./);
-  assert.doesNotMatch(html, /battle-rail--right[\s\S]*?Enemy Selection[\s\S]*?Runner/);
+  assert.match(html, /battle-rail--left[\s\S]*?Selected Unit[\s\S]*?Grunt/);
+  assert.match(html, /battle-rail--right[\s\S]*?Target Intel[\s\S]*?Runner/);
+  assert.match(html, /battle-rail--right[\s\S]*?<span>Terrain<\/span>[\s\S]*?<strong>Road<\/strong>/);
 });
 
 test("battle HUD renders transient battle notices", () => {

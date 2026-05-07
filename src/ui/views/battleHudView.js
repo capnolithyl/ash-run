@@ -28,8 +28,21 @@ import {
 import {
   getFocusTileForSide,
   renderSelectionDetails,
-  renderTargetReference
+  renderTargetIntelPanel
 } from "./battleHud/selectionPanels.js";
+
+function renderBattleMeta(battleSnapshot) {
+  const mapName = battleSnapshot.map?.name ?? "Unknown Map";
+  const turnLabel = battleSnapshot.turn?.number ?? 1;
+
+  return `
+    <div class="battle-footer-meta" aria-label="Battle mission details">
+      <span><strong>Mission</strong> Ash Run</span>
+      <span><strong>Map</strong> ${mapName}</span>
+      <span><strong>Turn</strong> ${turnLabel}</span>
+    </div>
+  `;
+}
 
 export function renderBattleHudView(state, options = {}) {
   const battleSnapshot = state.battleSnapshot;
@@ -59,6 +72,20 @@ export function renderBattleHudView(state, options = {}) {
     <div class="battle-shell">
       <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
+      <div class="battle-commanders">
+        ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player", {
+          fundsGain,
+          showFunds,
+          canActivatePower: playerPowerEnabled,
+          isCharged: playerPowerCharged,
+          isActive: playerPowerActive
+        })}
+        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", {
+          fundsGain,
+          showFunds,
+          isActive: enemyPowerActive
+        })}
+      </div>
       <div class="battle-footer-actions" aria-label="Battle controls">
         <label
           class="ghost-button ghost-button--small battle-footer-button battle-footer-button--intel battle-drawer-button"
@@ -92,39 +119,25 @@ export function renderBattleHudView(state, options = {}) {
           Feed
         </label>
       </div>
+      ${renderBattleMeta(battleSnapshot)}
       <aside class="battle-rail battle-rail--left">
         <div class="battle-drawer-header">
-          <span>Player Intel</span>
+          <span>Selected Unit</span>
           <label class="ghost-button ghost-button--small" for="battle-intel-drawer">Close</label>
         </div>
-        ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player", {
-          fundsGain,
-          showFunds,
-          canActivatePower: playerPowerEnabled,
-          isCharged: playerPowerCharged,
-          isActive: playerPowerActive
-        })}
         ${renderSelectionDetails(playerFocusTile, {
-          emptyTitle: "Player Intel",
-          emptyBody: "Select a friendly unit, building, or tile to pin player-side intel here."
+          title: "Selected Unit",
+          emptyTitle: "Selected Unit",
+          emptyBody: "Select a friendly unit, building, or tile to inspect it here."
         })}
         ${renderRecruitPanel(battleSnapshot)}
       </aside>
       <aside class="battle-rail battle-rail--right">
         <div class="battle-drawer-header">
-          <span>Enemy Intel</span>
+          <span>Target Intel</span>
           <label class="ghost-button ghost-button--small" for="battle-command-drawer">Close</label>
         </div>
-        ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", {
-          fundsGain,
-          showFunds,
-          isActive: enemyPowerActive
-        })}
-        ${renderTargetReference(battleSnapshot, state.battleUi?.hoveredTile)}
-        ${renderSelectionDetails(enemyFocusTile, {
-          emptyTitle: "Enemy Intel",
-          emptyBody: "Enemy scans and hostile unit details will appear here."
-        })}
+        ${renderTargetIntelPanel(battleSnapshot, state.battleUi?.hoveredTile, enemyFocusTile)}
         ${renderCommandFeed(battleSnapshot.log, state.battleUi?.hoveredTile)}
       </aside>
       ${renderActionPrompt(battleSnapshot)}

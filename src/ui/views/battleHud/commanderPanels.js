@@ -5,23 +5,6 @@ import { getCommanderPowerMax } from "../../../game/content/commanders.js";
 const COMMANDER_POWER_SEGMENT_VALUE = 25;
 const COMMANDER_POWER_SEGMENT_HALF_STEPS = 2;
 
-function renderFundsPanel(label, value, side, modifierClass = "", fundsGain = null) {
-  const isGaining = fundsGain?.side === side;
-  const displayValue = isGaining ? fundsGain.from : value;
-
-  return `
-    <div class="funds-panel ${modifierClass} ${isGaining ? "funds-panel--gaining" : ""}" data-funds-panel="${side}">
-      <span>${label}</span>
-      <strong data-funds-value="${side}">${displayValue}</strong>
-      ${
-        isGaining && !fundsGain.pending
-          ? `<em class="funds-panel__gain">+${fundsGain.amount}</em>`
-          : ""
-      }
-    </div>
-  `;
-}
-
 export function canSelectNextReadyUnit(battleSnapshot) {
   if (
     !battleSnapshot ||
@@ -170,47 +153,28 @@ export function renderCommanderPanel(
 
   return `
     <div class="commander-panel commander-panel--${side}" style="--accent:${commander.accent}">
-      <div class="commander-panel__header">
-        <div class="commander-panel__summary">
-          <p class="eyebrow">${sideLabel}</p>
-          <h2>${commander.name}</h2>
-          ${
-            showFunds
-              ? renderFundsPanel(
-                  "Funds",
-                  sideState.funds,
-                  side,
-                  `funds-panel--${side} funds-panel--commander`,
-                  fundsGain
-                )
-              : ""
-          }
-        </div>
-        <div class="commander-panel__identity">
-          ${
-            portraitImageUrl
-              ? `
-                <img
-                  class="commander-panel__portrait"
-                  src="${portraitImageUrl}"
-                  alt="${commander.name} portrait"
-                  loading="lazy"
-                  decoding="async"
-                />
-              `
-              : ""
-          }
+      <div class="commander-panel__identity">
+        ${
+          portraitImageUrl
+            ? `
+              <img
+                class="commander-panel__portrait"
+                src="${portraitImageUrl}"
+                alt="${commander.name} portrait"
+                loading="lazy"
+                decoding="async"
+              />
+            `
+            : ""
+        }
+      </div>
+      <div class="commander-panel__summary">
+        <p class="eyebrow">${sideLabel}</p>
+        <h2>${commander.name}</h2>
+        <div class="commander-panel__charge-row">
+          ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged, isActive })}
         </div>
       </div>
-      <div class="commander-ability">
-        <span>Passive: ${commander.passive.name ?? "Passive"}</span>
-        <p>${commander.passive.summary}</p>
-      </div>
-      <div class="commander-ability commander-ability--active">
-        <span>Power: ${commander.active.name ?? "Power"}</span>
-        <p>${commander.active.summary}</p>
-      </div>
-      ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged, isActive })}
     </div>
   `;
 }

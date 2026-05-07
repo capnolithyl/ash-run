@@ -6,12 +6,12 @@ export function getBattlefieldLayout({
 }) {
   const isCompact = viewportWidth <= 1024;
   const isShort = viewportHeight <= 520;
-  const reservedTop = isCompact ? (isShort ? 76 : 118) : 0;
-  const reservedBottom = isCompact ? (isShort ? 94 : viewportWidth <= 560 ? 152 : 128) : 0;
+  const reservedTop = isCompact ? (isShort ? 76 : 118) : 158;
+  const reservedBottom = isCompact ? (isShort ? 94 : viewportWidth <= 560 ? 152 : 128) : 112;
   const availableHeight = Math.max(180, viewportHeight - reservedTop - reservedBottom);
   // Desktop rails are fixed-width, so fit the board to the center lane instead of
   // leaving a large generic viewport percentage on each side.
-  const desktopRailWidth = 19 * 16;
+  const desktopRailWidth = 16.5 * 16;
   const desktopRailInset = 1.25 * 16;
   const desktopCenterLaneGap = 0.75 * 16;
   const desktopLaneWidth = Math.max(
@@ -25,8 +25,8 @@ export function getBattlefieldLayout({
   const boardHeight = mapHeight * cellSize;
   const centeredOriginY = isCompact
     ? reservedTop + Math.max(0, (availableHeight - boardHeight) / 2)
-    : (viewportHeight - boardHeight) / 2;
-  const desktopLift = isCompact ? 0 : Math.round(Math.min(34, viewportHeight * 0.034));
+    : reservedTop + Math.max(0, (availableHeight - boardHeight) / 2);
+  const desktopLift = 0;
 
   return {
     cellSize,

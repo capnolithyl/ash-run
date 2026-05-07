@@ -4,7 +4,6 @@ import {
   TURN_SIDES
 } from "../../../game/core/constants.js";
 import { getBuildingArmorBonusForType } from "../../../game/content/buildings.js";
-import { getWeaponClassProfile } from "../../../game/content/weaponClasses.js";
 import { getPositionArmorBonus } from "../../../game/simulation/combatResolver.js";
 import { buildFocusedTile, describeUnit } from "../../../game/simulation/battlePresentation.js";
 import {
@@ -130,18 +129,6 @@ function formatProfileName(value, fallback = "Unknown") {
     .join(" ");
 }
 
-function getArmorProfileSummary(unit) {
-  if (!unit?.armorClass) {
-    return "No armor profile available.";
-  }
-
-  const familyLabel = unit.family
-    ? `${unit.family.charAt(0).toUpperCase() + unit.family.slice(1)} unit`
-    : "Combat unit";
-
-  return `${familyLabel} using ${formatProfileName(unit.armorClass)} armor matchups.`;
-}
-
 function getWeaponClassIconFileName(weaponClass) {
   return weaponClass ? `${weaponClass.replaceAll("_", "-")}.png` : null;
 }
@@ -150,42 +137,39 @@ function getArmorClassIconFileName(armorClass) {
   return armorClass ? `${armorClass.replaceAll("_", "-")}.png` : null;
 }
 
+function renderLoadoutSection(iconUrl, label, value) {
+  return `
+    <div class="selection-loadout-card">
+      ${
+        iconUrl
+          ? `<img class="selection-loadout-card__icon" src="${iconUrl}" alt="" loading="lazy" decoding="async" />`
+          : ""
+      }
+      <div class="selection-loadout-card__copy">
+        <span>${label}</span>
+        <strong>${value}</strong>
+      </div>
+    </div>
+  `;
+}
+
 function renderProfileSummary(unit) {
-  const weaponProfile = getWeaponClassProfile(unit.weaponClass);
-  const armorName = unit?.armorClass
-    ? `${formatProfileName(unit.armorClass)} Armor`
-    : "Unarmored";
+  const armorName = unit?.armorClass ? `${formatProfileName(unit.armorClass)} Armor` : "Unarmored";
   const weaponIconFileName = getWeaponClassIconFileName(unit.weaponClass);
   const armorIconFileName = getArmorClassIconFileName(unit.armorClass);
 
   return `
-    <div class="selection-profile-grid">
-      <div class="selection-profile-card">
-        <div class="selection-profile-card__lead">
-          ${
-            weaponIconFileName
-              ? `<img class="selection-profile-card__icon" src="${getBattleHudWeaponIconUrl(weaponIconFileName)}" alt="" loading="lazy" decoding="async" />`
-              : ""
-          }
-          <div class="selection-profile-card__copy">
-            <strong>${formatProfileName(unit.weaponClass, "Unarmed")}</strong>
-            <p>${weaponProfile?.role ?? "This unit has no active weapon profile."}</p>
-          </div>
-        </div>
-      </div>
-      <div class="selection-profile-card">
-        <div class="selection-profile-card__lead">
-          ${
-            armorIconFileName
-              ? `<img class="selection-profile-card__icon" src="${getBattleHudArmorIconUrl(armorIconFileName)}" alt="" loading="lazy" decoding="async" />`
-              : ""
-          }
-          <div class="selection-profile-card__copy">
-            <strong>${armorName}</strong>
-            <p>${getArmorProfileSummary(unit)}</p>
-          </div>
-        </div>
-      </div>
+    <div class="selection-loadout-grid">
+      ${renderLoadoutSection(
+        weaponIconFileName ? getBattleHudWeaponIconUrl(weaponIconFileName) : "",
+        "Weapon",
+        formatProfileName(unit.weaponClass, "Unarmed")
+      )}
+      ${renderLoadoutSection(
+        armorIconFileName ? getBattleHudArmorIconUrl(armorIconFileName) : "",
+        "Armor",
+        armorName
+      )}
     </div>
   `;
 }
@@ -254,18 +238,18 @@ function renderExperienceBar(unit) {
   `;
 }
 
-function renderUnitSummary(unit, { showExperience = false } = {}) {
+function renderUnitSummary(unit, { showExperience = false, showLoadout = true } = {}) {
   const attachedGear = unit.gear ?? null;
 
   return `
     <div class="selection-section selection-section--unit" data-selection-unit-card="${unit.id ?? ""}">
       <div class="selection-unit-heading">
-        <div class="selection-unit-heading__title">
-          <strong>${unit.name}</strong>
-          <span class="selection-level-badge" aria-label="Level ${unit.level}">${unit.level}</span>
-          ${
-            unit.isBurned
-              ? `
+      <div class="selection-unit-heading__title">
+        <strong>${unit.name}</strong>
+        <span class="selection-level-badge" aria-label="Level ${unit.level}">Lv. ${unit.level}</span>
+        ${
+          unit.isBurned
+            ? `
                 <img
                   class="selection-unit-heading__condition-icon"
                   src="${BURN_ICON_URL}"
@@ -281,7 +265,7 @@ function renderUnitSummary(unit, { showExperience = false } = {}) {
       ${showExperience ? renderExperienceBar(unit) : ""}
       ${renderHealthBar(unit)}
       ${renderUnitStatGrid(unit)}
-      ${renderProfileSummary(unit)}
+      ${showLoadout ? renderProfileSummary(unit) : ""}
       ${
         attachedGear
           ? `
@@ -316,6 +300,73 @@ function renderFeatureSection(iconName, title, lines, modifierClass = "") {
   `;
 }
 
+function formatGridPosition(tile) {
+  if (!tile || !Number.isInteger(tile.x) || !Number.isInteger(tile.y)) {
+    return "Unknown";
+  }
+
+  return `Sector ${String.fromCharCode(65 + tile.y)}${tile.x + 1}`;
+}
+
+function getUnitEffectSummary(unit) {
+  const effects = [];
+
+  if (unit?.isBurned) {
+    effects.push("Burn");
+  }
+
+  if (unit?.corruptedStat) {
+    effects.push("Corrupted");
+  }
+
+  if (unit?.isSlowed) {
+    effects.push("Slowed");
+  }
+
+  return effects.length > 0 ? effects.join(", ") : "None";
+}
+
+function renderTargetIntelCard(tile, { forecast = null } = {}) {
+  if (!tile?.unit) {
+    return "";
+  }
+
+  const unit = tile.unit;
+  const armorName = unit?.armorClass ? formatProfileName(unit.armorClass) : "Unknown";
+  const rows = [
+    ["Armor", armorName],
+    ["Position", formatGridPosition(tile)],
+    ["Terrain", tile.terrain?.label ?? "Unknown"],
+    ["Effect", getUnitEffectSummary(unit)]
+  ];
+
+  if (forecast) {
+    const counterLabel = forecast.received ? `${forecast.received.min}-${forecast.received.max}` : "0";
+    rows.push(["Forecast", `${forecast.dealt.min}-${forecast.dealt.max} | Counter ${counterLabel}`]);
+  }
+
+  return `
+    <div class="card-block card-block--target-intel">
+      <h3>Target Intel</h3>
+      <div class="target-intel-card">
+        ${renderUnitSummary(unit, { showExperience: false, showLoadout: false })}
+        <div class="target-intel-card__rows">
+          ${rows
+            .map(
+              ([label, value]) => `
+                <div class="target-intel-card__row">
+                  <span>${label}</span>
+                  <strong>${value}</strong>
+                </div>
+              `
+            )
+            .join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyBody } = {}) {
   if (!selectedTile) {
     return `
@@ -331,6 +382,7 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
 
   return `
     <div class="card-block">
+      ${title ? `<h3>${title}</h3>` : ""}
       ${unit ? renderUnitSummary(unit, { showExperience: true }) : ""}
       ${
         building
@@ -367,11 +419,11 @@ function getSelectedTileFocusSide(battleSnapshot, selectedTile) {
     return selectedTile.unit.owner;
   }
 
-  if (selectedTile.building?.owner === TURN_SIDES.PLAYER || selectedTile.building?.owner === TURN_SIDES.ENEMY) {
-    return selectedTile.building.owner;
+  if (selectedTile.building) {
+    return TURN_SIDES.PLAYER;
   }
 
-  return battleSnapshot.turn.activeSide === TURN_SIDES.ENEMY ? TURN_SIDES.ENEMY : TURN_SIDES.PLAYER;
+  return TURN_SIDES.PLAYER;
 }
 
 export function getFocusTileForSide(battleSnapshot, battleUi, side) {
@@ -380,10 +432,6 @@ export function getFocusTileForSide(battleSnapshot, battleUi, side) {
 
   if (selectedTile && selectedTileSide === side) {
     return selectedTile;
-  }
-
-  if (side === TURN_SIDES.ENEMY) {
-    return null;
   }
 
   const focus = side === TURN_SIDES.PLAYER ? battleUi?.playerFocus : battleUi?.enemyFocus;
@@ -425,25 +473,29 @@ export function renderTargetReference(battleSnapshot, hoveredTile) {
   }
 
   const { target, forecast } = targetReference;
-  const counterLabel = forecast.received
-    ? `${forecast.received.min}-${forecast.received.max}`
-    : "0";
-  const targetView = {
-    ...describeUnit(battleSnapshot, target),
-    positionArmorBonus: getPositionArmorBonus(battleSnapshot, target)
-  };
+  const targetTile = buildFocusedTile(battleSnapshot, {
+    type: "unit",
+    id: target.id
+  });
+
+  return renderTargetIntelCard(targetTile, { forecast });
+}
+
+export function renderTargetIntelPanel(battleSnapshot, hoveredTile, selectedTile) {
+  const hoveredTargetReference = getHoveredTargetReference(battleSnapshot, hoveredTile);
+
+  if (hoveredTargetReference) {
+    return renderTargetReference(battleSnapshot, hoveredTile);
+  }
+
+  if (selectedTile?.unit?.owner === TURN_SIDES.ENEMY) {
+    return renderTargetIntelCard(selectedTile);
+  }
 
   return `
-    <div class="card-block card-block--target-reference">
-      <div class="selection-header">
-        <h3>Target</h3>
-      </div>
-      ${renderUnitSummary(targetView)}
-      <div class="selection-section">
-        <strong>Forecast</strong>
-        <p>${target.name}</p>
-        <p>Damage ${forecast.dealt.min}-${forecast.dealt.max} | Counter ${counterLabel}</p>
-      </div>
+    <div class="card-block">
+      <h3>Target Intel</h3>
+      <p>Select or target a hostile unit to inspect it here.</p>
     </div>
   `;
 }
