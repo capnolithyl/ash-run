@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { SCREEN_IDS } from "../../core/constants.js";
 import { MusicDirector } from "../audio/MusicDirector.js";
 import { preloadMusicAssets } from "../assets.js";
 import { MenuBackdropLayer } from "../view/MenuBackdropLayer.js";
@@ -16,6 +17,7 @@ export class ShellScene extends Phaser.Scene {
 
   create() {
     this.backdropLayer = new MenuBackdropLayer(this);
+    this.backdropLayer.render(this.scale.width, this.scale.height);
     this.musicDirector = new MusicDirector(this);
     this.controller = this.game.registry.get("controller");
 
@@ -39,10 +41,8 @@ export class ShellScene extends Phaser.Scene {
   }
 
   updateBackdropVisibility() {
-    this.showBackdrop =
-      this.latestState?.screen !== "battle" && this.latestState?.screen !== "map-editor";
-    this.backdropLayer.graphics.setVisible(this.showBackdrop);
-    this.backdropLayer.scanLine.setVisible(this.showBackdrop);
+    this.showBackdrop = this.latestState?.screen !== SCREEN_IDS.BATTLE;
+    this.backdropLayer.setVisible(this.showBackdrop);
   }
 
   update(time) {

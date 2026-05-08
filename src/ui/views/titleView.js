@@ -557,13 +557,34 @@ function renderTitleButton({
   iconOnly = false,
   ariaLabel = label,
 }) {
+  const imageSlug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const imageUrl = `./assets/img/ui/buttons/${imageSlug}.png`;
+  const imageMarkup = iconOnly
+    ? ""
+    : `
+      <img
+        class="title-button__image"
+        src="${imageUrl}"
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        decoding="async"
+        onload="this.closest('button')?.classList.add('title-button--image-loaded')"
+        onerror="this.remove()"
+      />
+    `;
+
   return `
     <button
-      class="menu-button ${className}"
+      class="menu-button ${className} ${iconOnly ? "" : "title-button--has-image"}"
       data-action="${action}"
       aria-label="${ariaLabel}"
       ${disabled ? "disabled" : ""}
     >
+      ${imageMarkup}
       <span class="title-button__content">
         <span class="title-button__icon">${renderTitleIcon(icon)}</span>
         ${iconOnly ? "" : `<span class="title-button__label">${label}</span>`}
@@ -686,11 +707,14 @@ export function renderTitleView(state) {
             </div>
           </div>
           <div class="title-showcase">
-            <div class="hero-logo" aria-label="Ash Run '84 logo">
-              <div class="hero-logo__sun" aria-hidden="true"></div>
-              <h1 class="hero-logo__title" id="title-screen-heading">ASH RUN '84</h1>
-              <p class="title-showcase__caption">A neon-front tactics roguelite with carry-over survivors, command powers, and hard-fought clears.</p>
-            </div>
+            <img
+              class="title-showcase__logo"
+              id="title-screen-heading"
+              src="./assets/img/logos/logo.png"
+              alt="Ash Run '84"
+              loading="eager"
+              decoding="async"
+            />
           </div>
         </div>
       </section>

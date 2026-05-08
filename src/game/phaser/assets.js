@@ -26,8 +26,9 @@ const TERRAIN_ANIMATION_FRAME_RATE = 10;
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
 export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
 export const SPLASH_ASSET_IDS = {
+  BACKGROUND: "background",
   STUDIO_LOGO: "studio-logo",
-  GAME_LOGO: "game-logo"
+  GAME_LOGO: "game-logo",
 };
 export const MUSIC_TRACK_IDS = {
   MENU: "menu",
@@ -140,14 +141,18 @@ const MUSIC_TRACKS = {
 };
 
 const SPLASH_ASSETS = {
+  [SPLASH_ASSET_IDS.BACKGROUND]: {
+    key: "image:splash:background",
+    url: `${IMAGE_ASSET_ROOT}/splash/splash-background.png`,
+  },
   [SPLASH_ASSET_IDS.STUDIO_LOGO]: {
     key: "image:splash:studio-logo",
-    url: `${IMAGE_ASSET_ROOT}/logos/articus.png`
+    url: `${IMAGE_ASSET_ROOT}/logos/articus.png`,
   },
   [SPLASH_ASSET_IDS.GAME_LOGO]: {
     key: "image:splash:game-logo",
-    url: `${IMAGE_ASSET_ROOT}/logos/logo.png`
-  }
+    url: `${IMAGE_ASSET_ROOT}/logos/logo.png`,
+  },
 };
 
 function flattenUnitAnimationAssets() {
