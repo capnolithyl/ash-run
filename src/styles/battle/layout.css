@@ -34,42 +34,26 @@
 }
 
 .battle-footer-actions {
+  --battle-footer-button-width: min(10.1rem, max(6.4rem, 13.2vw));
+  --battle-footer-button-next-width: min(11rem, max(7rem, 14.15vw));
+  --battle-footer-button-overlap: 0.72rem;
   position: absolute;
   left: 50%;
   bottom: max(0.85rem, env(safe-area-inset-bottom));
   z-index: 8;
   display: grid;
-  grid-template-columns: minmax(6.4rem, 1fr) minmax(8.8rem, 1.35fr) minmax(
-      7.2rem,
-      1fr
-    );
+  grid-template-columns: repeat(3, max-content);
   grid-template-areas: "pause next end";
-  gap: 0.55rem;
+  align-items: end;
+  justify-content: center;
+  gap: 0;
   transform: translateX(-50%);
-  padding: 0.75rem 0.8rem 0.8rem;
-  border: 1px solid rgba(255, 138, 61, 0.24);
-  border-radius: 1.25rem;
-  background:
-    radial-gradient(
-      circle at 12% 0%,
-      rgba(255, 79, 216, 0.18),
-      transparent 10rem
-    ),
-    radial-gradient(
-      circle at 88% 0%,
-      rgba(255, 138, 61, 0.16),
-      transparent 10rem
-    ),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.04),
-      rgba(255, 255, 255, 0.01)
-    ),
-    rgba(12, 5, 24, 0.92);
-  box-shadow:
-    0 0 0 1px rgba(255, 79, 216, 0.08),
-    0 18px 46px rgba(5, 1, 14, 0.62);
-  backdrop-filter: blur(16px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .battle-footer-meta {
@@ -113,55 +97,34 @@
   text-transform: uppercase;
 }
 
-.battle-footer-actions::before {
-  content: "";
-  position: absolute;
-  left: 16%;
-  right: 16%;
-  top: 0.42rem;
-  height: 0.16rem;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 79, 216, 0),
-    rgba(255, 210, 125, 0.84),
-    rgba(255, 79, 216, 0)
-  );
-  box-shadow: 0 0 18px rgba(255, 159, 79, 0.26);
-  pointer-events: none;
-}
-
 .battle-footer-actions .battle-footer-button {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 3rem;
-  padding: 0.8rem 1rem;
-  border-radius: 1rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
   font-size: 0.84rem;
   letter-spacing: 0.08em;
   line-height: 1;
   white-space: nowrap;
   text-transform: uppercase;
-  overflow: hidden;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 10px 24px rgba(5, 1, 14, 0.32);
+  overflow: visible;
+  box-shadow: none;
 }
 
-.battle-footer-actions .battle-footer-button::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.1),
-    transparent 42%
-  );
-  opacity: 0.7;
-  pointer-events: none;
+.battle-footer-actions .battle-footer-button.title-button--has-image {
+  width: var(--battle-footer-button-width);
+  aspect-ratio: 1.5;
+  min-height: 0;
+  margin-inline: calc(var(--battle-footer-button-overlap) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .battle-footer-button--pause {
@@ -170,13 +133,10 @@
 
 .battle-footer-button--next {
   grid-area: next;
-  min-height: 3.45rem;
-  font-size: 0.92rem;
-  letter-spacing: 0.1em;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 230, 196, 0.08),
-    0 16px 28px rgba(8, 2, 18, 0.4),
-    0 0 28px rgba(121, 94, 255, 0.16);
+}
+
+.battle-footer-actions .battle-footer-button--next.title-button--has-image {
+  width: var(--battle-footer-button-next-width);
 }
 
 .battle-footer-button--end-turn {
@@ -199,6 +159,78 @@
 
 .battle-footer-actions .battle-drawer-button {
   display: none;
+}
+
+.battle-footer-actions .battle-footer-button.title-button--image-loaded,
+.battle-footer-actions .battle-footer-button.title-button--image-loaded:hover,
+#ui-root[data-input-mode="controller"]
+  .battle-footer-actions
+  .battle-footer-button.title-button--image-loaded.is-controller-focused {
+  width: var(--battle-footer-button-width);
+  min-width: var(--battle-footer-button-width);
+  min-height: 0;
+  margin-inline: calc(var(--battle-footer-button-overlap) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.battle-footer-actions .battle-footer-button--next.title-button--image-loaded,
+.battle-footer-actions .battle-footer-button--next.title-button--image-loaded:hover,
+#ui-root[data-input-mode="controller"]
+  .battle-footer-actions
+  .battle-footer-button--next.title-button--image-loaded.is-controller-focused {
+  width: var(--battle-footer-button-next-width);
+  min-width: var(--battle-footer-button-next-width);
+}
+
+.battle-footer-actions .battle-footer-button.title-button--image-loaded .title-button__image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  opacity: 1;
+}
+
+.battle-footer-actions
+  .battle-footer-button.title-button--image-loaded:not(:disabled):hover
+  .title-button__image,
+#ui-root[data-input-mode="controller"]
+  .battle-footer-actions
+  .battle-footer-button.title-button--image-loaded.is-controller-focused
+  .title-button__image {
+  animation: title-menu-pulse 900ms ease-in-out infinite;
+  transform-origin: center;
+  filter:
+    brightness(1.08)
+    drop-shadow(0 0 0.45rem rgba(110, 228, 255, 0.22))
+    drop-shadow(0 0 0.85rem rgba(255, 79, 216, 0.14));
+}
+
+.battle-footer-actions .battle-footer-button.title-button--has-image .title-button__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 1;
+  will-change: transform, filter;
+}
+
+.battle-footer-actions .battle-footer-button.title-button--has-image .title-button__content {
+  display: none !important;
+}
+
+.battle-footer-actions .battle-footer-button:disabled.title-button--image-loaded {
+  opacity: 0.45;
+  filter: saturate(0.7);
 }
 
 .battle-rail {

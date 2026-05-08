@@ -1,5 +1,69 @@
 /* Theme tokens, reset, app shell, shared screen backdrop */
 
+@font-face {
+  font-family: "Oxanium";
+  src: url("../../../assets/fonts/oxanium/Oxanium-400.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Oxanium";
+  src: url("../../../assets/fonts/oxanium/Oxanium-500.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Oxanium";
+  src: url("../../../assets/fonts/oxanium/Oxanium-600.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Oxanium";
+  src: url("../../../assets/fonts/oxanium/Oxanium-700.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Oxanium";
+  src: url("../../../assets/fonts/oxanium/Oxanium-800.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("../../../assets/fonts/orbitron/Orbitron-600.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("../../../assets/fonts/orbitron/Orbitron-700.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("../../../assets/fonts/orbitron/Orbitron-800.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg-0: #090312;
   --bg-1: #160823;
@@ -34,6 +98,8 @@
   --compact-panel-padding: 0.9rem;
   --compact-footer-height: 4.25rem;
   --compact-commanders-height: 6.85rem;
+  --font-body: "Oxanium", "Bahnschrift SemiCondensed", "Aptos", sans-serif;
+  --font-display: "Orbitron", "Oxanium", "Bahnschrift SemiCondensed", "Aptos", sans-serif;
 }
 
 * {
@@ -57,7 +123,7 @@ html {
 body {
   overflow: hidden;
   color: var(--text);
-  font-family: "Bahnschrift SemiCondensed", "Aptos", sans-serif;
+  font-family: var(--font-body);
   background:
     radial-gradient(
       circle at 18% 18%,
@@ -76,6 +142,11 @@ body {
     ),
     linear-gradient(165deg, #06020f 0%, #120720 46%, #1e0b28 100%);
   scrollbar-color: rgba(255, 120, 219, 0.9) var(--scrollbar-track);
+}
+
+:where(h1, h2, .commander-name, .title-menu__button .title-button__label) {
+  font-family: var(--font-display);
+  font-weight: 700;
 }
 
 * {

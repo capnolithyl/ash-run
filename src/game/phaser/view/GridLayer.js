@@ -194,6 +194,18 @@ export class GridLayer {
     const theme = MAP_THEME_PALETTES[snapshot.map.theme];
     const useBattlefieldBackdrop = options.useBattlefieldBackdrop === true;
     const backgroundImage = this.ensureBackgroundImage();
+    const boardLeft = layout.originX;
+    const boardTop = layout.originY;
+    const boardWidth = snapshot.map.width * layout.cellSize;
+    const boardHeight = snapshot.map.height * layout.cellSize;
+    const borderInset = useBattlefieldBackdrop ? 12 : 10;
+    const frameLeft = boardLeft - borderInset;
+    const frameTop = boardTop - borderInset;
+    const frameWidth = boardWidth + borderInset * 2;
+    const frameHeight = boardHeight + borderInset * 2;
+    const frameRadius = 18;
+    const accentColor = useBattlefieldBackdrop ? 0xff4fd8 : 0x9f61ff;
+    const secondaryAccentColor = 0xffa65b;
     this.glowGraphics.clear();
     this.graphics.clear();
     this.overlayGraphics.clear();
@@ -214,23 +226,66 @@ export class GridLayer {
     this.graphics.fillRect(0, this.scene.scale.height * 0.82, this.scene.scale.width, this.scene.scale.height * 0.18);
     this.glowGraphics.fillStyle(0xff4fd8, 0.035);
     this.glowGraphics.fillRoundedRect(
-      layout.originX - 18,
-      layout.originY - 18,
-      snapshot.map.width * layout.cellSize + 36,
-      snapshot.map.height * layout.cellSize + 36,
+      boardLeft - 18,
+      boardTop - 18,
+      boardWidth + 36,
+      boardHeight + 36,
       24
+    );
+    this.glowGraphics.lineStyle(4, accentColor, useBattlefieldBackdrop ? 0.08 : 0.06);
+    this.glowGraphics.strokeRoundedRect(
+      frameLeft - 6,
+      frameTop - 6,
+      frameWidth + 12,
+      frameHeight + 12,
+      frameRadius + 4
     );
 
     this.renderTerrainSprites(snapshot, layout);
 
-    this.overlayGraphics.lineStyle(1.5, Phaser.Display.Color.HexStringToColor(theme.gridGlow).color, 0.18);
+    this.overlayGraphics.lineStyle(3, accentColor, useBattlefieldBackdrop ? 0.26 : 0.2);
     this.overlayGraphics.strokeRoundedRect(
-      layout.originX - 8,
-      layout.originY - 8,
-      snapshot.map.width * layout.cellSize + 14,
-      snapshot.map.height * layout.cellSize + 14,
-      16
+      frameLeft,
+      frameTop,
+      frameWidth,
+      frameHeight,
+      frameRadius
     );
+    this.overlayGraphics.lineStyle(1.5, secondaryAccentColor, useBattlefieldBackdrop ? 0.34 : 0.24);
+    this.overlayGraphics.strokeRoundedRect(
+      frameLeft + 4,
+      frameTop + 4,
+      frameWidth - 8,
+      frameHeight - 8,
+      frameRadius - 4
+    );
+    this.overlayGraphics.lineStyle(1.5, Phaser.Display.Color.HexStringToColor(theme.gridGlow).color, 0.28);
+    this.overlayGraphics.strokeRoundedRect(frameLeft + 8, frameTop + 8, frameWidth - 16, frameHeight - 16, 12);
+
+    const cornerLength = Math.max(18, Math.round(layout.cellSize * 0.75));
+    const outerLeft = frameLeft + 6;
+    const outerRight = frameLeft + frameWidth - 6;
+    const outerTop = frameTop + 6;
+    const outerBottom = frameTop + frameHeight - 6;
+
+    this.overlayGraphics.lineStyle(4, secondaryAccentColor, useBattlefieldBackdrop ? 0.32 : 0.24);
+    this.overlayGraphics.beginPath();
+    this.overlayGraphics.moveTo(outerLeft, outerTop + cornerLength);
+    this.overlayGraphics.lineTo(outerLeft, outerTop);
+    this.overlayGraphics.lineTo(outerLeft + cornerLength, outerTop);
+
+    this.overlayGraphics.moveTo(outerRight - cornerLength, outerTop);
+    this.overlayGraphics.lineTo(outerRight, outerTop);
+    this.overlayGraphics.lineTo(outerRight, outerTop + cornerLength);
+
+    this.overlayGraphics.moveTo(outerLeft, outerBottom - cornerLength);
+    this.overlayGraphics.lineTo(outerLeft, outerBottom);
+    this.overlayGraphics.lineTo(outerLeft + cornerLength, outerBottom);
+
+    this.overlayGraphics.moveTo(outerRight - cornerLength, outerBottom);
+    this.overlayGraphics.lineTo(outerRight, outerBottom);
+    this.overlayGraphics.lineTo(outerRight, outerBottom - cornerLength);
+    this.overlayGraphics.strokePath();
 
     for (let row = 0; row < snapshot.map.height; row += 1) {
       for (let column = 0; column < snapshot.map.width; column += 1) {

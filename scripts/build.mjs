@@ -38,7 +38,10 @@ await build({
     ".jpeg": "file",
     ".gif": "file",
     ".svg": "file",
-    ".webp": "file"
+    ".webp": "file",
+    ".ttf": "file",
+    ".woff": "file",
+    ".woff2": "file"
   }
 });
 

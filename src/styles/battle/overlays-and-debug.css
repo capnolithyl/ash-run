@@ -71,7 +71,7 @@
   border-radius: 0.8rem;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
-  font-family: "Bahnschrift SemiCondensed", "Aptos", sans-serif;
+  font-family: var(--font-body);
   font-size: 0.92rem;
   cursor: var(--cursor-action);
   letter-spacing: 0.05em;

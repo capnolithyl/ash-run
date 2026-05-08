@@ -2,8 +2,8 @@
 
 .commander-panel-shell {
   position: relative;
-  flex: 0 1 33rem;
-  min-width: min(100%, 31.5rem);
+  flex: 0 1 36.4rem;
+  min-width: min(100%, 34.9rem);
   isolation: isolate;
 }
 
@@ -13,10 +13,10 @@
   position: relative;
   display: flex;
   align-items: stretch;
-  gap: 0.85rem;
+  gap: 1.12rem;
   width: 100%;
-  min-height: 7.6rem;
-  padding: 0.95rem 1.1rem 1rem;
+  min-height: 7.95rem;
+  padding: 0.98rem 1.2rem 1.05rem;
   overflow: hidden;
   border-color: color-mix(
     in srgb,
@@ -83,29 +83,35 @@
   display: grid;
   flex: 1 1 auto;
   min-width: 0;
-  gap: 0.5rem;
+  gap: 0.56rem;
+  padding-inline-end: 0.78rem;
   align-content: start;
   grid-auto-rows: min-content;
 }
 
 .commander-panel__details {
   display: grid;
-  grid-template-columns: minmax(11rem, 1.05fr) minmax(12.4rem, 1.35fr);
+  grid-template-columns: minmax(10.6rem, 0.98fr) minmax(15.8rem, 1.54fr);
   align-items: start;
-  gap: 0.75rem;
+  gap: 0.84rem;
 }
 
 .commander-panel__nameplate {
   display: grid;
-  gap: 0.14rem;
+  gap: 0.18rem;
   min-width: 0;
+  min-height: 3.1rem;
   align-content: center;
 }
 
 .commander-panel__summary h2 {
   margin: 0;
+  display: flex;
+  align-items: center;
   font-size: clamp(1.45rem, 1.85vw, 2rem);
-  line-height: 0.95;
+  line-height: 1.08;
+  min-height: 2.48rem;
+  padding-block-end: 0.12rem;
   text-transform: uppercase;
 }
 
@@ -113,6 +119,18 @@
   display: flex;
   flex: 0 0 auto;
   align-items: stretch;
+}
+
+.commander-panel--player .commander-panel__identity {
+  margin-inline-end: 0.22rem;
+}
+
+.commander-panel--player .commander-panel__summary {
+  padding-inline-end: 1.16rem;
+}
+
+.commander-panel--player .commander-panel__systems {
+  padding-inline-end: 0.56rem;
 }
 
 .commander-panel__portrait {
@@ -139,6 +157,7 @@
 .commander-panel__title {
   color: color-mix(in srgb, var(--side-color) 72%, #7eeaff);
   font-size: 0.74rem;
+  line-height: 1.16;
   letter-spacing: 0.17em;
   text-transform: uppercase;
 }
@@ -146,15 +165,20 @@
 .commander-panel__systems {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 0.52rem;
   min-width: 0;
+  align-items: stretch;
+  padding-inline-end: 0.36rem;
 }
 
 .commander-panel__system {
   display: grid;
   gap: 0.14rem;
   min-width: 0;
-  padding: 0.35rem 0.5rem;
+  min-height: 3.65rem;
+  padding: 0.48rem 0.66rem;
+  align-content: start;
+  justify-items: start;
   appearance: none;
   border: 1px solid color-mix(in srgb, var(--side-color) 20%, rgba(255, 255, 255, 0.08));
   border-radius: 0.55rem;
@@ -321,7 +345,21 @@
 }
 
 .commander-panel--enemy .commander-panel__details {
-  grid-template-columns: minmax(12.4rem, 1.35fr) minmax(11rem, 1.05fr);
+  grid-template-columns: minmax(15.8rem, 1.54fr) minmax(10.6rem, 0.98fr);
+}
+
+.commander-panel--enemy .commander-panel__summary {
+  padding-inline-end: 0.94rem;
+  padding-inline-start: 0.86rem;
+}
+
+.commander-panel--enemy .commander-panel__identity {
+  margin-inline-start: 0.72rem;
+}
+
+.commander-panel--enemy .commander-panel__systems {
+  padding-inline-end: 0.44rem;
+  padding-inline-start: 0.42rem;
 }
 
 .commander-panel--enemy .commander-panel__nameplate {

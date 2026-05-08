@@ -44,6 +44,36 @@ function renderBattleMeta(battleSnapshot) {
   `;
 }
 
+function renderBattleFooterImageButton({
+  action,
+  className,
+  label,
+  imageSlug,
+  disabled = false
+}) {
+  const imageUrl = `./assets/img/ui/buttons/${imageSlug}.png`;
+
+  return `
+    <button
+      class="menu-button battle-footer-button ${className} title-button--has-image"
+      data-action="${action}"
+      aria-label="${label}"
+      ${disabled ? "disabled" : ""}
+    >
+      <img
+        class="title-button__image"
+        src="${imageUrl}"
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        decoding="async"
+        onload="this.closest('button')?.classList.add('title-button--image-loaded')"
+        onerror="this.remove()"
+      />
+    </button>
+  `;
+}
+
 function renderCompactIntelSheet(playerFocusTile, battleSnapshot, hoveredTile, enemyFocusTile) {
   return `
     <input
@@ -150,25 +180,25 @@ export function renderBattleHudView(state, options = {}) {
         >
           Intel
         </label>
-        <button
-          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--pause"
-          data-action="pause-battle"
-        >
-          Pause
-        </button>
-        <button
-          class="menu-button menu-button--small battle-footer-button battle-footer-button--next"
-          data-action="select-next-unit"
-          ${nextUnitEnabled ? "" : "disabled"}
-        >
-          Next
-        </button>
-        <button
-          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--end-turn"
-          data-action="end-turn"
-        >
-          End Turn
-        </button>
+        ${renderBattleFooterImageButton({
+          action: "pause-battle",
+          className: "battle-footer-button--pause",
+          label: "Pause",
+          imageSlug: "pause"
+        })}
+        ${renderBattleFooterImageButton({
+          action: "select-next-unit",
+          className: "battle-footer-button--next",
+          label: "Next",
+          imageSlug: "next",
+          disabled: !nextUnitEnabled
+        })}
+        ${renderBattleFooterImageButton({
+          action: "end-turn",
+          className: "battle-footer-button--end-turn",
+          label: "End Turn",
+          imageSlug: "end-turn"
+        })}
         <label
           class="ghost-button ghost-button--small battle-footer-button battle-footer-button--feed battle-drawer-button"
           for="battle-command-drawer"
