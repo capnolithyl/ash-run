@@ -207,25 +207,49 @@
   bottom: 6.8rem;
   width: 16.5rem;
   padding: 0.82rem;
+  isolation: isolate;
   border-radius: 1.25rem;
   overflow-y: auto;
-  background:
-    radial-gradient(
-      circle at top left,
-      rgba(255, 79, 216, 0.12),
-      transparent 12rem
-    ),
-    linear-gradient(
-      180deg,
-      rgba(255, 79, 216, 0.08),
-      rgba(255, 138, 61, 0.035) 60%,
-      rgba(152, 93, 255, 0.06)
-    ),
-    var(--panel);
+  background: rgba(15, 7, 28, 0.42);
   border-color: rgba(255, 79, 216, 0.24);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.025),
     0 24px 70px rgba(5, 1, 14, 0.66);
+}
+
+.battle-rail::before,
+.battle-rail::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.battle-rail::before {
+  z-index: -2;
+  background: url("../../../assets/img/ui/background/sidebar.png") center top / cover no-repeat;
+  opacity: 0.9;
+}
+
+.battle-rail::after {
+  z-index: -1;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(21, 8, 37, 0.28),
+      rgba(15, 7, 30, 0.12) 40%,
+      rgba(11, 5, 23, 0.34) 100%
+    ),
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(255, 79, 216, 0.12),
+      transparent 38%
+    );
+}
+
+.battle-rail > * {
+  position: relative;
+  z-index: 1;
 }
 
 .battle-rail:first-of-type {
@@ -235,18 +259,20 @@
 .battle-rail--right {
   right: 1.25rem;
   border-color: rgba(255, 138, 61, 0.24);
+}
+
+.battle-rail--right::after {
   background:
-    radial-gradient(
-      circle at top right,
-      rgba(255, 138, 61, 0.13),
-      transparent 12rem
-    ),
     linear-gradient(
       180deg,
-      rgba(255, 138, 61, 0.08),
-      rgba(255, 79, 216, 0.035) 60%,
-      rgba(152, 93, 255, 0.055)
+      rgba(25, 10, 24, 0.28),
+      rgba(16, 7, 28, 0.12) 40%,
+      rgba(12, 5, 20, 0.34) 100%
     ),
-    var(--panel);
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(255, 138, 61, 0.1),
+      transparent 38%
+    );
 }
 

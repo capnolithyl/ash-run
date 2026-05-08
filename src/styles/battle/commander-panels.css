@@ -24,16 +24,19 @@
     rgba(255, 255, 255, 0.08)
   );
   background:
-    radial-gradient(
-      circle at top right,
-      color-mix(in srgb, var(--accent) 22%, transparent),
-      transparent 7rem
-    ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--side-color) 13%, rgba(255, 255, 255, 0.03)),
-      rgba(9, 4, 18, 0.82)
-    );
+      color-mix(in srgb, var(--side-color) 18%, rgba(255, 255, 255, 0.04)),
+      rgba(10, 4, 19, 0.34) 38%,
+      rgba(9, 4, 18, 0.54)
+    ),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--accent) 18%, transparent),
+      transparent 7rem
+    ),
+    url("../../../assets/img/ui/background/commander.png") center top / cover no-repeat,
+    rgba(9, 4, 18, 0.72);
   box-shadow:
     inset 0 0 28px color-mix(in srgb, var(--side-color) 13%, transparent),
     0 0 24px var(--side-glow);

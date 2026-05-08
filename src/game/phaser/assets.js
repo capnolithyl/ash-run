@@ -30,6 +30,9 @@ export const SPLASH_ASSET_IDS = {
   STUDIO_LOGO: "studio-logo",
   GAME_LOGO: "game-logo",
 };
+export const BATTLEFIELD_ASSET_IDS = {
+  BACKGROUND: "background"
+};
 export const MUSIC_TRACK_IDS = {
   MENU: "menu",
   ALLY_TURN: "ally-turn",
@@ -155,6 +158,13 @@ const SPLASH_ASSETS = {
   },
 };
 
+const BATTLEFIELD_ASSETS = {
+  [BATTLEFIELD_ASSET_IDS.BACKGROUND]: {
+    key: "image:battlefield:background",
+    url: `${IMAGE_ASSET_ROOT}/ui/background/battlefield-bg.png`
+  }
+};
+
 function flattenUnitAnimationAssets() {
   return Object.values(GENERATED_UNIT_SPRITE_ANIMATIONS).flatMap((ownerVariants) =>
     Object.values(ownerVariants).flatMap((ownerSpec) =>
@@ -207,6 +217,12 @@ export function preloadSpriteAssets(scene) {
       }
     }
   }
+
+  for (const asset of Object.values(BATTLEFIELD_ASSETS)) {
+    if (!scene.textures.exists(asset.key)) {
+      scene.load.image(asset.key, asset.url);
+    }
+  }
 }
 
 export function preloadMusicAssets(scene) {
@@ -227,6 +243,10 @@ export function preloadSplashAssets(scene) {
 
 export function getSplashAssetKey(assetId) {
   return SPLASH_ASSETS[assetId]?.key ?? null;
+}
+
+export function getBattlefieldAssetKey(assetId) {
+  return BATTLEFIELD_ASSETS[assetId]?.key ?? null;
 }
 
 export function getMusicTrackKey(trackId) {

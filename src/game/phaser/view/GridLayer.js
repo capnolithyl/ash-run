@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "../../content/terrain.js";
-import { getTerrainSpriteDefinition } from "../assets.js";
+import { BATTLEFIELD_ASSET_IDS, getBattlefieldAssetKey, getTerrainSpriteDefinition } from "../assets.js";
 
 function getTerrainFrameIndices(scene, animationSpec) {
   const texture = scene.textures.get(animationSpec?.key);
@@ -80,6 +80,7 @@ function ensureTerrainAnimation(scene, animationSpec) {
 export class GridLayer {
   constructor(scene) {
     this.scene = scene;
+    this.backgroundImage = null;
     this.glowGraphics = scene.add.graphics();
     this.glowGraphics.setBlendMode(Phaser.BlendModes.ADD);
     this.glowGraphics.setDepth(0);
@@ -92,10 +93,33 @@ export class GridLayer {
   }
 
   clear() {
+    if (this.backgroundImage) {
+      this.backgroundImage.setVisible(false);
+    }
     this.glowGraphics.clear();
     this.graphics.clear();
     this.overlayGraphics.clear();
     this.clearTerrainSprites();
+  }
+
+  ensureBackgroundImage() {
+    if (this.backgroundImage) {
+      return this.backgroundImage;
+    }
+
+    const textureKey = getBattlefieldAssetKey(BATTLEFIELD_ASSET_IDS.BACKGROUND);
+
+    if (!textureKey || !this.scene.textures.exists(textureKey)) {
+      return null;
+    }
+
+    this.backgroundImage = this.scene.add
+      .image(this.scene.scale.width / 2, this.scene.scale.height / 2, textureKey)
+      .setDepth(-2)
+      .setScrollFactor(0)
+      .setVisible(false);
+
+    return this.backgroundImage;
   }
 
   clearTerrainSprites() {
@@ -166,19 +190,28 @@ export class GridLayer {
     this.terrainRenderKey = renderKey;
   }
 
-  render(snapshot, layout) {
+  render(snapshot, layout, options = {}) {
     const theme = MAP_THEME_PALETTES[snapshot.map.theme];
+    const useBattlefieldBackdrop = options.useBattlefieldBackdrop === true;
+    const backgroundImage = this.ensureBackgroundImage();
     this.glowGraphics.clear();
     this.graphics.clear();
     this.overlayGraphics.clear();
-    this.graphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.background).color, 0.92);
+
+    if (backgroundImage) {
+      backgroundImage
+        .setVisible(useBattlefieldBackdrop)
+        .setPosition(this.scene.scale.width / 2, this.scene.scale.height / 2)
+        .setDisplaySize(this.scene.scale.width, this.scene.scale.height);
+    }
+
+    this.graphics.fillStyle(
+      Phaser.Display.Color.HexStringToColor(theme.background).color,
+      useBattlefieldBackdrop ? 0.38 : 0.92
+    );
     this.graphics.fillRect(0, 0, this.scene.scale.width, this.scene.scale.height);
     this.graphics.fillStyle(0x12061f, 0.66);
     this.graphics.fillRect(0, this.scene.scale.height * 0.82, this.scene.scale.width, this.scene.scale.height * 0.18);
-    this.glowGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.accent).color, 0.08);
-    this.glowGraphics.fillCircle(this.scene.scale.width * 0.72, this.scene.scale.height * 0.18, 180);
-    this.glowGraphics.fillStyle(Phaser.Display.Color.HexStringToColor(theme.gridGlow).color, 0.07);
-    this.glowGraphics.fillCircle(this.scene.scale.width * 0.24, this.scene.scale.height * 0.2, 220);
     this.glowGraphics.fillStyle(0xff4fd8, 0.035);
     this.glowGraphics.fillRoundedRect(
       layout.originX - 18,

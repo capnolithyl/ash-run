@@ -735,7 +735,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (!isBattle) {
       this.fxLayer.clear();
-      this.gridLayer.render(snapshot, layout);
+      this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: false });
       this.selectionLayer.render(snapshot, layout, false, this.hoveredTile, [], null, {
         editorSpawns: {
           player: snapshot.map.playerSpawns,
@@ -802,7 +802,7 @@ export class BattleScene extends Phaser.Scene {
     const turnTransitionDelay = getTurnTransitionDelay(previousSnapshot, snapshot);
     this.fxLayer.setScreenShakeEnabled(this.latestState.metaState.options.screenShake !== false);
 
-    this.gridLayer.render(snapshot, layout);
+    this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: true });
     this.selectionLayer.render(
       snapshot,
       layout,
