@@ -553,18 +553,20 @@ function renderTitleButton({
   className,
   label,
   icon,
+  imageSlug = null,
   disabled = false,
   iconOnly = false,
   ariaLabel = label,
 }) {
-  const imageSlug = label
+  const resolvedImageSlug = imageSlug ?? label
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  const imageUrl = `./assets/img/ui/buttons/${imageSlug}.png`;
-  const imageMarkup = iconOnly
-    ? ""
-    : `
+  const imageUrl = resolvedImageSlug
+    ? `./assets/img/ui/buttons/${resolvedImageSlug}.png`
+    : null;
+  const imageMarkup = imageUrl
+    ? `
       <img
         class="title-button__image"
         src="${imageUrl}"
@@ -575,11 +577,12 @@ function renderTitleButton({
         onload="this.closest('button')?.classList.add('title-button--image-loaded')"
         onerror="this.remove()"
       />
-    `;
+    `
+    : "";
 
   return `
     <button
-      class="menu-button ${className} ${iconOnly ? "" : "title-button--has-image"}"
+      class="menu-button ${className} ${imageMarkup ? "title-button--has-image" : ""}"
       data-action="${action}"
       aria-label="${ariaLabel}"
       ${disabled ? "disabled" : ""}
@@ -641,6 +644,12 @@ export function renderTitleView(state) {
       label: "Sandbox",
       icon: "sandbox",
     },
+    {
+      action: "quit-game",
+      className: "title-menu__button menu-button--danger",
+      label: "Quit Game",
+      icon: "quit",
+    },
   ];
   const menuMarkup = menuEntries
     .map(
@@ -679,14 +688,11 @@ export function renderTitleView(state) {
           className: "ghost-button title-utility-button",
           label: "Options",
           icon: "options",
+          imageSlug: "settings",
           iconOnly: true,
         })}
         <div class="title-layout">
           <div class="title-menu-panel">
-            <div class="title-menu-panel__intro">
-              <p class="eyebrow">Command Console</p>
-              <p class="title-menu-panel__subtitle">Persistent squad tactics under neon skies.</p>
-            </div>
             <nav class="title-menu" aria-label="Main menu">
               <ul class="title-menu__list">
                 ${menuMarkup}
@@ -696,14 +702,6 @@ export function renderTitleView(state) {
               <p class="eyebrow">LTC Records</p>
               <p><strong>Latest Clear:</strong> ${formatTurnCount(latestClearTurnCount)}</p>
               <p><strong>Best Clear:</strong> ${formatTurnCount(bestClearTurnCount)}</p>
-            </div>
-            <div class="title-bottom-action">
-              ${renderTitleButton({
-                action: "quit-game",
-                className: "menu-button--danger title-bottom-action__button",
-                label: "Quit Game",
-                icon: "quit",
-              })}
             </div>
           </div>
           <div class="title-showcase">
