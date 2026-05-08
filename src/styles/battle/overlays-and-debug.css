@@ -1,0 +1,569 @@
+/* Battle prompts, overlays, pause, and debug panels */
+
+.recruit-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(
+    135deg,
+    rgba(152, 93, 255, 0.11),
+    rgba(255, 79, 216, 0.08)
+  );
+}
+
+.battle-command-prompt {
+  position: absolute;
+  transform: none;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.battle-command-prompt__card {
+  min-width: 11.25rem;
+  padding: 0.7rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 79, 216, 0.34);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 79, 216, 0.14),
+      transparent 7rem
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(255, 138, 61, 0.16),
+      transparent 8rem
+    ),
+    rgba(18, 8, 34, 0.94);
+  box-shadow:
+    0 0 26px rgba(255, 79, 216, 0.14),
+    0 18px 36px rgba(5, 2, 14, 0.4);
+  pointer-events: auto;
+}
+
+.battle-command-prompt__header {
+  display: grid;
+  gap: 0.1rem;
+  margin-bottom: 0.55rem;
+}
+
+.battle-command-prompt__header strong {
+  color: #fff4d1;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.battle-command-prompt__menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.battle-command-prompt__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-family: "Bahnschrift SemiCondensed", "Aptos", sans-serif;
+  font-size: 0.92rem;
+  cursor: var(--cursor-action);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition:
+    background 120ms ease,
+    color 120ms ease,
+    transform 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.battle-command-prompt__action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 138, 61, 0.46);
+  background: rgba(255, 138, 61, 0.14);
+  color: var(--text);
+  box-shadow: 0 0 18px rgba(255, 79, 216, 0.1);
+}
+
+.battle-command-prompt__action::before {
+  content: none;
+}
+
+.battle-command-prompt__action--primary {
+  border-color: rgba(255, 138, 61, 0.34);
+  background:
+    linear-gradient(135deg, rgba(255, 138, 61, 0.2), rgba(255, 79, 216, 0.14)),
+    rgba(255, 255, 255, 0.04);
+  color: #fff2d8;
+}
+
+.battle-command-prompt__action--capture {
+  border-color: rgba(255, 79, 216, 0.32);
+  color: #ffd6f5;
+}
+
+.battle-command-prompt__action--subtle {
+  color: var(--muted);
+}
+
+.battle-targeting-hint {
+  position: absolute;
+  top: 6.75rem;
+  left: 50%;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transform: translateX(-50%);
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 138, 61, 0.3);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 79, 216, 0.16),
+      transparent 6rem
+    ),
+    rgba(12, 6, 25, 0.92);
+  box-shadow:
+    0 0 28px rgba(255, 79, 216, 0.12),
+    0 18px 36px rgba(5, 2, 14, 0.42);
+}
+
+.battle-targeting-hint__copy {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.battle-targeting-hint__copy strong {
+  color: #fff5d9;
+}
+
+.battle-targeting-hint__copy span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.battle-targeting-hint__cancel {
+  white-space: nowrap;
+}
+
+.turn-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  animation: turn-banner-fade 1100ms ease forwards;
+}
+
+.turn-banner__card {
+  min-width: min(24rem, calc(100vw - 3rem));
+  padding: 1rem 1.4rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 255, 255, 0.12),
+      transparent 10rem
+    ),
+    rgba(10, 5, 20, 0.92);
+  box-shadow:
+    0 0 32px rgba(255, 79, 216, 0.12),
+    0 24px 40px rgba(5, 2, 14, 0.44);
+  animation: turn-banner-card 1100ms ease forwards;
+}
+
+.turn-banner--player .turn-banner__card {
+  border-color: rgba(255, 79, 216, 0.4);
+  box-shadow:
+    0 0 34px rgba(255, 79, 216, 0.18),
+    0 24px 40px rgba(5, 2, 14, 0.44);
+}
+
+.turn-banner--enemy .turn-banner__card {
+  border-color: rgba(255, 138, 61, 0.42);
+  box-shadow:
+    0 0 34px rgba(255, 138, 61, 0.18),
+    0 24px 40px rgba(5, 2, 14, 0.44);
+}
+
+.turn-banner__card h2 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.turn-banner--player .turn-banner__card h2 {
+  color: #ffd8f6;
+  text-shadow: 0 0 20px rgba(255, 79, 216, 0.28);
+}
+
+.turn-banner--enemy .turn-banner__card h2 {
+  color: #ffe1c6;
+  text-shadow: 0 0 20px rgba(255, 138, 61, 0.28);
+}
+
+.battle-notice {
+  position: absolute;
+  top: clamp(4.8rem, 9vh, 6.6rem);
+  left: 50%;
+  z-index: 11;
+  display: grid;
+  gap: 0.18rem;
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 0.78rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 214, 102, 0.46);
+  color: #fff9e8;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 214, 102, 0.18),
+      rgba(255, 79, 216, 0.08)
+    ),
+    rgba(10, 5, 20, 0.94);
+  box-shadow:
+    0 0 28px rgba(255, 214, 102, 0.16),
+    0 18px 34px rgba(5, 2, 14, 0.44);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: battle-notice-in var(--notice-duration, 2100ms) ease forwards;
+  animation-delay: var(--notice-delay, 0ms);
+}
+
+.battle-notice strong {
+  font-size: 0.98rem;
+  letter-spacing: 0;
+}
+
+.battle-notice span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.battle-overlay--power {
+  z-index: 12;
+  backdrop-filter: blur(9px);
+  background:
+    radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--accent) 22%, transparent),
+      transparent 28rem
+    ),
+    rgba(5, 2, 14, 0.74);
+  animation: power-overlay-fade 1700ms ease forwards;
+}
+
+.overlay-card--power {
+  width: min(30rem, calc(100vw - 2rem));
+  border: 1px solid color-mix(in srgb, var(--accent) 56%, transparent);
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent) 20%, transparent),
+      transparent 13rem
+    ),
+    rgba(13, 6, 28, 0.95);
+  box-shadow:
+    0 0 48px color-mix(in srgb, var(--accent) 24%, transparent),
+    0 26px 50px rgba(5, 2, 14, 0.52);
+  animation: power-card-rise 1700ms ease forwards;
+}
+
+.overlay-card--power h2 {
+  margin: 0.18rem 0 0.3rem;
+  color: #fff7df;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+.overlay-card--power > strong {
+  display: block;
+  color: color-mix(in srgb, var(--accent) 78%, #fff6dc);
+  font-size: 1.05rem;
+}
+
+.overlay-card--power p:last-child {
+  margin: 0.85rem auto 0;
+  max-width: 24rem;
+  color: var(--muted);
+}
+
+.battle-overlay--level-up {
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  animation: overlay-fade-in 220ms ease forwards;
+}
+
+.overlay-card--level-up {
+  width: min(26rem, calc(100vw - 2rem));
+  animation: level-up-overlay-in 260ms ease forwards;
+}
+
+.battle-overlay--closing {
+  animation: overlay-fade-out 220ms ease forwards;
+}
+
+.overlay-card--closing {
+  animation: level-up-overlay-out 220ms ease forwards;
+}
+
+.level-up-stats {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.level-up-stat {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.8rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 79, 216, 0.18);
+  background: rgba(255, 79, 216, 0.08);
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  animation: level-up-pop 420ms ease forwards;
+}
+
+.level-up-stat strong {
+  color: #fff3bf;
+  font-size: 1.15rem;
+}
+
+.level-up-stat small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.battle-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(255, 79, 216, 0.12),
+      transparent 30rem
+    ),
+    rgba(5, 2, 14, 0.68);
+}
+
+.battle-overlay--pause {
+  z-index: 40;
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+}
+
+.overlay-card {
+  position: relative;
+  z-index: 1;
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  text-align: center;
+  background:
+    linear-gradient(180deg, rgba(255, 79, 216, 0.08), rgba(255, 138, 61, 0.04)),
+    var(--panel);
+}
+
+.battle-results-breakdown {
+  display: grid;
+  gap: 0.45rem;
+  margin: 1rem 0 1.25rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(127, 216, 255, 0.18);
+  border-radius: 1rem;
+  text-align: left;
+  background: rgba(8, 16, 30, 0.52);
+}
+
+.battle-results-breakdown h3 {
+  margin: 0 0 0.15rem;
+  font-size: 0.98rem;
+}
+
+.battle-results-breakdown__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+}
+
+.battle-results-breakdown__row strong {
+  color: var(--text);
+}
+
+.battle-results-breakdown__row--total {
+  margin-top: 0.25rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.overlay-card--pause {
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  text-align: left;
+}
+
+.options-list--compact {
+  margin: 0.9rem 0 1rem;
+  gap: 0.55rem;
+}
+
+.pause-section,
+.debug-section {
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 79, 216, 0.16);
+  background: rgba(9, 3, 20, 0.44);
+  overflow: hidden;
+}
+
+.pause-section {
+  margin: 0.75rem 0 1rem;
+}
+
+.pause-section summary,
+.debug-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.1rem;
+  padding: 0.78rem 0.9rem;
+  cursor: var(--cursor-action);
+  list-style: none;
+  user-select: none;
+}
+
+.pause-section summary::-webkit-details-marker,
+.debug-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.pause-section summary::after,
+.debug-section summary::after {
+  content: "";
+  width: 0.58rem;
+  height: 0.58rem;
+  border-right: 2px solid rgba(255, 242, 212, 0.72);
+  border-bottom: 2px solid rgba(255, 242, 212, 0.72);
+  transform: rotate(45deg) translateY(-0.12rem);
+  transition: transform 160ms ease;
+}
+
+.pause-section[open] summary::after,
+.debug-section[open] summary::after {
+  transform: rotate(225deg) translate(-0.08rem, -0.08rem);
+}
+
+.pause-section summary span,
+.debug-section summary span {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.pause-section summary strong,
+.debug-section summary strong {
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.pause-section summary small,
+.debug-section summary small {
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.pause-warning {
+  margin: 1rem 0 1.25rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 91, 143, 0.24);
+  background: rgba(255, 91, 143, 0.08);
+}
+
+.pause-warning p {
+  margin: 0 0 0.5rem;
+}
+
+.pause-warning p:last-child {
+  margin-bottom: 0;
+}
+
+.debug-panel {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.debug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.25rem, 1fr));
+  gap: 0.55rem;
+  padding: 0 0.8rem 0.85rem;
+}
+
+.debug-grid--spawn label:nth-child(2) {
+  grid-column: span 2;
+}
+
+.debug-grid label {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.debug-grid input,
+.debug-grid select {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(111, 246, 255, 0.35);
+  background: rgba(8, 18, 31, 0.75);
+  color: var(--text);
+  width: 100%;
+  min-width: 0;
+  padding: 0.35rem 0.4rem;
+}
+
+.debug-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.55rem;
+  padding: 0 0.8rem 0.85rem;
+}
+
+.debug-actions--compact {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.overlay-card--pause > .battle-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+

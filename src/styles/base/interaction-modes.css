@@ -1,0 +1,57 @@
+/* Reduced-motion and hover-mode behavior */
+
+@media (prefers-reduced-motion: reduce) {
+  .title-scene::before,
+  .title-scene__stars,
+  .title-scene__sun,
+  .title-scene__orb,
+  .title-scene__haze,
+  .title-scene__mountains,
+  .title-scene__grid,
+  .title-menu__button,
+  .title-scene__tank-rig,
+  .title-tank,
+  .title-tank::before,
+  .title-tank__shadow,
+  .title-tank__track,
+  .battle-notice,
+  .battle-overlay--power,
+  .overlay-card--power,
+  .commander-card__info-image,
+  .commander-card__hover-overlay {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (hover: none) {
+  .battle-commanders .commander-panel__tooltip {
+    display: none;
+  }
+
+  .commander-card:hover .commander-card__info-image,
+  .commander-card:focus-visible .commander-card__info-image {
+    opacity: 1;
+    filter: drop-shadow(0 0.8rem 1.4rem rgba(0, 0, 0, 0.26));
+    transform: none;
+  }
+
+  .commander-card:hover .commander-card__hover-overlay,
+  .commander-card:focus-visible .commander-card__hover-overlay {
+    opacity: 0;
+    transform: translateY(0.45rem);
+  }
+
+  .commander-card--selected .commander-card__info-image {
+    opacity: 0.9;
+    filter: blur(8px) brightness(0.48) saturate(0.86)
+      drop-shadow(0 0.8rem 1.4rem rgba(0, 0, 0, 0.26));
+    transform: scale(1.03);
+  }
+
+  .commander-card--selected .commander-card__hover-overlay {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

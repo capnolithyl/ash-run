@@ -1,0 +1,389 @@
+/* Shared keyframes */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes title-aurora-drift {
+  from {
+    transform: translate3d(-1rem, 0, 0) scale(1);
+    opacity: 0.9;
+  }
+
+  to {
+    transform: translate3d(1rem, 0.6rem, 0) scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes title-stars-twinkle {
+  from {
+    opacity: 0.42;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 0.56;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes title-sun-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(-1rem, 0.6rem, 0) scale(1.02);
+  }
+}
+
+@keyframes title-orb-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(1.1rem, -0.75rem, 0);
+  }
+}
+
+@keyframes title-haze-breathe {
+  from {
+    opacity: 0.5;
+    transform: translate3d(0, 0, 0) scaleX(0.98);
+  }
+
+  50% {
+    opacity: 0.75;
+  }
+
+  to {
+    opacity: 0.6;
+    transform: translate3d(0, 0.5rem, 0) scaleX(1.02);
+  }
+}
+
+@keyframes title-mountains-drift {
+  from {
+    transform: translate3d(-1.5%, 0, 0);
+  }
+
+  to {
+    transform: translate3d(1.5%, -1%, 0);
+  }
+}
+
+@keyframes title-grid-scroll {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      0 0;
+  }
+
+  to {
+    background-position:
+      0 0,
+      5rem 0,
+      0 3.4rem;
+  }
+}
+
+@keyframes title-tank-drive {
+  from {
+    transform: translate3d(-1rem, 0.35rem, 0) scale(0.992);
+  }
+
+  35% {
+    transform: translate3d(0.2rem, -0.08rem, 0) scale(1);
+  }
+
+  65% {
+    transform: translate3d(1rem, 0.2rem, 0) scale(1.006);
+  }
+
+  to {
+    transform: translate3d(1.7rem, -0.15rem, 0) scale(1.012);
+  }
+}
+
+@keyframes title-tank-shadow {
+  from {
+    transform: translateX(-0.9rem) scaleX(0.96);
+    opacity: 0.5;
+  }
+
+  to {
+    transform: translateX(1.25rem) scaleX(1.03);
+    opacity: 0.68;
+  }
+}
+
+@keyframes title-tank-reflection {
+  0%,
+  100% {
+    opacity: 0.36;
+    transform: translateX(-0.4rem);
+  }
+
+  50% {
+    opacity: 0.62;
+    transform: translateX(0.6rem);
+  }
+}
+
+@keyframes title-tank-track-run {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      0 0;
+  }
+
+  to {
+    background-position:
+      0 0,
+      1.3rem 0,
+      0 0;
+  }
+}
+
+@keyframes title-button-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -0.2rem;
+  }
+}
+
+@keyframes title-menu-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.045);
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes level-up-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes level-up-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes level-up-overlay-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+@keyframes turn-banner-fade {
+  0% {
+    opacity: 0;
+  }
+
+  16% {
+    opacity: 1;
+  }
+
+  78% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes turn-banner-card {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  78% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) scale(1.02);
+  }
+}
+
+@keyframes battle-notice-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -0.6rem) scale(0.98);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  82% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -0.35rem) scale(0.99);
+  }
+}
+
+@keyframes power-overlay-fade {
+  0% {
+    opacity: 0;
+  }
+
+  14% {
+    opacity: 1;
+  }
+
+  82% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes power-card-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(1.1rem) scale(0.96);
+  }
+
+  16% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  78% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-0.7rem) scale(1.015);
+  }
+}
+
+@keyframes commander-power-ready {
+  0% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--side-color) 22%, transparent),
+      0 0 18px color-mix(in srgb, var(--side-color) 16%, transparent),
+      inset 0 0 18px color-mix(in srgb, var(--side-color) 10%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--side-color) 34%, transparent),
+      0 0 30px color-mix(in srgb, var(--side-color) 24%, transparent),
+      inset 0 0 26px color-mix(in srgb, var(--side-color) 18%, transparent);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--side-color) 22%, transparent),
+      0 0 18px color-mix(in srgb, var(--side-color) 16%, transparent),
+      inset 0 0 18px color-mix(in srgb, var(--side-color) 10%, transparent);
+  }
+}
+
+@keyframes commander-power-shine {
+  0% {
+    transform: translateX(-180%) rotate(18deg);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 0.9;
+  }
+
+  42% {
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: translateX(360%) rotate(18deg);
+    opacity: 0;
+  }
+}
+
+

@@ -2,14 +2,16 @@ import { defineConfig, devices } from "@playwright/test";
 
 const port = 4173;
 const baseURL = `http://127.0.0.1:${port}`;
+const workers = Number(process.env.PLAYWRIGHT_WORKERS ?? 1);
 
 export default defineConfig({
   testDir: "./tests/ui",
   timeout: 30_000,
+  workers,
   expect: {
     timeout: 10_000
   },
-  fullyParallel: true,
+  fullyParallel: false,
   reporter: [["list"]],
   use: {
     baseURL,

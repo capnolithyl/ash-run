@@ -1,4 +1,12 @@
-import { BATTLE_MODES, SCREEN_IDS, SLOT_IDS, TERRAIN_KEYS, TURN_SIDES } from "../game/core/constants.js";
+import {
+  BATTLE_MODES,
+  BUILDING_KEYS,
+  SCREEN_IDS,
+  SLOT_IDS,
+  TERRAIN_KEYS,
+  TURN_SIDES
+} from "../game/core/constants.js";
+import { createBlankMapDefinition, createDefaultMapEditorState } from "../game/content/mapEditor.js";
 import { RUN_UPGRADES } from "../game/content/runUpgrades.js";
 import { createBattlefield } from "../game/content/mapFactory.js";
 import { createDefaultMetaState, createEmptySlotSummaries } from "../game/state/defaults.js";
@@ -193,6 +201,40 @@ function createProgressionState() {
   return {
     screen: SCREEN_IDS.PROGRESSION,
     metaState
+  };
+}
+
+function createMapEditorState() {
+  const mapData = createBlankMapDefinition({
+    id: "editor-preview",
+    name: "Editor Preview",
+    playerSpawns: [{ x: 1, y: 1 }],
+    enemySpawns: [{ x: 4, y: 4 }],
+    buildings: [
+      {
+        id: "editor-preview-player-command",
+        type: BUILDING_KEYS.COMMAND,
+        owner: TURN_SIDES.PLAYER,
+        x: 1,
+        y: 1
+      },
+      {
+        id: "editor-preview-neutral-hospital",
+        type: BUILDING_KEYS.HOSPITAL,
+        owner: "neutral",
+        x: 3,
+        y: 2
+      }
+    ]
+  });
+
+  return {
+    screen: SCREEN_IDS.MAP_EDITOR,
+    mapEditor: {
+      ...createDefaultMapEditorState(mapData),
+      selectedTile: { x: 1, y: 1 }
+    },
+    metaState: createBaseMetaState()
   };
 }
 
@@ -436,6 +478,7 @@ export const UI_HARNESS_SCENES = [
   { id: "skirmish-map", label: "Skirmish Map", locator: "#ui-root" },
   { id: "options", label: "Options", locator: "#ui-root" },
   { id: "progression", label: "Progression", locator: "#ui-root" },
+  { id: "map-editor", label: "Map Editor", locator: ".battle-shell" },
   { id: "battle-commander-layout", label: "Battle Commander Layout", locator: ".battle-shell" },
   { id: "battle-targeting", label: "Battle HUD Targeting", locator: ".battle-shell" },
   { id: "battle-pause", label: "Battle HUD Pause", locator: ".battle-shell" },
@@ -476,6 +519,11 @@ export function createUiHarnessScene(sceneId) {
       return {
         sceneId,
         state: createProgressionState()
+      };
+    case "map-editor":
+      return {
+        sceneId,
+        state: createMapEditorState()
       };
     case "battle-targeting":
       return {

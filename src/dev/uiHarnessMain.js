@@ -1,5 +1,6 @@
 import "../styles/main.css";
 import { renderCommanderSelectView } from "../ui/views/commanderSelectView.js";
+import { renderMapEditorView } from "../ui/views/mapEditorView.js";
 import { renderOptionsView } from "../ui/views/optionsView.js";
 import { renderProgressionView } from "../ui/views/progressionView.js";
 import { renderBattleHudView } from "../ui/views/battleHudView.js";
@@ -41,6 +42,8 @@ function renderSceneMarkup(sceneId, state) {
       return renderOptionsView(state);
     case "progression":
       return renderProgressionView(state);
+    case "map-editor":
+      return renderMapEditorView(state);
     case "battle-commander-layout":
     case "battle-targeting":
     case "battle-pause":

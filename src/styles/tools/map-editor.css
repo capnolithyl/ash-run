@@ -1,0 +1,205 @@
+/* Map editor layout and controls */
+
+.map-editor-shell .battle-rail {
+  top: 8.4rem;
+  bottom: 7.3rem;
+}
+
+.map-editor-header {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.9rem 1.15rem;
+  width: min(48rem, calc(100vw - 36rem));
+  min-width: min(32rem, calc(100vw - 3rem));
+  padding: 1rem 1.1rem;
+  transform: translateX(-50%);
+}
+
+.map-editor-header h2 {
+  margin: 0.3rem 0 0.35rem;
+  font-size: clamp(1.6rem, 2.6vw, 2.5rem);
+  line-height: 0.95;
+  color: #fff2fb;
+  text-transform: uppercase;
+}
+
+.map-editor-header p:last-child {
+  margin-bottom: 0;
+}
+
+.map-editor-header__copy {
+  min-width: 0;
+}
+
+.map-editor-header__meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: end;
+  gap: 0.55rem 0.8rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.map-editor-header__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.map-editor-header__meta strong {
+  color: #ffbf76;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.map-editor-header__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 0.55rem;
+  grid-column: 2;
+}
+
+.map-editor-tool-grid {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0 0.8rem 0.85rem;
+}
+
+.map-editor-tool {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  gap: 0.7rem;
+  width: 100%;
+  text-align: left;
+}
+
+.map-editor-tool--active,
+#ui-root[data-input-mode="controller"] .map-editor-tool.is-controller-focused {
+  border-color: rgba(255, 191, 118, 0.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 191, 118, 0.22),
+    0 0 0 1px rgba(255, 191, 118, 0.12),
+    0 14px 32px rgba(6, 1, 16, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 191, 118, 0.14), rgba(255, 79, 216, 0.06)),
+    rgba(12, 5, 24, 0.92);
+}
+
+.map-editor-tool__swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 242, 212, 0.18);
+  background: rgba(8, 4, 18, 0.9);
+  color: #fff2d4;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.map-editor-tool__swatch--terrain {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--swatch) 92%, black), var(--swatch));
+}
+
+.map-editor-tool__copy {
+  display: grid;
+  gap: 0.14rem;
+  min-width: 0;
+}
+
+.map-editor-tool__copy strong {
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.map-editor-tool__copy small {
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+.map-editor-owner-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0 0.8rem 0.7rem;
+}
+
+.map-editor-chip {
+  text-transform: capitalize;
+}
+
+.map-editor-chip--active,
+#ui-root[data-input-mode="controller"] .map-editor-chip.is-controller-focused {
+  border-color: rgba(102, 255, 191, 0.52);
+  background: rgba(19, 58, 54, 0.84);
+  color: #f0fff8;
+}
+
+.map-editor-validation {
+  border-width: 1px;
+}
+
+.map-editor-validation--valid {
+  border-color: rgba(102, 255, 191, 0.35);
+  background:
+    linear-gradient(180deg, rgba(102, 255, 191, 0.12), rgba(102, 255, 191, 0.04)),
+    var(--panel-strong);
+}
+
+.map-editor-validation--invalid {
+  border-color: rgba(255, 138, 61, 0.32);
+  background:
+    linear-gradient(180deg, rgba(255, 138, 61, 0.12), rgba(255, 79, 216, 0.04)),
+    var(--panel-strong);
+}
+
+.map-editor-validation strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #fff2d4;
+}
+
+.map-editor-validation__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.map-editor-import-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+#map-editor-import {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.commander-panel,
+.card-block {
+  padding: 0.82rem;
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 34%),
+    var(--panel-strong);
+  border: 1px solid rgba(255, 79, 216, 0.12);
+  margin-bottom: 0.82rem;
+}
+

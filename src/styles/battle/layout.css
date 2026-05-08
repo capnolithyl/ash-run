@@ -1,0 +1,252 @@
+/* Battle shell layout, footer, and drawer framing */
+
+.battle-shell {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.battle-commanders {
+  position: absolute;
+  top: 1rem;
+  left: 1.25rem;
+  right: 1.25rem;
+  z-index: 8;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.15rem;
+  pointer-events: none;
+}
+
+.battle-commanders .commander-panel-shell {
+  pointer-events: auto;
+}
+
+.battle-drawer-toggle,
+.battle-drawer-header {
+  display: none;
+}
+
+.battle-intel-tab-toggle,
+.battle-compact-sheet {
+  display: none;
+}
+
+.battle-footer-actions {
+  position: absolute;
+  left: 50%;
+  bottom: max(0.85rem, env(safe-area-inset-bottom));
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(6.4rem, 1fr) minmax(8.8rem, 1.35fr) minmax(
+      7.2rem,
+      1fr
+    );
+  grid-template-areas: "pause next end";
+  gap: 0.55rem;
+  transform: translateX(-50%);
+  padding: 0.75rem 0.8rem 0.8rem;
+  border: 1px solid rgba(255, 138, 61, 0.24);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(
+      circle at 12% 0%,
+      rgba(255, 79, 216, 0.18),
+      transparent 10rem
+    ),
+    radial-gradient(
+      circle at 88% 0%,
+      rgba(255, 138, 61, 0.16),
+      transparent 10rem
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.01)
+    ),
+    rgba(12, 5, 24, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(255, 79, 216, 0.08),
+    0 18px 46px rgba(5, 1, 14, 0.62);
+  backdrop-filter: blur(16px);
+}
+
+.battle-footer-meta {
+  position: absolute;
+  left: 1.25rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 8;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.95rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 79, 216, 0.18);
+  border-radius: 1.15rem;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.03),
+      rgba(255, 255, 255, 0.015)
+    ),
+    rgba(10, 5, 20, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 16px 32px rgba(5, 1, 14, 0.38);
+  backdrop-filter: blur(14px);
+}
+
+.battle-footer-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text);
+  font-size: 0.84rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.battle-footer-meta strong {
+  color: #ff9a57;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.battle-footer-actions::before {
+  content: "";
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 0.42rem;
+  height: 0.16rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 79, 216, 0),
+    rgba(255, 210, 125, 0.84),
+    rgba(255, 79, 216, 0)
+  );
+  box-shadow: 0 0 18px rgba(255, 159, 79, 0.26);
+  pointer-events: none;
+}
+
+.battle-footer-actions .battle-footer-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: uppercase;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 10px 24px rgba(5, 1, 14, 0.32);
+}
+
+.battle-footer-actions .battle-footer-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    transparent 42%
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.battle-footer-button--pause {
+  grid-area: pause;
+}
+
+.battle-footer-button--next {
+  grid-area: next;
+  min-height: 3.45rem;
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 230, 196, 0.08),
+    0 16px 28px rgba(8, 2, 18, 0.4),
+    0 0 28px rgba(121, 94, 255, 0.16);
+}
+
+.battle-footer-button--end-turn {
+  grid-area: end;
+}
+
+.battle-footer-button--intel {
+  grid-area: intel;
+}
+
+.battle-footer-button--feed {
+  grid-area: feed;
+}
+
+.battle-drawer-button {
+  text-align: center;
+  cursor: var(--cursor-action);
+  user-select: none;
+}
+
+.battle-footer-actions .battle-drawer-button {
+  display: none;
+}
+
+.battle-rail {
+  position: absolute;
+  top: 12.55rem;
+  bottom: 6.8rem;
+  width: 16.5rem;
+  padding: 0.82rem;
+  border-radius: 1.25rem;
+  overflow-y: auto;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 79, 216, 0.12),
+      transparent 12rem
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 79, 216, 0.08),
+      rgba(255, 138, 61, 0.035) 60%,
+      rgba(152, 93, 255, 0.06)
+    ),
+    var(--panel);
+  border-color: rgba(255, 79, 216, 0.24);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.025),
+    0 24px 70px rgba(5, 1, 14, 0.66);
+}
+
+.battle-rail:first-of-type {
+  left: 1.25rem;
+}
+
+.battle-rail--right {
+  right: 1.25rem;
+  border-color: rgba(255, 138, 61, 0.24);
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(255, 138, 61, 0.13),
+      transparent 12rem
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 138, 61, 0.08),
+      rgba(255, 79, 216, 0.035) 60%,
+      rgba(152, 93, 255, 0.055)
+    ),
+    var(--panel);
+}
+
