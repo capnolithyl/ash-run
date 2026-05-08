@@ -202,6 +202,9 @@
 }
 
 .battle-rail {
+  --rail-color: #ff4fd8;
+  --rail-accent: #ff8a3d;
+  --rail-glow: rgba(255, 79, 216, 0.16);
   position: absolute;
   top: 12.55rem;
   bottom: 6.8rem;
@@ -210,11 +213,32 @@
   isolation: isolate;
   border-radius: 1.25rem;
   overflow-y: auto;
-  background: rgba(15, 7, 28, 0.42);
-  border-color: rgba(255, 79, 216, 0.24);
+  border-color: color-mix(
+    in srgb,
+    var(--rail-color) 36%,
+    rgba(255, 255, 255, 0.08)
+  );
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--rail-color) 14%, rgba(255, 255, 255, 0.04)),
+      rgba(16, 7, 30, 0.12) 40%,
+      rgba(10, 5, 22, 0.3)
+    ),
+    url("../../../assets/img/ui/background/sidebar.png") center top / cover no-repeat,
+    rgba(15, 7, 28, 0.42);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.025),
+    inset 0 0 28px color-mix(in srgb, var(--rail-color) 11%, transparent),
+    0 0 22px var(--rail-glow),
     0 24px 70px rgba(5, 1, 14, 0.66);
+  clip-path: polygon(
+    0.9rem 0,
+    100% 0,
+    100% calc(100% - 0.9rem),
+    calc(100% - 0.9rem) 100%,
+    0 100%,
+    0 0.9rem
+  );
 }
 
 .battle-rail::before,
@@ -226,25 +250,32 @@
 }
 
 .battle-rail::before {
-  z-index: -2;
-  background: url("../../../assets/img/ui/background/sidebar.png") center top / cover no-repeat;
-  opacity: 0.9;
+  inset: 0 auto 0 0;
+  width: 0.26rem;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    var(--rail-color),
+    var(--rail-accent),
+    transparent
+  );
+  box-shadow: 0 0 18px var(--rail-color);
 }
 
 .battle-rail::after {
-  z-index: -1;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(21, 8, 37, 0.28),
-      rgba(15, 7, 30, 0.12) 40%,
-      rgba(11, 5, 23, 0.34) 100%
-    ),
-    radial-gradient(
-      circle at 50% 10%,
-      rgba(255, 79, 216, 0.12),
-      transparent 38%
-    );
+  inset: 0.18rem;
+  z-index: 0;
+  border: 1px solid
+    color-mix(in srgb, var(--rail-color) 40%, rgba(255, 255, 255, 0.08));
+  clip-path: polygon(
+    0.75rem 0,
+    100% 0,
+    100% calc(100% - 0.75rem),
+    calc(100% - 0.75rem) 100%,
+    0 100%,
+    0 0.75rem
+  );
+  opacity: 0.8;
 }
 
 .battle-rail > * {
@@ -257,22 +288,12 @@
 }
 
 .battle-rail--right {
+  --rail-color: #ff8a3d;
+  --rail-glow: rgba(255, 138, 61, 0.16);
   right: 1.25rem;
-  border-color: rgba(255, 138, 61, 0.24);
 }
 
-.battle-rail--right::after {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(25, 10, 24, 0.28),
-      rgba(16, 7, 28, 0.12) 40%,
-      rgba(12, 5, 20, 0.34) 100%
-    ),
-    radial-gradient(
-      circle at 50% 10%,
-      rgba(255, 138, 61, 0.1),
-      transparent 38%
-    );
+.battle-rail--right::before {
+  inset: 0 0 0 auto;
 }
 
