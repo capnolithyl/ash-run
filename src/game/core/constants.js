@@ -27,6 +27,15 @@ export const BATTLE_MOVE_SEGMENT_DURATION_MS = 230;
 export const BATTLE_MOVE_SETTLE_MS = 70;
 export const BATTLE_ATTACK_IMPACT_DELAY_MS = 140;
 export const BATTLE_ATTACK_WINDOW_MS = 620;
+export const BATTLE_COMBAT_CUTSCENE_OPEN_MS = 240;
+export const BATTLE_COMBAT_CUTSCENE_CLOSE_MS = 220;
+export const BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS = 200;
+export const BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS = 250;
+export const BATTLE_COMBAT_CUTSCENE_SHAKE_MS = 150;
+export const BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS = 960;
+export const BATTLE_COMBAT_CUTSCENE_IMPACT_DELAY_MS = 360;
+export const BATTLE_COMBAT_CUTSCENE_LOOP_MIN = 4;
+export const BATTLE_COMBAT_CUTSCENE_LOOP_MAX = 5;
 
 export function getBattleMoveDuration(moveSegments = 0) {
   return Math.max(0, moveSegments) * BATTLE_MOVE_SEGMENT_DURATION_MS;
@@ -39,7 +48,7 @@ export const BUILDING_INCOME = {
   "motor-pool": 100,
   airfield: 100,
   hospital: 100,
-  "repair-station": 100
+  "repair-station": 100,
 };
 
 export const SCREEN_IDS = {
@@ -52,17 +61,17 @@ export const SCREEN_IDS = {
   OPTIONS: "options",
   PROGRESSION: "progression",
   MAP_EDITOR: "map-editor",
-  BATTLE: "battle"
+  BATTLE: "battle",
 };
 
 export const BATTLE_MODES = {
   RUN: "run",
-  SKIRMISH: "skirmish"
+  SKIRMISH: "skirmish",
 };
 
 export const TURN_SIDES = {
   PLAYER: "player",
-  ENEMY: "enemy"
+  ENEMY: "enemy",
 };
 
 export const ENEMY_AI_ARCHETYPES = {
@@ -70,7 +79,7 @@ export const ENEMY_AI_ARCHETYPES = {
   HYPER_AGGRESSIVE: "hyper-aggressive",
   TURTLE: "turtle",
   CAPTURE: "capture",
-  HQ_RUSH: "hq-rush"
+  HQ_RUSH: "hq-rush",
 };
 
 export const ENEMY_AI_ARCHETYPE_ORDER = [
@@ -78,7 +87,7 @@ export const ENEMY_AI_ARCHETYPE_ORDER = [
   ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE,
   ENEMY_AI_ARCHETYPES.TURTLE,
   ENEMY_AI_ARCHETYPES.CAPTURE,
-  ENEMY_AI_ARCHETYPES.HQ_RUSH
+  ENEMY_AI_ARCHETYPES.HQ_RUSH,
 ];
 
 export const TERRAIN_KEYS = {
@@ -87,7 +96,7 @@ export const TERRAIN_KEYS = {
   FOREST: "forest",
   MOUNTAIN: "mountain",
   WATER: "water",
-  RIDGE: "ridge"
+  RIDGE: "ridge",
 };
 
 export const BUILDING_KEYS = {
@@ -97,11 +106,11 @@ export const BUILDING_KEYS = {
   AIRFIELD: "airfield",
   SECTOR: "sector",
   HOSPITAL: "hospital",
-  REPAIR_STATION: "repair-station"
+  REPAIR_STATION: "repair-station",
 };
 
 export const UNIT_TAGS = {
   INFANTRY: "infantry",
   VEHICLE: "vehicle",
-  AIR: "air"
+  AIR: "air",
 };

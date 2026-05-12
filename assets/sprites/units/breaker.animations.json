@@ -1,0 +1,26 @@
+{
+  "frameWidth": 102,
+  "frameHeight": 128,
+  "animations": {
+    "idle": {
+      "file": "breaker-idle.png",
+      "frameRate": 5,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 1
+        }
+      }
+    },
+    "attack": {
+      "file": "breaker-attack.png",
+      "frameRate": 5,
+      "ranges": {
+        "left": {
+          "start": 0,
+          "end": 2
+        }
+      }
+    }
+  }
+}

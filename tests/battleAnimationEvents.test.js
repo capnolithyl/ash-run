@@ -1,9 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BATTLE_ATTACK_WINDOW_MS, TURN_SIDES } from "../src/game/core/constants.js";
+import {
+  BATTLE_ATTACK_WINDOW_MS,
+  BATTLE_COMBAT_CUTSCENE_CLOSE_MS,
+  BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
+  BATTLE_COMBAT_CUTSCENE_OPEN_MS,
+  BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS,
+  BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS,
+  BATTLE_MOVE_SETTLE_MS,
+  TERRAIN_KEYS,
+  getBattleMoveDuration,
+  TURN_SIDES
+} from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
+import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
 test("battle animation events include secondary-fire attacks that do not consume ammo", () => {
@@ -158,4 +170,123 @@ test("battle animation events keep normal order when both graves powers are acti
   assert.equal(attackEvents[1].attackerId, defender.id);
   assert.equal(attackEvents[1].targetId, attacker.id);
   assert.equal(attackEvents[1].isInitiator, false);
+});
+
+test("battle combat cutscene payload keeps player-left mapping, split terrain ids, and HP beats", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  battleState.map.tiles[attacker.y][attacker.x] = TERRAIN_KEYS.FOREST;
+  battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.RIDGE;
+  const system = new BattleSystem(battleState);
+
+  const before = system.getSnapshot();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  const after = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(before, after);
+
+  assert.ok(cutscene);
+  assert.equal(cutscene.playerUnit.id, attacker.id);
+  assert.equal(cutscene.enemyUnit.id, defender.id);
+  assert.equal(cutscene.playerTerrainId, TERRAIN_KEYS.FOREST);
+  assert.equal(cutscene.enemyTerrainId, TERRAIN_KEYS.RIDGE);
+  assert.equal(cutscene.steps.length >= 1, true);
+  assert.equal(cutscene.steps[0].attackerSide, TURN_SIDES.PLAYER);
+  assert.equal(cutscene.steps[0].targetSide, TURN_SIDES.ENEMY);
+  assert.equal(
+    cutscene.steps[0].startMs,
+    BATTLE_COMBAT_CUTSCENE_OPEN_MS + BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
+  );
+  assert.equal(cutscene.steps[0].impactMs, cutscene.steps[0].startMs + cutscene.steps[0].impactDelayMs);
+  assert.equal(cutscene.steps[0].endMs, cutscene.steps[0].startMs + cutscene.steps[0].windowMs);
+  assert.ok(cutscene.steps[0].windowMs >= BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS);
+  assert.ok(cutscene.steps[0].loopCount >= 3);
+  assert.equal(cutscene.steps[0].targetHpBefore, defender.current.hp);
+  assert.ok(cutscene.steps[0].targetHpAfter < cutscene.steps[0].targetHpBefore);
+  assert.equal(cutscene.openMs, BATTLE_COMBAT_CUTSCENE_OPEN_MS);
+  assert.equal(cutscene.closeMs, BATTLE_COMBAT_CUTSCENE_CLOSE_MS);
+  assert.equal(cutscene.introHoldMs, BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS);
+  assert.equal(cutscene.outroHoldMs, BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS);
+  assert.ok(
+    cutscene.durationMs >=
+      BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+        BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS +
+        BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS +
+        BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS +
+        BATTLE_COMBAT_CUTSCENE_CLOSE_MS
+  );
+});
+
+test("battle combat cutscene payload keeps graves preemptive counter order", () => {
+  const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [defender],
+    enemyUnits: [attacker]
+  });
+  battleState.player.commanderId = "graves";
+  battleState.player.charge = getCommanderPowerMax("graves");
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.startEnemyTurnActions().changed, true);
+
+  const before = system.getSnapshot();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  const after = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(before, after);
+
+  assert.ok(cutscene);
+  assert.equal(cutscene.steps.length, 2);
+  assert.equal(cutscene.steps[0].attackerSide, TURN_SIDES.PLAYER);
+  assert.equal(cutscene.steps[0].targetSide, TURN_SIDES.ENEMY);
+  assert.equal(cutscene.steps[1].startMs, cutscene.steps[0].endMs);
+  assert.equal(cutscene.steps[1].attackerSide, TURN_SIDES.ENEMY);
+  assert.equal(cutscene.steps[1].targetSide, TURN_SIDES.PLAYER);
+  assert.ok(
+    cutscene.durationMs >=
+      BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+        BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS +
+        BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS * 2 +
+        BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS +
+        BATTLE_COMBAT_CUTSCENE_CLOSE_MS
+  );
+});
+
+test("battle combat cutscene waits for move-and-settle before revealing the duel popup", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 1);
+  const battleState = createTestBattleState({
+    width: 6,
+    height: 4,
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.selection = { type: "unit", id: attacker.id, x: attacker.x, y: attacker.y };
+
+  const system = new BattleSystem(battleState);
+  assert.equal(system.handleTileSelection(3, 1), true);
+  assert.equal(system.beginPendingAttack(), true);
+  const before = system.getSnapshot();
+  assert.equal(system.handleTileSelection(defender.x, defender.y), true);
+  const after = system.getSnapshot();
+
+  const cutscene = deriveBattleCombatCutscene(before, after);
+  const expectedRevealStartMs = getBattleMoveDuration(2) + BATTLE_MOVE_SETTLE_MS;
+
+  assert.ok(cutscene);
+  assert.equal(cutscene.revealStartMs, expectedRevealStartMs);
+  assert.equal(
+    cutscene.steps[0].startMs,
+    expectedRevealStartMs +
+      BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+      BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
+  );
 });

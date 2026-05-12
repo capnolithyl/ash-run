@@ -1,6 +1,6 @@
 {
-  "frameWidth": 64,
-  "frameHeight": 64,
+  "frameWidth": 128,
+  "frameHeight": 128,
   "animations": {
     "idle": {
       "file": "bruiser-idle.png",

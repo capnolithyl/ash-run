@@ -26,7 +26,9 @@ export class GameController {
     this.fundsGainSequence = 0;
     this.battleNoticeSequence = 0;
     this.battlePowerOverlaySequence = 0;
+    this.battleCombatCutsceneSequence = 0;
     this.battleNoticeTimer = null;
+    this.battleCombatCutsceneTimer = null;
     this.lastBattleContextActionAt = 0;
     this.state = {
       ready: false,

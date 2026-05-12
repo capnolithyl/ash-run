@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  BATTLE_COMBAT_CUTSCENE_CLOSE_MS,
+  BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
+  BATTLE_COMBAT_CUTSCENE_OPEN_MS,
+  BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS,
+  BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS,
   BATTLE_MODES,
   ENEMY_AI_ARCHETYPES,
   SCREEN_IDS,
@@ -170,6 +175,70 @@ test("syncBattleState auto-detects post-action funds gains outside turn-start fl
   await Promise.resolve();
 
   assert.equal(playedFundsGainId, battleUi.fundsGain?.id);
+});
+
+test("syncBattleState creates and clears combat cutscene state for attack transitions", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  const system = new BattleSystem(battleState);
+  const controller = new GameController();
+  let cutsceneTimeoutCallback = null;
+  let cutsceneTimeoutDelay = null;
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.battleSystem = {
+    getSnapshot() {
+      return system.getSnapshot();
+    }
+  };
+
+  controller.syncBattleState();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  global.setTimeout = (callback, delay) => {
+    cutsceneTimeoutCallback = callback;
+    cutsceneTimeoutDelay = delay;
+    return 1;
+  };
+  global.clearTimeout = () => {};
+
+  try {
+    controller.syncBattleState();
+
+    let state = controller.getState();
+    assert.ok(state.battleUi.combatCutscene);
+    assert.equal(state.battleUi.combatCutscene.playerUnit.id, attacker.id);
+    assert.equal(state.battleUi.combatCutscene.enemyUnit.id, defender.id);
+    assert.equal(
+      state.battleUi.combatCutscene.steps[0].startMs,
+      BATTLE_COMBAT_CUTSCENE_OPEN_MS + BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
+    );
+    assert.ok(state.battleUi.combatCutscene.steps[0].windowMs >= BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS);
+    assert.ok(
+      state.battleUi.combatCutscene.durationMs >=
+        BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+          BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS +
+          BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS +
+          BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS +
+          BATTLE_COMBAT_CUTSCENE_CLOSE_MS
+    );
+    assert.equal(controller.isBattleInputLocked(), true);
+    assert.equal(typeof cutsceneTimeoutCallback, "function");
+    assert.equal(cutsceneTimeoutDelay, state.battleUi.combatCutscene.durationMs);
+
+    cutsceneTimeoutCallback();
+    state = controller.getState();
+    assert.equal(state.battleUi.combatCutscene, null);
+  } finally {
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
+  }
 });
 
 test("startSkirmish opens an unsaved battle with configured economy", async () => {

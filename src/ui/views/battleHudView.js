@@ -25,6 +25,7 @@ import {
   renderPowerOverlay,
   renderTurnBanner
 } from "./battleHud/overlays.js";
+import { renderCombatCutsceneOverlay } from "./battleHud/combatCutsceneOverlay.js";
 import {
   getFocusTileForSide,
   renderSelectionDetails,
@@ -136,6 +137,8 @@ export function renderBattleHudView(state, options = {}) {
   const suppressLevelUpOverlay = options.suppressLevelUpOverlay ?? false;
   const suppressOutcomeOverlay = options.suppressOutcomeOverlay ?? false;
   const turnBanner = options.turnBanner ?? null;
+  const combatCutscene = state.battleUi?.combatCutscene ?? null;
+  const combatCutsceneActive = Boolean(combatCutscene);
 
   if (!battleSnapshot) {
     return "";
@@ -240,12 +243,13 @@ export function renderBattleHudView(state, options = {}) {
       ${renderSupportPrompt(battleSnapshot)}
       ${renderMedpackPrompt(battleSnapshot)}
       ${renderExtinguishPrompt(battleSnapshot)}
-      ${renderBattleNotice(state.battleUi?.notice)}
-      ${renderTurnBanner(turnBanner)}
-      ${renderPowerOverlay(state.battleUi?.powerOverlay)}
-      ${suppressLevelUpOverlay ? "" : renderLevelUpOverlay(battleSnapshot)}
-      ${renderPauseOverlay(state, battleSnapshot)}
-      ${suppressOutcomeOverlay ? "" : renderOutcomeOverlay(state, battleSnapshot)}
+      ${combatCutsceneActive ? "" : renderBattleNotice(state.battleUi?.notice)}
+      ${combatCutsceneActive ? "" : renderTurnBanner(turnBanner)}
+      ${combatCutsceneActive ? "" : renderPowerOverlay(state.battleUi?.powerOverlay)}
+      ${renderCombatCutsceneOverlay(combatCutscene, state.metaState?.options)}
+      ${suppressLevelUpOverlay || combatCutsceneActive ? "" : renderLevelUpOverlay(battleSnapshot)}
+      ${combatCutsceneActive ? "" : renderPauseOverlay(state, battleSnapshot)}
+      ${suppressOutcomeOverlay || combatCutsceneActive ? "" : renderOutcomeOverlay(state, battleSnapshot)}
     </div>
   `;
 }

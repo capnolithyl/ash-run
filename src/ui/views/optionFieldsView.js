@@ -3,6 +3,7 @@ export function renderOptionFields(options = {}) {
     ? Math.max(0, Math.min(1, Number(options.masterVolume)))
     : 0.4;
   const masterVolumePercent = Math.round(masterVolume * 100);
+  const combatCutsceneAnimations = options.combatCutsceneAnimations !== false;
 
   return `
     <label class="option-row option-row--toggle">
@@ -12,6 +13,10 @@ export function renderOptionFields(options = {}) {
     <label class="option-row option-row--toggle">
       <span>Allow Screen Shake</span>
       <input type="checkbox" ${options.screenShake ? "checked" : ""} data-option="screenShake" />
+    </label>
+    <label class="option-row option-row--toggle">
+      <span>Combat Cutscene Animations</span>
+      <input type="checkbox" ${combatCutsceneAnimations ? "checked" : ""} data-option="combatCutsceneAnimations" />
     </label>
     <label class="option-row option-row--range">
       <span>Master Volume <strong>${masterVolumePercent}%</strong></span>

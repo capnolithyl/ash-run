@@ -6,6 +6,7 @@ function createDefaultOptions() {
   return {
     showGrid: true,
     screenShake: true,
+    combatCutsceneAnimations: true,
     masterVolume: 0.4,
     muted: false
   };

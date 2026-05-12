@@ -1,8 +1,5 @@
 import Phaser from "phaser";
-import {
-  BATTLE_ATTACK_IMPACT_DELAY_MS,
-  BATTLE_MOVE_SEGMENT_DURATION_MS
-} from "../../core/constants.js";
+import { BATTLE_ATTACK_IMPACT_DELAY_MS, BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
 import { getGearBadgeLabel } from "../../content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
@@ -11,7 +8,6 @@ import {
   getAnimationRangeFrameCount,
   getAttackAnimationPlayback,
   getOwnerIdleFlipX,
-  getUnitAttackRangeName,
   getUnitDefaultTexture,
 } from "./unitAnimationHelpers.js";
 
@@ -637,14 +633,29 @@ export class UnitLayer {
     }
 
     callbacks.onStart?.();
+    const suppressVisuals = callbacks.suppressVisuals === true;
+    const impactDelayMs = Math.max(0, callbacks.impactDelayMs ?? BATTLE_ATTACK_IMPACT_DELAY_MS);
+
+    if (suppressVisuals) {
+      if (callbacks.onImpact) {
+        this.scene.time.delayedCall(impactDelayMs, callbacks.onImpact);
+      }
+
+      return;
+    }
+
     this.stopEffectTweens(entity);
     this.stopAnimationTimer(entity);
 
-    const attackRangeName = getUnitAttackRangeName(entity.owner, directionX);
     const attackAnimation = entity.visualSpec?.attack;
     const attackPlayback = getAttackAnimationPlayback(entity.owner, attackAnimation, directionX);
     const attackRange = attackPlayback?.range ?? null;
-    const attackAnimationKey = ensureUnitAnimation(this.scene, attackAnimation, attackRangeName, 0);
+    const attackAnimationKey = ensureUnitAnimation(
+      this.scene,
+      attackAnimation,
+      attackPlayback?.rangeName ?? "default",
+      0
+    );
     const hasAttackAnimation = Boolean(attackAnimationKey && attackRange);
 
     const offsetX = Math.sign(directionX) * Math.max(5, (this.cellSize ?? 40) * 0.12);
@@ -685,7 +696,12 @@ export class UnitLayer {
     }));
 
     if (hasAttackAnimation) {
-      this.setVisualTexture(entity, attackAnimation.key, attackPlayback.startFrame, false);
+      this.setVisualTexture(
+        entity,
+        attackAnimation.key,
+        attackPlayback.startFrame,
+        attackPlayback.flipX ?? false
+      );
       entity.visual.play?.(attackAnimationKey);
       entity.animationTimer = this.scene.time.delayedCall(
         attackPlayback.durationMs,
@@ -697,7 +713,7 @@ export class UnitLayer {
     }
 
     if (callbacks.onImpact) {
-      this.scene.time.delayedCall(BATTLE_ATTACK_IMPACT_DELAY_MS, callbacks.onImpact);
+      this.scene.time.delayedCall(impactDelayMs, callbacks.onImpact);
     }
   }
 

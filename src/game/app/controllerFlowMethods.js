@@ -23,6 +23,11 @@ export const controllerFlowMethods = {
       this.battleNoticeTimer = null;
     }
 
+    if (this.battleCombatCutsceneTimer) {
+      clearTimeout(this.battleCombatCutsceneTimer);
+      this.battleCombatCutsceneTimer = null;
+    }
+
     this.state.battleUi = createBattleUiState();
   },
 

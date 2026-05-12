@@ -49,8 +49,24 @@ export function getUnitDefaultTexture(visualSpec, owner = "player") {
 }
 
 export function getAttackAnimationPlayback(owner, attackAnimation, directionX = 0) {
-  const rangeName = getUnitAttackRangeName(owner, directionX);
-  const range = getAnimationRange(attackAnimation, rangeName);
+  const requestedRangeName = getUnitAttackRangeName(owner, directionX);
+  const oppositeRangeName = requestedRangeName === "left" ? "right" : "left";
+  let rangeName = requestedRangeName;
+  let range = getAnimationRange(attackAnimation, rangeName);
+  let flipX = false;
+
+  if (!range) {
+    const oppositeRange = getAnimationRange(attackAnimation, oppositeRangeName);
+
+    if (oppositeRange) {
+      rangeName = oppositeRangeName;
+      range = oppositeRange;
+      flipX = true;
+    } else {
+      rangeName = "default";
+      range = getAnimationRange(attackAnimation, "default");
+    }
+  }
 
   if (!attackAnimation?.key || !range) {
     return null;
@@ -60,6 +76,7 @@ export function getAttackAnimationPlayback(owner, attackAnimation, directionX = 
     rangeName,
     range,
     startFrame: range.start,
+    flipX,
     durationMs: Math.max(
       1,
       Math.round((getAnimationRangeFrameCount(range) / Math.max(1, attackAnimation.frameRate)) * 1000),

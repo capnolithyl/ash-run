@@ -36,6 +36,7 @@ export function createBattleUiState() {
     fundsGain: null,
     notice: null,
     powerOverlay: null,
+    combatCutscene: null,
     hoveredTile: null,
     playerFocus: null,
     enemyFocus: null

@@ -8,6 +8,7 @@ import {
 } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
+import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { renderBattleHudView } from "../src/ui/views/battleHudView.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
@@ -429,6 +430,129 @@ test("battle HUD renders commander power activation overlays", () => {
   assert.match(html, /Player Power Activated/);
   assert.match(html, /Blitz Surge/);
   assert.match(html, /Viper/);
+});
+
+test("battle HUD renders the combat cutscene overlay with stable sprite layers and split lanes", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  battleState.map.tiles[attacker.y][attacker.x] = TERRAIN_KEYS.FOREST;
+  battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.RIDGE;
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  const after = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(before, after);
+  const html = renderBattleHudView({
+    battleSnapshot: after,
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      notice: null,
+      powerOverlay: null,
+      combatCutscene: {
+        id: "cutscene-1",
+        startedAt: Date.now() - 820,
+        ...cutscene
+      },
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        combatCutsceneAnimations: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /battle-overlay--combat-cutscene/);
+  assert.match(html, /data-combat-cutscene-id="cutscene-1"/);
+  assert.match(html, /combat-cutscene__header-pill">HP<\/div>/);
+  assert.match(html, /combat-cutscene__lane combat-cutscene__lane--player[\s\S]*data-terrain-id="forest"/);
+  assert.match(html, /combat-cutscene__lane combat-cutscene__lane--enemy[\s\S]*data-terrain-id="ridge"/);
+  assert.match(html, /data-cutscene-hp-fill="player"/);
+  assert.match(html, /data-cutscene-hp-fill="enemy"/);
+  assert.match(html, /combat-cutscene__sprite-actor[\s\S]*combat-cutscene__sprite-layer--idle[\s\S]*combat-cutscene__sprite-layer--attack/);
+  assert.match(html, /combat-cutscene__sprite-sheet-viewport/);
+  assert.match(html, /data-cutscene-attack-strip="player"/);
+  assert.match(html, /data-cutscene-attack-strip="enemy"/);
+  assert.match(html, /assets\/sprites\/units\/player\/grunt\/grunt-attack\.png/);
+  assert.match(html, /assets\/sprites\/units\/enemy\/grunt\/grunt-attack\.png/);
+  assert.doesNotMatch(html, /assets\/sprites\/units\/player\/grunt\.svg/);
+  assert.doesNotMatch(html, /grunt-idle\.png/);
+  assert.doesNotMatch(html, /combat-cutscene__sprite-figure/);
+  assert.match(html, /combat-cutscene__footer[\s\S]*Rifle/i);
+});
+
+test("battle HUD keeps the combat cutscene overlay hidden until movement lead-in finishes", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  const after = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(before, after);
+  const html = renderBattleHudView({
+    battleSnapshot: after,
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      notice: null,
+      powerOverlay: null,
+      combatCutscene: {
+        id: "cutscene-hidden",
+        startedAt: Date.now(),
+        ...cutscene,
+        revealStartMs: 320
+      },
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        combatCutsceneAnimations: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /battle-overlay--combat-cutscene-hidden/);
 });
 
 test("battle HUD includes drawer toggles and footer turn controls", () => {

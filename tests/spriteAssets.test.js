@@ -15,6 +15,7 @@ import {
   getUnitSpriteDefinition,
   getUnitSpriteKey
 } from "../src/game/phaser/assets.js";
+import { GENERATED_UNIT_SPRITE_ANIMATIONS } from "../src/game/phaser/generated/unitSpriteAnimations.js";
 
 function resolveSpritePath(url) {
   return path.resolve(process.cwd(), url.replace(/^\.\//, ""));
@@ -115,11 +116,11 @@ function isWorkingSpriteSource(filePath) {
   const relativePath = path.relative(path.resolve(process.cwd(), "assets/sprites"), filePath);
   const parts = relativePath.split(path.sep);
 
-  if (parts.length !== 2 || parts[0] !== "terrain") {
+  if (parts.length < 2) {
     return false;
   }
 
-  return path.basename(parts[1]).startsWith("_");
+  return path.basename(filePath).startsWith("_");
 }
 
 test("sprite manifest covers all active unit, terrain, and building content", () => {
@@ -225,19 +226,29 @@ test("unit sprite sheets are preferred over static fallbacks when present", () =
   assert.equal(spriteDefinition.idle.key, "spritesheet:units:player:bruiser:idle");
   assert.equal(spriteDefinition.idle.frameCount, 3);
   assert.deepEqual(spriteDefinition.idle.ranges.default, { start: 0, end: 2 });
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.player.frameWidth, 128);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.player.frameHeight, 128);
 });
 
-test("unit animation manifest supports owner-specific omissions and directional attacks", () => {
+test("unit animation manifest supports owner-specific omissions and mirrored attacks", () => {
   const playerGruntDefinition = getUnitSpriteDefinition("grunt", "player");
   const enemyGruntDefinition = getUnitSpriteDefinition("grunt", "enemy");
+  const playerBreakerDefinition = getUnitSpriteDefinition("breaker", "player");
+  const enemyBreakerDefinition = getUnitSpriteDefinition("breaker", "enemy");
+  const enemyBruiserDefinition = getUnitSpriteDefinition("bruiser", "enemy");
 
-  assert.equal(playerGruntDefinition.idle, null);
-  assert.equal(playerGruntDefinition.fallbackUrl, "./assets/sprites/units/player/grunt.svg");
+  assert.equal(playerGruntDefinition.idle.key, "spritesheet:units:player:grunt:idle");
+  assert.deepEqual(playerGruntDefinition.idle.ranges.default, { start: 0, end: 1 });
   assert.ok(playerGruntDefinition.attack);
   assert.deepEqual(playerGruntDefinition.attack.ranges.left, { start: 0, end: 2 });
-  assert.deepEqual(playerGruntDefinition.attack.ranges.right, { start: 3, end: 5 });
   assert.equal(enemyGruntDefinition.idle.key, "spritesheet:units:enemy:grunt:idle");
   assert.equal(enemyGruntDefinition.idle.frameCount, 2);
+  assert.equal(playerBreakerDefinition.idle.key, "spritesheet:units:player:breaker:idle");
+  assert.deepEqual(playerBreakerDefinition.attack.ranges.left, { start: 0, end: 2 });
+  assert.equal(enemyBreakerDefinition.idle.key, "spritesheet:units:enemy:breaker:idle");
+  assert.deepEqual(enemyBreakerDefinition.attack.ranges.left, { start: 0, end: 2 });
+  assert.equal(enemyBruiserDefinition.idle.key, "spritesheet:units:enemy:bruiser:idle");
+  assert.equal(enemyBruiserDefinition.attack, null);
 });
 
 test("sprite folders only contain manifest assets or documented source masters", () => {

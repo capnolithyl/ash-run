@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import {
+  BATTLE_ATTACK_IMPACT_DELAY_MS,
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
@@ -829,6 +830,8 @@ export class BattleScene extends Phaser.Scene {
         .filter((event) => event.type === "destroy")
         .map((event) => [event.unitId, event])
     );
+    const combatCutscene = this.latestState?.battleUi?.combatCutscene ?? null;
+    const combatCutsceneActive = Boolean(combatCutscene);
     const attackDrivenDestroyUnitIds = new Set(
       attackEvents
         .filter((event) => destroyEventByUnitId.has(event.targetId))
@@ -896,28 +899,39 @@ export class BattleScene extends Phaser.Scene {
         }
 
         const event = attackEvents[index];
+        const cutsceneStep = combatCutscene?.steps?.[index] ?? null;
         const destroyEvent = destroyEventByUnitId.get(event.targetId);
+        const attackWindowMs = cutsceneStep?.windowMs ?? BATTLE_ATTACK_WINDOW_MS;
+        const impactDelayMs =
+          (cutsceneStep?.impactMs ?? 0) - (cutsceneStep?.startMs ?? 0) || BATTLE_ATTACK_IMPACT_DELAY_MS;
 
         this.unitLayer.playAttack(
           event.attackerId,
           event.toX - event.fromX,
           event.toY - event.fromY,
           {
+            impactDelayMs,
+            suppressVisuals: combatCutsceneActive,
             onStart: () => {
-              this.fxLayer.playAttack(event, layout);
+              if (!combatCutsceneActive) {
+                this.fxLayer.playAttack(event, layout);
+              }
 
               if (destroyEvent) {
-                this.unitLayer.scheduleDestroy(event.targetId, BATTLE_ATTACK_WINDOW_MS);
-                this.fxLayer.schedule(BATTLE_ATTACK_WINDOW_MS, () =>
+                this.unitLayer.scheduleDestroy(event.targetId, attackWindowMs);
+                this.fxLayer.schedule(attackWindowMs, () =>
                   this.fxLayer.playDestroy(destroyEvent, layout)
                 );
               }
 
-              this.fxLayer.schedule(BATTLE_ATTACK_WINDOW_MS, () => playAttackSequence(index + 1));
+              this.fxLayer.schedule(attackWindowMs, () => playAttackSequence(index + 1));
             },
             onImpact: () => {
               this.unitLayer.playDamage(event.targetId);
-              this.fxLayer.playDamageNumber(event, layout);
+
+              if (!combatCutsceneActive) {
+                this.fxLayer.playDamageNumber(event, layout);
+              }
             }
           }
         );
@@ -925,14 +939,27 @@ export class BattleScene extends Phaser.Scene {
 
       const firstAttack = attackEvents[0];
       const firstAttackMoveDelay = this.unitLayer.getMoveTweenRemaining(firstAttack.attackerId);
+      const combatCutsceneRevealStartMs = combatCutscene?.revealStartMs ?? 0;
+      const combatCutsceneLeadInDelay = combatCutsceneActive
+        ? Math.max(
+            0,
+            (combatCutscene?.steps?.[0]?.startMs ?? combatCutscene?.openMs ?? 0) -
+              combatCutsceneRevealStartMs
+          )
+        : 0;
 
       this.fxLayer.schedule(turnTransitionDelay, () => {
         if (firstAttackMoveDelay > 0) {
           this.unitLayer.queueAfterMovement(
             firstAttack.attackerId,
             () => playAttackSequence(0),
-            BATTLE_MOVE_SETTLE_MS
+            BATTLE_MOVE_SETTLE_MS + combatCutsceneLeadInDelay
           );
+          return;
+        }
+
+        if (combatCutsceneLeadInDelay > 0) {
+          this.fxLayer.schedule(combatCutsceneLeadInDelay, () => playAttackSequence(0));
           return;
         }
 

@@ -16,6 +16,12 @@
   .title-tank__track,
   .battle-notice,
   .battle-overlay--power,
+  .battle-overlay--combat-cutscene,
+  .combat-cutscene,
+  .combat-cutscene__body,
+  .combat-cutscene__lane::after,
+  .combat-cutscene__health-fill,
+  .combat-cutscene__sprite-sheet-image,
   .overlay-card--power,
   .commander-card__info-image,
   .commander-card__hover-overlay {

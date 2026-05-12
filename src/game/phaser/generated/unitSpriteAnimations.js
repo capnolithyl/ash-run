@@ -7,20 +7,29 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
       "frameWidth": 102,
       "frameHeight": 128,
       "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:grunt:idle",
+          "url": "./assets/sprites/units/player/grunt/grunt-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "animationKeyBase": "animation:units:player:grunt:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
         "attack": {
           "key": "spritesheet:units:player:grunt:attack",
           "url": "./assets/sprites/units/player/grunt/grunt-attack.png",
           "frameRate": 5,
-          "frameCount": 6,
+          "frameCount": 3,
           "animationKeyBase": "animation:units:player:grunt:attack",
           "ranges": {
             "left": {
               "start": 0,
               "end": 2
-            },
-            "right": {
-              "start": 3,
-              "end": 5
             }
           }
         }
@@ -47,16 +56,78 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "key": "spritesheet:units:enemy:grunt:attack",
           "url": "./assets/sprites/units/enemy/grunt/grunt-attack.png",
           "frameRate": 5,
-          "frameCount": 6,
+          "frameCount": 3,
           "animationKeyBase": "animation:units:enemy:grunt:attack",
           "ranges": {
             "left": {
               "start": 0,
               "end": 2
-            },
-            "right": {
-              "start": 3,
-              "end": 5
+            }
+          }
+        }
+      }
+    }
+  },
+  "breaker": {
+    "player": {
+      "frameWidth": 102,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:breaker:idle",
+          "url": "./assets/sprites/units/player/breaker/breaker-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "animationKeyBase": "animation:units:player:breaker:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:player:breaker:attack",
+          "url": "./assets/sprites/units/player/breaker/breaker-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "animationKeyBase": "animation:units:player:breaker:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    },
+    "enemy": {
+      "frameWidth": 102,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:enemy:breaker:idle",
+          "url": "./assets/sprites/units/enemy/breaker/breaker-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "animationKeyBase": "animation:units:enemy:breaker:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:enemy:breaker:attack",
+          "url": "./assets/sprites/units/enemy/breaker/breaker-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "animationKeyBase": "animation:units:enemy:breaker:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 2
             }
           }
         }
@@ -65,8 +136,8 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
   },
   "bruiser": {
     "player": {
-      "frameWidth": 64,
-      "frameHeight": 64,
+      "frameWidth": 128,
+      "frameHeight": 128,
       "animations": {
         "idle": {
           "key": "spritesheet:units:player:bruiser:idle",
@@ -74,6 +145,25 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "frameRate": 5,
           "frameCount": 3,
           "animationKeyBase": "animation:units:player:bruiser:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    },
+    "enemy": {
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:enemy:bruiser:idle",
+          "url": "./assets/sprites/units/enemy/bruiser/bruiser-idle.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "animationKeyBase": "animation:units:enemy:bruiser:idle",
           "ranges": {
             "default": {
               "start": 0,

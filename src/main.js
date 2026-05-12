@@ -8,4 +8,11 @@ const uiRoot = document.getElementById("ui-root");
 
 const controller = new GameController();
 new AppShell(uiRoot, controller);
-createGame(gameRoot, controller);
+const game = createGame(gameRoot, controller);
+
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  window.__ASH_RUN_DEV__ = {
+    controller,
+    game
+  };
+}

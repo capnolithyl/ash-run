@@ -30,12 +30,39 @@ test("attack playback helper resolves the clip and duration for directional atta
     rangeName: "right",
     range: { start: 3, end: 5 },
     startFrame: 3,
+    flipX: false,
     durationMs: 600,
   });
   assert.deepEqual(getAttackAnimationPlayback("enemy", attackAnimation, 0), {
     rangeName: "left",
     range: { start: 0, end: 2 },
     startFrame: 0,
+    flipX: false,
+    durationMs: 600,
+  });
+});
+
+test("attack playback helper mirrors a single directional attack clip when needed", () => {
+  const attackAnimation = {
+    key: "spritesheet:units:player:grunt:attack",
+    frameRate: 5,
+    ranges: {
+      left: { start: 0, end: 2 },
+    },
+  };
+
+  assert.deepEqual(getAttackAnimationPlayback("player", attackAnimation, -1), {
+    rangeName: "left",
+    range: { start: 0, end: 2 },
+    startFrame: 0,
+    flipX: false,
+    durationMs: 600,
+  });
+  assert.deepEqual(getAttackAnimationPlayback("player", attackAnimation, 1), {
+    rangeName: "left",
+    range: { start: 0, end: 2 },
+    startFrame: 0,
+    flipX: true,
     durationMs: 600,
   });
 });

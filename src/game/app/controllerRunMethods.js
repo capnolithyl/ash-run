@@ -5,6 +5,7 @@ import {
 } from "../core/constants.js";
 import { canUnitEquipRunUpgrade, isGearUpgrade } from "../content/runUpgrades.js";
 import { getBattleSnapshotTransitionDurationMs } from "../phaser/view/battleAnimationEvents.js";
+import { deriveBattleCombatCutscene } from "../phaser/view/battleCombatCutscene.js";
 import {
   addRunIntel,
   applyBattleVictoryToRun,
@@ -28,6 +29,39 @@ import {
 
 function getEligibleGearRosterUnits(runState, reward) {
   return (runState?.roster ?? []).filter((unit) => canUnitEquipRunUpgrade(unit, reward));
+}
+
+function maybeSyncCombatCutscene(controller, previousSnapshot, nextSnapshot) {
+  if (controller.state.metaState.options.combatCutsceneAnimations === false) {
+    return;
+  }
+
+  const cutscene = deriveBattleCombatCutscene(previousSnapshot, nextSnapshot);
+
+  if (!cutscene) {
+    return;
+  }
+
+  if (controller.battleCombatCutsceneTimer) {
+    clearTimeout(controller.battleCombatCutsceneTimer);
+    controller.battleCombatCutsceneTimer = null;
+  }
+
+  const nextCutscene = {
+    id: `combat-cutscene-${++controller.battleCombatCutsceneSequence}`,
+    startedAt: Date.now(),
+    ...cutscene
+  };
+
+  controller.state.battleUi.combatCutscene = nextCutscene;
+  controller.battleCombatCutsceneTimer = setTimeout(() => {
+    controller.battleCombatCutsceneTimer = null;
+
+    if (controller.state.battleUi.combatCutscene?.id === nextCutscene.id) {
+      controller.state.battleUi.combatCutscene = null;
+      controller.emit();
+    }
+  }, nextCutscene.durationMs);
 }
 
 export const controllerRunMethods = {
@@ -347,7 +381,8 @@ export const controllerRunMethods = {
         previousSnapshot,
         this.state.battleSnapshot
       );
-      await delay(stepDelay);
+      const combatCutsceneDuration = this.state.battleUi.combatCutscene?.durationMs ?? 0;
+      await delay(Math.max(stepDelay, combatCutsceneDuration));
     }
 
     while (this.state.battleUi.pauseMenuOpen) {
@@ -420,6 +455,8 @@ export const controllerRunMethods = {
     ) {
       this.state.battleUi.enemyFocus = cloneFocusSelection(this.state.battleSnapshot.selection);
     }
+
+    maybeSyncCombatCutscene(this, previousSnapshot, nextSnapshot);
 
     this.emit();
 

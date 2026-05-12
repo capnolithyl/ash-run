@@ -278,6 +278,8 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
     type: idleAnimation ? "spritesheet" : "image",
     key: idleAnimation?.key ?? fallbackKey,
     url: idleAnimation?.url ?? fallbackAsset?.url ?? null,
+    frameWidth: animationBundle?.frameWidth ?? null,
+    frameHeight: animationBundle?.frameHeight ?? null,
     frameCount: idleAnimation?.ranges?.default
       ? idleAnimation.ranges.default.end - idleAnimation.ranges.default.start + 1
       : 1,

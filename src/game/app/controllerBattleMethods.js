@@ -39,7 +39,12 @@ function getPendingCaptureRewardContext(controller) {
 
 export const controllerBattleMethods = {
   openPauseMenu() {
-    if (!this.battleSystem || this.state.screen !== SCREEN_IDS.BATTLE || this.state.battleSnapshot?.victory) {
+    if (
+      !this.battleSystem ||
+      this.state.screen !== SCREEN_IDS.BATTLE ||
+      this.state.battleSnapshot?.victory ||
+      this.state.battleUi.combatCutscene
+    ) {
       return;
     }
 
@@ -63,6 +68,7 @@ export const controllerBattleMethods = {
       this.state.battleUi.pauseMenuOpen ||
         this.state.battleUi.fundsGain ||
         this.state.battleUi.powerOverlay ||
+        this.state.battleUi.combatCutscene ||
         this.state.battleSnapshot?.levelUpQueue?.length
     );
   },
