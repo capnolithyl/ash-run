@@ -465,7 +465,7 @@
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1;
-  cursor: help;
+  cursor: var(--cursor-help);
   transition:
     transform 160ms ease,
     border-color 160ms ease,

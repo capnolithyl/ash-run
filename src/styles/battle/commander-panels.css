@@ -346,7 +346,7 @@
   color: inherit;
   font: inherit;
   text-align: center;
-  cursor: help;
+  cursor: var(--cursor-help);
   transition:
     transform 160ms ease,
     filter 160ms ease,
@@ -722,7 +722,7 @@
 }
 
 .commander-power-button--readonly {
-  cursor: default;
+  cursor: var(--cursor-default);
 }
 
 .commander-power-button--readonly:hover {
@@ -803,6 +803,35 @@
   background: transparent;
 }
 
+.commander-meter__active-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  padding: 0.08rem 0.46rem 0.02rem;
+  border-radius: 999px;
+  color: #fff9e8;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.03) 32%
+    ),
+    rgba(11, 4, 20, 0.7);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--side-color) 18%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent) 12%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
 .commander-meter__segment {
   position: relative;
   display: block;
@@ -832,6 +861,7 @@
 }
 
 .commander-meter__segments--active .commander-meter__segment {
+  opacity: 0.42;
   filter: brightness(1.08) saturate(1.08)
     drop-shadow(0 0 10px color-mix(in srgb, var(--side-color) 22%, transparent))
     drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 18%, transparent));

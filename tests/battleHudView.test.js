@@ -704,6 +704,7 @@ test("battle HUD keeps the power meter visually active for the rest of the activ
 
   assert.match(html, /commander-power-button--active/);
   assert.match(html, /commander-meter__segments--active/);
+  assert.match(html, /commander-meter__active-label[^>]*>ACTIVE<\/span>/);
   assert.match(html, /commander-panel-shell--power-active/);
   assert.match(html, /commander-panel--power-active/);
   assert.match(html, /--commander-active-glow-delay:-\d+ms/);

@@ -147,6 +147,9 @@ function renderCommanderPowerSegments(sideState, powerMax, { isActive = false } 
   const ariaLabel = isActive
     ? "Commander power active. Meter is fully charged."
     : `Commander power ${displayCharge} of ${powerMax}. Each segment is worth ${COMMANDER_POWER_SEGMENT_VALUE} points.`;
+  const activeLabel = isActive
+    ? '<span class="commander-meter__active-label" aria-hidden="true">ACTIVE</span>'
+    : "";
 
   return `
     <div
@@ -159,6 +162,7 @@ function renderCommanderPowerSegments(sideState, powerMax, { isActive = false } 
       aria-label="${ariaLabel}"
     >
       ${segments}
+      ${activeLabel}
     </div>
   `;
 }

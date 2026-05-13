@@ -91,9 +91,21 @@
     rgba(255, 171, 103, 0.98),
     rgba(187, 110, 255, 0.98)
   );
-  --cursor-default: auto;
-  --cursor-action: pointer;
-  --cursor-disabled: not-allowed;
+  /* Chromium can use .cur directly and falls back to the keyword if an animated .ani is ignored. */
+  --cursor-default: url("../../../assets/cursor/retrowave_arrow.cur"), auto;
+  --cursor-action: url("../../../assets/cursor/retrowave_link.ani"), pointer;
+  --cursor-disabled: url("../../../assets/cursor/retrowave_unavail.cur"), not-allowed;
+  --cursor-help: url("../../../assets/cursor/retrowave_help.cur"), help;
+  --cursor-text: url("../../../assets/cursor/retrowave_beam.cur"), text;
+  --cursor-crosshair: url("../../../assets/cursor/retrowave_cross.cur"), crosshair;
+  --cursor-pen: url("../../../assets/cursor/retrowave_pen.cur"), pointer;
+  --cursor-progress: url("../../../assets/cursor/retrowave_wait.ani"), progress;
+  --cursor-wait: url("../../../assets/cursor/retrowave_busy.ani"), wait;
+  --cursor-move: url("../../../assets/cursor/retrowave_move.ani"), move;
+  --cursor-resize-ns: url("../../../assets/cursor/retrowave_ns.ani"), ns-resize;
+  --cursor-resize-ew: url("../../../assets/cursor/retrowave_ew.ani"), ew-resize;
+  --cursor-resize-nwse: url("../../../assets/cursor/retrowave_nwse.ani"), nwse-resize;
+  --cursor-resize-nesw: url("../../../assets/cursor/retrowave_nesw.ani"), nesw-resize;
   --screen-edge-gutter: clamp(0.65rem, 1.15vw, 1.25rem);
   --compact-panel-padding: 0.9rem;
   --compact-footer-height: 4.25rem;
@@ -124,6 +136,7 @@ body {
   overflow: hidden;
   color: var(--text);
   font-family: var(--font-body);
+  cursor: var(--cursor-default);
   background:
     radial-gradient(
       circle at 18% 18%,
@@ -177,8 +190,53 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+button,
+a[href],
+select,
+summary,
+label[for],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: var(--cursor-action);
+}
+
+input[type="range"] {
+  cursor: var(--cursor-resize-ew);
+}
+
+input:not(
+    [type="button"]
+  ):not(
+    [type="submit"]
+  ):not(
+    [type="reset"]
+  ):not(
+    [type="checkbox"]
+  ):not(
+    [type="radio"]
+  ):not(
+    [type="range"]
+  ),
+textarea,
+[contenteditable=""],
+[contenteditable="true"] {
+  cursor: var(--cursor-text);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: var(--cursor-disabled);
 }
 
 #app {
@@ -187,6 +245,15 @@ input {
 
 #game-root canvas {
   touch-action: none;
+  cursor: var(--cursor-default);
+}
+
+body:has(#ui-root .battle-shell:not(.map-editor-shell)) #game-root canvas {
+  cursor: var(--cursor-crosshair);
+}
+
+body:has(#ui-root .map-editor-shell) #game-root canvas {
+  cursor: var(--cursor-pen);
 }
 
 #game-root,

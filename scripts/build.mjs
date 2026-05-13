@@ -32,7 +32,9 @@ await build({
   platform: "browser",
   sourcemap: true,
   loader: {
+    ".ani": "file",
     ".css": "css",
+    ".cur": "file",
     ".png": "file",
     ".jpg": "file",
     ".jpeg": "file",

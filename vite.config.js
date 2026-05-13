@@ -6,6 +6,7 @@ import path from "node:path";
  */
 export default {
   root: process.cwd(),
+  assetsInclude: ["**/*.cur", "**/*.ani"],
   server: {
     host: "127.0.0.1",
     port: 5173,
