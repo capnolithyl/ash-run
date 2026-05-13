@@ -41,3 +41,22 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /Command Post/);
   assert.doesNotMatch(html, /disabled/);
 });
+
+test("map editor accordions render closed by default and only open the requested section", () => {
+  const state = {
+    mapEditor: createDefaultMapEditorState(createBlankMapDefinition({ id: "accordion-map" }))
+  };
+
+  const closedHtml = renderMapEditorView(state);
+  assert.doesNotMatch(closedHtml, /<details[^>]*data-map-editor-accordion="terrain"[^>]*\sopen/);
+  assert.doesNotMatch(closedHtml, /<details[^>]*data-map-editor-accordion="buildings"[^>]*\sopen/);
+  assert.doesNotMatch(closedHtml, /<details[^>]*data-map-editor-accordion="units"[^>]*\sopen/);
+  assert.doesNotMatch(closedHtml, /<details[^>]*data-map-editor-accordion="mirror"[^>]*\sopen/);
+
+  const openHtml = renderMapEditorView(state, { openAccordion: "units" });
+  assert.match(openHtml, /<details[^>]*data-map-editor-accordion="units"[^>]*\sopen/);
+  assert.match(openHtml, /map-editor-accordion__content/);
+  assert.doesNotMatch(openHtml, /<details[^>]*data-map-editor-accordion="terrain"[^>]*\sopen/);
+  assert.doesNotMatch(openHtml, /<details[^>]*data-map-editor-accordion="buildings"[^>]*\sopen/);
+  assert.doesNotMatch(openHtml, /<details[^>]*data-map-editor-accordion="mirror"[^>]*\sopen/);
+});

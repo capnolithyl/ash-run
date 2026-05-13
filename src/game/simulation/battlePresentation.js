@@ -92,6 +92,30 @@ function describeTerrain(terrain, terrainId = null) {
   };
 }
 
+function describeEditableUnit(unit) {
+  if (!unit) {
+    return null;
+  }
+
+  return {
+    hp: unit.current.hp,
+    maxHealth: unit.stats.maxHealth,
+    attack: unit.stats.attack,
+    armor: unit.stats.armor,
+    movement: unit.stats.movement,
+    minRange: unit.stats.minRange,
+    maxRange: unit.stats.maxRange,
+    stamina: unit.current.stamina,
+    staminaMax: unit.stats.staminaMax,
+    ammo: unit.current.ammo,
+    ammoMax: unit.stats.ammoMax,
+    luck: unit.stats.luck,
+    level: unit.level,
+    experience: unit.experience,
+    gearSlot: unit.gear?.slot ?? null
+  };
+}
+
 export function describeUnit(state, unit) {
   if (!unit) {
     return null;
@@ -134,6 +158,7 @@ export function describeUnit(state, unit) {
     ),
     hasMoved: unit.hasMoved,
     hasAttacked: unit.hasAttacked,
+    editable: describeEditableUnit(unit),
     gear: gearUpgrade
       ? {
           slot: gearUpgrade.id,

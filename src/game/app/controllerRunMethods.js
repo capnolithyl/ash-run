@@ -471,12 +471,12 @@ export const controllerRunMethods = {
     }
   },
 
-  async debugSpawnUnit({ owner, unitTypeId, x, y, stats }) {
+  async debugSpawnUnit({ owner, unitTypeId, x, y, stats, gearSlot = null }) {
     if (!this.battleSystem || !this.state.debugMode) {
       return;
     }
 
-    const changed = this.battleSystem.spawnDebugUnit(unitTypeId, owner, x, y, stats);
+    const changed = this.battleSystem.spawnDebugUnit(unitTypeId, owner, x, y, stats, gearSlot);
 
     if (changed) {
       await this.persistCurrentRun();

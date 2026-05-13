@@ -26,6 +26,28 @@ export const appShellEventMethods = {
         input.value = selectedOption.dataset[datasetKey] ?? "";
       }
     }
+
+    const gearSelect = this.root.querySelector('[data-debug-field="spawn-gear-slot"]');
+
+    if (!gearSelect) {
+      return;
+    }
+
+    const selectedFamily = selectedOption.dataset.family ?? "";
+
+    for (const option of gearSelect.options) {
+      if (!option.value) {
+        option.disabled = false;
+        continue;
+      }
+
+      option.disabled =
+        Boolean(option.dataset.eligibleFamily) && option.dataset.eligibleFamily !== selectedFamily;
+    }
+
+    if (gearSelect.selectedOptions[0]?.disabled) {
+      gearSelect.value = "";
+    }
   },
 
   async handleContextMenu(event) {
@@ -38,6 +60,20 @@ export const appShellEventMethods = {
 
     event.preventDefault();
     await this.controller.handleBattleContextAction();
+  },
+
+  handleToggle(event) {
+    if (this.latestState?.screen !== SCREEN_IDS.MAP_EDITOR) {
+      return;
+    }
+
+    const accordion = event.target;
+
+    if (!accordion?.matches?.("details[data-map-editor-accordion]")) {
+      return;
+    }
+
+    this.captureMapEditorUiState();
   },
 
   async handleClick(event) {
@@ -209,6 +245,15 @@ export const appShellEventMethods = {
       case "map-editor-select-building-owner":
         this.controller.selectMapEditorBuildingOwner(trigger.dataset.buildingOwner);
         break;
+      case "map-editor-select-unit":
+        this.controller.selectMapEditorUnitType(trigger.dataset.unitTypeId);
+        break;
+      case "map-editor-select-unit-owner":
+        this.controller.selectMapEditorUnitOwner(trigger.dataset.unitOwner);
+        break;
+      case "map-editor-set-mirror-mode":
+        this.controller.setMapEditorMirrorMode(trigger.dataset.mirrorMode);
+        break;
       case "map-editor-export": {
         const exportedMap = this.controller.exportMapEditorMap();
         if (!exportedMap) break;
@@ -292,6 +337,7 @@ export const appShellEventMethods = {
           unitTypeId: this.getDebugField("spawn-unit-type", "grunt"),
           x: this.getDebugNumberField("spawn-x", 0),
           y: this.getDebugNumberField("spawn-y", 0),
+          gearSlot: this.getDebugField("spawn-gear-slot", ""),
           stats: {
             attack: this.getDebugNumberField("spawn-attack", NaN),
             armor: this.getDebugNumberField("spawn-armor", NaN),
@@ -320,7 +366,8 @@ export const appShellEventMethods = {
           ammoMax: this.getDebugNumberField("unit-max-ammo", NaN),
           luck: this.getDebugNumberField("unit-luck", NaN),
           level: this.getDebugNumberField("unit-level", NaN),
-          experience: this.getDebugNumberField("unit-experience", NaN)
+          experience: this.getDebugNumberField("unit-experience", NaN),
+          gearSlot: this.getDebugField("unit-gear-slot", "")
         });
         break;
       case "debug-apply-commanders":

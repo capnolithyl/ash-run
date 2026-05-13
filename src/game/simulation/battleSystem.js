@@ -239,8 +239,8 @@ export class BattleSystem {
     return structuredClone(this.state.lastPowerResult);
   }
 
-  spawnDebugUnit(unitTypeId, owner, x, y, statOverrides = {}) {
-    return debugActions.spawnDebugUnit(this, unitTypeId, owner, x, y, statOverrides);
+  spawnDebugUnit(unitTypeId, owner, x, y, statOverrides = {}, gearSlot = null) {
+    return debugActions.spawnDebugUnit(this, unitTypeId, owner, x, y, statOverrides, gearSlot);
   }
 
   applyDebugStatsToSelectedUnit(debugPatch) {

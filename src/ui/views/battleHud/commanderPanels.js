@@ -187,13 +187,17 @@ export function renderCommanderPanel(
           ${
             portraitImageUrl
               ? `
-                <img
-                  class="commander-panel__portrait"
-                  src="${portraitImageUrl}"
-                  alt="${commander.name} portrait"
-                  loading="lazy"
-                  decoding="async"
-                />
+                <div class="commander-panel__portrait-frame">
+                  <div class="commander-panel__portrait-mask">
+                    <img
+                      class="commander-panel__portrait"
+                      src="${portraitImageUrl}"
+                      alt="${commander.name} portrait"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                </div>
               `
               : ""
           }

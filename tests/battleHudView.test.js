@@ -48,6 +48,16 @@ function countMatches(text, pattern) {
   return text.match(pattern)?.length ?? 0;
 }
 
+function getBattleSidePanel(html, panelModifierClass) {
+  return (
+    html.match(
+      new RegExp(
+        `<aside class="battle-side-panel ${panelModifierClass}"[\\s\\S]*?<\\/aside>`
+      )
+    )?.[0] ?? ""
+  );
+}
+
 test("battle HUD shows hovered enemy stats while targeting", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 2);
@@ -290,8 +300,10 @@ test("battle HUD keeps player and enemy intel in separate sidebars", () => {
     banner: ""
   });
 
-  assert.match(html, /battle-rail--left[\s\S]*?Selected Unit[\s\S]*?Bruiser/);
-  assert.match(html, /battle-rail--right[\s\S]*?Target Intel[\s\S]*?Runner/);
+  assert.match(html, /class="battle-desktop-layout"/);
+  assert.match(html, /battle-side-panel--selected[\s\S]*?Selected Unit[\s\S]*?Bruiser/);
+  assert.match(html, /battle-side-stack--right[\s\S]*?Target Intel[\s\S]*?Runner/);
+  assert.match(html, /battle-side-panel--feed[\s\S]*?Command Feed/);
   assert.doesNotMatch(html, /Player Intel/);
   assert.doesNotMatch(html, /Enemy Intel/);
 });
@@ -356,9 +368,48 @@ test("battle HUD keeps enemy target intel available from enemy focus while a pla
     banner: ""
   });
 
-  assert.match(html, /battle-rail--left[\s\S]*?Selected Unit[\s\S]*?Grunt/);
-  assert.match(html, /battle-rail--right[\s\S]*?Target Intel[\s\S]*?Runner/);
-  assert.match(html, /battle-rail--right[\s\S]*?<span>Terrain<\/span>[\s\S]*?<strong>Road<\/strong>/);
+  assert.match(html, /battle-side-panel--selected[\s\S]*?Selected Unit[\s\S]*?Grunt/);
+  assert.match(html, /battle-side-stack--right[\s\S]*?Target Intel[\s\S]*?Runner/);
+  assert.match(html, /battle-side-stack--right[\s\S]*?<span>Terrain<\/span>[\s\S]*?<strong>Road<\/strong>/);
+});
+
+test("battle HUD keeps enemy selections out of the selected-unit panel in debug mode", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit]
+  });
+  battleState.selection = { type: "unit", id: enemyUnit.id, x: enemyUnit.x, y: enemyUnit.y };
+  const system = new BattleSystem(battleState);
+
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y },
+      enemyFocus: { type: "unit", id: enemyUnit.id, x: enemyUnit.x, y: enemyUnit.y }
+    },
+    debugMode: true,
+    runStatus: null,
+    banner: ""
+  });
+
+  const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+  const targetPanel = getBattleSidePanel(html, "battle-side-panel--target");
+
+  assert.match(selectedPanel, /Selected Unit/);
+  assert.match(selectedPanel, /Grunt/);
+  assert.doesNotMatch(selectedPanel, /Runner/);
+  assert.match(targetPanel, /Target Intel/);
+  assert.match(targetPanel, /Runner/);
 });
 
 test("battle HUD renders transient battle notices", () => {
@@ -780,7 +831,7 @@ test("reward-equip overlay shows eligible squad units and skip control", () => {
   assert.match(html, /data-action="discard-run-gear"/);
 });
 
-test("battle HUD shows gear details and AA ammo in the selection sidebar", () => {
+test("battle HUD keeps gear inside the loadout stack with tooltip details and ammo state", () => {
   const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   unit.gear = { slot: "gear-aa-kit" };
   unit.gearState = { aaKitAmmo: 4 };
@@ -791,9 +842,12 @@ test("battle HUD shows gear details and AA ammo in the selection sidebar", () =>
 
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, /<strong>Gear<\/strong>/);
-  assert.match(html, /AA Kit/);
-  assert.match(html, /AA Ammo:<\/strong> 4/);
+  assert.match(html, /<span>Gear<\/span>[\s\S]*?<strong>AA Kit<\/strong>/);
+  assert.match(html, /selection-loadout-card__meta[^"]*">4 ammo<\/span>/);
+  assert.match(html, /selection-loadout-card__info/);
+  assert.match(html, /Can attack and counter aircraft\./);
+  assert.match(html, /Uses 6 dedicated AA shots each map\./);
+  assert.doesNotMatch(html, /AA Ammo:<\/strong> 4/);
 });
 
 test("battle HUD places experience above HP and shows weapon and armor profiles for selected units", () => {
@@ -902,6 +956,7 @@ test("debug pause menu groups tools into accordion sections", () => {
   assert.match(html, /<strong>Commander Overrides<\/strong>/);
   assert.match(html, /<strong>Battle Shortcuts<\/strong>/);
   assert.match(html, /<strong>Selected Unit Overrides<\/strong>/);
+  assert.match(html, /Bruiser \| Tile 2, 2/);
   assert.match(html, /data-debug-field="spawn-owner"/);
   assert.match(html, /data-debug-field="player-commander"/);
   assert.match(html, /data-debug-field="enemy-commander"/);
@@ -951,6 +1006,11 @@ test("debug spawn fields start with the selected unit type defaults", () => {
     html,
     new RegExp(`data-debug-field="spawn-max-ammo" type="number" value="${defaultUnit.ammoMax}"`)
   );
+  assert.match(html, /data-debug-field="spawn-gear-slot"/);
+  assert.match(html, /value="gear-aa-kit"/);
+  assert.match(html, /value="gear-field-meds"/);
+  assert.match(html, /AA Kit \(Infantry\)/);
+  assert.match(html, /Field Medpack \(Infantry\)/);
 });
 
 test("debug commander overrides reflect the current battle commanders", () => {
@@ -991,4 +1051,148 @@ test("debug commander overrides reflect the current battle commanders", () => {
   assert.match(html, /data-debug-field="enemy-commander"[\s\S]*value="sable" selected/);
   assert.match(html, /data-debug-field="enemy-ai-archetype"[\s\S]*value="hq-rush" selected/);
   assert.match(html, /data-action="debug-apply-commanders"/);
+});
+
+test("selected unit debug overrides include the unit's current gear", () => {
+  const grunt = createPlacedUnit("grunt", "player", 1, 1);
+  grunt.gear = { slot: "gear-aa-kit" };
+  grunt.gearState = { aaKitAmmo: 3 };
+  const battleState = createTestBattleState({
+    playerUnits: [grunt]
+  });
+  battleState.selection = {
+    type: "unit",
+    id: grunt.id,
+    x: grunt.x,
+    y: grunt.y
+  };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: true,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: true,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /data-debug-field="unit-gear-slot"/);
+  assert.match(html, /data-debug-field="unit-gear-slot"[\s\S]*value="gear-aa-kit"[\s\S]*selected/);
+  assert.match(html, /data-debug-field="unit-max-stamina" type="number" value="60"/);
+  assert.match(html, /data-debug-field="unit-max-ammo" type="number" value="7"/);
+  assert.match(html, /data-debug-field="unit-luck" type="number" value="3"/);
+});
+
+test("selected unit debug overrides use raw editable stats while the sidebar keeps display-adjusted values", () => {
+  const grunt = createPlacedUnit("grunt", "player", 1, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [grunt]
+  });
+  battleState.player.commanderId = "viper";
+  battleState.selection = {
+    type: "unit",
+    id: grunt.id,
+    x: grunt.x,
+    y: grunt.y
+  };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: true,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: true,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /data-debug-field="unit-attack" type="number" value="62"/);
+  assert.match(html, /aria-label="ATK 74"/);
+});
+
+test("debug mode keeps enemy selections in target intel while debug overrides still follow the selection", () => {
+  const medic = createPlacedUnit("medic", TURN_SIDES.ENEMY, 4, 2);
+  medic.gear = { slot: "gear-field-meds" };
+  medic.gearState = {};
+  const battleState = createTestBattleState({
+    enemyUnits: [medic]
+  });
+  battleState.selection = {
+    type: "unit",
+    id: medic.id,
+    x: medic.x,
+    y: medic.y
+  };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: true,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        showGrid: true,
+        screenShake: true,
+        masterVolume: 0.4,
+        muted: false
+      }
+    },
+    debugMode: true,
+    runStatus: null,
+    banner: ""
+  });
+
+  const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+  const targetPanel = getBattleSidePanel(html, "battle-side-panel--target");
+
+  assert.match(selectedPanel, /Select a friendly unit, building, or tile to inspect it here\./);
+  assert.doesNotMatch(selectedPanel, /Medic/);
+  assert.match(targetPanel, /<strong>Medic<\/strong>/);
+  assert.match(targetPanel, /<span>Gear<\/span>[\s\S]*?<strong>Field Medpack<\/strong>[\s\S]*?1 use/);
+  assert.match(targetPanel, /Can target self or an adjacent infantry ally\./);
+  assert.match(html, /<strong>Selected Unit Overrides<\/strong>[\s\S]*?<small>Medic[\s\S]*?<\/small>/);
 });

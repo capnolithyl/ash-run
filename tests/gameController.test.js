@@ -637,3 +637,150 @@ test("sandbox commander overrides update both battle sides without saving a run"
   assert.equal(state.battleSnapshot.enemy.commanderId, "sable");
   assert.equal(state.battleSnapshot.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.HQ_RUSH);
 });
+
+test("sandbox debug spawning can equip infantry gear", async () => {
+  const controller = new GameController();
+  const system = new BattleSystem(createTestBattleState());
+
+  controller.battleSystem = system;
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.debugMode = true;
+
+  await controller.debugSpawnUnit({
+    owner: TURN_SIDES.PLAYER,
+    unitTypeId: "grunt",
+    x: 3,
+    y: 2,
+    gearSlot: "gear-aa-kit",
+    stats: {}
+  });
+
+  const spawnedUnit = controller
+    .battleSystem.state.player.units.find((unit) => unit.x === 3 && unit.y === 2);
+  const battleUi = controller.getState().battleUi;
+
+  assert.ok(spawnedUnit);
+  assert.equal(spawnedUnit.gear?.slot, "gear-aa-kit");
+  assert.equal(spawnedUnit.gearState?.aaKitAmmo, 6);
+  assert.equal(battleUi.playerFocus?.id, spawnedUnit.id);
+  assert.equal(controller.getState().battleSnapshot.presentation.selectedTile.unit.gear?.slot, "gear-aa-kit");
+  assert.equal(controller.getState().battleSnapshot.presentation.selectedTile.unit.gear?.ammo, 6);
+});
+
+test("sandbox debug spawning surfaces field medpack gear in the selected unit snapshot", async () => {
+  const controller = new GameController();
+  const system = new BattleSystem(createTestBattleState());
+
+  controller.battleSystem = system;
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.debugMode = true;
+
+  await controller.debugSpawnUnit({
+    owner: TURN_SIDES.PLAYER,
+    unitTypeId: "medic",
+    x: 4,
+    y: 2,
+    gearSlot: "gear-field-meds",
+    stats: {}
+  });
+
+  const selectedUnit = controller.getState().battleSnapshot.presentation.selectedTile.unit;
+  assert.equal(controller.getState().battleUi.playerFocus?.id, selectedUnit.id);
+  assert.equal(selectedUnit.name, "Medic");
+  assert.equal(selectedUnit.gear?.slot, "gear-field-meds");
+  assert.equal(selectedUnit.gear?.name, "Field Medpack");
+});
+
+test("sandbox selected-unit stat edits preserve gear state unless the gear changes", async () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const battleState = createTestBattleState({
+    playerUnits: [grunt]
+  });
+  battleState.selection = {
+    type: "unit",
+    id: grunt.id,
+    x: grunt.x,
+    y: grunt.y
+  };
+
+  const controller = new GameController();
+  const system = new BattleSystem(battleState);
+
+  controller.battleSystem = system;
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.debugMode = true;
+
+  await controller.debugApplySelectedUnitStats({
+    gearSlot: "gear-aa-kit"
+  });
+
+  let selectedUnit = controller.getState().battleSnapshot.presentation.selectedTile.unit;
+  assert.equal(selectedUnit.editable?.attack, 62);
+  assert.equal(selectedUnit.gear?.slot, "gear-aa-kit");
+  assert.equal(selectedUnit.gear?.ammo, 6);
+
+  controller.battleSystem.state.player.units[0].gearState.aaKitAmmo = 2;
+
+  await controller.debugApplySelectedUnitStats({
+    hp: 77,
+    attack: 9,
+    gearSlot: "gear-aa-kit"
+  });
+
+  const internalUnit = controller.battleSystem.state.player.units[0];
+  selectedUnit = controller.getState().battleSnapshot.presentation.selectedTile.unit;
+  assert.equal(internalUnit.stats.attack, 9);
+  assert.equal(internalUnit.current.hp, 77);
+  assert.equal(selectedUnit.editable?.attack, 9);
+  assert.equal(selectedUnit.editable?.hp, 77);
+  assert.equal(selectedUnit.gear?.slot, "gear-aa-kit");
+  assert.equal(selectedUnit.gear?.ammo, 2);
+  assert.match(
+    controller.getState().battleSnapshot.log[0] ?? "",
+    /\[Debug\] Updated Grunt at 2,2 \(Gear: AA Kit\)\./
+  );
+});
+
+test("sandbox selected-unit stat edits can clear and replace gear while resetting gear state only on gear change", async () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  grunt.gear = { slot: "gear-aa-kit" };
+  grunt.gearState = { aaKitAmmo: 2 };
+  const battleState = createTestBattleState({
+    playerUnits: [grunt]
+  });
+  battleState.selection = {
+    type: "unit",
+    id: grunt.id,
+    x: grunt.x,
+    y: grunt.y
+  };
+
+  const controller = new GameController();
+  const system = new BattleSystem(battleState);
+
+  controller.battleSystem = system;
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.debugMode = true;
+
+  await controller.debugApplySelectedUnitStats({
+    gearSlot: ""
+  });
+
+  let internalUnit = controller.battleSystem.state.player.units[0];
+  let selectedUnit = controller.getState().battleSnapshot.presentation.selectedTile.unit;
+  assert.equal(internalUnit.gear.slot, null);
+  assert.deepEqual(internalUnit.gearState, {});
+  assert.equal(selectedUnit.editable?.gearSlot, null);
+  assert.equal(selectedUnit.gear, null);
+
+  await controller.debugApplySelectedUnitStats({
+    gearSlot: "gear-field-meds"
+  });
+
+  internalUnit = controller.battleSystem.state.player.units[0];
+  selectedUnit = controller.getState().battleSnapshot.presentation.selectedTile.unit;
+  assert.equal(internalUnit.gear.slot, "gear-field-meds");
+  assert.deepEqual(internalUnit.gearState, {});
+  assert.equal(selectedUnit.editable?.gearSlot, "gear-field-meds");
+  assert.equal(selectedUnit.gear?.slot, "gear-field-meds");
+});

@@ -38,6 +38,7 @@ function renderUnitPreview(unitTypeId, unitName) {
         class="run-unit-card__preview-image run-unit-card__preview-image--sheet"
         role="img"
         aria-label="${unitName} battlefield animation preview"
+        data-fallback-src="${spriteDefinition.fallbackUrl ?? ""}"
       >
         <div
           class="run-unit-card__preview-strip"

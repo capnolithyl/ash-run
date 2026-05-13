@@ -1,12 +1,15 @@
 import { BUILDING_KEYS, SCREEN_IDS, TERRAIN_KEYS, TURN_SIDES } from "../core/constants.js";
+import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import {
   applyMapEditorTool,
   createBlankMapDefinition,
   createDefaultMapEditorState,
   exportMapDefinition,
   getMapEditorValidation,
+  MAP_EDITOR_MIRROR_MODES,
   MAP_EDITOR_TOOL_IDS,
-  normalizeMapDefinition
+  normalizeMapDefinition,
+  resizeMapDefinition
 } from "../content/mapEditor.js";
 import { MAP_THEME_PALETTES } from "../content/terrain.js";
 
@@ -48,12 +51,6 @@ export const controllerMapEditorMethods = {
 
     this.state.mapEditor.selectedTool = toolId;
 
-    if (toolId === MAP_EDITOR_TOOL_IDS.PLAYER_SPAWN) {
-      this.state.mapEditor.selectedSpawnSide = TURN_SIDES.PLAYER;
-    } else if (toolId === MAP_EDITOR_TOOL_IDS.ENEMY_SPAWN) {
-      this.state.mapEditor.selectedSpawnSide = TURN_SIDES.ENEMY;
-    }
-
     this.emit();
   },
 
@@ -86,16 +83,31 @@ export const controllerMapEditorMethods = {
     this.emit();
   },
 
-  selectMapEditorSpawnSide(side) {
-    if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(side)) {
+  selectMapEditorUnitType(unitTypeId) {
+    if (!Object.hasOwn(UNIT_CATALOG, unitTypeId)) {
       return;
     }
 
-    this.state.mapEditor.selectedSpawnSide = side;
-    this.state.mapEditor.selectedTool =
-      side === TURN_SIDES.PLAYER
-        ? MAP_EDITOR_TOOL_IDS.PLAYER_SPAWN
-        : MAP_EDITOR_TOOL_IDS.ENEMY_SPAWN;
+    this.state.mapEditor.selectedUnitTypeId = unitTypeId;
+    this.state.mapEditor.selectedTool = MAP_EDITOR_TOOL_IDS.UNIT;
+    this.emit();
+  },
+
+  selectMapEditorUnitOwner(owner) {
+    if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(owner)) {
+      return;
+    }
+
+    this.state.mapEditor.selectedUnitOwner = owner;
+    this.emit();
+  },
+
+  setMapEditorMirrorMode(mirrorMode) {
+    if (!Object.values(MAP_EDITOR_MIRROR_MODES).includes(mirrorMode)) {
+      return;
+    }
+
+    this.state.mapEditor.mirrorMode = mirrorMode;
     this.emit();
   },
 
@@ -116,6 +128,10 @@ export const controllerMapEditorMethods = {
       }
 
       mapData.theme = value;
+    } else if (field === "width" || field === "height") {
+      const nextWidth = field === "width" ? Number(value) : mapData.width;
+      const nextHeight = field === "height" ? Number(value) : mapData.height;
+      this.state.mapEditor.mapData = resizeMapDefinition(mapData, nextWidth, nextHeight);
     } else {
       return;
     }

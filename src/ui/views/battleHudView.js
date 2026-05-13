@@ -38,9 +38,18 @@ function renderBattleMeta(battleSnapshot) {
 
   return `
     <div class="battle-footer-meta" aria-label="Battle mission details">
-      <span><strong>Mission</strong> Ash Run</span>
-      <span><strong>Map</strong> ${mapName}</span>
-      <span><strong>Turn</strong> ${turnLabel}</span>
+      <span class="battle-footer-meta__item">
+        <strong>Mission</strong>
+        <em>Ash Run</em>
+      </span>
+      <span class="battle-footer-meta__item">
+        <strong>Map</strong>
+        <em>${mapName}</em>
+      </span>
+      <span class="battle-footer-meta__item">
+        <strong>Turn</strong>
+        <em>${turnLabel}</em>
+      </span>
     </div>
   `;
 }
@@ -132,6 +141,29 @@ function renderCompactIntelSheet(playerFocusTile, battleSnapshot, hoveredTile, e
   `;
 }
 
+function renderDesktopBattlePanels(battleSnapshot, hoveredTile, playerFocusTile, enemyFocusTile) {
+  return `
+    <div class="battle-desktop-layout">
+      <aside class="battle-side-panel battle-side-panel--selected" aria-label="Selected Unit Intel">
+        ${renderSelectionDetails(playerFocusTile, {
+          title: "Selected Unit",
+          emptyTitle: "Selected Unit",
+          emptyBody: "Select a friendly unit, building, or tile to inspect it here."
+        })}
+        ${renderRecruitPanel(battleSnapshot)}
+      </aside>
+      <div class="battle-side-stack battle-side-stack--right" aria-label="Target Intel and Command Feed">
+        <aside class="battle-side-panel battle-side-panel--target" aria-label="Target Intel">
+          ${renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)}
+        </aside>
+        <aside class="battle-side-panel battle-side-panel--feed" aria-label="Command Feed">
+          ${renderCommandFeed(battleSnapshot.log, hoveredTile)}
+        </aside>
+      </div>
+    </div>
+  `;
+}
+
 export function renderBattleHudView(state, options = {}) {
   const battleSnapshot = state.battleSnapshot;
   const suppressLevelUpOverlay = options.suppressLevelUpOverlay ?? false;
@@ -150,6 +182,7 @@ export function renderBattleHudView(state, options = {}) {
   const playerPowerEnabled = canActivatePlayerPower(battleSnapshot);
   const playerPowerCharged = isPlayerPowerCharged(battleSnapshot);
   const fundsGain = state.battleUi?.fundsGain ?? null;
+  const hoveredTile = state.battleUi?.hoveredTile ?? null;
   const showFunds = battleSnapshot.mode !== BATTLE_MODES.RUN;
   const playerPowerActive = battleSnapshot.player.powerUsedTurn === battleSnapshot.turn.number;
   const enemyPowerActive =
@@ -210,30 +243,11 @@ export function renderBattleHudView(state, options = {}) {
         </label>
       </div>
       ${renderBattleMeta(battleSnapshot)}
-      <aside class="battle-rail battle-rail--left">
-        <div class="battle-drawer-header">
-          <span>Selected Unit</span>
-          <label class="ghost-button ghost-button--small" for="battle-intel-drawer">Close</label>
-        </div>
-        ${renderSelectionDetails(playerFocusTile, {
-          title: "Selected Unit",
-          emptyTitle: "Selected Unit",
-          emptyBody: "Select a friendly unit, building, or tile to inspect it here."
-        })}
-        ${renderRecruitPanel(battleSnapshot)}
-      </aside>
-      <aside class="battle-rail battle-rail--right">
-        <div class="battle-drawer-header">
-          <span>Target Intel</span>
-          <label class="ghost-button ghost-button--small" for="battle-command-drawer">Close</label>
-        </div>
-        ${renderTargetIntelPanel(battleSnapshot, state.battleUi?.hoveredTile, enemyFocusTile)}
-        ${renderCommandFeed(battleSnapshot.log, state.battleUi?.hoveredTile)}
-      </aside>
+      ${renderDesktopBattlePanels(battleSnapshot, hoveredTile, playerFocusTile, enemyFocusTile)}
       ${renderCompactIntelSheet(
         playerFocusTile,
         battleSnapshot,
-        state.battleUi?.hoveredTile,
+        hoveredTile,
         enemyFocusTile
       )}
       ${renderActionPrompt(battleSnapshot)}

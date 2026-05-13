@@ -38,6 +38,13 @@ export class AppShell {
       command: false,
       intelTab: "selected"
     };
+    this.mapEditorUi = {
+      openAccordion: null,
+      leftRailScrollTop: 0,
+      rightRailScrollTop: 0,
+      unitsScrollTop: 0,
+      focusedField: null
+    };
     this.runLoadoutTableScroll = {
       top: 0,
       left: 0
@@ -53,6 +60,7 @@ export class AppShell {
     this.root.addEventListener("click", (event) => this.handleClick(event));
     this.root.addEventListener("input", (event) => this.handleInput(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));
+    this.root.addEventListener("toggle", (event) => this.handleToggle(event), true);
     this.root.addEventListener("contextmenu", (event) => this.handleContextMenu(event));
     this.root.addEventListener("pointerdown", (event) => this.handlePointerDown(event));
     this.root.addEventListener("dragstart", (event) => this.handleDragStart(event));

@@ -1,12 +1,31 @@
 import { ENEMY_AI_ARCHETYPE_ORDER, TURN_SIDES } from "../core/constants.js";
 import { getCommanderById, getEnemyAiArchetypeLabel } from "../content/commanders.js";
+import {
+  canUnitEquipRunUpgrade,
+  createInitialGearState,
+  getRunUpgradeById
+} from "../content/runUpgrades.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { appendLog } from "./battleLog.js";
 import { getCommanderPowerMaxForSide, getRecruitDiscount } from "./commanderEffects.js";
 import { getLivingUnits, getSelectedUnit, getTerrainAt, getUnitAt } from "./selectors.js";
 import { createUnitFromType } from "./unitFactory.js";
 
-export function spawnDebugUnit(system, unitTypeId, owner, x, y, statOverrides = {}) {
+function resolveDebugGearSlot(unit, requestedGearSlot = null) {
+  if (!requestedGearSlot) {
+    return null;
+  }
+
+  const gearUpgrade = getRunUpgradeById(requestedGearSlot);
+
+  if (!canUnitEquipRunUpgrade(unit, gearUpgrade)) {
+    return null;
+  }
+
+  return gearUpgrade.id;
+}
+
+export function spawnDebugUnit(system, unitTypeId, owner, x, y, statOverrides = {}, gearSlot = null) {
   if (!UNIT_CATALOG[unitTypeId] || ![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(owner)) {
     return false;
   }
@@ -30,6 +49,10 @@ export function spawnDebugUnit(system, unitTypeId, owner, x, y, statOverrides = 
   unit.stats.maxHealth = Math.max(1, unit.stats.maxHealth);
   unit.stats.movement = Math.max(1, unit.stats.movement);
   unit.stats.maxRange = Math.max(unit.stats.minRange, unit.stats.maxRange);
+  unit.gear = {
+    slot: resolveDebugGearSlot(unit, gearSlot)
+  };
+  unit.gearState = createInitialGearState(unit.gear.slot);
   unit.current.hp = unit.stats.maxHealth;
   unit.current.stamina = unit.stats.staminaMax;
   unit.current.ammo = unit.stats.ammoMax;
@@ -37,7 +60,8 @@ export function spawnDebugUnit(system, unitTypeId, owner, x, y, statOverrides = 
   system.state[owner].units.push(unit);
   system.state.selection = { type: "unit", id: unit.id, x, y };
   system.clearPendingAction();
-  appendLog(system.state, `[Debug] Spawned ${unit.name} (${owner}) at ${x + 1},${y + 1}.`);
+  const gearLabel = unit.gear.slot ? ` with ${getRunUpgradeById(unit.gear.slot)?.name ?? unit.gear.slot}` : "";
+  appendLog(system.state, `[Debug] Spawned ${unit.name} (${owner}) at ${x + 1},${y + 1}${gearLabel}.`);
   system.updateVictoryState();
   return true;
 }
@@ -115,7 +139,26 @@ export function applyDebugStatsToSelectedUnit(system, debugPatch) {
     selectedUnit.current.ammo = Math.min(selectedUnit.current.ammo, selectedUnit.stats.ammoMax);
   }
 
-  appendLog(system.state, `[Debug] Updated stats for ${selectedUnit.name}.`);
+  const requestedGearSlot =
+    typeof debugPatch.gearSlot === "string" && debugPatch.gearSlot.length > 0
+      ? debugPatch.gearSlot
+      : null;
+  const currentGearSlot = selectedUnit.gear?.slot ?? null;
+  let resolvedGearSlot = currentGearSlot;
+
+  if (requestedGearSlot !== currentGearSlot) {
+    resolvedGearSlot = resolveDebugGearSlot(selectedUnit, requestedGearSlot);
+    selectedUnit.gear = {
+      slot: resolvedGearSlot
+    };
+    selectedUnit.gearState = createInitialGearState(resolvedGearSlot);
+  }
+
+  const gearName = resolvedGearSlot ? getRunUpgradeById(resolvedGearSlot)?.name ?? resolvedGearSlot : "None";
+  appendLog(
+    system.state,
+    `[Debug] Updated ${selectedUnit.name} at ${selectedUnit.x + 1},${selectedUnit.y + 1} (Gear: ${gearName}).`
+  );
   system.updateVictoryState();
   return true;
 }

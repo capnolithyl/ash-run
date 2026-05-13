@@ -2,7 +2,7 @@ import {
   SKIRMISH_DEFAULT_FUNDS_PER_BUILDING,
   SKIRMISH_DEFAULT_STARTING_FUNDS,
   SLOT_IDS,
-  TURN_SIDES
+  TURN_SIDES,
 } from "../core/constants.js";
 import { COMMANDERS } from "../content/commanders.js";
 
@@ -18,7 +18,7 @@ export function pickFirstAvailableSlot(slots) {
 
 export function unlockNextCommander(metaState) {
   const lockedCommander = COMMANDERS.find(
-    (commander) => !metaState.unlockedCommanderIds.includes(commander.id)
+    (commander) => !metaState.unlockedCommanderIds.includes(commander.id),
   );
 
   if (!lockedCommander) {
@@ -39,14 +39,16 @@ export function createBattleUiState() {
     combatCutscene: null,
     hoveredTile: null,
     playerFocus: null,
-    enemyFocus: null
+    enemyFocus: null,
   };
 }
 
 export function createDefaultSkirmishSetupState(unlockedCommanderIds = []) {
-  const defaultCommanderId = unlockedCommanderIds[0] ?? COMMANDERS[0]?.id ?? null;
+  const defaultCommanderId =
+    unlockedCommanderIds[0] ?? COMMANDERS[0]?.id ?? null;
   const defaultEnemyCommanderId =
-    COMMANDERS.find((commander) => commander.id !== defaultCommanderId)?.id ?? defaultCommanderId;
+    COMMANDERS.find((commander) => commander.id !== defaultCommanderId)?.id ??
+    defaultCommanderId;
 
   return {
     step: "commanders",
@@ -54,15 +56,15 @@ export function createDefaultSkirmishSetupState(unlockedCommanderIds = []) {
     enemyCommanderId: defaultEnemyCommanderId,
     mapId: "ashline-crossing",
     startingFunds: SKIRMISH_DEFAULT_STARTING_FUNDS,
-    fundsPerBuilding: SKIRMISH_DEFAULT_FUNDS_PER_BUILDING
+    fundsPerBuilding: SKIRMISH_DEFAULT_FUNDS_PER_BUILDING,
   };
 }
 
 export function createDefaultRunLoadoutState() {
   return {
-    budget: 1000,
-    fundsRemaining: 1000,
-    units: []
+    budget: 10000,
+    fundsRemaining: 10000,
+    units: [],
   };
 }
 
@@ -75,7 +77,7 @@ export function cloneFocusSelection(selection) {
     type: selection.type,
     id: selection.id ?? null,
     x: selection.x ?? null,
-    y: selection.y ?? null
+    y: selection.y ?? null,
   };
 }
 
@@ -85,11 +87,19 @@ export function getFocusSideForSelection(snapshot, selection) {
   }
 
   if (selection.type === "unit") {
-    if (snapshot.player.units.some((unit) => unit.id === selection.id && unit.current.hp > 0)) {
+    if (
+      snapshot.player.units.some(
+        (unit) => unit.id === selection.id && unit.current.hp > 0,
+      )
+    ) {
       return TURN_SIDES.PLAYER;
     }
 
-    if (snapshot.enemy.units.some((unit) => unit.id === selection.id && unit.current.hp > 0)) {
+    if (
+      snapshot.enemy.units.some(
+        (unit) => unit.id === selection.id && unit.current.hp > 0,
+      )
+    ) {
       return TURN_SIDES.ENEMY;
     }
 
@@ -97,14 +107,21 @@ export function getFocusSideForSelection(snapshot, selection) {
   }
 
   if (selection.type === "building") {
-    const building = snapshot.map.buildings.find((candidate) => candidate.id === selection.id);
+    const building = snapshot.map.buildings.find(
+      (candidate) => candidate.id === selection.id,
+    );
 
-    if (building?.owner === TURN_SIDES.PLAYER || building?.owner === TURN_SIDES.ENEMY) {
+    if (
+      building?.owner === TURN_SIDES.PLAYER ||
+      building?.owner === TURN_SIDES.ENEMY
+    ) {
       return building.owner;
     }
   }
 
-  return snapshot.turn.activeSide === TURN_SIDES.ENEMY ? TURN_SIDES.ENEMY : TURN_SIDES.PLAYER;
+  return snapshot.turn.activeSide === TURN_SIDES.ENEMY
+    ? TURN_SIDES.ENEMY
+    : TURN_SIDES.PLAYER;
 }
 
 export function getCommanderPowerTitle(commander) {
@@ -142,7 +159,7 @@ export function getFundsGainFromSnapshots(previousSnapshot, nextSnapshot) {
         side,
         amount,
         previousFunds,
-        nextFunds
+        nextFunds,
       };
     }
   }

@@ -173,6 +173,65 @@ function renderLoadoutSection(iconUrl, label, value) {
   `;
 }
 
+function getGearStatusLabel(attachedGear) {
+  if (!attachedGear) {
+    return "";
+  }
+
+  if (Number.isFinite(attachedGear.ammo)) {
+    return `${attachedGear.ammo} ammo`;
+  }
+
+  if (attachedGear.slot === "gear-field-meds") {
+    return "1 use";
+  }
+
+  return "";
+}
+
+function renderGearLoadoutSection(attachedGear, { showWhenEmpty = true, tooltipIdSuffix = "" } = {}) {
+  if (!attachedGear && !showWhenEmpty) {
+    return "";
+  }
+
+  const gearName = attachedGear?.name ?? "None";
+  const gearStatusLabel = getGearStatusLabel(attachedGear);
+  const tooltipId = attachedGear?.slot ? `selection-gear-tooltip-${attachedGear.slot}-${tooltipIdSuffix}` : "";
+
+  return `
+    <div class="selection-loadout-card selection-loadout-card--gear${attachedGear ? " selection-loadout-card--gear-equipped" : ""}">
+      <div class="selection-loadout-card__copy selection-loadout-card__copy--gear">
+        <span>Gear</span>
+        <div class="selection-loadout-card__title-row">
+          <strong>${gearName}</strong>
+          ${gearStatusLabel ? `<span class="selection-loadout-card__meta">${gearStatusLabel}</span>` : ""}
+        </div>
+      </div>
+      ${
+        attachedGear
+          ? `
+            <button
+              class="selection-loadout-card__info"
+              type="button"
+              aria-label="${gearName} details"
+              aria-describedby="${tooltipId}"
+            >
+              i
+            </button>
+            <div class="selection-loadout-tooltip" id="${tooltipId}" role="tooltip">
+              <div class="selection-loadout-tooltip__header">
+                <strong class="selection-loadout-tooltip__title">${gearName}</strong>
+                ${gearStatusLabel ? `<span class="selection-loadout-tooltip__meta">${gearStatusLabel}</span>` : ""}
+              </div>
+              ${(attachedGear.detailLines ?? []).map((line) => `<p>${line}</p>`).join("")}
+            </div>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
 function renderProfileSummary(unit) {
   const armorName = unit?.armorClass ? `${formatProfileName(unit.armorClass)} Armor` : "Unarmored";
   const weaponIconFileName = getWeaponClassIconFileName(unit.weaponClass);
@@ -258,7 +317,7 @@ function renderExperienceBar(unit) {
   `;
 }
 
-function renderUnitSummary(unit, { showExperience = false, showLoadout = true } = {}) {
+function renderUnitSummary(unit, { showExperience = false, showLoadout = true, showGear = true } = {}) {
   const attachedGear = unit.gear ?? null;
 
   return `
@@ -286,22 +345,10 @@ function renderUnitSummary(unit, { showExperience = false, showLoadout = true } 
       ${renderHealthBar(unit)}
       ${renderUnitStatGrid(unit)}
       ${showLoadout ? renderProfileSummary(unit) : ""}
-      ${
-        attachedGear
-          ? `
-            <div class="selection-header">
-              <strong>Gear</strong>
-              <span>${attachedGear.name}</span>
-            </div>
-            ${(attachedGear.detailLines ?? []).map((line) => `<p>${line}</p>`).join("")}
-            ${
-              Number.isFinite(attachedGear.ammo)
-                ? `<p><strong>AA Ammo:</strong> ${attachedGear.ammo}</p>`
-                : ""
-            }
-          `
-          : ""
-      }
+      ${showGear ? renderGearLoadoutSection(attachedGear, {
+        showWhenEmpty: showLoadout,
+        tooltipIdSuffix: unit.id ?? "unit"
+      }) : ""}
     </div>
   `;
 }
