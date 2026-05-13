@@ -34,7 +34,7 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-action="map-editor-select-building"/);
   assert.match(html, /data-action="map-editor-select-tool"/);
   assert.match(html, /data-map-editor-field="name"/);
-  assert.match(html, /data-map-editor-field="id"/);
+  assert.match(html, /data-map-editor-derived-id/);
   assert.match(html, /data-map-editor-field="theme"/);
   assert.match(html, /data-action="map-editor-export"/);
   assert.match(html, /Tile 1, 1/);
@@ -59,4 +59,19 @@ test("map editor accordions render closed by default and only open the requested
   assert.doesNotMatch(openHtml, /<details[^>]*data-map-editor-accordion="terrain"[^>]*\sopen/);
   assert.doesNotMatch(openHtml, /<details[^>]*data-map-editor-accordion="buildings"[^>]*\sopen/);
   assert.doesNotMatch(openHtml, /<details[^>]*data-map-editor-accordion="mirror"[^>]*\sopen/);
+});
+
+test("map editor view shows the id as derived read-only metadata instead of an editable field", () => {
+  const state = {
+    mapEditor: createDefaultMapEditorState(
+      createBlankMapDefinition({ id: "ignored-id", name: "Spiral Ridge" })
+    )
+  };
+
+  const html = renderMapEditorView(state);
+
+  assert.match(html, /Derived ID/);
+  assert.match(html, /data-map-editor-derived-id/);
+  assert.match(html, /readonly/);
+  assert.doesNotMatch(html, /data-map-editor-field="id"/);
 });

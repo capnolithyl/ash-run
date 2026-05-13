@@ -672,7 +672,7 @@ test("battle HUD turns the power meter into the activation control", () => {
   assert.match(renderHudForBattleState(enemyTurnState), /commander-power-button--readonly/);
 });
 
-test("battle HUD keeps the power meter visually active for the rest of the activation turn", () => {
+test("battle HUD keeps the power meter visually active through the opposing turn", () => {
   const battleState = createTestBattleState({
     playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2)],
     enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2)]
@@ -713,6 +713,56 @@ test("battle HUD keeps the power meter visually active for the rest of the activ
   assert.equal(countMatches(html, /commander-meter__segment--full/g), segmentCount);
   assert.equal(countMatches(html, /commander-meter__segment--half/g), 0);
   assert.doesNotMatch(html, /Active This Turn/);
+
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.startEnemyTurnActions().changed, true);
+
+  const enemyTurnHtml = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(enemyTurnHtml, /commander-power-button--active/);
+  assert.match(enemyTurnHtml, /commander-meter__active-label[^>]*>ACTIVE<\/span>/);
+  assert.match(enemyTurnHtml, /commander-panel-shell--power-active/);
+
+  assert.equal(system.finalizeEnemyTurn().changed, true);
+
+  const nextPlayerTurnHtml = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.doesNotMatch(nextPlayerTurnHtml, /commander-meter__active-label[^>]*>ACTIVE<\/span>/);
+  assert.doesNotMatch(nextPlayerTurnHtml, /commander-panel-shell--power-active/);
 });
 
 test("run-complete overlay includes intel breakdown and a progression button", () => {
@@ -869,6 +919,7 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
   const battleState = createTestBattleState({
     playerUnits: [unit]
   });
+  battleState.map.tiles[unit.y][unit.x] = TERRAIN_KEYS.PLAIN;
   battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
 
   const html = renderHudForBattleState(battleState);
@@ -881,6 +932,10 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
   assert.match(html, /assets\/img\/icons\/battle-hud\/weapons\/rifle\.png/);
   assert.match(html, /<strong>Infantry Armor<\/strong>/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/armor\/infantry\.png/);
+  assert.match(
+    html,
+    /<strong>Infantry Armor<\/strong>[\s\S]*?<span>Gear<\/span>[\s\S]*?<strong>None<\/strong>[\s\S]*?<span>Terrain<\/span>[\s\S]*?<strong>Plain<\/strong>[\s\S]*?Armor bonus: \+1/
+  );
   assert.doesNotMatch(html, /Weapon Profile/);
   assert.doesNotMatch(html, /Armor Profile/);
 });

@@ -417,6 +417,7 @@ export const appShellEventMethods = {
     const mapEditorField = event.target.dataset.mapEditorField;
 
     if (mapEditorField) {
+      this.setInputMode("mouse");
       this.controller.updateMapEditorField(mapEditorField, event.target.value);
       return;
     }
@@ -459,6 +460,7 @@ export const appShellEventMethods = {
       return;
     }
 
+    this.setInputMode("mouse");
     this.controller.updateMapEditorField(mapEditorField, event.target.value);
   }
 };

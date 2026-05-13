@@ -91,21 +91,45 @@
     rgba(255, 171, 103, 0.98),
     rgba(187, 110, 255, 0.98)
   );
-  /* Chromium can use .cur directly and falls back to the keyword if an animated .ani is ignored. */
+  /* Keep .ani first in case Chromium/Electron gains support later, but always fall back to a packaged .cur before a system cursor keyword. */
   --cursor-default: url("../../../assets/cursor/retrowave_arrow.cur"), auto;
-  --cursor-action: url("../../../assets/cursor/retrowave_link.ani"), pointer;
+  --cursor-action:
+    url("../../../assets/cursor/retrowave_link.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    pointer;
   --cursor-disabled: url("../../../assets/cursor/retrowave_unavail.cur"), not-allowed;
   --cursor-help: url("../../../assets/cursor/retrowave_help.cur"), help;
   --cursor-text: url("../../../assets/cursor/retrowave_beam.cur"), text;
   --cursor-crosshair: url("../../../assets/cursor/retrowave_cross.cur"), crosshair;
   --cursor-pen: url("../../../assets/cursor/retrowave_pen.cur"), pointer;
-  --cursor-progress: url("../../../assets/cursor/retrowave_wait.ani"), progress;
-  --cursor-wait: url("../../../assets/cursor/retrowave_busy.ani"), wait;
-  --cursor-move: url("../../../assets/cursor/retrowave_move.ani"), move;
-  --cursor-resize-ns: url("../../../assets/cursor/retrowave_ns.ani"), ns-resize;
-  --cursor-resize-ew: url("../../../assets/cursor/retrowave_ew.ani"), ew-resize;
-  --cursor-resize-nwse: url("../../../assets/cursor/retrowave_nwse.ani"), nwse-resize;
-  --cursor-resize-nesw: url("../../../assets/cursor/retrowave_nesw.ani"), nesw-resize;
+  --cursor-progress:
+    url("../../../assets/cursor/retrowave_wait.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    progress;
+  --cursor-wait:
+    url("../../../assets/cursor/retrowave_busy.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    wait;
+  --cursor-move:
+    url("../../../assets/cursor/retrowave_move.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    move;
+  --cursor-resize-ns:
+    url("../../../assets/cursor/retrowave_ns.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    ns-resize;
+  --cursor-resize-ew:
+    url("../../../assets/cursor/retrowave_ew.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    ew-resize;
+  --cursor-resize-nwse:
+    url("../../../assets/cursor/retrowave_nwse.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    nwse-resize;
+  --cursor-resize-nesw:
+    url("../../../assets/cursor/retrowave_nesw.ani"),
+    url("../../../assets/cursor/retrowave_arrow.cur"),
+    nesw-resize;
   --screen-edge-gutter: clamp(0.65rem, 1.15vw, 1.25rem);
   --compact-panel-padding: 0.9rem;
   --compact-footer-height: 4.25rem;

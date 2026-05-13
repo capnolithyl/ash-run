@@ -15,6 +15,7 @@ import {
   MAP_EDITOR_TOOL_IDS,
   resizeMapDefinition
 } from "../src/game/content/mapEditor.js";
+import { appShellEventMethods } from "../src/ui/appShell/eventMethods.js";
 import { renderMapEditorView } from "../src/ui/views/mapEditorView.js";
 
 test("terrain painting to blocked tiles removes buildings, units, and legacy spawns on that tile", () => {
@@ -77,8 +78,6 @@ test("map editor controller can paint a map, resize it, place units, and export 
   const controller = new GameController();
 
   controller.openMapEditor();
-  controller.updateMapEditorField("name", "Factory Lane");
-  controller.updateMapEditorField("id", "Factory Lane!");
   controller.updateMapEditorField("width", "20");
   controller.updateMapEditorField("height", "14");
   controller.selectMapEditorTerrain(TERRAIN_KEYS.FOREST);
@@ -92,21 +91,101 @@ test("map editor controller can paint a map, resize it, place units, and export 
   controller.selectMapEditorUnitType("breaker");
   controller.selectMapEditorUnitOwner(TURN_SIDES.ENEMY);
   controller.applyMapEditorToolAt(5, 5);
+  controller.updateMapEditorField("name", "Factory Lane");
+  controller.updateMapEditorField("id", "should-be-ignored");
 
   const exported = controller.exportMapEditorMap();
   const parsed = JSON.parse(exported.text);
+  const state = controller.getState();
 
-  assert.equal(controller.getState().screen, SCREEN_IDS.MAP_EDITOR);
+  assert.equal(state.screen, SCREEN_IDS.MAP_EDITOR);
   assert.ok(exported);
+  assert.equal(state.mapEditor.mapData.id, "factory-lane");
   assert.equal(exported.filename, "factory-lane.json");
   assert.equal(parsed.id, "factory-lane");
   assert.equal(parsed.name, "Factory Lane");
   assert.equal(parsed.width, 20);
   assert.equal(parsed.height, 14);
   assert.equal(parsed.tiles[2][2], TERRAIN_KEYS.FOREST);
-  assert.equal(parsed.buildings.some((building) => building.x === 1 && building.y === 1), true);
-  assert.equal(parsed.units.some((unit) => unit.unitTypeId === "grunt" && unit.owner === TURN_SIDES.PLAYER), true);
-  assert.equal(parsed.units.some((unit) => unit.unitTypeId === "breaker" && unit.owner === TURN_SIDES.ENEMY), true);
+  assert.deepEqual(parsed.buildings, [
+    {
+      id: "factory-lane-player-command-1-1",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.PLAYER,
+      x: 1,
+      y: 1
+    }
+  ]);
+  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-player-grunt-0-0"), true);
+  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-enemy-breaker-5-5"), true);
+});
+
+test("imported maps also re-derive their map id from the map name", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.importMapEditorMap({
+    id: "legacy-import-id",
+    name: "Spiral Ridge",
+    theme: "ash",
+    width: 12,
+    height: 12,
+    tiles: Array.from({ length: 12 }, () => Array.from({ length: 12 }, () => TERRAIN_KEYS.PLAIN)),
+    buildings: [
+      {
+        id: "legacy-building-id",
+        type: BUILDING_KEYS.SECTOR,
+        owner: "neutral",
+        x: 2,
+        y: 2
+      }
+    ],
+    units: [
+      {
+        id: "legacy-unit-id",
+        unitTypeId: "grunt",
+        owner: TURN_SIDES.PLAYER,
+        x: 1,
+        y: 1
+      }
+    ]
+  });
+
+  const exported = controller.exportMapEditorMap();
+  const parsed = JSON.parse(exported.text);
+
+  assert.equal(controller.getState().mapEditor.mapData.id, "spiral-ridge");
+  assert.equal(parsed.id, "spiral-ridge");
+  assert.equal(parsed.buildings[0].id, "spiral-ridge-neutral-sector-2-2");
+  assert.equal(parsed.units[0].id, "spiral-ridge-player-grunt-1-1");
+});
+
+test("map editor typing exits controller mode before applying the field update", () => {
+  const callOrder = [];
+  const shell = {
+    setInputMode(mode) {
+      callOrder.push(`mode:${mode}`);
+    },
+    controller: {
+      updateMapEditorField(field, value) {
+        callOrder.push(`field:${field}=${value}`);
+      }
+    }
+  };
+
+  appShellEventMethods.handleInput.call(shell, {
+    target: {
+      dataset: {
+        mapEditorField: "name"
+      },
+      value: "Factory Lane"
+    }
+  });
+
+  assert.deepEqual(callOrder, [
+    "mode:mouse",
+    "field:name=Factory Lane"
+  ]);
 });
 
 test("new maps no longer require spawn points to export", () => {

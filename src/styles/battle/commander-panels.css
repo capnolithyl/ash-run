@@ -245,8 +245,8 @@
 .commander-panel__portrait-frame {
   position: relative;
   flex: 0 0 auto;
-  width: clamp(7.5rem, 8vw, 8.5rem);
-  aspect-ratio: 1;
+  width: clamp(6.15rem, 6.5vw, 7rem);
+  aspect-ratio: 396 / 470;
   filter: drop-shadow(
       0 0 18px color-mix(in srgb, var(--side-color) 18%, transparent)
     )
@@ -262,15 +262,15 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: url("../../../assets/img/ui/background/portait-frame.png")
-    center / 100% 100% no-repeat;
+  background: url("../../../assets/img/ui/background/portrait-frame.png")
+    center / contain no-repeat;
   pointer-events: none;
   z-index: 2;
 }
 
 .commander-panel__portrait-mask {
   position: absolute;
-  inset: 12.2% 11.8% 12.8%;
+  inset: 8.2% 10.8% 8.4%;
   overflow: hidden;
   clip-path: polygon(
     0 12%,
@@ -330,13 +330,16 @@
 
 .commander-panel__system {
   --system-frame-image: url("../../../assets/img/ui/background/commander-trait.png");
-  --system-frame-size: auto 106%;
+  --system-frame-size: contain;
   --system-frame-position: 50% 50%;
+  --system-frame-aspect: 748 / 159;
   display: flex;
+  width: 100%;
   min-width: 0;
-  min-height: 4.35rem;
+  min-height: clamp(3.15rem, 3.45vw, 3.45rem);
+  aspect-ratio: var(--system-frame-aspect);
   position: relative;
-  padding: 1.18rem 1rem 0.8rem;
+  padding: 0.96rem 0.95rem 0.62rem;
   align-items: center;
   justify-content: center;
   appearance: none;
@@ -367,8 +370,9 @@
 
 .commander-panel__system--ability {
   --system-frame-image: url("../../../assets/img/ui/background/commander-ability.png");
-  --system-frame-size: auto 106%;
+  --system-frame-size: contain;
   --system-frame-position: 50% 50%;
+  --system-frame-aspect: 780 / 166;
 }
 
 .commander-panel__system > * {

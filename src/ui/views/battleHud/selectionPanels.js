@@ -232,6 +232,25 @@ function renderGearLoadoutSection(attachedGear, { showWhenEmpty = true, tooltipI
   `;
 }
 
+function renderTerrainLoadoutSection(terrain) {
+  if (!terrain) {
+    return "";
+  }
+
+  return `
+    <div class="selection-loadout-card selection-loadout-card--terrain">
+      <span class="selection-icon selection-icon--feature selection-loadout-card__badge" aria-hidden="true">
+        ${renderSelectionIcon(getTerrainIconName(terrain.id))}
+      </span>
+      <div class="selection-loadout-card__copy selection-loadout-card__copy--terrain">
+        <span>Terrain</span>
+        <strong>${terrain.label ?? "Unknown"}</strong>
+        <p class="selection-loadout-card__detail">Armor bonus: +${terrain.armorBonus ?? 0}</p>
+      </div>
+    </div>
+  `;
+}
+
 function renderProfileSummary(unit) {
   const armorName = unit?.armorClass ? `${formatProfileName(unit.armorClass)} Armor` : "Unarmored";
   const weaponIconFileName = getWeaponClassIconFileName(unit.weaponClass);
@@ -317,7 +336,10 @@ function renderExperienceBar(unit) {
   `;
 }
 
-function renderUnitSummary(unit, { showExperience = false, showLoadout = true, showGear = true } = {}) {
+function renderUnitSummary(
+  unit,
+  { showExperience = false, showLoadout = true, showGear = true, terrainMarkup = "" } = {}
+) {
   const attachedGear = unit.gear ?? null;
 
   return `
@@ -344,11 +366,24 @@ function renderUnitSummary(unit, { showExperience = false, showLoadout = true, s
       ${showExperience ? renderExperienceBar(unit) : ""}
       ${renderHealthBar(unit)}
       ${renderUnitStatGrid(unit)}
-      ${showLoadout ? renderProfileSummary(unit) : ""}
-      ${showGear ? renderGearLoadoutSection(attachedGear, {
-        showWhenEmpty: showLoadout,
-        tooltipIdSuffix: unit.id ?? "unit"
-      }) : ""}
+      ${
+        showLoadout || showGear || terrainMarkup
+          ? `
+              <div class="selection-loadout-stack">
+                ${showLoadout ? renderProfileSummary(unit) : ""}
+                ${
+                  showGear
+                    ? renderGearLoadoutSection(attachedGear, {
+                        showWhenEmpty: showLoadout,
+                        tooltipIdSuffix: unit.id ?? "unit"
+                      })
+                    : ""
+                }
+                ${terrainMarkup}
+              </div>
+            `
+          : ""
+      }
     </div>
   `;
 }
@@ -448,9 +483,16 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
   const building = selectedTile.building;
 
   return `
-    <div class="card-block">
-      ${title ? `<h3>${title}</h3>` : ""}
-      ${unit ? renderUnitSummary(unit, { showExperience: true }) : ""}
+      <div class="card-block">
+        ${title ? `<h3>${title}</h3>` : ""}
+      ${
+        unit
+          ? renderUnitSummary(unit, {
+              showExperience: true,
+              terrainMarkup: building ? "" : renderTerrainLoadoutSection(selectedTile.terrain)
+            })
+          : ""
+      }
       ${
         building
           ? renderFeatureSection(
@@ -466,12 +508,14 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
       ${
         building
           ? ""
-          : renderFeatureSection(
-              getTerrainIconName(selectedTile.terrain.id),
-              selectedTile.terrain.label,
-              [`Armor bonus: +${selectedTile.terrain.armorBonus ?? 0}`],
-              "selection-section--terrain"
-            )
+          : unit
+            ? ""
+            : renderFeatureSection(
+                getTerrainIconName(selectedTile.terrain.id),
+                selectedTile.terrain.label,
+                [`Armor bonus: +${selectedTile.terrain.armorBonus ?? 0}`],
+                "selection-section--terrain"
+              )
       }
     </div>
   `;

@@ -2,6 +2,8 @@ import { BUILDING_KEYS, SCREEN_IDS, TERRAIN_KEYS, TURN_SIDES } from "../core/con
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import {
   applyMapEditorTool,
+  buildMapEditorBuildingId,
+  buildMapEditorUnitId,
   createBlankMapDefinition,
   createDefaultMapEditorState,
   exportMapDefinition,
@@ -28,9 +30,36 @@ function normalizeMapEditorId(value) {
     .replace(/-{2,}/g, "-");
 }
 
+function deriveMapEditorIdFromName(name) {
+  return normalizeMapEditorId(name) || "custom-map";
+}
+
+function synchronizeMapEditorIdentity(mapData) {
+  if (!mapData) {
+    return mapData;
+  }
+
+  const nextMapId = deriveMapEditorIdFromName(mapData.name);
+
+  return {
+    ...mapData,
+    id: nextMapId,
+    buildings: mapData.buildings.map((building) => ({
+      ...building,
+      id: buildMapEditorBuildingId(nextMapId, building.type, building.owner, building.x, building.y)
+    })),
+    units: mapData.units.map((unit) => ({
+      ...unit,
+      id: buildMapEditorUnitId(nextMapId, unit.unitTypeId, unit.owner, unit.x, unit.y)
+    }))
+  };
+}
+
 export const controllerMapEditorMethods = {
   openMapEditor() {
-    this.state.mapEditor = createDefaultMapEditorState(createBlankMapDefinition());
+    this.state.mapEditor = createDefaultMapEditorState(
+      synchronizeMapEditorIdentity(createBlankMapDefinition())
+    );
     this.state.screen = SCREEN_IDS.MAP_EDITOR;
     this.state.banner = "Map editor active.";
     this.resetBattleUi();
@@ -38,9 +67,13 @@ export const controllerMapEditorMethods = {
   },
 
   resetMapEditor() {
-    this.state.mapEditor = createDefaultMapEditorState(createBlankMapDefinition({
-      theme: this.state.mapEditor?.mapData?.theme ?? "ash"
-    }));
+    this.state.mapEditor = createDefaultMapEditorState(
+      synchronizeMapEditorIdentity(
+        createBlankMapDefinition({
+          theme: this.state.mapEditor?.mapData?.theme ?? "ash"
+        })
+      )
+    );
     this.emit();
   },
 
@@ -118,10 +151,9 @@ export const controllerMapEditorMethods = {
       return;
     }
 
-    if (field === "id") {
-      mapData.id = normalizeMapEditorId(value);
-    } else if (field === "name") {
+    if (field === "name") {
       mapData.name = String(value ?? "").trimStart();
+      this.state.mapEditor.mapData = synchronizeMapEditorIdentity(mapData);
     } else if (field === "theme") {
       if (!Object.hasOwn(MAP_THEME_PALETTES, value)) {
         return;
@@ -131,7 +163,9 @@ export const controllerMapEditorMethods = {
     } else if (field === "width" || field === "height") {
       const nextWidth = field === "width" ? Number(value) : mapData.width;
       const nextHeight = field === "height" ? Number(value) : mapData.height;
-      this.state.mapEditor.mapData = resizeMapDefinition(mapData, nextWidth, nextHeight);
+      this.state.mapEditor.mapData = synchronizeMapEditorIdentity(
+        resizeMapDefinition(mapData, nextWidth, nextHeight)
+      );
     } else {
       return;
     }
@@ -204,7 +238,7 @@ export const controllerMapEditorMethods = {
   },
 
   importMapEditorMap(mapInput) {
-    this.state.mapEditor.mapData = normalizeMapDefinition(mapInput);
+    this.state.mapEditor.mapData = synchronizeMapEditorIdentity(normalizeMapDefinition(mapInput));
     this.state.mapEditor.selectedTile = null;
     this.state.mapEditor.hoveredTile = null;
     this.state.mapEditor.isPainting = false;

@@ -164,6 +164,30 @@ function renderDesktopBattlePanels(battleSnapshot, hoveredTile, playerFocusTile,
   `;
 }
 
+function isCommanderPowerActiveForSide(battleSnapshot, side) {
+  const turnNumber = Number(battleSnapshot?.turn?.number);
+  const activeSide = battleSnapshot?.turn?.activeSide;
+  const powerUsedTurn = Number(battleSnapshot?.[side]?.powerUsedTurn);
+
+  if (!Number.isFinite(turnNumber) || !Number.isFinite(powerUsedTurn) || !activeSide) {
+    return false;
+  }
+
+  if (activeSide === side) {
+    return powerUsedTurn === turnNumber;
+  }
+
+  if (side === TURN_SIDES.PLAYER && activeSide === TURN_SIDES.ENEMY) {
+    return powerUsedTurn === turnNumber - 1;
+  }
+
+  if (side === TURN_SIDES.ENEMY && activeSide === TURN_SIDES.PLAYER) {
+    return powerUsedTurn === turnNumber;
+  }
+
+  return false;
+}
+
 export function renderBattleHudView(state, options = {}) {
   const battleSnapshot = state.battleSnapshot;
   const suppressLevelUpOverlay = options.suppressLevelUpOverlay ?? false;
@@ -184,10 +208,8 @@ export function renderBattleHudView(state, options = {}) {
   const fundsGain = state.battleUi?.fundsGain ?? null;
   const hoveredTile = state.battleUi?.hoveredTile ?? null;
   const showFunds = battleSnapshot.mode !== BATTLE_MODES.RUN;
-  const playerPowerActive = battleSnapshot.player.powerUsedTurn === battleSnapshot.turn.number;
-  const enemyPowerActive =
-    battleSnapshot.turn.activeSide === TURN_SIDES.ENEMY &&
-    battleSnapshot.enemy.powerUsedTurn === battleSnapshot.turn.number;
+  const playerPowerActive = isCommanderPowerActiveForSide(battleSnapshot, TURN_SIDES.PLAYER);
+  const enemyPowerActive = isCommanderPowerActiveForSide(battleSnapshot, TURN_SIDES.ENEMY);
   const commanderAnimationClockMs =
     typeof performance !== "undefined" && typeof performance.now === "function"
       ? performance.now()
