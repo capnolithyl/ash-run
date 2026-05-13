@@ -597,18 +597,15 @@ test("forfeiting a run marks the battle as lost and preserves earned intel", asy
 
 test("skirmish battle tile clicks sync selection without a run save", async () => {
   const controller = new GameController();
-
-  controller.state.metaState.unlockedCommanderIds = ["atlas", "viper"];
-  controller.updateSkirmishSetup({
-    step: "map",
-    playerCommanderId: "atlas",
-    enemyCommanderId: "viper",
-    mapId: "ashline-crossing"
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.SKIRMISH,
+    playerUnits: [playerUnit]
   });
 
-  await controller.startSkirmish();
-
-  const playerUnit = controller.getState().battleSnapshot.player.units[0];
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.syncBattleState();
   await controller.handleBattleTileClick(playerUnit.x, playerUnit.y);
 
   const state = controller.getState();

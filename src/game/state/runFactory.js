@@ -7,6 +7,7 @@ import {
   TURN_SIDES,
   UNIT_TAGS
 } from "../core/constants.js";
+import { getRunEnemyStartingSquad } from "../core/runBalance.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
 import { createId } from "../core/id.js";
 import { pickOne, pickWeighted, shuffle, stringToSeed } from "../core/random.js";
@@ -34,15 +35,8 @@ import {
   buildScaledEnemyRoster,
   getEnemyStartingFunds
 } from "./enemyScaling.js";
-import { buildPersistentStarterRoster, getCommanderStarterUnitIds } from "./rosters.js";
 
 const ANTI_AIR_UNIT_IDS = new Set(["skyguard", "interceptor"]);
-const EARLY_ENEMY_AIR_REPLACEMENTS = {
-  gunship: "runner",
-  payload: "bruiser",
-  interceptor: "skyguard",
-  carrier: "runner"
-};
 
 function toSafeNumber(value) {
   return Number.isFinite(value) ? value : 0;
@@ -143,12 +137,31 @@ export function normalizeBattleState(battleState) {
   return nextBattleState;
 }
 
-function buildEnemyRoster(commanderId, difficultyTier) {
-  const starterUnitIds = getCommanderStarterUnitIds(commanderId).map((unitTypeId) =>
-    difficultyTier >= 4 ? unitTypeId : (EARLY_ENEMY_AIR_REPLACEMENTS[unitTypeId] ?? unitTypeId)
-  );
+function createBattleUnitFromMapPlacement(unitDefinition) {
+  const unit = createUnitFromType(unitDefinition.unitTypeId, unitDefinition.owner, 1);
 
-  return buildScaledEnemyRoster(starterUnitIds, difficultyTier);
+  return {
+    ...unit,
+    id: unitDefinition.id,
+    x: unitDefinition.x,
+    y: unitDefinition.y,
+    current: {
+      ...unit.current
+    }
+  };
+}
+
+function getPlacedBattleUnitsForSide(mapDefinition, owner) {
+  return (mapDefinition.units ?? [])
+    .filter((unit) => unit.owner === owner)
+    .map(createBattleUnitFromMapPlacement);
+}
+
+function buildEnemyRoster(difficultyTier) {
+  return buildScaledEnemyRoster(
+    getRunEnemyStartingSquad(difficultyTier),
+    difficultyTier
+  );
 }
 
 function buildMapSequence(seed, targetMapCount) {
@@ -157,20 +170,16 @@ function buildMapSequence(seed, targetMapCount) {
 }
 
 function createPlayerBattleRoster(runState, mapDefinition) {
-  const roster = (
-    runState.roster.length > 0
-      ? runState.roster
-      : buildPersistentStarterRoster(runState.commanderId)
-  );
+  const roster = runState.roster ?? [];
 
   return deployPersistentRoster(roster, TURN_SIDES.PLAYER, mapDefinition, mapDefinition.playerSpawns);
 }
 
-function createEnemyBattleRoster(runState, mapDefinition, enemyCommanderId) {
+function createEnemyBattleRoster(runState, mapDefinition) {
   const difficultyTier = runState.mapIndex + 1;
 
   return placeFreshUnits(
-    buildEnemyRoster(enemyCommanderId, difficultyTier),
+    buildEnemyRoster(difficultyTier),
     mapDefinition,
     mapDefinition.enemySpawns
   );
@@ -334,7 +343,7 @@ export function createBattleStateForRun(runState) {
   const enemyAiArchetype = pickEnemyAiArchetype(battleSeed, enemyCommanderId);
   const capturedBuildings = applyEnemyMapControlScaling(mapDefinition, difficultyTier);
   const playerUnits = createPlayerBattleRoster(normalizedRunState, mapDefinition);
-  const enemyUnits = createEnemyBattleRoster(normalizedRunState, mapDefinition, enemyCommanderId);
+  const enemyUnits = createEnemyBattleRoster(normalizedRunState, mapDefinition);
   const antiAirSafety = addEmergencyAntiAirIfNeeded(playerUnits, enemyUnits, mapDefinition);
   const openingLog = [`${normalizedRunState.mapIndex + 1}/${normalizedRunState.targetMapCount}: ${mapDefinition.name}`];
   const rewardedPlayerUnits = applyRunRewardsToUnits(normalizedRunState, antiAirSafety.units);
@@ -410,17 +419,8 @@ export function createSkirmishBattleState({
   const mapDefinition = structuredClone(getMapById(mapId) ?? MAP_POOL[0]);
   const incomeByType = createIncomeTable(fundsPerBuilding);
   const battleSeed = stringToSeed(`skirmish-${mapDefinition.id}-${playerCommanderId}-${enemyCommanderId}`);
-  const playerUnits = deployPersistentRoster(
-    buildPersistentStarterRoster(playerCommanderId),
-    TURN_SIDES.PLAYER,
-    mapDefinition,
-    mapDefinition.playerSpawns
-  );
-  const enemyUnits = createEnemyBattleRoster(
-    { mapIndex: 0 },
-    mapDefinition,
-    enemyCommanderId
-  );
+  const playerUnits = getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.PLAYER);
+  const enemyUnits = getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.ENEMY);
   const enemyAiArchetype = pickEnemyAiArchetype(battleSeed, enemyCommanderId);
 
   return {

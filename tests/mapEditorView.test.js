@@ -34,7 +34,6 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-action="map-editor-select-building"/);
   assert.match(html, /data-action="map-editor-select-tool"/);
   assert.match(html, /data-map-editor-field="name"/);
-  assert.match(html, /data-map-editor-derived-id/);
   assert.match(html, /data-map-editor-field="theme"/);
   assert.match(html, /data-action="map-editor-export"/);
   assert.match(html, /Tile 1, 1/);
@@ -70,8 +69,7 @@ test("map editor view shows the id as derived read-only metadata instead of an e
 
   const html = renderMapEditorView(state);
 
-  assert.match(html, /Derived ID/);
-  assert.match(html, /data-map-editor-derived-id/);
-  assert.match(html, /readonly/);
+  assert.doesNotMatch(html, /Derived ID/);
+  assert.doesNotMatch(html, /data-map-editor-derived-id/);
   assert.doesNotMatch(html, /data-map-editor-field="id"/);
 });

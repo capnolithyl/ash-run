@@ -220,7 +220,7 @@ function renderValidationCard(validation) {
     return `
       <div class="card-block map-editor-validation map-editor-validation--valid">
         <strong>Ready To Save</strong>
-        <p>The map has a valid name, derived ID, theme, size, terrain, buildings, and placed-unit data.</p>
+        <p>The map has a valid name, theme, size, terrain, buildings, and placed-unit data.</p>
       </div>
     `;
   }
@@ -359,17 +359,6 @@ export function renderMapEditorView(state, uiState = {}) {
                 data-map-editor-field="name"
                 value="${map.name}"
                 maxlength="60"
-              />
-            </label>
-            <label>
-              <span>Derived ID</span>
-              <input
-                type="text"
-                data-map-editor-derived-id
-                value="${map.id}"
-                readonly
-                aria-readonly="true"
-                tabindex="-1"
               />
             </label>
             <label>

@@ -1,7 +1,5 @@
 import { COMMANDERS } from "../../game/content/commanders.js";
 import { getCommanderInfoImageUrl } from "../../game/content/commanderArt.js";
-import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
-import { getCommanderStarterUnitIds } from "../../game/state/rosters.js";
 import { formatRelativeTimestamp, titleCaseSlot } from "../formatters.js";
 
 const COMMANDER_SLIDER_COPY_COUNT = 3;
@@ -17,23 +15,8 @@ export function getCommanderSliderEntries() {
   ).flat();
 }
 
-function getCommanderStarterSquad(commanderId) {
-  const countsByUnitId = new Map();
-
-  for (const unitTypeId of getCommanderStarterUnitIds(commanderId)) {
-    countsByUnitId.set(unitTypeId, (countsByUnitId.get(unitTypeId) ?? 0) + 1);
-  }
-
-  return Array.from(countsByUnitId.entries()).map(([unitTypeId, count]) => ({
-    unitTypeId,
-    count,
-    name: UNIT_CATALOG[unitTypeId]?.name ?? unitTypeId
-  }));
-}
-
 export function renderCommanderCardBody(commander, unlocked) {
   const infoImageUrl = getCommanderInfoImageUrl(commander.id);
-  const starterSquad = getCommanderStarterSquad(commander.id);
   const passiveName = commander.passive.name ?? "Passive";
   const activeName = commander.active.name ?? "Power";
 
@@ -83,20 +66,6 @@ export function renderCommanderCardBody(commander, unlocked) {
           <span>Active Power</span>
           <strong class="commander-card__ability-name">${activeName}</strong>
           <p>${commander.active.summary}</p>
-        </div>
-        <div class="commander-card__overlay-section commander-card__overlay-section--squad">
-          <span>Starting Squad</span>
-          <ul class="commander-card__squad-list">
-            ${starterSquad
-              .map(
-                (unit) => `
-                  <li class="commander-card__squad-chip">
-                    ${unit.count > 1 ? `${unit.count}x ` : ""}${unit.name}
-                  </li>
-                `
-              )
-              .join("")}
-          </ul>
         </div>
         <p class="commander-card__quote">${commander.quote}</p>
       </div>
@@ -208,7 +177,7 @@ export function renderCommanderSelectView(state) {
             data-action="open-run-loadout"
             ${state.selectedCommanderId ? "" : "disabled"}
           >
-            Next: Starting Squad
+            Next: Squad Builder
           </button>
         </div>
       </section>

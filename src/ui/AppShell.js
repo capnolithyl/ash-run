@@ -45,6 +45,9 @@ export class AppShell {
       unitsScrollTop: 0,
       focusedField: null
     };
+    this.skirmishUi = {
+      mapListScrollTop: 0
+    };
     this.runLoadoutTableScroll = {
       top: 0,
       left: 0

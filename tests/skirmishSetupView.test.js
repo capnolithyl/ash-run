@@ -44,6 +44,7 @@ test("skirmish setup renders map, economy controls, and visual legend on the sec
   assert.match(html, /Map Preview/);
   assert.match(html, /data-action="select-skirmish-map"/);
   assert.match(html, /class="skirmish-map-option skirmish-map-option--active"/);
+  assert.match(html, /data-role="skirmish-map-list"/);
   assert.match(html, /class="skirmish-map-grid"/);
   assert.match(html, /class="skirmish-map-tile skirmish-map-tile--/);
   assert.doesNotMatch(html, /Â|â|Ã/);

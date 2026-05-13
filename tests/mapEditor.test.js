@@ -92,7 +92,6 @@ test("map editor controller can paint a map, resize it, place units, and export 
   controller.selectMapEditorUnitOwner(TURN_SIDES.ENEMY);
   controller.applyMapEditorToolAt(5, 5);
   controller.updateMapEditorField("name", "Factory Lane");
-  controller.updateMapEditorField("id", "should-be-ignored");
 
   const exported = controller.exportMapEditorMap();
   const parsed = JSON.parse(exported.text);
@@ -163,12 +162,15 @@ test("imported maps also re-derive their map id from the map name", () => {
 test("map editor typing exits controller mode before applying the field update", () => {
   const callOrder = [];
   const shell = {
+    syncMapEditorNameDraft(value) {
+      callOrder.push(`draft:${value}`);
+    },
     setInputMode(mode) {
       callOrder.push(`mode:${mode}`);
     },
     controller: {
-      updateMapEditorField(field, value) {
-        callOrder.push(`field:${field}=${value}`);
+      updateMapEditorField(field, value, options) {
+        callOrder.push(`field:${field}=${value}:${options?.emit}`);
       }
     }
   };
@@ -184,7 +186,36 @@ test("map editor typing exits controller mode before applying the field update",
 
   assert.deepEqual(callOrder, [
     "mode:mouse",
-    "field:name=Factory Lane"
+    "field:name=Factory Lane:false",
+    "draft:Factory Lane"
+  ]);
+});
+
+test("map editor change events still commit inspector fields through the controller", async () => {
+  const callOrder = [];
+  const shell = {
+    setInputMode(mode) {
+      callOrder.push(`mode:${mode}`);
+    },
+    controller: {
+      updateMapEditorField(field, value) {
+        callOrder.push(`field:${field}=${value}`);
+      }
+    }
+  };
+
+  await appShellEventMethods.handleChange.call(shell, {
+    target: {
+      dataset: {
+        mapEditorField: "width"
+      },
+      value: "20"
+    }
+  });
+
+  assert.deepEqual(callOrder, [
+    "mode:mouse",
+    "field:width=20"
   ]);
 });
 

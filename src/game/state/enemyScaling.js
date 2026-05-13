@@ -2,27 +2,10 @@ import { ENEMY_STARTING_FUNDS, TURN_SIDES } from "../core/constants.js";
 import { createUnitFromType } from "../simulation/unitFactory.js";
 import { awardExperience, getXpThreshold } from "../simulation/progression.js";
 
-const ENEMY_REINFORCEMENT_SCHEDULE = [
-  { tier: 3, unitTypeId: "grunt" },
-  { tier: 5, unitTypeId: "bruiser" },
-  { tier: 7, unitTypeId: "skyguard" },
-  { tier: 9, unitTypeId: "siege-gun" }
-];
 const ENEMY_STARTING_FUNDS_PER_TIER = 100;
 const ENEMY_STARTING_FUNDS_MAX = 500;
-const ENEMY_LEVEL_STEP_INTERVAL = 2;
-const ENEMY_LEVEL_MAX = 5;
 const ENEMY_PRECAPTURE_STEP_INTERVAL = 3;
 const ENEMY_PRECAPTURE_MAX = 2;
-
-/**
- * Enemy scaling is intentionally centralized so difficulty pressure can be
- * tuned without touching run assembly or battle rules.
- */
-function getEnemyStartingLevel(difficultyTier) {
-  const levelSteps = Math.floor((Math.max(1, difficultyTier) - 1) / ENEMY_LEVEL_STEP_INTERVAL);
-  return Math.min(ENEMY_LEVEL_MAX, 1 + levelSteps);
-}
 
 function scaleEnemyUnitLevel(unit, targetLevel, seed) {
   let scaledUnit = unit;
@@ -90,19 +73,11 @@ export function applyEnemyMapControlScaling(mapDefinition, difficultyTier) {
   return neutralBuildings;
 }
 
-export function buildScaledEnemyRoster(baseUnitTypeIds, difficultyTier) {
-  const targetLevel = getEnemyStartingLevel(difficultyTier);
-  const rosterUnitTypeIds = [
-    ...baseUnitTypeIds,
-    ...ENEMY_REINFORCEMENT_SCHEDULE
-      .filter((entry) => difficultyTier >= entry.tier)
-      .map((entry) => entry.unitTypeId)
-  ];
-
-  return rosterUnitTypeIds.map((unitTypeId, index) =>
+export function buildScaledEnemyRoster(baseUnitConfigs, difficultyTier) {
+  return baseUnitConfigs.map((unitConfig, index) =>
     scaleEnemyUnitLevel(
-      createUnitFromType(unitTypeId, TURN_SIDES.ENEMY),
-      targetLevel,
+      createUnitFromType(unitConfig.unitTypeId, TURN_SIDES.ENEMY),
+      Math.max(1, Number(unitConfig.level) || 1),
       difficultyTier * 1000 + index
     )
   );

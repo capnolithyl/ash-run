@@ -25,7 +25,11 @@ function createRunState(overrides = {}) {
     mapIndex: 0,
     targetMapCount: 10,
     mapSequence: [MAP_POOL[0].id],
-    roster: [],
+    roster: [
+      createPersistentUnitSnapshot(createUnitFromType("grunt", TURN_SIDES.PLAYER)),
+      createPersistentUnitSnapshot(createUnitFromType("runner", TURN_SIDES.PLAYER)),
+      createPersistentUnitSnapshot(createUnitFromType("longshot", TURN_SIDES.PLAYER))
+    ],
     completedMaps: [],
     ...overrides
   };
@@ -94,6 +98,14 @@ test("createBattleStateForRun scales enemy opening pressure on later maps", () =
   assert.ok(fourthMap.log.includes("Enemy pressure increased to tier 4."));
 });
 
+test("createBattleStateForRun respects explicit enemy opener levels from run balance", () => {
+  const fourthMap = createBattleStateForRun(createRunState({ mapIndex: 3 }));
+
+  assert.ok(
+    fourthMap.enemy.units.some((unit) => unit.unitTypeId === "gunship" && unit.level === 3)
+  );
+});
+
 test("createBattleStateForRun assigns anti-air support when enemy opens with air power", () => {
   let battleState = null;
 
@@ -147,6 +159,30 @@ test("skirmish battle creation assigns deterministic enemy AI archetypes for the
   });
 
   assert.equal(firstBattle.enemy.aiArchetype, secondBattle.enemy.aiArchetype);
+});
+
+test("skirmish battle creation no longer injects commander starter squads on spawnless maps", () => {
+  const battleState = createSkirmishBattleState({
+    mapId: "spannisland",
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
+
+  assert.equal(battleState.player.units.length, 0);
+  assert.equal(battleState.enemy.units.length, 0);
+});
+
+test("run battle creation can deploy bought squads on maps without authored spawn points", () => {
+  const battleState = createBattleStateForRun(createRunState({
+    mapSequence: ["spannisland-run"]
+  }));
+
+  assert.ok(battleState.player.units.length > 0);
+  assert.ok(battleState.enemy.units.length > 0);
+  assert.equal(uniquePositionCount(battleState.player.units), battleState.player.units.length);
+  assert.equal(uniquePositionCount(battleState.enemy.units), battleState.enemy.units.length);
 });
 
 test("enemy AI archetype rolls stay biased by commander weights across skirmish battle creation", () => {

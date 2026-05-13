@@ -214,7 +214,12 @@ function renderSkirmishCommandersStep(state) {
 function renderSkirmishMapStep(state, selectedMap) {
   return `
     <div class="skirmish-map-layout">
-      <div class="skirmish-map-list" role="listbox" aria-label="Skirmish map list">
+      <div
+        class="skirmish-map-list"
+        data-role="skirmish-map-list"
+        role="listbox"
+        aria-label="Skirmish map list"
+      >
         ${MAP_POOL.map((mapDefinition) => {
           const isSelected = mapDefinition.id === state.skirmishSetup.mapId;
           const selected = isSelected ? "skirmish-map-option--active" : "";

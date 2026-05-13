@@ -2,6 +2,14 @@ import { SCREEN_IDS } from "../../game/core/constants.js";
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
+  syncMapEditorNameDraft(value) {
+    const headerTitle = this.root.querySelector(".map-editor-header__copy h2");
+
+    if (headerTitle) {
+      headerTitle.textContent = String(value ?? "").trimStart() || "Untitled Map";
+    }
+  },
+
   getDebugField(field, fallback = "") {
     return this.root.querySelector(`[data-debug-field="${field}"]`)?.value ?? fallback;
   },
@@ -419,6 +427,7 @@ export const appShellEventMethods = {
     if (mapEditorField) {
       this.setInputMode("mouse");
       this.controller.updateMapEditorField(mapEditorField, event.target.value);
+
       return;
     }
 
@@ -461,6 +470,10 @@ export const appShellEventMethods = {
     }
 
     this.setInputMode("mouse");
-    this.controller.updateMapEditorField(mapEditorField, event.target.value);
+
+    if (mapEditorField === "name") {
+      this.controller.updateMapEditorField(mapEditorField, event.target.value, { emit: false });
+      this.syncMapEditorNameDraft(event.target.value);
+    }
   }
 };

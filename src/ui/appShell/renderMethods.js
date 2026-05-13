@@ -36,6 +36,10 @@ export const appShellRenderMethods = {
       this.resetMapEditorUiState();
     }
 
+    if (state.screen !== SCREEN_IDS.SKIRMISH_SETUP) {
+      this.resetSkirmishUiState();
+    }
+
     if (state.screen === SCREEN_IDS.COMMANDER_SELECT) {
       this.renderCommanderSelect(state);
       this.syncControllerFocusAfterRender();
@@ -44,6 +48,12 @@ export const appShellRenderMethods = {
 
     if (state.screen === SCREEN_IDS.RUN_LOADOUT) {
       this.renderRunLoadout(state);
+      this.syncControllerFocusAfterRender();
+      return;
+    }
+
+    if (state.screen === SCREEN_IDS.SKIRMISH_SETUP) {
+      this.renderSkirmishSetup(state);
       this.syncControllerFocusAfterRender();
       return;
     }
@@ -71,13 +81,6 @@ export const appShellRenderMethods = {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderProgressionView(state);
-        this.syncControllerFocusAfterRender();
-        return;
-      case SCREEN_IDS.SKIRMISH_SETUP:
-        this.resetBattleUiTimers();
-        this.previousBattleSnapshot = null;
-        this.root.innerHTML = renderSkirmishSetupView(state);
-        this.syncCommanderSliders(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.TUTORIAL:
@@ -165,6 +168,12 @@ export const appShellRenderMethods = {
       rightRailScrollTop: 0,
       unitsScrollTop: 0,
       focusedField: null
+    };
+  },
+
+  resetSkirmishUiState() {
+    this.skirmishUi = {
+      mapListScrollTop: 0
     };
   },
 
@@ -895,6 +904,19 @@ export const appShellRenderMethods = {
     this.applyRunLoadoutTableScroll();
   },
 
+  renderSkirmishSetup(state) {
+    this.resetBattleUiTimers();
+    this.previousBattleSnapshot = null;
+
+    if (this.root.querySelector('[data-screen-id="skirmish-setup"]')) {
+      this.captureSkirmishUiState();
+    }
+
+    this.root.innerHTML = renderSkirmishSetupView(state);
+    this.syncCommanderSliders(state);
+    this.applySkirmishUiState();
+  },
+
   renderMapEditor(state) {
     this.resetBattleUiTimers();
     this.previousBattleSnapshot = null;
@@ -933,6 +955,11 @@ export const appShellRenderMethods = {
             typeof focusedField.selectionEnd === "number" ? focusedField.selectionEnd : null
         }
       : null;
+  },
+
+  captureSkirmishUiState() {
+    const mapList = this.root.querySelector('[data-role="skirmish-map-list"]');
+    this.skirmishUi.mapListScrollTop = mapList?.scrollTop ?? 0;
   },
 
   applyMapEditorUiState() {
@@ -974,6 +1001,14 @@ export const appShellRenderMethods = {
       typeof nextField.setSelectionRange === "function"
     ) {
       nextField.setSelectionRange(focusedField.selectionStart, focusedField.selectionEnd);
+    }
+  },
+
+  applySkirmishUiState() {
+    const mapList = this.root.querySelector('[data-role="skirmish-map-list"]');
+
+    if (mapList) {
+      mapList.scrollTop = this.skirmishUi.mapListScrollTop ?? 0;
     }
   },
 

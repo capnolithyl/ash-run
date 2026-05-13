@@ -29,7 +29,7 @@ test("commander select renders carousel controls and a reachable deployment acti
   assert.match(html, /data-action="commander-slider-prev"/);
   assert.match(html, /data-action="commander-slider-next"/);
   assert.match(html, /data-role="start-run-button"/);
-  assert.match(html, /Next: Starting Squad/);
+  assert.match(html, /Next: Squad Builder/);
   assert.match(html, /commander-card__info-image/);
   assert.match(html, /assets\/img\/commanders\/atlas\/Atlas%20-%20Info\.png/);
   assert.match(html, /assets\/img\/commanders\/sables\/Sables%20-%20Info\.png/);
@@ -40,14 +40,12 @@ test("commander select renders carousel controls and a reachable deployment acti
   assert.match(html, /commander-card__hover-overlay/);
   assert.match(html, /aria-disabled="true"/);
   assert.match(html, /tabindex="-1"/);
-  assert.match(html, /Starting Squad/);
   assert.match(html, /Field Repairs/);
   assert.match(html, /Blitz Surge/);
   assert.match(html, /"If it still rolls, it can still win\."/);
-  assert.match(html, /2x Grunt/);
-  assert.match(html, /Bruiser/);
   assert.match(html, /All enemies take 10% damage and Burn for 1 turn\./);
   assert.match(html, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
+  assert.doesNotMatch(html, /Starting Squad/);
   assert.doesNotMatch(html, /halves attack/i);
   assert.doesNotMatch(html, /randomly halves one visible stat/i);
 });

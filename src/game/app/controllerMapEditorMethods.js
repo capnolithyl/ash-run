@@ -144,7 +144,8 @@ export const controllerMapEditorMethods = {
     this.emit();
   },
 
-  updateMapEditorField(field, value) {
+  updateMapEditorField(field, value, options = {}) {
+    const { emit = true } = options;
     const mapData = this.state.mapEditor?.mapData;
 
     if (!mapData) {
@@ -170,7 +171,9 @@ export const controllerMapEditorMethods = {
       return;
     }
 
-    this.emit();
+    if (emit) {
+      this.emit();
+    }
   },
 
   setMapEditorSelectedTile(tile) {
