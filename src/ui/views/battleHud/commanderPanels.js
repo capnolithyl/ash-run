@@ -4,6 +4,32 @@ import { getCommanderPowerMax } from "../../../game/content/commanders.js";
 
 const COMMANDER_POWER_SEGMENT_VALUE = 25;
 const COMMANDER_POWER_SEGMENT_HALF_STEPS = 2;
+const COMMANDER_PANEL_ACTIVE_GLOW_CYCLE_MS = 2400;
+const COMMANDER_PANEL_ACTIVE_BORDER_CYCLE_MS = 3100;
+const COMMANDER_PANEL_ACTIVE_SPINE_CYCLE_MS = 1500;
+
+function getCommanderAnimationClockMs() {
+  if (typeof performance !== "undefined" && typeof performance.now === "function") {
+    return performance.now();
+  }
+
+  return Date.now();
+}
+
+function getCommanderPanelStyle(commanderAccent, { isActive = false, animationClockMs = 0 } = {}) {
+  const styleParts = [`--accent:${commanderAccent}`];
+
+  if (isActive) {
+    const animationClock = Number.isFinite(animationClockMs) ? animationClockMs : 0;
+    styleParts.push(
+      `--commander-active-glow-delay:${-Math.floor(animationClock % COMMANDER_PANEL_ACTIVE_GLOW_CYCLE_MS)}ms`,
+      `--commander-active-border-delay:${-Math.floor(animationClock % COMMANDER_PANEL_ACTIVE_BORDER_CYCLE_MS)}ms`,
+      `--commander-active-spine-delay:${-Math.floor(animationClock % COMMANDER_PANEL_ACTIVE_SPINE_CYCLE_MS)}ms`
+    );
+  }
+
+  return styleParts.join("; ");
+}
 
 function getCommanderTooltipSlot(systemKey) {
   return systemKey === "passive" ? "trait" : "active";
@@ -12,15 +38,15 @@ function getCommanderTooltipSlot(systemKey) {
 function renderCommanderSystem(system, systemKey) {
   const systemLabel = systemKey === "passive" ? "Trait" : "Ability";
   const tooltipSlot = getCommanderTooltipSlot(systemKey);
+  const systemVariant = systemKey === "passive" ? "trait" : "ability";
 
   return `
     <button
       type="button"
-      class="commander-panel__system"
+      class="commander-panel__system commander-panel__system--${systemVariant}"
       data-tooltip-trigger="${tooltipSlot}"
       aria-label="${systemLabel}: ${system.name}. ${system.summary}"
     >
-      <span>${systemLabel}</span>
       <strong>${system.name}</strong>
     </button>
   `;
@@ -175,14 +201,34 @@ export function renderCommanderPanel(
   commander,
   sideState,
   side,
-  { fundsGain = null, canActivatePower = false, isCharged = false, isActive = false, showFunds = true } = {}
+  {
+    fundsGain = null,
+    canActivatePower = false,
+    isCharged = false,
+    isActive = false,
+    showFunds = true,
+    animationClockMs = 0
+  } = {}
 ) {
   const sideLabel = side === TURN_SIDES.PLAYER ? "Player Commander" : "Enemy Commander";
   const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
+  const shellClassName = `commander-panel-shell commander-panel-shell--${side} ${
+    isActive ? "commander-panel-shell--power-active" : ""
+  }`.trim();
+  const panelClassName = `commander-panel commander-panel--${side} ${
+    isActive ? "commander-panel--power-active" : ""
+  }`.trim();
+  const resolvedAnimationClockMs = Number.isFinite(animationClockMs)
+    ? animationClockMs
+    : getCommanderAnimationClockMs();
+  const panelStyle = getCommanderPanelStyle(commander.accent, {
+    isActive,
+    animationClockMs: resolvedAnimationClockMs
+  });
 
   return `
-    <div class="commander-panel-shell commander-panel-shell--${side}" style="--accent:${commander.accent}">
-      <div class="commander-panel commander-panel--${side}">
+    <div class="${shellClassName}" style="${panelStyle}">
+      <div class="${panelClassName}">
         <div class="commander-panel__identity">
           ${
             portraitImageUrl
@@ -213,9 +259,9 @@ export function renderCommanderPanel(
               ${renderCommanderSystem(commander.passive, "passive")}
               ${renderCommanderSystem(commander.active, "active")}
             </div>
-          </div>
-          <div class="commander-panel__charge-row">
-            ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged, isActive })}
+            <div class="commander-panel__charge-row">
+              ${renderCommanderPowerControl(commander, sideState, side, { canActivatePower, isCharged, isActive })}
+            </div>
           </div>
         </div>
       </div>

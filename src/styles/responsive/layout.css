@@ -948,13 +948,16 @@
 
   .battle-commanders .commander-panel__details {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "name"
+      "systems"
+      "charge";
     gap: 0.3rem;
+    min-height: 0;
   }
 
-  .battle-commanders .commander-panel__portrait {
-    width: 3.1rem;
-    height: 3.9rem;
-    border-radius: 0.8rem;
+  .battle-commanders .commander-panel__portrait-frame {
+    width: 3.7rem;
   }
 
   .battle-commanders .commander-panel__summary h2 {
@@ -966,30 +969,28 @@
   }
 
   .battle-commanders .commander-panel__systems {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.25rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.22rem;
+    padding-inline-end: 0;
   }
 
   .battle-commanders .commander-panel__system {
-    padding: 0.28rem 0.38rem;
-    border-radius: 0.45rem;
-  }
-
-  .battle-commanders .commander-panel__system span {
-    font-size: 0.5rem;
+    min-height: 2.85rem;
+    padding: 0.84rem 0.5rem 0.4rem;
   }
 
   .battle-commanders .commander-panel__system strong {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
+    line-height: 1.12;
+    letter-spacing: 0.05em;
   }
 
   .battle-commanders .commander-panel__charge-row {
-    margin-top: 0;
+    margin-top: 0.04rem;
   }
 
-  .battle-commanders .commander-panel--enemy .commander-panel__nameplate,
-  .battle-commanders .commander-panel--enemy .commander-panel__systems {
-    order: initial;
+  .battle-commanders .commander-panel__charge-row .commander-power-button {
+    max-width: none;
   }
 
   .battle-commanders .commander-panel::after {

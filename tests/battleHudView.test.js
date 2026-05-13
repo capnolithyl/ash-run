@@ -181,6 +181,14 @@ test("battle HUD shows compact commander strips with hover-only commander toolti
   assert.equal(countMatches(html, /role="tooltip"/g), 4);
   assert.equal(countMatches(html, /data-tooltip-trigger="trait"/g), 2);
   assert.equal(countMatches(html, /data-tooltip-trigger="active"/g), 2);
+  assert.match(html, /class="commander-panel__system commander-panel__system--trait"/);
+  assert.match(html, /class="commander-panel__system commander-panel__system--ability"/);
+  assert.match(
+    html,
+    /commander-panel__details[\s\S]*?commander-panel__nameplate[\s\S]*?commander-panel__systems[\s\S]*?commander-panel__charge-row/
+  );
+  assert.doesNotMatch(html, /<button[^>]*class="commander-panel__system[^"]*"[\s\S]*?<span>Trait<\/span>[\s\S]*?<\/button>/);
+  assert.doesNotMatch(html, /<button[^>]*class="commander-panel__system[^"]*"[\s\S]*?<span>Ability<\/span>[\s\S]*?<\/button>/);
   assert.doesNotMatch(html, /Charging/);
   assert.doesNotMatch(html, /Passive:/);
   assert.doesNotMatch(html, /Power:/);
@@ -696,6 +704,11 @@ test("battle HUD keeps the power meter visually active for the rest of the activ
 
   assert.match(html, /commander-power-button--active/);
   assert.match(html, /commander-meter__segments--active/);
+  assert.match(html, /commander-panel-shell--power-active/);
+  assert.match(html, /commander-panel--power-active/);
+  assert.match(html, /--commander-active-glow-delay:-\d+ms/);
+  assert.match(html, /--commander-active-border-delay:-\d+ms/);
+  assert.match(html, /--commander-active-spine-delay:-\d+ms/);
   assert.equal(countMatches(html, /commander-meter__segment--full/g), segmentCount);
   assert.equal(countMatches(html, /commander-meter__segment--half/g), 0);
   assert.doesNotMatch(html, /Active This Turn/);

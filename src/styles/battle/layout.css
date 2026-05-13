@@ -9,7 +9,7 @@
   --battle-desktop-left-width: clamp(17rem, 18vw, 18.75rem);
   --battle-desktop-right-width: clamp(15rem, 16vw, 16.5rem);
   --battle-commanders-top: 0.8rem;
-  --battle-desktop-panels-top: 11.65rem;
+  --battle-desktop-panels-top: calc(11.65rem + clamp(1.35rem, 1.45vw, 1.7rem));
   --battle-desktop-bottom: 6.7rem;
 }
 

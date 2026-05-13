@@ -188,6 +188,10 @@ export function renderBattleHudView(state, options = {}) {
   const enemyPowerActive =
     battleSnapshot.turn.activeSide === TURN_SIDES.ENEMY &&
     battleSnapshot.enemy.powerUsedTurn === battleSnapshot.turn.number;
+  const commanderAnimationClockMs =
+    typeof performance !== "undefined" && typeof performance.now === "function"
+      ? performance.now()
+      : Date.now();
   const playerFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.PLAYER);
   const enemyFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.ENEMY);
 
@@ -201,12 +205,14 @@ export function renderBattleHudView(state, options = {}) {
           showFunds,
           canActivatePower: playerPowerEnabled,
           isCharged: playerPowerCharged,
-          isActive: playerPowerActive
+          isActive: playerPowerActive,
+          animationClockMs: commanderAnimationClockMs
         })}
         ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", {
           fundsGain,
           showFunds,
-          isActive: enemyPowerActive
+          isActive: enemyPowerActive,
+          animationClockMs: commanderAnimationClockMs
         })}
       </div>
       <div class="battle-footer-actions" aria-label="Battle controls">
