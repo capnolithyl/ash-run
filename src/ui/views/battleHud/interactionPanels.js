@@ -1,4 +1,4 @@
-import { BATTLE_MODES } from "../../../game/core/constants.js";
+import { BATTLE_MODES, UNIT_TAGS } from "../../../game/core/constants.js";
 import { getBattlefieldLayout } from "../../../game/core/battlefieldLayout.js";
 import {
   COMMANDERS,
@@ -6,7 +6,33 @@ import {
   getEnemyAiArchetypeLabel
 } from "../../../game/content/commanders.js";
 import { ENEMY_AI_ARCHETYPE_ORDER } from "../../../game/core/constants.js";
+import { RUN_CARD_TYPES, RUN_UPGRADES } from "../../../game/content/runUpgrades.js";
 import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
+
+const DEBUG_GEAR_UPGRADES = RUN_UPGRADES.filter((upgrade) => upgrade.type === RUN_CARD_TYPES.GEAR);
+
+function renderDebugGearOptions(selectedSlot = null, eligibleFamily = null) {
+  const normalizedSelectedSlot =
+    DEBUG_GEAR_UPGRADES.some(
+      (upgrade) => upgrade.id === selectedSlot && (!eligibleFamily || upgrade.eligibleFamily === eligibleFamily)
+    )
+      ? selectedSlot
+      : null;
+
+  return [
+    `<option value="" ${normalizedSelectedSlot ? "" : "selected"}>No Gear</option>`,
+    ...DEBUG_GEAR_UPGRADES.map((upgrade) => {
+      const isEligible = !eligibleFamily || upgrade.eligibleFamily === eligibleFamily;
+      const labelSuffix = upgrade.eligibleFamily === UNIT_TAGS.INFANTRY ? " (Infantry)" : "";
+      return `<option
+        value="${upgrade.id}"
+        data-eligible-family="${upgrade.eligibleFamily ?? ""}"
+        ${upgrade.id === normalizedSelectedSlot ? "selected" : ""}
+        ${isEligible ? "" : "disabled"}
+      >${upgrade.name}${labelSuffix}</option>`;
+    })
+  ].join("");
+}
 
 function getBattleLayout(battleSnapshot) {
   if (typeof window === "undefined") {
@@ -281,6 +307,7 @@ export function renderDebugControls(state, battleSnapshot) {
 
   const selectedTile = battleSnapshot.presentation?.selectedTile;
   const selectedUnit = selectedTile?.unit;
+  const selectedEditable = selectedUnit?.editable ?? null;
   const defaultSpawnUnit = UNIT_CATALOG.grunt ?? Object.values(UNIT_CATALOG)[0];
   const commanderOptions = COMMANDERS.map(
     (commander) => `<option value="${commander.id}">${commander.name}</option>`
@@ -292,6 +319,7 @@ export function renderDebugControls(state, battleSnapshot) {
     .map(
       (unit) => `<option
         value="${unit.id}"
+        data-family="${unit.family}"
         data-stat-attack="${unit.attack}"
         data-stat-armor="${unit.armor}"
         data-stat-max-health="${unit.maxHealth}"
@@ -332,6 +360,11 @@ export function renderDebugControls(state, battleSnapshot) {
           </label>
           <label>Y
             <input data-debug-field="spawn-y" type="number" value="${spawnY}" min="0" max="${battleSnapshot.map.height - 1}" />
+          </label>
+          <label>Gear
+            <select data-debug-field="spawn-gear-slot">
+              ${renderDebugGearOptions(null, defaultSpawnUnit?.family ?? null)}
+            </select>
           </label>
           <label>ATK <input data-debug-field="spawn-attack" type="number" value="${defaultSpawnUnit?.attack ?? ""}" /></label>
           <label>ARM <input data-debug-field="spawn-armor" type="number" value="${defaultSpawnUnit?.armor ?? ""}" /></label>
@@ -406,24 +439,29 @@ export function renderDebugControls(state, battleSnapshot) {
         <summary>
           <span>
             <strong>Selected Unit Overrides</strong>
-            <small>${selectedUnit ? selectedUnit.name : "No unit selected"}</small>
+            <small>${selectedUnit ? `${selectedUnit.name} | Tile ${selectedTile?.x ?? 0}, ${selectedTile?.y ?? 0}` : "No unit selected"}</small>
           </span>
         </summary>
         <div class="debug-grid">
-          <label>HP <input data-debug-field="unit-hp" type="number" value="${selectedUnit?.hp ?? ""}" /></label>
-          <label>Max HP <input data-debug-field="unit-max-health" type="number" value="${selectedUnit?.maxHealth ?? ""}" /></label>
-          <label>ATK <input data-debug-field="unit-attack" type="number" value="${selectedUnit?.attack ?? ""}" /></label>
-          <label>ARM <input data-debug-field="unit-armor" type="number" value="${selectedUnit?.armor ?? ""}" /></label>
-          <label>MOV <input data-debug-field="unit-movement" type="number" value="${selectedUnit?.movement ?? ""}" /></label>
-          <label>Min RNG <input data-debug-field="unit-min-range" type="number" value="${selectedUnit?.minRange ?? ""}" /></label>
-          <label>Max RNG <input data-debug-field="unit-max-range" type="number" value="${selectedUnit?.maxRange ?? ""}" /></label>
-          <label>STA <input data-debug-field="unit-stamina" type="number" value="${selectedUnit?.stamina ?? ""}" /></label>
-          <label>Max STA <input data-debug-field="unit-max-stamina" type="number" /></label>
-          <label>Ammo <input data-debug-field="unit-ammo" type="number" value="${selectedUnit?.ammo ?? ""}" /></label>
-          <label>Max Ammo <input data-debug-field="unit-max-ammo" type="number" /></label>
-          <label>Luck <input data-debug-field="unit-luck" type="number" /></label>
-          <label>Level <input data-debug-field="unit-level" type="number" value="${selectedUnit?.level ?? ""}" min="1" /></label>
-          <label>XP <input data-debug-field="unit-experience" type="number" value="${selectedUnit?.experience ?? ""}" min="0" /></label>
+          <label>HP <input data-debug-field="unit-hp" type="number" value="${selectedEditable?.hp ?? ""}" /></label>
+          <label>Max HP <input data-debug-field="unit-max-health" type="number" value="${selectedEditable?.maxHealth ?? ""}" /></label>
+          <label>ATK <input data-debug-field="unit-attack" type="number" value="${selectedEditable?.attack ?? ""}" /></label>
+          <label>ARM <input data-debug-field="unit-armor" type="number" value="${selectedEditable?.armor ?? ""}" /></label>
+          <label>MOV <input data-debug-field="unit-movement" type="number" value="${selectedEditable?.movement ?? ""}" /></label>
+          <label>Min RNG <input data-debug-field="unit-min-range" type="number" value="${selectedEditable?.minRange ?? ""}" /></label>
+          <label>Max RNG <input data-debug-field="unit-max-range" type="number" value="${selectedEditable?.maxRange ?? ""}" /></label>
+          <label>STA <input data-debug-field="unit-stamina" type="number" value="${selectedEditable?.stamina ?? ""}" /></label>
+          <label>Max STA <input data-debug-field="unit-max-stamina" type="number" value="${selectedEditable?.staminaMax ?? ""}" /></label>
+          <label>Ammo <input data-debug-field="unit-ammo" type="number" value="${selectedEditable?.ammo ?? ""}" /></label>
+          <label>Max Ammo <input data-debug-field="unit-max-ammo" type="number" value="${selectedEditable?.ammoMax ?? ""}" /></label>
+          <label>Luck <input data-debug-field="unit-luck" type="number" value="${selectedEditable?.luck ?? ""}" /></label>
+          <label>Gear
+            <select data-debug-field="unit-gear-slot" ${selectedUnit ? "" : "disabled"}>
+              ${renderDebugGearOptions(selectedEditable?.gearSlot ?? null, selectedUnit?.family ?? null)}
+            </select>
+          </label>
+          <label>Level <input data-debug-field="unit-level" type="number" value="${selectedEditable?.level ?? ""}" min="1" /></label>
+          <label>XP <input data-debug-field="unit-experience" type="number" value="${selectedEditable?.experience ?? ""}" min="0" /></label>
         </div>
         <div class="debug-actions">
           <button class="menu-button menu-button--small" data-action="debug-apply-selected-stats" ${
