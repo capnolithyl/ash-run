@@ -1,5 +1,5 @@
 {
-  "id": "spannisland",
+  "id": "spann-island",
   "name": "Spann Island",
   "theme": "ash",
   "width": 16,
@@ -188,152 +188,155 @@
   ],
   "buildings": [
     {
-      "id": "spannisland-enemy-motor-pool-11-1",
+      "id": "spann-island-enemy-motor-pool-11-1",
       "type": "motor-pool",
       "owner": "enemy",
       "x": 11,
       "y": 1
     },
     {
-      "id": "spannisland-enemy-motor-pool-13-1",
+      "id": "spann-island-enemy-motor-pool-13-1",
       "type": "motor-pool",
       "owner": "enemy",
       "x": 13,
       "y": 1
     },
     {
-      "id": "spannisland-enemy-command-12-2",
+      "id": "spann-island-enemy-command-12-2",
       "type": "command",
       "owner": "enemy",
       "x": 12,
       "y": 2
     },
     {
-      "id": "spannisland-enemy-barracks-13-2",
+      "id": "spann-island-enemy-barracks-13-2",
       "type": "barracks",
       "owner": "enemy",
       "x": 13,
       "y": 2
     },
     {
-      "id": "spannisland-neutral-sector-9-2",
+      "id": "spann-island-neutral-sector-9-2",
       "type": "sector",
       "owner": "neutral",
       "x": 9,
       "y": 2
     },
     {
-      "id": "spannisland-neutral-sector-1-3",
+      "id": "spann-island-neutral-sector-1-3",
       "type": "sector",
       "owner": "neutral",
       "x": 1,
       "y": 3
     },
     {
-      "id": "spannisland-enemy-barracks-13-3",
+      "id": "spann-island-enemy-barracks-13-3",
       "type": "barracks",
       "owner": "enemy",
       "x": 13,
       "y": 3
     },
     {
-      "id": "spannisland-neutral-sector-2-3",
+      "id": "spann-island-neutral-sector-2-3",
       "type": "sector",
       "owner": "neutral",
       "x": 2,
       "y": 3
     },
     {
-      "id": "spannisland-neutral-sector-11-4",
+      "id": "spann-island-neutral-sector-11-4",
       "type": "sector",
       "owner": "neutral",
       "x": 11,
       "y": 4
     },
     {
-      "id": "spannisland-neutral-hospital-9-4",
+      "id": "spann-island-neutral-hospital-9-4",
       "type": "hospital",
       "owner": "neutral",
       "x": 9,
       "y": 4
     },
     {
-      "id": "spannisland-player-barracks-1-5",
+      "id": "spann-island-player-barracks-1-5",
       "type": "barracks",
       "owner": "player",
       "x": 1,
       "y": 5
     },
     {
-      "id": "spannisland-neutral-sector-13-5",
+      "id": "spann-island-neutral-sector-13-5",
       "type": "sector",
       "owner": "neutral",
       "x": 13,
       "y": 5
     },
     {
-      "id": "spannisland-neutral-sector-4-5",
+      "id": "spann-island-neutral-sector-4-5",
       "type": "sector",
       "owner": "neutral",
       "x": 4,
       "y": 5
     },
     {
-      "id": "spannisland-player-barracks-1-6",
+      "id": "spann-island-player-barracks-1-6",
       "type": "barracks",
       "owner": "player",
       "x": 1,
       "y": 6
     },
     {
-      "id": "spannisland-player-command-2-6",
+      "id": "spann-island-player-command-2-6",
       "type": "command",
       "owner": "player",
       "x": 2,
       "y": 6
     },
     {
-      "id": "spannisland-player-motor-pool-2-7",
+      "id": "spann-island-player-motor-pool-2-7",
       "type": "motor-pool",
       "owner": "player",
       "x": 2,
       "y": 7
     },
     {
-      "id": "spannisland-player-motor-pool-3-7",
+      "id": "spann-island-player-motor-pool-3-7",
       "type": "motor-pool",
       "owner": "player",
       "x": 3,
       "y": 7
     },
     {
-      "id": "spannisland-neutral-repair-station-12-8",
+      "id": "spann-island-neutral-repair-station-12-8",
       "type": "repair-station",
       "owner": "neutral",
       "x": 12,
       "y": 8
     },
     {
-      "id": "spannisland-neutral-sector-13-8",
+      "id": "spann-island-neutral-sector-13-8",
       "type": "sector",
       "owner": "neutral",
       "x": 13,
       "y": 8
     },
     {
-      "id": "spannisland-neutral-sector-5-8",
+      "id": "spann-island-neutral-sector-5-8",
       "type": "sector",
       "owner": "neutral",
       "x": 5,
       "y": 8
     },
     {
-      "id": "spannisland-neutral-sector-8-8",
+      "id": "spann-island-neutral-sector-8-8",
       "type": "sector",
       "owner": "neutral",
       "x": 8,
       "y": 8
     }
   ],
-  "units": []
+  "units": [],
+  "goal": {
+    "type": "hq-capture"
+  }
 }
