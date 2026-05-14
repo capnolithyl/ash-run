@@ -1,6 +1,7 @@
 import { BATTLE_MODES, TURN_SIDES } from "../core/constants.js";
 import { getRunUpgradeById } from "../content/runUpgrades.js";
 import { describeBuilding } from "../content/buildings.js";
+import { DEFEND_OBJECTIVE_MAX_HP } from "../content/mapGoals.js";
 import { getArmorClassForUnit, getWeaponClassForUnit } from "../content/weaponClasses.js";
 import {
   canResupplyUnit,
@@ -20,6 +21,12 @@ import {
   getPositionArmorBonus
 } from "./combatResolver.js";
 import { findUnitById } from "./battleUnits.js";
+import {
+  canUnitDropOffHostage,
+  canUnitRescueHostage,
+  getMissionMarkers,
+  getMissionProgressText
+} from "./missionRules.js";
 import {
   getBuildingAt,
   getAntiAirGearAmmo,
@@ -56,6 +63,7 @@ function getSupportNeedScore(state, unit) {
 
 function createEmptyPresentation() {
   return {
+    mission: null,
     selectedTile: null,
     pendingAction: null,
     reachableTiles: [],
@@ -139,7 +147,7 @@ export function describeUnit(state, unit) {
     attack: getDisplayedUnitAttack(state, unit),
     armor: getDisplayedUnitArmor(state, unit),
     positionArmorBonus,
-    movement: getDisplayedUnitMovement(state, unit),
+    movement: getUnitMovementAllowance(unit, getDisplayedUnitMovement(state, unit)),
     minRange: unit.stats.minRange,
     maxRange: getDisplayedUnitRangeCap(state, unit) + getElevationRangeBonus(state, unit),
     experience: experience.current,
@@ -156,6 +164,7 @@ export function describeUnit(state, unit) {
     isSlowed: (unit.statuses ?? []).some(
       (status) => status.type === "mobility" && (Number(status.value) || 0) < 0
     ),
+    isHostageCarrier: Boolean(unit.temporary?.hostageCarrier),
     hasMoved: unit.hasMoved,
     hasAttacked: unit.hasAttacked,
     editable: describeEditableUnit(unit),
@@ -167,6 +176,27 @@ export function describeUnit(state, unit) {
           ammo: gearUpgrade.id === "gear-aa-kit" ? getAntiAirGearAmmo(unit) : null
         }
       : null
+  };
+}
+
+function buildMissionPresentation(state) {
+  const mission = state.mission;
+
+  if (!mission) {
+    return null;
+  }
+
+  return {
+    type: mission.type,
+    label: mission.label,
+    status: getMissionProgressText(state),
+    turnsRemaining: mission.turnsRemaining ?? null,
+    turnLimit: mission.turnLimit ?? null,
+    targetHp: mission.defend?.targetHp ?? null,
+    maxTargetHp: mission.defend?.maxHp ?? DEFEND_OBJECTIVE_MAX_HP,
+    rescueStatus: mission.rescue?.status ?? null,
+    hostageCarrierUnitId: mission.rescue?.carrierUnitId ?? null,
+    markers: getMissionMarkers(state)
   };
 }
 
@@ -294,7 +324,7 @@ function createPendingActionView(state) {
           .filter((option) => option.needScore > 0)
           .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id))
       : [];
-  const adjacentRunners = !isSlipstream && unit.family === "infantry"
+  const adjacentRunners = !isSlipstream && unit.family === "infantry" && !unit.temporary?.hostageCarrier
     ? getLivingUnitsForSide(state, unit.owner)
         .filter((candidate) =>
           candidate.unitTypeId === "runner" &&
@@ -332,6 +362,8 @@ function createPendingActionView(state) {
     !unit.transport?.hasLockedUnload &&
     (unit.transport?.canUnloadAfterMove || unit.hasMoved) &&
     validUnloadTiles.length > 0;
+  const canRescue = !isSlipstream && canUnitRescueHostage(state, unit);
+  const canDropOff = !isSlipstream && canUnitDropOffHostage(state, unit);
 
   return {
     ...pendingAction,
@@ -342,6 +374,8 @@ function createPendingActionView(state) {
     canSupport: supportTargets.length > 0,
     supportActionLabel: unit.unitTypeId === "medic" ? "Heal" : "Support",
     supportCooldown: unit.cooldowns?.support ?? 0,
+    canRescue,
+    canDropOff,
     canUseMedpack: medpackTargets.length > 0,
     canExtinguish: extinguishTargets.length > 0,
     canEnterTransport,
@@ -368,6 +402,7 @@ export function buildBattlePresentation(snapshot) {
   const selectedBuilding = getSelectedBuilding(snapshot);
   const selectedTile = buildSelectedTile(snapshot, getSelectionCoordinates(snapshot));
   const pendingAction = createPendingActionView(snapshot);
+  const mission = buildMissionPresentation(snapshot);
 
   if (selectedUnit) {
     const attackProfile = getUnitAttackProfile(selectedUnit);
@@ -407,6 +442,7 @@ export function buildBattlePresentation(snapshot) {
 
     return {
       ...createEmptyPresentation(),
+      mission,
       selectedUnitId: selectedUnit.id,
       selectedTile,
       pendingAction,
@@ -456,6 +492,7 @@ export function buildBattlePresentation(snapshot) {
   if (selectedBuilding) {
     return {
       ...createEmptyPresentation(),
+      mission,
       selectedBuildingId: selectedBuilding.id,
       selectedTile,
       pendingAction,
@@ -471,6 +508,7 @@ export function buildBattlePresentation(snapshot) {
   if (selectedTile) {
     return {
       ...createEmptyPresentation(),
+      mission,
       selectedTile,
       pendingAction
     };
@@ -478,6 +516,7 @@ export function buildBattlePresentation(snapshot) {
 
   return {
     ...createEmptyPresentation(),
+    mission,
     pendingAction
   };
 }

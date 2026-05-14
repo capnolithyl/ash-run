@@ -10,6 +10,7 @@ import { findUnitById } from "./battleUnits.js";
 import { buildBattlePresentation } from "./battlePresentation.js";
 import { getRecruitDiscount } from "./commanderEffects.js";
 import * as debugActions from "./debugActions.js";
+import * as missionRules from "./missionRules.js";
 import * as playerActions from "./playerActions.js";
 import { awardExperience } from "./progression.js";
 import * as transportRules from "./transportRules.js";
@@ -62,15 +63,18 @@ export class BattleSystem {
       this.state.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.BALANCED;
     }
     this.state.enemy.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.ENEMY);
+    missionRules.normalizeMissionState(this.state);
   }
 
   getSnapshot() {
+    missionRules.normalizeMissionState(this.state);
     const snapshot = structuredClone(this.state);
     snapshot.presentation = buildBattlePresentation(snapshot);
     return snapshot;
   }
 
   getStateForSave() {
+    missionRules.normalizeMissionState(this.state);
     return structuredClone(this.state);
   }
 
@@ -209,6 +213,14 @@ export class BattleSystem {
 
   useExtinguishAbilityWithPendingUnit(targetId = null) {
     return playerActions.useExtinguishAbilityWithPendingUnit(this, targetId);
+  }
+
+  rescueHostageWithPendingUnit() {
+    return playerActions.rescueHostageWithPendingUnit(this);
+  }
+
+  dropOffHostageWithPendingUnit() {
+    return playerActions.dropOffHostageWithPendingUnit(this);
   }
 
   waitWithPendingUnit() {

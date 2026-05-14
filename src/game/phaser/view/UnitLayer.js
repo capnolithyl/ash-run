@@ -185,9 +185,19 @@ export class UnitLayer {
       .setPadding(4, 1, 4, 1)
       .setOrigin(0.5)
       .setVisible(false);
+    const hostageIcon = this.scene.add
+      .text(0, layout.cellSize * 0.33, "VIP", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: `${Math.max(8, Math.floor(layout.cellSize * 0.14))}px`,
+        color: "#12061f",
+        backgroundColor: "#fff18a"
+      })
+      .setPadding(4, 1, 4, 1)
+      .setOrigin(0.5)
+      .setVisible(false);
     const children = fallbackLabel
-      ? [glow, aura, visual, healthMeter, fallbackLabel, transportIcon, gearIcon]
-      : [glow, aura, shadow, visual, healthMeter, transportIcon, gearIcon];
+      ? [glow, aura, visual, healthMeter, fallbackLabel, transportIcon, gearIcon, hostageIcon]
+      : [glow, aura, shadow, visual, healthMeter, transportIcon, gearIcon, hostageIcon];
 
     const container = this.scene.add.container(0, 0, children);
     container.setDepth(28);
@@ -221,7 +231,8 @@ export class UnitLayer {
       destroyTimer: null,
       animationTimer: null,
       transportIcon,
-      gearIcon
+      gearIcon,
+      hostageIcon
     };
   }
 
@@ -861,6 +872,7 @@ export class UnitLayer {
       const gearBadgeLabel = getGearBadgeLabel(unit.gear?.slot);
       entity.gearIcon?.setText(gearBadgeLabel ?? "");
       entity.gearIcon?.setVisible(Boolean(gearBadgeLabel));
+      entity.hostageIcon?.setVisible(Boolean(unit.temporary?.hostageCarrier));
       const dimmed =
         unit.hasMoved ||
         unit.hasAttacked ||

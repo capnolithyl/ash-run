@@ -12,7 +12,9 @@
 - Turn-based, two sides: player and enemy.
 - Player roster is deployed from persistent snapshots.
 - Enemy roster is generated from commander-based templates plus scaling additions.
-- Victory currently centers on eliminating the enemy force.
+- Every map has exactly one mission goal.
+- Current goal types are `rout`, `hq-capture`, `rescue`, `defend`, and `survive`.
+- Mission rules, not a global fallback, decide victory and defeat for the current battle.
 
 ## Persistence Rules
 

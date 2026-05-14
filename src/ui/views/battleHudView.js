@@ -35,12 +35,14 @@ import {
 function renderBattleMeta(battleSnapshot) {
   const mapName = battleSnapshot.map?.name ?? "Unknown Map";
   const turnLabel = battleSnapshot.turn?.number ?? 1;
+  const mission = battleSnapshot.presentation?.mission ?? null;
 
   return `
     <div class="battle-footer-meta" aria-label="Battle mission details">
       <span class="battle-footer-meta__item">
         <strong>Mission</strong>
-        <em>Ash Run</em>
+        <em>${mission?.label ?? "Rout"}</em>
+        ${mission?.status ? `<small>${mission.status}</small>` : ""}
       </span>
       <span class="battle-footer-meta__item">
         <strong>Map</strong>

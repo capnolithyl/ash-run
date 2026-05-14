@@ -1,3 +1,4 @@
+import { watch } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -11,9 +12,13 @@ const sharedEnv = {
 };
 const devServerScript = path.resolve(root, "scripts/dev-server.mjs");
 const electronScript = path.resolve(root, "scripts/start-electron.mjs");
+const electronSourceDirectory = path.resolve(root, "electron");
 
 let shuttingDown = false;
 let electronProcess = null;
+let restartingElectron = false;
+let electronRestartTimer = null;
+let electronWatcher = null;
 
 const devServerProcess = spawn(process.execPath, [devServerScript], {
   cwd: root,
@@ -37,20 +42,8 @@ devServerProcess.on("exit", (code) => {
 
 try {
   await waitForPort(devPort, devServerProcess);
-
-  electronProcess = spawn(
-    process.execPath,
-    [electronScript, "--dev-server"],
-    {
-      cwd: root,
-      stdio: "inherit",
-      env: sharedEnv
-    }
-  );
-
-  electronProcess.on("exit", (code) => {
-    void shutdown(code ?? 0);
-  });
+  watchElectronSources();
+  launchElectron();
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   await shutdown(1);
@@ -70,9 +63,12 @@ async function shutdown(exitCode) {
   }
 
   shuttingDown = true;
+  clearTimeout(electronRestartTimer);
+  electronWatcher?.close();
 
   if (electronProcess && electronProcess.exitCode === null) {
     electronProcess.kill();
+    await onceChildExits(electronProcess);
   }
 
   if (devServerProcess.exitCode === null) {
@@ -81,6 +77,72 @@ async function shutdown(exitCode) {
   }
 
   process.exit(exitCode);
+}
+
+function watchElectronSources() {
+  electronWatcher = watch(electronSourceDirectory, (_eventType, fileName) => {
+    if (!fileName || shuttingDown) {
+      return;
+    }
+
+    clearTimeout(electronRestartTimer);
+    electronRestartTimer = setTimeout(() => {
+      restartElectron(`electron/${fileName}`);
+    }, 120);
+  });
+}
+
+function launchElectron() {
+  const child = spawn(
+    process.execPath,
+    [electronScript, "--dev-server"],
+    {
+      cwd: root,
+      stdio: "inherit",
+      env: sharedEnv
+    }
+  );
+
+  electronProcess = child;
+
+  child.on("exit", (code) => {
+    if (electronProcess !== child) {
+      return;
+    }
+
+    electronProcess = null;
+
+    if (shuttingDown) {
+      return;
+    }
+
+    if (restartingElectron) {
+      restartingElectron = false;
+      launchElectron();
+      return;
+    }
+
+    void shutdown(code ?? 0);
+  });
+}
+
+function restartElectron(reason) {
+  if (shuttingDown) {
+    return;
+  }
+
+  if (!electronProcess || electronProcess.exitCode !== null) {
+    launchElectron();
+    return;
+  }
+
+  if (restartingElectron) {
+    return;
+  }
+
+  restartingElectron = true;
+  console.log(`Detected ${reason}. Restarting Electron so main/preload changes take effect.`);
+  electronProcess.kill();
 }
 
 function parseDevPort(rawPort) {

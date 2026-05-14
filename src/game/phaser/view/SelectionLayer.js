@@ -141,6 +141,27 @@ function drawSpawnMarker(graphics, layout, spawn, color, label) {
   return text;
 }
 
+function drawObjectiveMarker(graphics, layout, marker) {
+  const center = getTileCenter(layout, marker);
+  const radius = Math.max(10, layout.cellSize * 0.18);
+
+  graphics.fillStyle(0x12061f, 0.9);
+  graphics.fillCircle(center.x, center.y, radius + 4);
+  graphics.fillStyle(marker.color ?? 0xff8a3d, 0.95);
+  graphics.fillCircle(center.x, center.y, radius);
+  graphics.lineStyle(2, 0xfff2d4, 0.95);
+  graphics.strokeCircle(center.x, center.y, radius + 1);
+
+  return graphics.scene.add
+    .text(center.x, center.y, marker.label ?? "!", {
+      fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+      fontSize: `${Math.max(10, Math.floor(layout.cellSize * 0.16))}px`,
+      color: "#12061f"
+    })
+    .setOrigin(0.5)
+    .setDepth(CURSOR_DEPTH + 1);
+}
+
 export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
@@ -319,6 +340,10 @@ export class SelectionLayer {
 
     for (const spawn of options.editorSpawns?.enemy ?? []) {
       markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, 0xff8a3d, "E"));
+    }
+
+    for (const marker of presentation.mission?.markers ?? []) {
+      markerLabels.push(drawObjectiveMarker(this.cursorGraphics, layout, marker));
     }
 
     if (presentation.selectedTile) {

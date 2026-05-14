@@ -10,6 +10,7 @@ export function canLoadUnit(unit, runner) {
     unit.owner === runner.owner &&
     unit.family === UNIT_TAGS.INFANTRY &&
     runner.unitTypeId === "runner" &&
+    !unit.temporary?.hostageCarrier &&
     !unit.transport?.carriedByUnitId &&
     !runner.transport?.carryingUnitId
   );

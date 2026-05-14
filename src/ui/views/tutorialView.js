@@ -2,11 +2,12 @@ const TUTORIAL_STEPS = [
   {
     id: "run",
     eyebrow: "01 / Run Plan",
-    title: "Clear ten maps, keep veterans alive.",
+    title: "Clear ten maps by meeting each mission goal.",
     summary:
-      "Ash Run '84 mixes map-local tactics with a persistent squad. Win each battle, carry survivors forward, and unlock commanders after full clears.",
+      "Ash Run '84 mixes map-local tactics with a persistent squad. Each map has one objective, survivors carry forward, and full clears unlock commanders.",
     points: [
       "Your goal is a 10-map run.",
+      "Maps can ask for Rout, HQ Capture, Rescue, Defend, or Survive.",
       "Surviving units keep XP, levels, and stat growth.",
       "Defeat ends the run, so preserving strong units matters."
     ],
@@ -20,7 +21,7 @@ const TUTORIAL_STEPS = [
       "Most turns are a rhythm of inspecting tiles, moving units, attacking or using a command, and passing control to the enemy.",
     points: [
       "Select a unit to preview movement and legal actions.",
-      "Use Fire, Capture, Support, Enter, Unload, Wait, or Redo from the command prompt.",
+      "Use Fire, Capture, Rescue, Drop Off, Support, Enter, Unload, Wait, or Redo from the command prompt.",
       "Next Unit jumps to another ready unit; End Turn hands the field to the enemy."
     ],
     drill: "Tap empty tiles to inspect terrain. Tap a unit again after moving to open its command prompt."
@@ -158,7 +159,7 @@ export function renderTutorialView() {
         </div>
 
         <div class="tutorial-checklist" aria-label="Readiness checklist">
-          <label><input type="checkbox" /> I can win by eliminating the enemy force.</label>
+          <label><input type="checkbox" /> I can read the mission goal and know whether the map is Rout, HQ Capture, Rescue, Defend, or Survive.</label>
           <label><input type="checkbox" /> I know commander charge resets each map and Intel Credits come from captures and map clears.</label>
           <label><input type="checkbox" /> I know survivors persist, but defeated units are gone from the run.</label>
         </div>

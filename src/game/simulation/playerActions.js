@@ -23,6 +23,12 @@ import {
   removeDeadUnits
 } from "./combatResolver.js";
 import {
+  canUnitDropOffHostage,
+  canUnitRescueHostage,
+  performDropOff,
+  performRescue
+} from "./missionRules.js";
+import {
   canUnitAttackTarget,
   getAttackProfileForTarget,
   getBuildingAt,
@@ -950,6 +956,56 @@ export function captureWithPendingUnit(system) {
     id: building.id,
     x: building.x,
     y: building.y
+  };
+  system.updateVictoryState();
+  return true;
+}
+
+export function rescueHostageWithPendingUnit(system) {
+  const pendingAction = system.state.pendingAction;
+  const unit = pendingAction ? findUnitById(system.state, pendingAction.unitId) : null;
+
+  if (!unit || !canUnitRescueHostage(system.state, unit)) {
+    return false;
+  }
+
+  const changed = performRescue(system.state, unit);
+
+  if (!changed) {
+    return false;
+  }
+
+  system.clearPendingAction();
+  system.state.selection = {
+    type: "unit",
+    id: unit.id,
+    x: unit.x,
+    y: unit.y
+  };
+  system.updateVictoryState();
+  return true;
+}
+
+export function dropOffHostageWithPendingUnit(system) {
+  const pendingAction = system.state.pendingAction;
+  const unit = pendingAction ? findUnitById(system.state, pendingAction.unitId) : null;
+
+  if (!unit || !canUnitDropOffHostage(system.state, unit)) {
+    return false;
+  }
+
+  const changed = performDropOff(system.state, unit);
+
+  if (!changed) {
+    return false;
+  }
+
+  system.clearPendingAction();
+  system.state.selection = {
+    type: "unit",
+    id: unit.id,
+    x: unit.x,
+    y: unit.y
   };
   system.updateVictoryState();
   return true;

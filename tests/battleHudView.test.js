@@ -2,11 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   BATTLE_MODES,
+  BUILDING_KEYS,
   ENEMY_AI_ARCHETYPES,
   TERRAIN_KEYS,
   TURN_SIDES
 } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
+import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
@@ -983,6 +985,93 @@ test("medics with field medpacks show separate heal and medpack actions", () => 
 
   assert.match(html, /data-action="use-support">Heal<\/button>/);
   assert.match(html, /data-action="use-medpack">Medpack<\/button>/);
+});
+
+test("battle HUD replaces the mission footer label with the live goal and progress", () => {
+  const battleState = createTestBattleState();
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.SURVIVE,
+    turnLimit: 4
+  };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /<strong>Mission<\/strong>[\s\S]*?<em>Survive<\/em>/);
+  assert.match(html, /4 turns left/);
+});
+
+test("rescue missions expose the rescue action and show hostage-carrier status in the sidebar", () => {
+  const playerHq = {
+    id: "player-hq",
+    type: BUILDING_KEYS.COMMAND,
+    owner: TURN_SIDES.PLAYER,
+    x: 1,
+    y: 1
+  };
+  const hostageBuilding = {
+    id: "hostage-sector",
+    type: BUILDING_KEYS.SECTOR,
+    owner: TURN_SIDES.ENEMY,
+    x: 2,
+    y: 2
+  };
+  const rescuer = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [rescuer],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  battleState.map.buildings = [playerHq, hostageBuilding];
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.RESCUE,
+    target: {
+      x: 2,
+      y: 2
+    }
+  };
+  battleState.selection = { type: "unit", id: rescuer.id, x: rescuer.x, y: rescuer.y };
+
+  const system = new BattleSystem(battleState);
+  assert.equal(system.handleTileSelection(rescuer.x, rescuer.y), true);
+
+  let html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: { mapIndex: 0, targetMapCount: 10 },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /data-action="rescue-hostage"/);
+
+  assert.equal(system.rescueHostageWithPendingUnit(), true);
+  system.state.selection = { type: "unit", id: rescuer.id, x: rescuer.x, y: rescuer.y };
+
+  html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: { mapIndex: 0, targetMapCount: 10 },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /Hostage Carrier/);
+  assert.match(html, /Bring the hostage to your HQ/);
 });
 
 test("debug pause menu groups tools into accordion sections", () => {

@@ -1,6 +1,14 @@
 import { BUILDING_KEYS, TERRAIN_KEYS, TURN_SIDES } from "../core/constants.js";
 import { createUnitFromType } from "../simulation/unitFactory.js";
 import { getBuildingTypeMetadata } from "./buildings.js";
+import {
+  getDefaultMapGoal,
+  getMapGoalLabel,
+  getMapGoalSummary,
+  getMapGoalValidationErrors,
+  getStaticMapGoalMarkers,
+  normalizeMapGoal
+} from "./mapGoals.js";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "./terrain.js";
 import { UNIT_CATALOG } from "./unitCatalog.js";
 
@@ -266,7 +274,8 @@ export function createBlankMapDefinition(overrides = {}) {
     buildings: [],
     units: [],
     playerSpawns: [],
-    enemySpawns: []
+    enemySpawns: [],
+    goal: getDefaultMapGoal()
   };
 
   if (typeof overrides.layout === "string" && overrides.layout.trim()) {
@@ -281,6 +290,7 @@ export function createBlankMapDefinition(overrides = {}) {
     mapData,
     new Set(mapData.playerSpawns.map((spawn) => `${spawn.x},${spawn.y}`))
   );
+  mapData.goal = normalizeMapGoal(overrides.goal ?? getDefaultMapGoal(), mapData);
 
   return mapData;
 }
@@ -298,7 +308,8 @@ export function normalizeMapDefinition(mapInput = {}) {
     buildings: [],
     units: [],
     playerSpawns: [],
-    enemySpawns: []
+    enemySpawns: [],
+    goal: getDefaultMapGoal()
   };
 
   if (typeof mapInput.layout === "string" && mapInput.layout.trim()) {
@@ -313,6 +324,7 @@ export function normalizeMapDefinition(mapInput = {}) {
     mapData,
     new Set(mapData.playerSpawns.map((spawn) => `${spawn.x},${spawn.y}`))
   );
+  mapData.goal = normalizeMapGoal(mapInput.goal ?? getDefaultMapGoal(), mapData);
 
   return mapData;
 }
@@ -351,6 +363,7 @@ export function resizeMapDefinition(mapInput, width, height) {
     resizedMap,
     new Set(resizedMap.playerSpawns.map((spawn) => `${spawn.x},${spawn.y}`))
   );
+  resizedMap.goal = normalizeMapGoal(normalized.goal, resizedMap);
 
   return resizedMap;
 }
@@ -565,6 +578,7 @@ export function applyMapEditorTool(mapInput, editorState, x, y) {
     nextMap,
     new Set(nextMap.playerSpawns.map((spawn) => `${spawn.x},${spawn.y}`))
   );
+  nextMap.goal = normalizeMapGoal(nextMap.goal, nextMap);
 
   return {
     changed,
@@ -597,6 +611,8 @@ export function getMapEditorValidation(mapInput) {
     errors.push(`Map height must be between ${MIN_DIMENSION} and ${MAX_DIMENSION}.`);
   }
 
+  errors.push(...getMapGoalValidationErrors(mapData, mapData.goal));
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -618,7 +634,8 @@ export function exportMapDefinition(mapInput) {
     ),
     units: [...normalized.units].sort((left, right) =>
       `${left.y}:${left.x}:${left.id}`.localeCompare(`${right.y}:${right.x}:${right.id}`)
-    )
+    ),
+    goal: normalizeMapGoal(normalized.goal, normalized)
   };
 
   if (normalized.playerSpawns.length > 0) {
@@ -693,7 +710,12 @@ export function createMapEditorSnapshot(mapInput, selectedTile = null, hoveredTi
             y: selectedTile.y
           }
         : null,
-      mirroredTile
+      mirroredTile,
+      mission: {
+        label: getMapGoalLabel(mapData.goal),
+        status: getMapGoalSummary(mapData.goal, mapData),
+        markers: getStaticMapGoalMarkers(mapData, mapData.goal)
+      }
     }
   };
 }

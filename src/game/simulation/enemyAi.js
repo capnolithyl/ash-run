@@ -9,6 +9,7 @@ import {
   TURN_SIDES,
   UNIT_TAGS
 } from "../core/constants.js";
+import { MAP_GOAL_TYPES } from "../content/mapGoals.js";
 import { randomInt } from "../core/random.js";
 import { canCaptureBuilding } from "./captureRules.js";
 import { canResupplyUnit, getMovementModifier } from "./commanderEffects.js";
@@ -172,6 +173,7 @@ function canEnemyRecruitOption(state, option) {
 
 function scoreEnemyRecruitmentOption(state, option) {
   const archetype = getEnemyAiArchetype(state);
+  const missionType = state.mission?.type ?? MAP_GOAL_TYPES.ROUT;
   const playerUnits = getLivingUnits(state, TURN_SIDES.PLAYER);
   const enemyUnits = getLivingUnits(state, TURN_SIDES.ENEMY);
   const fundsAfterPurchase = state.enemy.funds - option.adjustedCost;
@@ -246,6 +248,20 @@ function scoreEnemyRecruitmentOption(state, option) {
     score += HQ_RUSH_RECRUITS.has(option.id) ? 8 : 0;
     score += option.id === "runner" ? 5 : 0;
     score += SUPPORT_RECRUITS.has(option.id) ? -4 : 0;
+  }
+
+  if (missionType === MAP_GOAL_TYPES.RESCUE) {
+    score += FRONTLINE_RECRUITS.has(option.id) ? 4 : 0;
+    score += option.id === "runner" ? 2 : 0;
+  }
+
+  if (missionType === MAP_GOAL_TYPES.DEFEND || missionType === MAP_GOAL_TYPES.SURVIVE) {
+    score += FRONTLINE_RECRUITS.has(option.id) ? 6 : 0;
+    score += SUPPORT_RECRUITS.has(option.id) ? -6 : 0;
+  }
+
+  if (missionType === MAP_GOAL_TYPES.HQ_CAPTURE) {
+    score += HQ_RUSH_RECRUITS.has(option.id) ? 5 : 0;
   }
 
   return score;
@@ -334,6 +350,52 @@ function getCommandRushScore(state, tile) {
   return Math.max(0, 16 - distance) * 9 + (distance === 0 ? 120 : 0);
 }
 
+function getMissionObjectiveScore(state, unit, tile) {
+  const mission = state.mission;
+
+  if (!mission) {
+    return 0;
+  }
+
+  if (mission.type === MAP_GOAL_TYPES.HQ_CAPTURE) {
+    return getCommandRushScore(state, tile) * 1.5 + Math.max(0, getCaptureObjectiveScore(state, unit, tile)) * 0.4;
+  }
+
+  if (mission.type === MAP_GOAL_TYPES.RESCUE) {
+    if (mission.rescue?.status === "carried") {
+      const carrier = mission.rescue.carrierUnitId
+        ? state.player.units.find((candidate) => candidate.id === mission.rescue.carrierUnitId) ?? null
+        : null;
+      const carrierDistance = carrier
+        ? Math.abs(tile.x - carrier.x) + Math.abs(tile.y - carrier.y)
+        : Number.POSITIVE_INFINITY;
+      const hqDistance = mission.playerHq
+        ? Math.abs(tile.x - mission.playerHq.x) + Math.abs(tile.y - mission.playerHq.y)
+        : Number.POSITIVE_INFINITY;
+
+      return Math.max(0, 16 - carrierDistance) * 12 + Math.max(0, 12 - hqDistance) * 8;
+    }
+
+    if (mission.target) {
+      const targetDistance = Math.abs(tile.x - mission.target.x) + Math.abs(tile.y - mission.target.y);
+      return Math.max(0, 16 - targetDistance) * 11;
+    }
+
+    return 0;
+  }
+
+  if (mission.type === MAP_GOAL_TYPES.DEFEND && mission.target) {
+    const targetDistance = Math.abs(tile.x - mission.target.x) + Math.abs(tile.y - mission.target.y);
+    return (targetDistance === 1 ? 180 : 0) + Math.max(0, 10 - targetDistance) * 18;
+  }
+
+  if (mission.type === MAP_GOAL_TYPES.SURVIVE) {
+    return getPressureScore(state, tile) * 1.45 + getCommandRushScore(state, tile) * 0.5;
+  }
+
+  return 0;
+}
+
 function getTileSafetyScore(state, unit, tile) {
   const positionedUnit = {
     ...unit,
@@ -353,10 +415,28 @@ function getTileSafetyScore(state, unit, tile) {
 function getStrategicObjectiveScore(state, unit, tile) {
   const profile = getEnemyAiProfile(state);
   const archetype = getEnemyAiArchetype(state);
+  const missionType = state.mission?.type ?? MAP_GOAL_TYPES.ROUT;
   const captureScore = getCaptureObjectiveScore(state, unit, tile);
   const pressureScore = getPressureScore(state, tile);
   const commandScore = getCommandRushScore(state, tile);
   const safetyScore = getTileSafetyScore(state, unit, tile);
+  const missionObjectiveScore = getMissionObjectiveScore(state, unit, tile);
+
+  if (missionType === MAP_GOAL_TYPES.HQ_CAPTURE) {
+    return commandScore * Math.max(1.3, profile.objectiveWeight) + missionObjectiveScore + safetyScore * profile.safetyWeight;
+  }
+
+  if (missionType === MAP_GOAL_TYPES.RESCUE) {
+    return missionObjectiveScore + pressureScore * 0.7 + safetyScore * profile.safetyWeight;
+  }
+
+  if (missionType === MAP_GOAL_TYPES.DEFEND) {
+    return missionObjectiveScore + pressureScore * 0.5 + safetyScore * profile.safetyWeight;
+  }
+
+  if (missionType === MAP_GOAL_TYPES.SURVIVE) {
+    return missionObjectiveScore + pressureScore * 1.2 + commandScore * 0.4 + safetyScore * 0.7;
+  }
 
   if (archetype === ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE) {
     return pressureScore * 1.3 + commandScore * 0.45 + safetyScore * profile.safetyWeight;

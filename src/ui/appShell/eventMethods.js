@@ -2,6 +2,31 @@ import { SCREEN_IDS } from "../../game/core/constants.js";
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
+  getDesktopApi() {
+    return globalThis.ashRun84Api ?? null;
+  },
+
+  openMapEditorImportFallback() {
+    this.root.querySelector("#map-editor-import")?.click();
+  },
+
+  downloadMapEditorJson(exportedMap) {
+    const blob = new Blob([exportedMap.text], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = exportedMap.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  logDesktopDialogFallback(action, error) {
+    console.warn(
+      `Map editor ${action} dialog unavailable in the current Electron main process. Falling back.`,
+      error
+    );
+  },
+
   syncMapEditorNameDraft(value) {
     const headerTitle = this.root.querySelector(".map-editor-header__copy h2");
 
@@ -262,14 +287,46 @@ export const appShellEventMethods = {
       case "map-editor-set-mirror-mode":
         this.controller.setMapEditorMirrorMode(trigger.dataset.mirrorMode);
         break;
+      case "map-editor-goal-use-selected-building":
+        this.controller.setMapEditorGoalTargetFromSelectedBuilding();
+        break;
+      case "map-editor-goal-clear-target":
+        this.controller.clearMapEditorGoalTarget();
+        break;
+      case "map-editor-import": {
+        const desktopApi = this.getDesktopApi?.();
+
+        if (desktopApi?.importMapFile) {
+          try {
+            const importedMap = await desktopApi.importMapFile();
+
+            if (importedMap?.text) {
+              this.controller.importMapEditorMap(JSON.parse(importedMap.text));
+            }
+            break;
+          } catch (error) {
+            this.logDesktopDialogFallback("import", error);
+          }
+        }
+
+        this.openMapEditorImportFallback();
+        break;
+      }
       case "map-editor-export": {
         const exportedMap = this.controller.exportMapEditorMap();
         if (!exportedMap) break;
-        const blob = new Blob([exportedMap.text], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = exportedMap.filename; a.click();
-        URL.revokeObjectURL(url);
+        const desktopApi = this.getDesktopApi?.();
+
+        if (desktopApi?.exportMapFile) {
+          try {
+            await desktopApi.exportMapFile(exportedMap.filename, exportedMap.text);
+            break;
+          } catch (error) {
+            this.logDesktopDialogFallback("export", error);
+          }
+        }
+
+        this.downloadMapEditorJson(exportedMap);
         break;
       }
       case "load-slot":
@@ -308,6 +365,12 @@ export const appShellEventMethods = {
         break;
       case "capture-building":
         await this.controller.captureWithSelectedUnit();
+        break;
+      case "rescue-hostage":
+        await this.controller.rescueHostageWithSelectedUnit();
+        break;
+      case "drop-off-hostage":
+        await this.controller.dropOffHostageWithSelectedUnit();
         break;
       case "use-support":
         await this.controller.useSelectedSupportAbility();
@@ -418,6 +481,7 @@ export const appShellEventMethods = {
       if (file) {
         const text = await file.text();
         this.controller.importMapEditorMap(JSON.parse(text));
+        event.target.value = "";
       }
       return;
     }

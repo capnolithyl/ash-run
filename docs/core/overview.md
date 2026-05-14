@@ -7,6 +7,8 @@ Ash Run '84 is a single-player turn-based tactics roguelite built around a hybri
 
 Run mode still uses buildings as tactical objectives, but their job shifts toward Intel Credit payouts, service control, and denying enemy reinforcement income while preserving roguelite continuity through unit XP, levels, and stat growth.
 
+Battles are now mission-based rather than using one global win condition. Authored maps carry a single goal such as Rout, HQ Capture, Rescue, Defend, or Survive, and that goal drives battle completion in run mode and skirmish alike.
+
 XP progression is tuned around impactful trades rather than raw damage totals: chunking a target for a large share of its max HP matters most, higher-level enemies pay out better, and infantry punching into heavier targets is rewarded more than bullying weak ones.
 
 ## Current Pillars

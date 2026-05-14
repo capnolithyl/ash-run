@@ -7,6 +7,13 @@ import {
   MAP_EDITOR_MIRROR_MODES,
   MAP_EDITOR_TOOL_IDS
 } from "../../game/content/mapEditor.js";
+import {
+  getMapGoalLabel,
+  getMapGoalSummary,
+  getMapGoalTargetBuilding,
+  MAP_GOAL_ORDER,
+  MAP_GOAL_TYPES
+} from "../../game/content/mapGoals.js";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "../../game/content/terrain.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
 
@@ -235,6 +242,78 @@ function renderValidationCard(validation) {
   `;
 }
 
+function renderGoalSection(map, tileDetails) {
+  const goal = map.goal;
+  const targetBuilding = getMapGoalTargetBuilding(map, goal);
+  const selectedBuilding = tileDetails?.building ?? null;
+  const canUseSelectedBuilding =
+    Boolean(selectedBuilding) &&
+    (goal.type === MAP_GOAL_TYPES.RESCUE || goal.type === MAP_GOAL_TYPES.DEFEND);
+
+  return `
+    <div class="card-block">
+      <p class="eyebrow">Goal</p>
+      <div class="debug-grid">
+        <label>
+          <span>Type</span>
+          <select data-map-editor-field="goalType">
+            ${MAP_GOAL_ORDER.map(
+              (goalType) => `
+                <option value="${goalType}" ${goal.type === goalType ? "selected" : ""}>
+                  ${getMapGoalLabel(goalType)}
+                </option>
+              `
+            ).join("")}
+          </select>
+        </label>
+        ${
+          goal.type === MAP_GOAL_TYPES.DEFEND || goal.type === MAP_GOAL_TYPES.SURVIVE
+            ? `
+              <label>
+                <span>Turns</span>
+                <input
+                  type="number"
+                  data-map-editor-field="goalTurnLimit"
+                  value="${goal.turnLimit ?? ""}"
+                  min="1"
+                  max="99"
+                />
+              </label>
+            `
+            : ""
+        }
+      </div>
+      <p>${getMapGoalSummary(goal, map)}</p>
+      ${
+        goal.type === MAP_GOAL_TYPES.RESCUE || goal.type === MAP_GOAL_TYPES.DEFEND
+          ? `
+            <p><strong>Target</strong> ${targetBuilding ? `${targetBuilding.id} (${targetBuilding.x}, ${targetBuilding.y})` : "No building selected"}</p>
+            <div class="map-editor-import-row">
+              <button
+                class="ghost-button ghost-button--small"
+                data-action="map-editor-goal-use-selected-building"
+                type="button"
+                ${canUseSelectedBuilding ? "" : "disabled"}
+              >
+                Use Selected Building
+              </button>
+              <button
+                class="ghost-button ghost-button--small"
+                data-action="map-editor-goal-clear-target"
+                type="button"
+                ${targetBuilding ? "" : "disabled"}
+              >
+                Clear Target
+              </button>
+            </div>
+            <p>${selectedBuilding ? `Selected building: ${selectedBuilding.id}` : "Select a building tile, then click Use Selected Building."}</p>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
 export function renderMapEditorView(state, uiState = {}) {
   const map = state.mapEditor?.mapData;
 
@@ -245,6 +324,7 @@ export function renderMapEditorView(state, uiState = {}) {
   const openAccordion = uiState.openAccordion ?? null;
   const validation = getMapEditorValidation(map);
   const tileDetails = getMapEditorTileDetails(map, state.mapEditor.selectedTile);
+  const goalLabel = getMapGoalLabel(map.goal);
 
   return `
     <div class="battle-shell map-editor-shell" data-screen-id="map-editor">
@@ -260,6 +340,7 @@ export function renderMapEditorView(state, uiState = {}) {
         <div class="map-editor-header__meta">
           <span><strong>Theme</strong> ${map.theme}</span>
           <span><strong>Size</strong> ${map.width} x ${map.height}</span>
+          <span><strong>Goal</strong> ${goalLabel}</span>
           <span><strong>Tool</strong> ${renderActiveTool(state)}</span>
           <span><strong>Mirror</strong> ${state.mapEditor.mirrorMode}</span>
         </div>
@@ -398,6 +479,7 @@ export function renderMapEditorView(state, uiState = {}) {
           </div>
         </div>
 
+        ${renderGoalSection(map, tileDetails)}
         ${renderTileSummary(tileDetails)}
         ${renderValidationCard(validation)}
 
@@ -405,7 +487,9 @@ export function renderMapEditorView(state, uiState = {}) {
           <p class="eyebrow">Import / Save</p>
           <p>Import an existing JSON map, or save the current one when validation passes.</p>
           <div class="map-editor-import-row">
-            <label class="ghost-button ghost-button--small" for="map-editor-import">Import JSON</label>
+            <button class="ghost-button ghost-button--small" data-action="map-editor-import" type="button">
+              Import JSON
+            </button>
             <input id="map-editor-import" type="file" data-action="map-editor-import" accept="application/json" />
           </div>
         </div>

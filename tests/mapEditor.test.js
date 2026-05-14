@@ -15,6 +15,7 @@ import {
   MAP_EDITOR_TOOL_IDS,
   resizeMapDefinition
 } from "../src/game/content/mapEditor.js";
+import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { appShellEventMethods } from "../src/ui/appShell/eventMethods.js";
 import { renderMapEditorView } from "../src/ui/views/mapEditorView.js";
 
@@ -219,6 +220,203 @@ test("map editor change events still commit inspector fields through the control
   ]);
 });
 
+test("map editor import button uses the desktop file dialog when available", async () => {
+  let importedMap = null;
+  const shell = {
+    latestState: {},
+    getDesktopApi() {
+      return {
+        async importMapFile() {
+          return {
+            text: JSON.stringify({
+              name: "Desktop Import",
+              width: 12,
+              height: 12
+            })
+          };
+        }
+      };
+    },
+    controller: {
+      importMapEditorMap(mapInput) {
+        importedMap = mapInput;
+      }
+    }
+  };
+
+  await appShellEventMethods.handleClick.call(shell, {
+    target: {
+      closest() {
+        return {
+          dataset: {
+            action: "map-editor-import"
+          }
+        };
+      }
+    }
+  });
+
+  assert.equal(importedMap?.name, "Desktop Import");
+  assert.equal(importedMap?.width, 12);
+});
+
+test("map editor import button falls back to the browser file input", async () => {
+  let clicked = false;
+  const shell = {
+    latestState: {},
+    getDesktopApi() {
+      return null;
+    },
+    openMapEditorImportFallback() {
+      this.root.querySelector("#map-editor-import")?.click();
+    },
+    root: {
+      querySelector(selector) {
+        assert.equal(selector, "#map-editor-import");
+        return {
+          click() {
+            clicked = true;
+          }
+        };
+      }
+    },
+    controller: {}
+  };
+
+  await appShellEventMethods.handleClick.call(shell, {
+    target: {
+      closest() {
+        return {
+          dataset: {
+            action: "map-editor-import"
+          }
+        };
+      }
+    }
+  });
+
+  assert.equal(clicked, true);
+});
+
+test("map editor export uses the desktop save dialog when available", async () => {
+  const exportCalls = [];
+  const shell = {
+    latestState: {},
+    getDesktopApi() {
+      return {
+        async exportMapFile(filename, text) {
+          exportCalls.push({ filename, text });
+        }
+      };
+    },
+    controller: {
+      exportMapEditorMap() {
+        return {
+          filename: "factory-lane.json",
+          text: "{\n  \"id\": \"factory-lane\"\n}"
+        };
+      }
+    }
+  };
+
+  await appShellEventMethods.handleClick.call(shell, {
+    target: {
+      closest() {
+        return {
+          dataset: {
+            action: "map-editor-export"
+          }
+        };
+      }
+    }
+  });
+
+  assert.deepEqual(exportCalls, [
+    {
+      filename: "factory-lane.json",
+      text: "{\n  \"id\": \"factory-lane\"\n}"
+    }
+  ]);
+});
+
+test("map editor import falls back to the browser file input when the desktop handler is missing", async () => {
+  let clicked = false;
+  const shell = {
+    latestState: {},
+    getDesktopApi() {
+      return {
+        async importMapFile() {
+          throw new Error("No handler registered for 'map-files:import'");
+        }
+      };
+    },
+    openMapEditorImportFallback() {
+      clicked = true;
+    },
+    logDesktopDialogFallback() {},
+    controller: {}
+  };
+
+  await appShellEventMethods.handleClick.call(shell, {
+    target: {
+      closest() {
+        return {
+          dataset: {
+            action: "map-editor-import"
+          }
+        };
+      }
+    }
+  });
+
+  assert.equal(clicked, true);
+});
+
+test("map editor export falls back to browser download when the desktop handler is missing", async () => {
+  const downloads = [];
+  const shell = {
+    latestState: {},
+    getDesktopApi() {
+      return {
+        async exportMapFile() {
+          throw new Error("No handler registered for 'map-files:export'");
+        }
+      };
+    },
+    logDesktopDialogFallback() {},
+    downloadMapEditorJson(exportedMap) {
+      downloads.push(exportedMap);
+    },
+    controller: {
+      exportMapEditorMap() {
+        return {
+          filename: "fallback-map.json",
+          text: "{\n  \"id\": \"fallback-map\"\n}"
+        };
+      }
+    }
+  };
+
+  await appShellEventMethods.handleClick.call(shell, {
+    target: {
+      closest() {
+        return {
+          dataset: {
+            action: "map-editor-export"
+          }
+        };
+      }
+    }
+  });
+
+  assert.deepEqual(downloads, [
+    {
+      filename: "fallback-map.json",
+      text: "{\n  \"id\": \"fallback-map\"\n}"
+    }
+  ]);
+});
+
 test("new maps no longer require spawn points to export", () => {
   const validation = getMapEditorValidation(
     createBlankMapDefinition({
@@ -252,6 +450,7 @@ test("exported maps exclude editor-only controller state and keep units", () => 
   assert.equal(Object.hasOwn(exported, "selectedTile"), false);
   assert.deepEqual(Object.keys(exported).sort(), [
     "buildings",
+    "goal",
     "height",
     "id",
     "name",
@@ -260,6 +459,68 @@ test("exported maps exclude editor-only controller state and keep units", () => 
     "units",
     "width"
   ]);
+});
+
+test("goal exports default to rout and goal validation requires mission-specific data", () => {
+  const routExport = exportMapDefinition(
+    createBlankMapDefinition({
+      id: "goal-rout",
+      name: "Goal Rout"
+    })
+  );
+
+  assert.equal(routExport.goal.type, MAP_GOAL_TYPES.ROUT);
+
+  const defendValidation = getMapEditorValidation(
+    createBlankMapDefinition({
+      id: "goal-defend",
+      name: "Goal Defend",
+      goal: {
+        type: MAP_GOAL_TYPES.DEFEND
+      }
+    })
+  );
+
+  assert.equal(defendValidation.isValid, false);
+  assert.match(defendValidation.errors.join(" "), /Defend maps need a marked building/i);
+  assert.match(defendValidation.errors.join(" "), /turn limit/i);
+});
+
+test("goal targets clear automatically when the marked building is removed", () => {
+  const mapData = createBlankMapDefinition({
+    id: "goal-clear",
+    name: "Goal Clear",
+    buildings: [
+      {
+        id: "goal-clear-player-command",
+        type: BUILDING_KEYS.COMMAND,
+        owner: TURN_SIDES.PLAYER,
+        x: 1,
+        y: 1
+      },
+      {
+        id: "goal-clear-neutral-sector",
+        type: BUILDING_KEYS.SECTOR,
+        owner: "neutral",
+        x: 3,
+        y: 3
+      }
+    ],
+    goal: {
+      type: MAP_GOAL_TYPES.RESCUE,
+      target: {
+        x: 3,
+        y: 3
+      }
+    }
+  });
+  const editorState = createDefaultMapEditorState(mapData);
+  editorState.selectedTool = MAP_EDITOR_TOOL_IDS.ERASER;
+
+  const result = applyMapEditorTool(mapData, editorState, 3, 3);
+
+  assert.equal(result.mapData.buildings.some((building) => building.x === 3 && building.y === 3), false);
+  assert.equal(result.mapData.goal.target, undefined);
 });
 
 test("mirror mode applies terrain edits vertically, horizontally, and diagonally", () => {
@@ -348,6 +609,7 @@ test("map editor view exposes every building, every unit, size fields, and mirro
 
   assert.match(html, /data-map-editor-field="width"/);
   assert.match(html, /data-map-editor-field="height"/);
+  assert.match(html, /data-map-editor-field="goalType"/);
   assert.match(html, /data-mirror-mode="vertical"/);
   assert.doesNotMatch(html, /Player Spawn|Enemy Spawn/);
 });

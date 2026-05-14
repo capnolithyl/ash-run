@@ -102,6 +102,16 @@ export function renderActionPrompt(battleSnapshot) {
               : ""
           }
           ${
+            pendingAction.canRescue
+              ? '<button class="battle-command-prompt__action battle-command-prompt__action--capture" data-action="rescue-hostage">Rescue</button>'
+              : ""
+          }
+          ${
+            pendingAction.canDropOff
+              ? '<button class="battle-command-prompt__action battle-command-prompt__action--primary" data-action="drop-off-hostage">Drop Off</button>'
+              : ""
+          }
+          ${
             pendingAction.canSupport
               ? `<button class="battle-command-prompt__action" data-action="use-support">${pendingAction.supportActionLabel ?? "Support"}</button>`
               : ""

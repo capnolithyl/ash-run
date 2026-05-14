@@ -7,6 +7,7 @@ import {
   TURN_SIDES,
   UNIT_TAGS
 } from "../core/constants.js";
+import { MAP_GOAL_TYPES } from "../content/mapGoals.js";
 import { getRunEnemyStartingSquad } from "../core/runBalance.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
 import { createId } from "../core/id.js";
@@ -35,6 +36,7 @@ import {
   buildScaledEnemyRoster,
   getEnemyStartingFunds
 } from "./enemyScaling.js";
+import { normalizeMissionState } from "../simulation/missionRules.js";
 
 const ANTI_AIR_UNIT_IDS = new Set(["skyguard", "interceptor"]);
 
@@ -132,6 +134,12 @@ export function normalizeBattleState(battleState) {
 
   if (nextBattleState.mode === BATTLE_MODES.RUN) {
     nextBattleState.rewardLedger = normalizeBattleRewardLedger(nextBattleState.rewardLedger);
+  }
+
+  normalizeMissionState(nextBattleState);
+
+  if (nextBattleState.mission?.type === MAP_GOAL_TYPES.SURVIVE) {
+    nextBattleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE;
   }
 
   return nextBattleState;
@@ -368,7 +376,7 @@ export function createBattleStateForRun(runState) {
     openingLog.push(`Run upgrades active: ${(normalizedRunState.selectedRewards ?? []).map((reward) => reward.name).join(", ")}.`);
   }
 
-  return {
+  const battleState = {
     id: createId("battle"),
     mode: BATTLE_MODES.RUN,
     seed: battleSeed,
@@ -407,6 +415,8 @@ export function createBattleStateForRun(runState) {
     log: openingLog,
     victory: null
   };
+
+  return normalizeBattleState(battleState);
 }
 
 export function createSkirmishBattleState({
@@ -423,7 +433,7 @@ export function createSkirmishBattleState({
   const enemyUnits = getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.ENEMY);
   const enemyAiArchetype = pickEnemyAiArchetype(battleSeed, enemyCommanderId);
 
-  return {
+  const battleState = {
     id: createId("battle"),
     mode: BATTLE_MODES.SKIRMISH,
     seed: battleSeed,
@@ -465,6 +475,8 @@ export function createSkirmishBattleState({
     log: [`Skirmish: ${mapDefinition.name}`],
     victory: null
   };
+
+  return normalizeBattleState(battleState);
 }
 
 export function createSlotRecord(runState, battleState) {

@@ -1,5 +1,6 @@
 import { BUILDING_KEYS } from "../core/constants.js";
 import { exportMapDefinition, normalizeMapDefinition } from "./mapEditor.js";
+import { MAP_GOAL_TYPES } from "./mapGoals.js";
 import { GENERATED_MAP_MODULES } from "./maps.generated.js";
 
 const VITE_MAP_MODULES =
@@ -28,10 +29,21 @@ export const MAP_POOL = loadMapPool();
 
 export const RUN_MAP_POOL = MAP_POOL.map((mapDefinition) => {
   const runMap = structuredClone(mapDefinition);
+  const goalTarget =
+    runMap.goal &&
+    [MAP_GOAL_TYPES.RESCUE, MAP_GOAL_TYPES.DEFEND].includes(runMap.goal.type) &&
+    runMap.goal.target
+      ? runMap.goal.target
+      : null;
   runMap.id = `${mapDefinition.id}-run`;
   runMap.name = `${mapDefinition.name} (Run)`;
   runMap.buildings = runMap.buildings.filter(
-    (building) => !(building.owner === "player" && PRODUCTION_BUILDINGS.has(building.type))
+    (building) =>
+      !(
+        building.owner === "player" &&
+        PRODUCTION_BUILDINGS.has(building.type) &&
+        (!goalTarget || goalTarget.x !== building.x || goalTarget.y !== building.y)
+      )
   );
   runMap.buildings = runMap.buildings.map((building) =>
     PRODUCTION_BUILDINGS.has(building.type)

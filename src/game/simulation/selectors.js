@@ -50,7 +50,12 @@ export function getBuildingAt(state, x, y) {
 }
 
 export function getUnitAttackProfile(unit) {
-  if (!unit || unit.stats?.maxRange <= 0 || unit.stats?.attack <= 0) {
+  if (
+    !unit ||
+    unit.temporary?.hostageCarrier ||
+    unit.stats?.maxRange <= 0 ||
+    unit.stats?.attack <= 0
+  ) {
     return null;
   }
 
@@ -165,7 +170,10 @@ function getMovementCost(unit, terrain) {
 export function getUnitMovementAllowance(unit, movementBudget) {
   const requestedBudget = Math.max(0, Math.floor(movementBudget ?? 0));
   const currentStamina = Math.max(0, Math.floor(getEffectiveCurrentStamina(unit) ?? requestedBudget));
-  return Math.min(requestedBudget, currentStamina);
+  const hostagePenalty = unit?.temporary?.hostageCarrier ? 1 : 0;
+  const reducedBudget = Math.max(0, requestedBudget - hostagePenalty);
+  const minimumAllowance = unit?.temporary?.hostageCarrier && requestedBudget > 0 && currentStamina > 0 ? 1 : 0;
+  return Math.max(minimumAllowance, Math.min(reducedBudget, currentStamina));
 }
 
 function isTerrainBlockedForUnit(unit, terrain) {

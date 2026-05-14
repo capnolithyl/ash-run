@@ -323,6 +323,30 @@ export const controllerBattleMethods = {
     }
   },
 
+  async rescueHostageWithSelectedUnit() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    const changed = this.battleSystem.rescueHostageWithPendingUnit();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  },
+
+  async dropOffHostageWithSelectedUnit() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    const changed = this.battleSystem.dropOffHostageWithPendingUnit();
+
+    if (changed) {
+      await this.persistCurrentRun();
+    }
+  },
+
   async useSelectedSupportAbility() {
     if (!this.battleSystem || this.isBattleInputLocked()) {
       return;

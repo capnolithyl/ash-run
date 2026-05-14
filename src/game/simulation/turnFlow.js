@@ -12,6 +12,12 @@ import { serviceUnitsOnSectors } from "./battleServicing.js";
 import { findUnitById } from "./battleUnits.js";
 import { captureBuildingForUnit } from "./captureRules.js";
 import {
+  applyMissionTurnEnd,
+  canUnitSabotageDefendTarget,
+  performSabotageDefendTarget,
+  updateMissionVictory
+} from "./missionRules.js";
+import {
   canSlipstreamAfterAttack,
   expireCurrentTurnStatuses,
   getIncomeBonus,
@@ -80,6 +86,7 @@ export function endTurn(system) {
       pendingSlipstream: null,
       pendingUnitIds: []
     };
+    applyMissionTurnEnd(system.state, TURN_SIDES.PLAYER);
     system.updateVictoryState();
     return true;
   }
@@ -321,6 +328,16 @@ export function processEnemyTurnStep(system) {
 
     system.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
 
+    if (canUnitSabotageDefendTarget(system.state, unit) && performSabotageDefendTarget(system.state, unit)) {
+      system.updateVictoryState();
+      return {
+        changed: true,
+        done: system.state.victory || system.state.enemyTurn.pendingUnitIds.length === 0,
+        type: "sabotage",
+        unitId
+      };
+    }
+
     const supportPlan = getBestSupportPlan(system.state, unit);
 
     if (supportPlan && system.applySupportAbility(unit, supportPlan.target)) {
@@ -536,6 +553,8 @@ export function finalizeEnemyTurn(system) {
 
   system.state.enemyTurn = null;
   expireCurrentTurnStatuses(system.state, TURN_SIDES.ENEMY);
+  applyMissionTurnEnd(system.state, TURN_SIDES.ENEMY);
+  system.updateVictoryState();
 
   if (system.state.victory) {
     system.clearSelection();
@@ -649,45 +668,5 @@ export function performEnemyRecruitment(system) {
 }
 
 export function updateVictoryState(system) {
-  system.state.victory = null;
-  const livingPlayer = getLivingUnits(system.state, TURN_SIDES.PLAYER);
-  const livingEnemy = getLivingUnits(system.state, TURN_SIDES.ENEMY);
-
-  if (livingEnemy.length === 0) {
-    system.state.victory = {
-      winner: TURN_SIDES.PLAYER,
-      message: "Battle won. The route is clear."
-    };
-    return;
-  }
-
-  if (livingPlayer.length === 0) {
-    system.state.victory = {
-      winner: TURN_SIDES.ENEMY,
-      message: "Your column was overrun."
-    };
-    return;
-  }
-
-  const enemyCommand = system.state.map.buildings.find(
-    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.ENEMY
-  );
-  const playerCommand = system.state.map.buildings.find(
-    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
-  );
-
-  if (!enemyCommand) {
-    system.state.victory = {
-      winner: TURN_SIDES.PLAYER,
-      message: "Enemy command fell. The route is clear."
-    };
-    return;
-  }
-
-  if (!playerCommand) {
-    system.state.victory = {
-      winner: TURN_SIDES.ENEMY,
-      message: "Your command post was captured."
-    };
-  }
+  return updateMissionVictory(system.state);
 }

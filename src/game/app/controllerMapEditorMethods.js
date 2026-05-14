@@ -13,6 +13,7 @@ import {
   normalizeMapDefinition,
   resizeMapDefinition
 } from "../content/mapEditor.js";
+import { MAP_GOAL_ORDER, normalizeMapGoal } from "../content/mapGoals.js";
 import { MAP_THEME_PALETTES } from "../content/terrain.js";
 
 function normalizeEditorTile(tile) {
@@ -167,6 +168,26 @@ export const controllerMapEditorMethods = {
       this.state.mapEditor.mapData = synchronizeMapEditorIdentity(
         resizeMapDefinition(mapData, nextWidth, nextHeight)
       );
+    } else if (field === "goalType") {
+      if (!MAP_GOAL_ORDER.includes(value)) {
+        return;
+      }
+
+      mapData.goal = normalizeMapGoal(
+        {
+          ...mapData.goal,
+          type: value
+        },
+        mapData
+      );
+    } else if (field === "goalTurnLimit") {
+      mapData.goal = normalizeMapGoal(
+        {
+          ...mapData.goal,
+          turnLimit: Number(value)
+        },
+        mapData
+      );
     } else {
       return;
     }
@@ -245,6 +266,52 @@ export const controllerMapEditorMethods = {
     this.state.mapEditor.selectedTile = null;
     this.state.mapEditor.hoveredTile = null;
     this.state.mapEditor.isPainting = false;
+    this.emit();
+  },
+
+  setMapEditorGoalTargetFromSelectedBuilding() {
+    const mapData = this.state.mapEditor?.mapData;
+    const selectedTile = this.state.mapEditor?.selectedTile;
+
+    if (!mapData || !selectedTile) {
+      return;
+    }
+
+    const building = mapData.buildings.find(
+      (candidate) => candidate.x === selectedTile.x && candidate.y === selectedTile.y
+    );
+
+    if (!building) {
+      return;
+    }
+
+    mapData.goal = normalizeMapGoal(
+      {
+        ...mapData.goal,
+        target: {
+          x: building.x,
+          y: building.y
+        }
+      },
+      mapData
+    );
+    this.emit();
+  },
+
+  clearMapEditorGoalTarget() {
+    const mapData = this.state.mapEditor?.mapData;
+
+    if (!mapData) {
+      return;
+    }
+
+    mapData.goal = normalizeMapGoal(
+      {
+        ...mapData.goal,
+        target: null
+      },
+      mapData
+    );
     this.emit();
   },
 

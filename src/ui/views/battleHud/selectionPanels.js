@@ -367,6 +367,15 @@ function renderUnitSummary(
       ${renderHealthBar(unit)}
       ${renderUnitStatGrid(unit)}
       ${
+        unit.isHostageCarrier
+          ? renderFeatureSection(
+              "command",
+              "Hostage Carrier",
+              ["Movement -1. Cannot attack. Deliver the hostage to your HQ."]
+            )
+          : ""
+      }
+      ${
         showLoadout || showGear || terrainMarkup
           ? `
               <div class="selection-loadout-stack">

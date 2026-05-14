@@ -25,8 +25,10 @@ import {
 import {
   getAttackForecast,
   getCombatExperience,
-  getDefenderArmor
+  getDefenderArmor,
+  removeDeadUnits
 } from "../src/game/simulation/combatResolver.js";
+import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { pickBestFavorableAttack } from "../src/game/simulation/enemyAi.js";
 import { getXpThreshold } from "../src/game/simulation/progression.js";
 import {
@@ -3010,4 +3012,264 @@ test("enemy runners extract threatened infantry instead of leaving them exposed"
   assert.equal(updatedPassenger.transport.carriedByUnitId, runner.id);
   assert.deepEqual({ x: updatedRunner.x, y: updatedRunner.y }, { x: 3, y: 1 });
   assert.deepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: 3, y: 1 });
+});
+
+test("rout missions give zero-start sides one full turn before defeat checks arm", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const battleState = createNeutralBattleState({
+    playerUnits: [player],
+    enemyUnits: []
+  });
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.ROUT
+  };
+  battleState.map.buildings = [];
+
+  const system = new BattleSystem(battleState);
+
+  system.updateVictoryState();
+  assert.equal(system.getStateForSave().victory, null);
+
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.getStateForSave().victory, null);
+
+  system.startEnemyTurnActions();
+  const finalizeResult = system.finalizeEnemyTurn();
+
+  assert.equal(finalizeResult.changed, true);
+  assert.equal(system.getStateForSave().victory?.winner, TURN_SIDES.PLAYER);
+});
+
+test("hq capture missions ignore unit wipes and resolve on command-post ownership only", () => {
+  const battleState = createNeutralBattleState({
+    playerUnits: [],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 4)]
+  });
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.HQ_CAPTURE
+  };
+  battleState.map.buildings = [
+    {
+      id: "player-hq",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.PLAYER,
+      x: 1,
+      y: 1
+    },
+    {
+      id: "enemy-hq",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.ENEMY,
+      x: 6,
+      y: 4
+    }
+  ];
+
+  const system = new BattleSystem(battleState);
+
+  system.updateVictoryState();
+  assert.equal(system.getStateForSave().victory, null);
+
+  system.state.map.buildings[1].owner = TURN_SIDES.PLAYER;
+  system.updateVictoryState();
+
+  assert.equal(system.getStateForSave().victory?.winner, TURN_SIDES.PLAYER);
+});
+
+test("rescue missions add rescue flow, block attacks, block transports, and win on drop-off", () => {
+  const rescuer = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 3, 2);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createNeutralBattleState({
+    playerUnits: [rescuer, runner],
+    enemyUnits: [enemy]
+  });
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.RESCUE,
+    target: {
+      x: 2,
+      y: 2
+    }
+  };
+  battleState.map.buildings = [
+    {
+      id: "player-hq",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.PLAYER,
+      x: 1,
+      y: 1
+    },
+    {
+      id: "hostage-sector",
+      type: BUILDING_KEYS.SECTOR,
+      owner: TURN_SIDES.ENEMY,
+      x: 2,
+      y: 2
+    }
+  ];
+  battleState.selection = { type: "unit", id: rescuer.id, x: rescuer.x, y: rescuer.y };
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.handleTileSelection(rescuer.x, rescuer.y), true);
+  assert.equal(system.getSnapshot().presentation.pendingAction.canRescue, true);
+  assert.equal(system.rescueHostageWithPendingUnit(), true);
+  assert.equal(system.getStateForSave().mission.rescue.status, "carried");
+  assert.equal(canUnitAttackTarget(system.getStateForSave().player.units[0], enemy), false);
+  assert.equal(canLoadUnit(system.getStateForSave().player.units[0], system.getStateForSave().player.units[1]), false);
+
+  const savedState = system.getStateForSave();
+  const updatedRescuer = savedState.player.units.find((unit) => unit.id === rescuer.id);
+  updatedRescuer.x = 1;
+  updatedRescuer.y = 1;
+  updatedRescuer.hasMoved = false;
+  updatedRescuer.hasAttacked = false;
+  savedState.selection = { type: "unit", id: updatedRescuer.id, x: 1, y: 1 };
+  savedState.pendingAction = {
+    type: "move",
+    unitId: updatedRescuer.id,
+    mode: "menu",
+    fromX: 1,
+    fromY: 1,
+    fromStamina: updatedRescuer.current.stamina,
+    toX: 1,
+    toY: 1
+  };
+  system.state = savedState;
+
+  assert.equal(system.dropOffHostageWithPendingUnit(), true);
+  assert.equal(system.getStateForSave().victory?.winner, TURN_SIDES.PLAYER);
+});
+
+test("rescue missions fail when the hostage carrier dies", () => {
+  const rescuer = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createNeutralBattleState({
+    playerUnits: [rescuer],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.RESCUE,
+    target: {
+      x: 2,
+      y: 2
+    }
+  };
+  battleState.map.buildings = [
+    {
+      id: "player-hq",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.PLAYER,
+      x: 1,
+      y: 1
+    },
+    {
+      id: "hostage-sector",
+      type: BUILDING_KEYS.SECTOR,
+      owner: TURN_SIDES.ENEMY,
+      x: 2,
+      y: 2
+    }
+  ];
+  battleState.selection = { type: "unit", id: rescuer.id, x: rescuer.x, y: rescuer.y };
+
+  const system = new BattleSystem(battleState);
+  assert.equal(system.handleTileSelection(rescuer.x, rescuer.y), true);
+  assert.equal(system.rescueHostageWithPendingUnit(), true);
+
+  system.state.player.units[0].current.hp = 0;
+  removeDeadUnits(system.state);
+  system.updateVictoryState();
+
+  assert.equal(system.getStateForSave().victory?.winner, TURN_SIDES.ENEMY);
+});
+
+test("defend missions take sabotage damage and can also time out in the player's favor", () => {
+  const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const saboteur = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 4);
+  const battleState = createNeutralBattleState({
+    playerUnits: [defender],
+    enemyUnits: [saboteur]
+  });
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.DEFEND,
+    target: {
+      x: 3,
+      y: 3
+    },
+    turnLimit: 2
+  };
+  battleState.map.buildings = [
+    {
+      id: "defend-objective",
+      type: BUILDING_KEYS.SECTOR,
+      owner: TURN_SIDES.PLAYER,
+      x: 3,
+      y: 3
+    }
+  ];
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.endTurn(), true);
+  system.startEnemyTurnActions();
+  const sabotageStep = system.processEnemyTurnStep();
+
+  assert.equal(sabotageStep.type, "sabotage");
+  assert.equal(system.getStateForSave().mission.defend.targetHp, 1);
+
+  system.finalizeEnemyTurn();
+  assert.equal(system.getStateForSave().mission.turnsRemaining, 1);
+
+  const timeoutState = createNeutralBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: []
+  });
+  timeoutState.map.goal = {
+    type: MAP_GOAL_TYPES.DEFEND,
+    target: {
+      x: 3,
+      y: 3
+    },
+    turnLimit: 1
+  };
+  timeoutState.map.buildings = [
+    {
+      id: "defend-objective",
+      type: BUILDING_KEYS.SECTOR,
+      owner: TURN_SIDES.PLAYER,
+      x: 3,
+      y: 3
+    }
+  ];
+
+  const timeoutSystem = new BattleSystem(timeoutState);
+  assert.equal(timeoutSystem.endTurn(), true);
+  timeoutSystem.startEnemyTurnActions();
+  timeoutSystem.finalizeEnemyTurn();
+
+  assert.equal(timeoutSystem.getStateForSave().victory?.winner, TURN_SIDES.PLAYER);
+});
+
+test("survive missions ignore enemy wipes and resolve after the last enemy turn", () => {
+  const survivor = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const battleState = createNeutralBattleState({
+    playerUnits: [survivor],
+    enemyUnits: []
+  });
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.SURVIVE,
+    turnLimit: 1
+  };
+  battleState.map.buildings = [];
+
+  const system = new BattleSystem(battleState);
+
+  system.updateVictoryState();
+  assert.equal(system.getStateForSave().victory, null);
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.getStateForSave().victory, null);
+  system.startEnemyTurnActions();
+  system.finalizeEnemyTurn();
+
+  assert.equal(system.getStateForSave().victory?.winner, TURN_SIDES.PLAYER);
 });

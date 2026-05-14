@@ -55,6 +55,7 @@ test("skirmish setup renders map, economy controls, and visual legend on the sec
   assert.match(html, /data-skirmish-field="fundsPerBuilding"/);
   assert.match(html, /type="range"/);
   assert.match(html, /data-skirmish-output="startingFunds">1200/);
+  assert.match(html, /<strong>Rout<\/strong>/);
   assert.match(html, /data-action="skirmish-previous-step"/);
   assert.match(html, /data-action="start-skirmish"/);
 });

@@ -5,6 +5,8 @@ import {
   TURN_SIDES,
   UNIT_TAGS
 } from "../src/game/core/constants.js";
+import { BUILDING_KEYS } from "../src/game/core/constants.js";
+import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { RUN_CARD_TYPES } from "../src/game/content/runUpgrades.js";
 import { MAP_POOL } from "../src/game/content/maps.js";
 import { ARMOR_CLASSES, WEAPON_CLASSES } from "../src/game/content/weaponClasses.js";
@@ -232,6 +234,70 @@ test("legacy battle states normalize a missing enemy AI archetype to balanced", 
   const normalized = normalizeBattleState(battleState);
 
   assert.equal(normalized.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.BALANCED);
+});
+
+test("battle state normalization backfills mission data from the map goal", () => {
+  const battleState = createSkirmishBattleState({
+    mapId: MAP_POOL[0].id,
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
+
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.RESCUE,
+    target: {
+      x: 2,
+      y: 2
+    }
+  };
+  battleState.map.buildings = [
+    {
+      id: "player-hq",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.PLAYER,
+      x: 1,
+      y: 1
+    },
+    {
+      id: "enemy-sector",
+      type: BUILDING_KEYS.SECTOR,
+      owner: TURN_SIDES.ENEMY,
+      x: 2,
+      y: 2
+    }
+  ];
+  delete battleState.mission;
+
+  const normalized = normalizeBattleState(battleState);
+
+  assert.equal(normalized.mission.type, MAP_GOAL_TYPES.RESCUE);
+  assert.deepEqual(normalized.mission.target, { x: 2, y: 2 });
+  assert.equal(normalized.mission.rescue.status, "waiting");
+  assert.deepEqual(normalized.mission.playerHq, { id: "player-hq", x: 1, y: 1 });
+});
+
+test("survive missions force hyper-aggressive enemy AI when battle state is normalized", () => {
+  const battleState = createSkirmishBattleState({
+    mapId: MAP_POOL[0].id,
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
+
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.SURVIVE,
+    turnLimit: 4
+  };
+  battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.TURTLE;
+
+  const normalized = normalizeBattleState(battleState);
+
+  assert.equal(normalized.mission.type, MAP_GOAL_TYPES.SURVIVE);
+  assert.equal(normalized.mission.turnsRemaining, 4);
+  assert.equal(normalized.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE);
 });
 
 test("forced draft maps offer only reinforcement unit choices", () => {

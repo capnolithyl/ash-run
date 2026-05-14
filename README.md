@@ -12,6 +12,7 @@ The prototype already supports a full desktop play loop:
 - 3 manual save slots with slot summaries and last-played metadata
 - Commander selection, slot assignment, and opening-squad drafting before run start
 - 10-map runs sampled from a 20-map authored pool
+- Map-based mission goals: Rout, HQ Capture, Rescue, Defend, and Survive
 - Persistent survivor rosters with XP, levels, rolled stat growth, and permadeath
 - Standalone skirmish setup with commander picks, map selection, and economy sliders
 - Sandbox/debug battle entry with live spawn tools and commander overrides
@@ -54,6 +55,7 @@ Sandbox is the testing seam for combat and commander work.
 ## Tactical Systems In The Prototype
 
 - Grid-based turn combat with movement previews, attack previews, and counterattacks
+- Mission-driven win conditions with HUD and map markers
 - Mouse, touch, and controller support for battle navigation
 - Battlefield zoom and pan
 - Commander passives, charge, and active powers

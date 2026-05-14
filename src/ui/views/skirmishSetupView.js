@@ -1,4 +1,5 @@
 import { MAP_POOL } from "../../game/content/maps.js";
+import { getMapGoalLabel, getMapGoalSummary } from "../../game/content/mapGoals.js";
 import { getCommanderSliderEntries, renderCommanderCardBody } from "./commanderSelectView.js";
 
 const TERRAIN_PREVIEW_KEYS = {
@@ -240,6 +241,7 @@ function renderSkirmishMapStep(state, selectedMap) {
       <div class="skirmish-map-preview">
         <p class="eyebrow">Map Preview</p>
         <h3>${selectedMap.name}</h3>
+        <p><strong>${getMapGoalLabel(selectedMap.goal)}</strong> ${getMapGoalSummary(selectedMap.goal, selectedMap)}</p>
         ${renderMapPreview(selectedMap)}
         ${renderMapLegend()}
       </div>

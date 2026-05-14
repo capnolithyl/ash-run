@@ -14,6 +14,13 @@
 - Board sizes range from quick skirmish maps to wide, multi-front encounters
 - Wider central route/bridge bands to avoid single-tile stall points
 - Variable player production building assignments
+- Every map exports a single goal definition through `map.goal`
+
+## Goal Schema
+
+- `map.goal.type`: `rout`, `hq-capture`, `rescue`, `defend`, or `survive`
+- `map.goal.target`: `{ x, y }` for `rescue` and `defend`
+- `map.goal.turnLimit`: positive integer for `defend` and `survive`
 
 ## Run Usage
 

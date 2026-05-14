@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
@@ -46,6 +46,43 @@ async function readJson(filePath, fallback) {
 async function writeJson(filePath, value) {
   await ensureStorageRoot();
   await fs.writeFile(filePath, JSON.stringify(value, null, 2), "utf8");
+}
+
+async function pathExists(targetPath) {
+  try {
+    const stats = await fs.stat(targetPath);
+    return stats.isDirectory();
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
+async function resolvePreferredMapDirectory() {
+  const projectMapDirectory = path.resolve(app.getAppPath(), "src/game/content/maps");
+
+  if (await pathExists(projectMapDirectory)) {
+    return projectMapDirectory;
+  }
+
+  const cwdMapDirectory = path.resolve(process.cwd(), "src/game/content/maps");
+
+  if (await pathExists(cwdMapDirectory)) {
+    return cwdMapDirectory;
+  }
+
+  const fallbackDirectory = path.join(app.getPath("documents"), "Ash Run '84", "maps");
+  await fs.mkdir(fallbackDirectory, { recursive: true });
+  return fallbackDirectory;
+}
+
+function normalizeMapFileName(fileName) {
+  const baseName = path.basename(String(fileName ?? "").trim() || "custom-map.json");
+
+  return baseName.toLowerCase().endsWith(".json") ? baseName : `${baseName}.json`;
 }
 
 async function listSlotSummaries() {
@@ -146,6 +183,57 @@ ipcMain.handle("storage:delete-slot", async (_event, slotId) => {
   }
 
   return true;
+});
+
+ipcMain.handle("map-files:import", async (event) => {
+  const browserWindow = BrowserWindow.fromWebContents(event.sender) ?? undefined;
+  const defaultDirectory = await resolvePreferredMapDirectory();
+  const result = await dialog.showOpenDialog(browserWindow, {
+    title: "Import Map JSON",
+    defaultPath: defaultDirectory,
+    filters: [
+      {
+        name: "JSON Maps",
+        extensions: ["json"]
+      }
+    ],
+    properties: ["openFile"]
+  });
+
+  if (result.canceled || !result.filePaths[0]) {
+    return null;
+  }
+
+  return {
+    filePath: result.filePaths[0],
+    text: await fs.readFile(result.filePaths[0], "utf8")
+  };
+});
+
+ipcMain.handle("map-files:export", async (event, suggestedFileName, text) => {
+  const browserWindow = BrowserWindow.fromWebContents(event.sender) ?? undefined;
+  const defaultDirectory = await resolvePreferredMapDirectory();
+  const result = await dialog.showSaveDialog(browserWindow, {
+    title: "Save Map JSON",
+    defaultPath: path.join(defaultDirectory, normalizeMapFileName(suggestedFileName)),
+    filters: [
+      {
+        name: "JSON Maps",
+        extensions: ["json"]
+      }
+    ]
+  });
+
+  if (result.canceled || !result.filePath) {
+    return null;
+  }
+
+  await fs.mkdir(path.dirname(result.filePath), { recursive: true });
+  await fs.writeFile(result.filePath, text, "utf8");
+
+  return {
+    filePath: result.filePath
+  };
 });
 
 ipcMain.handle("app:quit", () => {
