@@ -6,7 +6,7 @@ import {
   BATTLE_TURN_BANNER_SETTLE_MS,
   SCREEN_IDS
 } from "../../core/constants.js";
-import { createMapEditorSnapshot } from "../../content/mapEditor.js";
+import { createMapEditorSnapshot, MAP_EDITOR_TOOL_IDS } from "../../content/mapEditor.js";
 import { getBattlefieldLayout } from "../../core/battlefieldLayout.js";
 import { getMovementPath, getSelectedUnit } from "../../simulation/selectors.js";
 import { preloadSpriteAssets } from "../assets.js";
@@ -29,13 +29,18 @@ function isBoardScreen(state) {
   return isBattleScreen(state) || isMapEditorScreen(state);
 }
 
-function getBoardSnapshot(state) {
+function getBoardSnapshot(state, hoveredTile = null) {
   if (isBattleScreen(state)) {
     return state.battleSnapshot;
   }
 
   if (isMapEditorScreen(state)) {
-    return createMapEditorSnapshot(state.mapEditor.mapData, state.mapEditor.selectedTile);
+    return createMapEditorSnapshot(
+      state.mapEditor.mapData,
+      state.mapEditor.selectedTile,
+      hoveredTile,
+      state.mapEditor.mirrorMode
+    );
   }
 
   return null;
@@ -165,6 +170,7 @@ export class BattleScene extends Phaser.Scene {
     this.cameraTargetZoom = 1;
     this.suppressTouchClickUntil = 0;
     this.mapEditorPaintPointerId = null;
+    this.mapEditorPaintToolId = null;
     this.lastPaintedTileKey = null;
     this.gamepadCursorTile = null;
     this.gamepadMoveDirection = null;
@@ -269,6 +275,7 @@ export class BattleScene extends Phaser.Scene {
         }
 
         this.mapEditorPaintPointerId = getPointerId(pointer);
+        this.mapEditorPaintToolId = isRightClick(pointer) ? MAP_EDITOR_TOOL_IDS.ERASER : null;
         this.lastPaintedTileKey = null;
         this.controller.startMapEditorPaint?.();
         this.paintEditorTile(tile);
@@ -357,6 +364,7 @@ export class BattleScene extends Phaser.Scene {
 
       if (isMapEditorScreen(this.latestState) && this.mapEditorPaintPointerId === pointerId) {
         this.mapEditorPaintPointerId = null;
+        this.mapEditorPaintToolId = null;
         this.lastPaintedTileKey = null;
         this.controller.stopMapEditorPaint?.();
         return;
@@ -402,6 +410,7 @@ export class BattleScene extends Phaser.Scene {
 
       if (this.mapEditorPaintPointerId === pointerId) {
         this.mapEditorPaintPointerId = null;
+        this.mapEditorPaintToolId = null;
         this.lastPaintedTileKey = null;
         this.controller.stopMapEditorPaint?.();
       }
@@ -453,7 +462,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   clampBattlefieldCamera() {
-    const snapshot = getBoardSnapshot(this.latestState);
+    const snapshot = getBoardSnapshot(this.latestState, this.hoveredTile);
 
     if (!snapshot) {
       return;
@@ -491,6 +500,7 @@ export class BattleScene extends Phaser.Scene {
     this.touchPointers.clear();
     this.clickCandidate = null;
     this.mapEditorPaintPointerId = null;
+    this.mapEditorPaintToolId = null;
     this.lastPaintedTileKey = null;
   }
 
@@ -658,11 +668,13 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.lastPaintedTileKey = tileKey;
-    this.controller.applyMapEditorToolAt?.(tile.x, tile.y);
+    this.controller.applyMapEditorToolAt?.(tile.x, tile.y, {
+      toolId: this.mapEditorPaintToolId
+    });
   }
 
   getTileFromScreenPoint(screenX, screenY) {
-    const snapshot = getBoardSnapshot(this.latestState);
+    const snapshot = getBoardSnapshot(this.latestState, this.hoveredTile);
 
     if (!snapshot) {
       return null;
@@ -708,7 +720,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   renderBattle() {
-    const snapshot = getBoardSnapshot(this.latestState);
+    const snapshot = getBoardSnapshot(this.latestState, this.hoveredTile);
 
     if (!snapshot) {
       this.resetBattlefieldCamera();
@@ -736,7 +748,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (!isBattle) {
       this.fxLayer.clear();
-      this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: false });
+      this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: true });
       this.selectionLayer.render(snapshot, layout, false, this.hoveredTile, [], null, {
         editorSpawns: {
           player: snapshot.map.playerSpawns,

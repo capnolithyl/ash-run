@@ -483,8 +483,14 @@ function setUnitAt(mapData, unitTypeId, owner, x, y) {
   return true;
 }
 
-function applyToolToSingleTile(nextMap, editorState, x, y) {
-  const toolId = editorState?.selectedTool ?? MAP_EDITOR_TOOL_IDS.TERRAIN;
+function resolveMapEditorToolId(editorState, overrideToolId) {
+  return Object.values(MAP_EDITOR_TOOL_IDS).includes(overrideToolId)
+    ? overrideToolId
+    : (editorState?.selectedTool ?? MAP_EDITOR_TOOL_IDS.TERRAIN);
+}
+
+function applyToolToSingleTile(nextMap, editorState, x, y, overrideToolId = null) {
+  const toolId = resolveMapEditorToolId(editorState, overrideToolId);
 
   if (toolId === MAP_EDITOR_TOOL_IDS.TERRAIN) {
     const nextTerrain = isTerrainKey(editorState?.selectedTerrainId)
@@ -549,8 +555,9 @@ function applyToolToSingleTile(nextMap, editorState, x, y) {
   return false;
 }
 
-export function applyMapEditorTool(mapInput, editorState, x, y) {
+export function applyMapEditorTool(mapInput, editorState, x, y, options = {}) {
   const mapData = normalizeMapDefinition(mapInput);
+  const overrideToolId = options?.toolId ?? null;
 
   if (!isInsideMap(mapData, x, y)) {
     return {
@@ -567,7 +574,7 @@ export function applyMapEditorTool(mapInput, editorState, x, y) {
   let changed = false;
 
   for (const tile of targetTiles) {
-    changed = applyToolToSingleTile(nextMap, editorState, tile.x, tile.y) || changed;
+    changed = applyToolToSingleTile(nextMap, editorState, tile.x, tile.y, overrideToolId) || changed;
   }
 
   nextMap.buildings = normalizeBuildings(nextMap.buildings, nextMap);

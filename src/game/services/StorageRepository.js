@@ -2,6 +2,16 @@ import { createDefaultMetaState, createEmptySlotSummaries } from "../state/defau
 
 const META_KEY = "ash-run-84:meta";
 const SLOT_KEY_PREFIX = "ash-run-84:slot:";
+const CUSTOM_MAP_KEY_PREFIX = "ash-run-84:custom-map:";
+
+function normalizeCustomMapStorageKey(fileName, mapData = null) {
+  const preferredId = String(mapData?.id ?? "").trim();
+  const baseName = String(fileName ?? "")
+    .trim()
+    .replace(/\.json$/i, "");
+
+  return preferredId || baseName || "custom-map";
+}
 
 /**
  * The repository hides whether we are running in Electron or in a browser.
@@ -89,6 +99,60 @@ export class StorageRepository {
 
     globalThis.localStorage.removeItem(`${SLOT_KEY_PREFIX}${slotId}`);
     return true;
+  }
+
+  async listCustomMaps() {
+    if (this.desktopApi?.listCustomMaps) {
+      return (await this.desktopApi.listCustomMaps()) ?? [];
+    }
+
+    const storage = globalThis.localStorage;
+
+    if (!storage) {
+      return [];
+    }
+
+    const customMaps = [];
+
+    for (let index = 0; index < storage.length; index += 1) {
+      const key = storage.key(index);
+
+      if (!key?.startsWith(CUSTOM_MAP_KEY_PREFIX)) {
+        continue;
+      }
+
+      const raw = storage.getItem(key);
+
+      if (!raw) {
+        continue;
+      }
+
+      customMaps.push(JSON.parse(raw));
+    }
+
+    return customMaps.sort((left, right) =>
+      String(left?.id ?? "").localeCompare(String(right?.id ?? ""))
+    );
+  }
+
+  async saveCustomMap(fileName, text) {
+    if (this.desktopApi?.saveCustomMap) {
+      return this.desktopApi.saveCustomMap(fileName, text);
+    }
+
+    const storage = globalThis.localStorage;
+
+    if (!storage) {
+      throw new Error("Custom map storage is unavailable in this environment.");
+    }
+
+    const mapData = JSON.parse(text);
+    const storageKey = `${CUSTOM_MAP_KEY_PREFIX}${normalizeCustomMapStorageKey(
+      fileName,
+      mapData
+    )}`;
+    storage.setItem(storageKey, JSON.stringify(mapData));
+    return mapData;
   }
 
   async quit() {

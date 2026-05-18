@@ -138,7 +138,7 @@ function renderEraserTool(state) {
       <span class="map-editor-tool__swatch map-editor-tool__swatch--marker">X</span>
       <span class="map-editor-tool__copy">
         <strong>Eraser</strong>
-        <small>Clears terrain, buildings, and units from mirrored tiles too.</small>
+        <small>Clears terrain, buildings, and units. Right click does this without changing tools.</small>
       </span>
     </button>
   `;
@@ -203,10 +203,126 @@ function renderActiveTool(state) {
   return "Eraser";
 }
 
+function renderCompactTool(state) {
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.BUILDING) {
+    return getBuildingTypeMetadata(state.mapEditor.selectedBuildingType).name;
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT) {
+    return UNIT_CATALOG[state.mapEditor.selectedUnitTypeId]?.name ?? "Unit";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN) {
+    return TERRAIN_LIBRARY[state.mapEditor.selectedTerrainId]?.label ?? "Terrain";
+  }
+
+  return "Eraser";
+}
+
+function renderMirrorLabel(mirrorMode) {
+  if (!mirrorMode) {
+    return "Off";
+  }
+
+  return mirrorMode.charAt(0).toUpperCase() + mirrorMode.slice(1);
+}
+
+function renderTopCardStat(label, value) {
+  return `
+    <div class="map-editor-topcard__stat">
+      <dt>${label}</dt>
+      <dd>${value}</dd>
+    </div>
+  `;
+}
+
+function renderTopCard({
+  side,
+  eyebrow,
+  title,
+  summary,
+  stats,
+  actions = ""
+}) {
+  return `
+    <section class="commander-panel-shell commander-panel-shell--${side} map-editor-topcard-shell">
+      <div class="commander-panel commander-panel--${side} map-editor-topcard map-editor-topcard--${side}">
+        <div class="map-editor-topcard__body">
+          <div class="map-editor-topcard__headline">
+            <p class="map-editor-topcard__eyebrow">${eyebrow}</p>
+            <h2 class="map-editor-topcard__title" ${side === "player" ? 'data-map-editor-live-name="true"' : ""}>${title}</h2>
+            <p class="map-editor-topcard__summary">${summary}</p>
+          </div>
+          ${
+            stats.length
+              ? `
+                <dl class="map-editor-topcard__stats">
+                  ${stats.map(({ label, value }) => renderTopCardStat(label, value)).join("")}
+                </dl>
+              `
+              : ""
+          }
+          ${actions}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderTopPanels(state, map, goalLabel, validation) {
+  const validationHeadline = validation.isValid ? "Ready To Save" : "Needs Attention";
+  const validationSummary = validation.isValid
+    ? "The map passes validation and can be saved right now."
+    : validation.errors[0] ?? "Resolve the remaining validation issues before saving.";
+
+  return `
+    <div class="battle-commanders map-editor-commanders" aria-label="Map editor overview">
+      ${renderTopCard({
+        side: "player",
+        eyebrow: "Map Editor",
+        title: map.name || "Untitled Map",
+        summary: getMapGoalSummary(map.goal, map),
+        stats: [
+          { label: "Theme", value: map.theme },
+          { label: "Size", value: `${map.width} x ${map.height}` },
+          { label: "Goal", value: goalLabel }
+        ]
+      })}
+      ${renderTopCard({
+        side: "enemy",
+        eyebrow: "Editor Status",
+        title: validationHeadline,
+        summary: validationSummary,
+        stats: [],
+        actions: `
+          <div class="map-editor-topcard__actions">
+            <button
+              class="ghost-button ghost-button--small"
+              data-action="map-editor-import"
+              type="button"
+            >
+              Load Map
+            </button>
+            <button
+              class="menu-button menu-button--small"
+              data-action="map-editor-export"
+              type="button"
+              ${validation.isValid ? "" : "disabled"}
+            >
+              Save Map
+            </button>
+          </div>
+        `
+      })}
+    </div>
+  `;
+}
+
 function renderTileSummary(tileDetails) {
   if (!tileDetails) {
     return `
       <div class="card-block">
+        <p class="eyebrow">Selected Tile</p>
         <p>Select a tile on the battlefield to inspect its terrain, building, and placed unit.</p>
       </div>
     `;
@@ -214,30 +330,11 @@ function renderTileSummary(tileDetails) {
 
   return `
     <div class="card-block map-editor-tile-card">
-      <p class="eyebrow">Tile ${tileDetails.x}, ${tileDetails.y}</p>
-      <h3>${tileDetails.terrain?.label ?? "Unknown Terrain"}</h3>
+      <p class="eyebrow">Selected Tile</p>
+      <h3>Tile ${tileDetails.x}, ${tileDetails.y}</h3>
+      <p>${tileDetails.terrain?.label ?? "Unknown Terrain"}</p>
       <p>${tileDetails.buildingMetadata ? `${tileDetails.buildingMetadata.name} (${tileDetails.building.owner})` : "No building"}</p>
       <p>${tileDetails.unitMetadata ? `${tileDetails.unitMetadata.name} (${tileDetails.unit.owner})` : "No unit"}</p>
-    </div>
-  `;
-}
-
-function renderValidationCard(validation) {
-  if (validation.isValid) {
-    return `
-      <div class="card-block map-editor-validation map-editor-validation--valid">
-        <strong>Ready To Save</strong>
-        <p>The map has a valid name, theme, size, terrain, buildings, and placed-unit data.</p>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="card-block map-editor-validation map-editor-validation--invalid">
-      <strong>Needs Attention</strong>
-      <ul class="map-editor-validation__list">
-        ${validation.errors.map((error) => `<li>${error}</li>`).join("")}
-      </ul>
     </div>
   `;
 }
@@ -288,7 +385,7 @@ function renderGoalSection(map, tileDetails) {
         goal.type === MAP_GOAL_TYPES.RESCUE || goal.type === MAP_GOAL_TYPES.DEFEND
           ? `
             <p><strong>Target</strong> ${targetBuilding ? `${targetBuilding.id} (${targetBuilding.x}, ${targetBuilding.y})` : "No building selected"}</p>
-            <div class="map-editor-import-row">
+            <div class="map-editor-inline-actions">
               <button
                 class="ghost-button ghost-button--small"
                 data-action="map-editor-goal-use-selected-building"
@@ -314,6 +411,29 @@ function renderGoalSection(map, tileDetails) {
   `;
 }
 
+function renderFooterMeta(map, goalLabel, toolLabel, mirrorLabel) {
+  return `
+    <div class="battle-footer-meta map-editor-footer-meta" aria-label="Map editor summary">
+      <div class="battle-footer-meta__item">
+        <strong>Map</strong>
+        <em>${map.name || "Untitled Map"}</em>
+      </div>
+      <div class="battle-footer-meta__item">
+        <strong>Goal</strong>
+        <em>${goalLabel}</em>
+      </div>
+      <div class="battle-footer-meta__item">
+        <strong>Tool</strong>
+        <em>${toolLabel}</em>
+      </div>
+      <div class="battle-footer-meta__item">
+        <strong>Mirror</strong>
+        <em>${mirrorLabel}</em>
+      </div>
+    </div>
+  `;
+}
+
 export function renderMapEditorView(state, uiState = {}) {
   const map = state.mapEditor?.mapData;
 
@@ -325,30 +445,15 @@ export function renderMapEditorView(state, uiState = {}) {
   const validation = getMapEditorValidation(map);
   const tileDetails = getMapEditorTileDetails(map, state.mapEditor.selectedTile);
   const goalLabel = getMapGoalLabel(map.goal);
+  const footerTool = renderCompactTool(state);
+  const mirrorLabel = renderMirrorLabel(state.mapEditor.mirrorMode);
 
   return `
     <div class="battle-shell map-editor-shell" data-screen-id="map-editor">
       <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
 
-      <section class="map-editor-header card-block">
-        <div class="map-editor-header__copy">
-          <p class="eyebrow">Map Editor</p>
-          <h2>${map.name || "Untitled Map"}</h2>
-          <p>Paint terrain, place structures and armies, mirror your work, and download a repo-ready JSON map.</p>
-        </div>
-        <div class="map-editor-header__meta">
-          <span><strong>Theme</strong> ${map.theme}</span>
-          <span><strong>Size</strong> ${map.width} x ${map.height}</span>
-          <span><strong>Goal</strong> ${goalLabel}</span>
-          <span><strong>Tool</strong> ${renderActiveTool(state)}</span>
-          <span><strong>Mirror</strong> ${state.mapEditor.mirrorMode}</span>
-        </div>
-        <div class="map-editor-header__actions">
-          <button class="ghost-button ghost-button--small" data-action="map-editor-new" type="button">New Map</button>
-          <button class="ghost-button ghost-button--small" data-action="back-to-title" type="button">Back</button>
-        </div>
-      </section>
+      ${renderTopPanels(state, map, goalLabel, validation)}
 
       <aside class="battle-rail battle-rail--left map-editor-rail" data-map-editor-rail="left">
         <div class="battle-drawer-header">
@@ -359,7 +464,7 @@ export function renderMapEditorView(state, uiState = {}) {
         ${renderAccordion(
           MAP_EDITOR_ACCORDION_IDS.TERRAIN,
           "Terrain",
-          "Choose a tile, then click or drag to paint.",
+          "Click or drag to paint. Right click erases to plains.",
           `
             <div class="map-editor-tool-grid">
               ${renderTerrainTools(state)}
@@ -481,42 +586,40 @@ export function renderMapEditorView(state, uiState = {}) {
 
         ${renderGoalSection(map, tileDetails)}
         ${renderTileSummary(tileDetails)}
-        ${renderValidationCard(validation)}
-
-        <div class="card-block">
-          <p class="eyebrow">Import / Save</p>
-          <p>Import an existing JSON map, or save the current one when validation passes.</p>
-          <div class="map-editor-import-row">
-            <button class="ghost-button ghost-button--small" data-action="map-editor-import" type="button">
-              Import JSON
-            </button>
-            <input id="map-editor-import" type="file" data-action="map-editor-import" accept="application/json" />
-          </div>
-        </div>
       </aside>
 
-      <div class="battle-footer-actions map-editor-footer-actions" aria-label="Map editor controls">
+      ${renderFooterMeta(map, goalLabel, footerTool, mirrorLabel)}
+
+      <div class="map-editor-footer-controls" aria-label="Map editor controls">
         <label
-          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--intel battle-drawer-button"
+          class="ghost-button ghost-button--small map-editor-footer-controls__drawer"
           for="battle-intel-drawer"
         >
           Palette
         </label>
         <button
-          class="menu-button menu-button--small battle-footer-button battle-footer-button--next"
-          data-action="map-editor-export"
+          class="ghost-button ghost-button--small map-editor-footer-controls__button map-editor-footer-controls__button--secondary"
+          data-action="map-editor-new"
           type="button"
-          ${validation.isValid ? "" : "disabled"}
         >
-          Save JSON
+          New Map
+        </button>
+        <button
+          class="ghost-button ghost-button--small map-editor-footer-controls__button map-editor-footer-controls__button--secondary"
+          data-action="back-to-title"
+          type="button"
+        >
+          Back
         </button>
         <label
-          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--feed battle-drawer-button"
+          class="ghost-button ghost-button--small map-editor-footer-controls__drawer"
           for="battle-command-drawer"
         >
           Inspector
         </label>
       </div>
+
+      <input id="map-editor-import" type="file" data-action="map-editor-import" accept="application/json" />
     </div>
   `;
 }

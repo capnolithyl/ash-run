@@ -15,9 +15,14 @@ import {
   MAP_EDITOR_TOOL_IDS,
   resizeMapDefinition
 } from "../src/game/content/mapEditor.js";
+import { getMapById, replaceCustomMaps } from "../src/game/content/maps.js";
 import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { appShellEventMethods } from "../src/ui/appShell/eventMethods.js";
 import { renderMapEditorView } from "../src/ui/views/mapEditorView.js";
+
+test.afterEach(() => {
+  replaceCustomMaps([]);
+});
 
 test("terrain painting to blocked tiles removes buildings, units, and legacy spawns on that tile", () => {
   const mapData = createBlankMapDefinition({
@@ -75,6 +80,43 @@ test("unit painting places player and enemy units directly on the map", () => {
   ]);
 });
 
+test("temporary eraser override clears a tile without changing the selected tool", () => {
+  const mapData = createBlankMapDefinition({
+    id: "override-eraser",
+    buildings: [
+      {
+        id: "override-eraser-neutral-sector",
+        type: BUILDING_KEYS.SECTOR,
+        owner: "neutral",
+        x: 2,
+        y: 2
+      }
+    ],
+    units: [
+      {
+        id: "override-eraser-player-grunt",
+        unitTypeId: "grunt",
+        owner: TURN_SIDES.PLAYER,
+        x: 2,
+        y: 2
+      }
+    ]
+  });
+  mapData.tiles[2][2] = TERRAIN_KEYS.FOREST;
+
+  const editorState = createDefaultMapEditorState(mapData);
+  editorState.selectedTool = MAP_EDITOR_TOOL_IDS.BUILDING;
+
+  const result = applyMapEditorTool(mapData, editorState, 2, 2, {
+    toolId: MAP_EDITOR_TOOL_IDS.ERASER
+  });
+
+  assert.equal(editorState.selectedTool, MAP_EDITOR_TOOL_IDS.BUILDING);
+  assert.equal(result.mapData.tiles[2][2], TERRAIN_KEYS.PLAIN);
+  assert.equal(result.mapData.buildings.some((building) => building.x === 2 && building.y === 2), false);
+  assert.equal(result.mapData.units.some((unit) => unit.x === 2 && unit.y === 2), false);
+});
+
 test("map editor controller can paint a map, resize it, place units, and export repo-ready JSON", () => {
   const controller = new GameController();
 
@@ -118,6 +160,27 @@ test("map editor controller can paint a map, resize it, place units, and export 
   ]);
   assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-player-grunt-0-0"), true);
   assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-enemy-breaker-5-5"), true);
+});
+
+test("saving a map editor map writes to storage and registers it immediately", async () => {
+  const saveCalls = [];
+  const controller = new GameController({
+    async saveCustomMap(filename, text) {
+      saveCalls.push({ filename, text });
+      return JSON.parse(text);
+    }
+  });
+
+  controller.openMapEditor();
+  controller.updateMapEditorField("name", "Runtime Save");
+
+  const saved = await controller.saveMapEditorMap();
+
+  assert.equal(saveCalls.length, 1);
+  assert.equal(saveCalls[0].filename, "runtime-save.json");
+  assert.equal(saved?.mapData?.id, "runtime-save");
+  assert.equal(getMapById("runtime-save")?.name, "Runtime Save");
+  assert.match(controller.getState().banner, /custom map library/i);
 });
 
 test("imported maps also re-derive their map id from the map name", () => {
@@ -298,23 +361,13 @@ test("map editor import button falls back to the browser file input", async () =
   assert.equal(clicked, true);
 });
 
-test("map editor export uses the desktop save dialog when available", async () => {
-  const exportCalls = [];
+test("map editor save action uses the controller-managed library save flow", async () => {
+  const saveCalls = [];
   const shell = {
     latestState: {},
-    getDesktopApi() {
-      return {
-        async exportMapFile(filename, text) {
-          exportCalls.push({ filename, text });
-        }
-      };
-    },
     controller: {
-      exportMapEditorMap() {
-        return {
-          filename: "factory-lane.json",
-          text: "{\n  \"id\": \"factory-lane\"\n}"
-        };
+      async saveMapEditorMap() {
+        saveCalls.push("saved");
       }
     }
   };
@@ -331,12 +384,7 @@ test("map editor export uses the desktop save dialog when available", async () =
     }
   });
 
-  assert.deepEqual(exportCalls, [
-    {
-      filename: "factory-lane.json",
-      text: "{\n  \"id\": \"factory-lane\"\n}"
-    }
-  ]);
+  assert.deepEqual(saveCalls, ["saved"]);
 });
 
 test("map editor import falls back to the browser file input when the desktop handler is missing", async () => {
@@ -372,27 +420,13 @@ test("map editor import falls back to the browser file input when the desktop ha
   assert.equal(clicked, true);
 });
 
-test("map editor export falls back to browser download when the desktop handler is missing", async () => {
-  const downloads = [];
+test("map editor save action uses the same controller flow without desktop export handlers", async () => {
+  const saveCalls = [];
   const shell = {
     latestState: {},
-    getDesktopApi() {
-      return {
-        async exportMapFile() {
-          throw new Error("No handler registered for 'map-files:export'");
-        }
-      };
-    },
-    logDesktopDialogFallback() {},
-    downloadMapEditorJson(exportedMap) {
-      downloads.push(exportedMap);
-    },
     controller: {
-      exportMapEditorMap() {
-        return {
-          filename: "fallback-map.json",
-          text: "{\n  \"id\": \"fallback-map\"\n}"
-        };
+      async saveMapEditorMap() {
+        saveCalls.push("saved");
       }
     }
   };
@@ -409,12 +443,7 @@ test("map editor export falls back to browser download when the desktop handler 
     }
   });
 
-  assert.deepEqual(downloads, [
-    {
-      filename: "fallback-map.json",
-      text: "{\n  \"id\": \"fallback-map\"\n}"
-    }
-  ]);
+  assert.deepEqual(saveCalls, ["saved"]);
 });
 
 test("new maps no longer require spawn points to export", () => {

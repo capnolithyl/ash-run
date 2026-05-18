@@ -15,6 +15,7 @@ import {
 } from "../content/mapEditor.js";
 import { MAP_GOAL_ORDER, normalizeMapGoal } from "../content/mapGoals.js";
 import { MAP_THEME_PALETTES } from "../content/terrain.js";
+import { upsertCustomMap } from "../content/maps.js";
 
 function normalizeEditorTile(tile) {
   return tile && Number.isInteger(tile.x) && Number.isInteger(tile.y)
@@ -239,14 +240,14 @@ export const controllerMapEditorMethods = {
     this.emit();
   },
 
-  applyMapEditorToolAt(x, y) {
+  applyMapEditorToolAt(x, y, options = {}) {
     const mapData = this.state.mapEditor?.mapData;
 
     if (!mapData || !Number.isInteger(x) || !Number.isInteger(y)) {
       return false;
     }
 
-    const result = applyMapEditorTool(mapData, this.state.mapEditor, x, y);
+    const result = applyMapEditorTool(mapData, this.state.mapEditor, x, y, options);
     const currentTile = this.state.mapEditor.selectedTile;
     const selectedChanged =
       currentTile?.x !== result.selectedTile?.x || currentTile?.y !== result.selectedTile?.y;
@@ -326,6 +327,26 @@ export const controllerMapEditorMethods = {
     return {
       filename: `${exportedMap.id}.json`,
       text: JSON.stringify(exportedMap, null, 2)
+    };
+  },
+
+  async saveMapEditorMap() {
+    const exportedMap = this.exportMapEditorMap();
+
+    if (!exportedMap) {
+      return null;
+    }
+
+    const savedMap =
+      (await this.storage.saveCustomMap?.(exportedMap.filename, exportedMap.text))
+      ?? JSON.parse(exportedMap.text);
+    const registeredMap = upsertCustomMap(savedMap);
+    this.state.banner = `Saved ${registeredMap.name} to your custom map library.`;
+    this.emit();
+
+    return {
+      filename: exportedMap.filename,
+      mapData: registeredMap
     };
   }
 };

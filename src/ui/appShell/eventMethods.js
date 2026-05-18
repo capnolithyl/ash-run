@@ -28,7 +28,9 @@ export const appShellEventMethods = {
   },
 
   syncMapEditorNameDraft(value) {
-    const headerTitle = this.root.querySelector(".map-editor-header__copy h2");
+    const headerTitle = this.root.querySelector(
+      "[data-map-editor-live-name], .map-editor-meta__title, .map-editor-header__copy h2"
+    );
 
     if (headerTitle) {
       headerTitle.textContent = String(value ?? "").trimStart() || "Untitled Map";
@@ -313,20 +315,7 @@ export const appShellEventMethods = {
         break;
       }
       case "map-editor-export": {
-        const exportedMap = this.controller.exportMapEditorMap();
-        if (!exportedMap) break;
-        const desktopApi = this.getDesktopApi?.();
-
-        if (desktopApi?.exportMapFile) {
-          try {
-            await desktopApi.exportMapFile(exportedMap.filename, exportedMap.text);
-            break;
-          } catch (error) {
-            this.logDesktopDialogFallback("export", error);
-          }
-        }
-
-        this.downloadMapEditorJson(exportedMap);
+        await this.controller.saveMapEditorMap?.();
         break;
       }
       case "load-slot":

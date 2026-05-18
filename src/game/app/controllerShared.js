@@ -5,6 +5,7 @@ import {
   TURN_SIDES,
 } from "../core/constants.js";
 import { COMMANDERS } from "../content/commanders.js";
+import { MAP_POOL } from "../content/maps.js";
 
 export const BATTLE_CONTEXT_ACTION_DEDUPE_MS = 180;
 export const RUN_META_CURRENCY_MAP_REWARD = 5;
@@ -54,7 +55,7 @@ export function createDefaultSkirmishSetupState(unlockedCommanderIds = []) {
     step: "commanders",
     playerCommanderId: defaultCommanderId,
     enemyCommanderId: defaultEnemyCommanderId,
-    mapId: "ashline-crossing",
+    mapId: MAP_POOL[0]?.id ?? null,
     startingFunds: SKIRMISH_DEFAULT_STARTING_FUNDS,
     fundsPerBuilding: SKIRMISH_DEFAULT_FUNDS_PER_BUILDING,
   };

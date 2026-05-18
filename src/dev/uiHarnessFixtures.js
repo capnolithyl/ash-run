@@ -169,7 +169,7 @@ function createSkirmishSetupState(step = "commanders") {
       step,
       playerCommanderId: "atlas",
       enemyCommanderId: "rook",
-      mapId: "ashline-crossing",
+      mapId: "river-city",
       startingFunds: 1400,
       fundsPerBuilding: 150
     }

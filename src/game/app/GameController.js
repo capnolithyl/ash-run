@@ -13,6 +13,7 @@ import { controllerBattleMethods } from "./controllerBattleMethods.js";
 import { controllerMapEditorMethods } from "./controllerMapEditorMethods.js";
 import { controllerRunMethods } from "./controllerRunMethods.js";
 import { createBlankMapDefinition, createDefaultMapEditorState } from "../content/mapEditor.js";
+import { replaceCustomMaps } from "../content/maps.js";
 
 /**
  * The controller owns app flow and save orchestration.
@@ -82,6 +83,7 @@ export class GameController {
         ...(loadedMeta?.options ?? {})
       }
     };
+    replaceCustomMaps((await this.storage.listCustomMaps?.()) ?? []);
     this.state.slots = await this.storage.listSlots();
     this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
     this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);

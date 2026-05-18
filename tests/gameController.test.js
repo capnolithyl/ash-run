@@ -12,9 +12,48 @@ import {
   TURN_SIDES
 } from "../src/game/core/constants.js";
 import { GameController } from "../src/game/app/GameController.js";
+import { getMapById, MAP_POOL, replaceCustomMaps } from "../src/game/content/maps.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { createBattleStateForRun } from "../src/game/state/runFactory.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
+
+test.afterEach(() => {
+  replaceCustomMaps([]);
+});
+
+test("initialize seeds custom maps before the first ready state emit", async () => {
+  const emittedStates = [];
+  const controller = new GameController({
+    async loadMeta() {
+      return null;
+    },
+    async listSlots() {
+      return [];
+    },
+    async listCustomMaps() {
+      return [
+        {
+          id: "runtime-seeded",
+          name: "Runtime Seeded",
+          theme: "ash",
+          width: 8,
+          height: 8
+        }
+      ];
+    }
+  });
+
+  controller.subscribe((state) => {
+    emittedStates.push(state);
+  });
+
+  await controller.initialize();
+
+  assert.equal(controller.getState().ready, true);
+  assert.equal(emittedStates.length, 1);
+  assert.equal(getMapById("runtime-seeded")?.name, "Runtime Seeded");
+  assert.equal(emittedStates[0].ready, true);
+});
 
 test("battle context action ignores duplicate right-click source events", async () => {
   const controller = new GameController();
@@ -250,7 +289,7 @@ test("startSkirmish opens an unsaved battle with configured economy", async () =
     step: "map",
     playerCommanderId: "atlas",
     enemyCommanderId: "viper",
-    mapId: "ashline-crossing",
+    mapId: MAP_POOL[0].id,
     startingFunds: 2000,
     fundsPerBuilding: 250
   });
@@ -403,7 +442,7 @@ test("run victories award five intel credits per cleared map", async () => {
     commanderId: "atlas",
     mapIndex: 0,
     targetMapCount: 10,
-    mapSequence: ["ashline-crossing"],
+    mapSequence: [MAP_POOL[0].id],
     roster: [],
     completedMaps: [],
     selectedRewards: [],

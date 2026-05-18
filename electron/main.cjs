@@ -17,11 +17,14 @@ const USE_DEV_SERVER = !app.isPackaged && process.env.ASH_RUN_84_DEV_SERVER === 
  */
 function getStoragePaths() {
   const dataRoot = path.join(app.getPath("userData"), "storage");
+  const customMapsRoot = path.join(app.getPath("documents"), "Ash Run '84", "maps");
 
   return {
     dataRoot,
+    customMapsRoot,
     metaFile: path.join(dataRoot, META_FILE_NAME),
-    slotFile: (slotId) => path.join(dataRoot, `${slotId}.json`)
+    slotFile: (slotId) => path.join(dataRoot, `${slotId}.json`),
+    customMapFile: (fileName) => path.join(customMapsRoot, normalizeMapFileName(fileName))
   };
 }
 
@@ -44,45 +47,46 @@ async function readJson(filePath, fallback) {
 }
 
 async function writeJson(filePath, value) {
-  await ensureStorageRoot();
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, JSON.stringify(value, null, 2), "utf8");
 }
 
-async function pathExists(targetPath) {
-  try {
-    const stats = await fs.stat(targetPath);
-    return stats.isDirectory();
-  } catch (error) {
-    if (error && error.code === "ENOENT") {
-      return false;
-    }
-
-    throw error;
-  }
-}
-
 async function resolvePreferredMapDirectory() {
-  const projectMapDirectory = path.resolve(app.getAppPath(), "src/game/content/maps");
-
-  if (await pathExists(projectMapDirectory)) {
-    return projectMapDirectory;
-  }
-
-  const cwdMapDirectory = path.resolve(process.cwd(), "src/game/content/maps");
-
-  if (await pathExists(cwdMapDirectory)) {
-    return cwdMapDirectory;
-  }
-
-  const fallbackDirectory = path.join(app.getPath("documents"), "Ash Run '84", "maps");
-  await fs.mkdir(fallbackDirectory, { recursive: true });
-  return fallbackDirectory;
+  const { customMapsRoot } = getStoragePaths();
+  await fs.mkdir(customMapsRoot, { recursive: true });
+  return customMapsRoot;
 }
 
 function normalizeMapFileName(fileName) {
   const baseName = path.basename(String(fileName ?? "").trim() || "custom-map.json");
 
   return baseName.toLowerCase().endsWith(".json") ? baseName : `${baseName}.json`;
+}
+
+async function readCustomMapFile(filePath) {
+  try {
+    return await readJson(filePath, null);
+  } catch (error) {
+    console.warn(`Skipping invalid custom map file: ${filePath}`, error);
+    return null;
+  }
+}
+
+async function listCustomMaps() {
+  const { customMapsRoot } = getStoragePaths();
+  await fs.mkdir(customMapsRoot, { recursive: true });
+  const directoryEntries = await fs.readdir(customMapsRoot, { withFileTypes: true });
+  const customMaps = await Promise.all(
+    directoryEntries
+      .filter(
+        (entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json")
+      )
+      .map((entry) => readCustomMapFile(path.join(customMapsRoot, entry.name)))
+  );
+
+  return customMaps
+    .filter(Boolean)
+    .sort((left, right) => String(left.id ?? "").localeCompare(String(right.id ?? "")));
 }
 
 async function listSlotSummaries() {
@@ -183,6 +187,17 @@ ipcMain.handle("storage:delete-slot", async (_event, slotId) => {
   }
 
   return true;
+});
+
+ipcMain.handle("custom-maps:list", async () => listCustomMaps());
+
+ipcMain.handle("custom-maps:save", async (_event, suggestedFileName, text) => {
+  const { customMapFile } = getStoragePaths();
+  const mapData = JSON.parse(text);
+  const targetPath = customMapFile(suggestedFileName);
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.writeFile(targetPath, JSON.stringify(mapData, null, 2), "utf8");
+  return mapData;
 });
 
 ipcMain.handle("map-files:import", async (event) => {

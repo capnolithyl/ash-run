@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld("ashRun84Api", {
   saveSlot: (slotId, slotRecord) =>
     ipcRenderer.invoke("storage:save-slot", slotId, slotRecord),
   deleteSlot: (slotId) => ipcRenderer.invoke("storage:delete-slot", slotId),
+  listCustomMaps: () => ipcRenderer.invoke("custom-maps:list"),
+  saveCustomMap: (suggestedFileName, text) =>
+    ipcRenderer.invoke("custom-maps:save", suggestedFileName, text),
   importMapFile: () => ipcRenderer.invoke("map-files:import"),
   exportMapFile: (suggestedFileName, text) =>
     ipcRenderer.invoke("map-files:export", suggestedFileName, text),

@@ -1,4 +1,258 @@
 export const GENERATED_MAP_MODULES = {
+  "./maps/last-train-out.json": {
+    "id": "last-train-out",
+    "name": "Last Train Out",
+    "theme": "ash",
+    "width": 14,
+    "height": 10,
+    "tiles": [
+      [
+        "mountain",
+        "mountain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "mountain",
+        "mountain"
+      ],
+      [
+        "mountain",
+        "mountain",
+        "forest",
+        "forest",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "forest",
+        "forest",
+        "mountain",
+        "mountain"
+      ],
+      [
+        "mountain",
+        "mountain",
+        "forest",
+        "forest",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "forest",
+        "forest",
+        "mountain",
+        "mountain"
+      ],
+      [
+        "plain",
+        "plain",
+        "forest",
+        "forest",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "forest",
+        "forest",
+        "plain",
+        "plain"
+      ],
+      [
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road"
+      ],
+      [
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain"
+      ],
+      [
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain"
+      ],
+      [
+        "plain",
+        "forest",
+        "forest",
+        "forest",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "forest",
+        "forest",
+        "forest",
+        "plain"
+      ],
+      [
+        "plain",
+        "forest",
+        "forest",
+        "forest",
+        "plain",
+        "plain",
+        "road",
+        "road",
+        "plain",
+        "plain",
+        "forest",
+        "forest",
+        "forest",
+        "plain"
+      ],
+      [
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road"
+      ]
+    ],
+    "buildings": [
+      {
+        "id": "last-train-out-player-motor-pool-10-4",
+        "type": "motor-pool",
+        "owner": "player",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "id": "last-train-out-player-barracks-3-4",
+        "type": "barracks",
+        "owner": "player",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "id": "last-train-out-neutral-hospital-5-5",
+        "type": "hospital",
+        "owner": "neutral",
+        "x": 5,
+        "y": 5
+      },
+      {
+        "id": "last-train-out-neutral-sector-8-5",
+        "type": "sector",
+        "owner": "neutral",
+        "x": 8,
+        "y": 5
+      },
+      {
+        "id": "last-train-out-player-command-6-8",
+        "type": "command",
+        "owner": "player",
+        "x": 6,
+        "y": 8
+      }
+    ],
+    "units": [
+      {
+        "id": "last-train-out-enemy-breaker-6-0",
+        "unitTypeId": "breaker",
+        "owner": "enemy",
+        "x": 6,
+        "y": 0
+      },
+      {
+        "id": "last-train-out-enemy-longshot-7-0",
+        "unitTypeId": "longshot",
+        "owner": "enemy",
+        "x": 7,
+        "y": 0
+      },
+      {
+        "id": "last-train-out-enemy-bruiser-0-4",
+        "unitTypeId": "bruiser",
+        "owner": "enemy",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "id": "last-train-out-enemy-runner-13-4",
+        "unitTypeId": "runner",
+        "owner": "enemy",
+        "x": 13,
+        "y": 4
+      },
+      {
+        "id": "last-train-out-enemy-grunt-0-9",
+        "unitTypeId": "grunt",
+        "owner": "enemy",
+        "x": 0,
+        "y": 9
+      },
+      {
+        "id": "last-train-out-enemy-grunt-13-9",
+        "unitTypeId": "grunt",
+        "owner": "enemy",
+        "x": 13,
+        "y": 9
+      }
+    ],
+    "goal": {
+      "type": "survive",
+      "turnLimit": 6
+    }
+  },
   "./maps/river-city.json": {
     "id": "river-city",
     "name": "River City",
@@ -536,8 +790,8 @@ export const GENERATED_MAP_MODULES = {
     ],
     "units": []
   },
-  "./maps/spannisland.json": {
-    "id": "spannisland",
+  "./maps/spann-island.json": {
+    "id": "spann-island",
     "name": "Spann Island",
     "theme": "ash",
     "width": 16,
@@ -726,153 +980,156 @@ export const GENERATED_MAP_MODULES = {
     ],
     "buildings": [
       {
-        "id": "spannisland-enemy-motor-pool-11-1",
+        "id": "spann-island-enemy-motor-pool-11-1",
         "type": "motor-pool",
         "owner": "enemy",
         "x": 11,
         "y": 1
       },
       {
-        "id": "spannisland-enemy-motor-pool-13-1",
+        "id": "spann-island-enemy-motor-pool-13-1",
         "type": "motor-pool",
         "owner": "enemy",
         "x": 13,
         "y": 1
       },
       {
-        "id": "spannisland-enemy-command-12-2",
+        "id": "spann-island-enemy-command-12-2",
         "type": "command",
         "owner": "enemy",
         "x": 12,
         "y": 2
       },
       {
-        "id": "spannisland-enemy-barracks-13-2",
+        "id": "spann-island-enemy-barracks-13-2",
         "type": "barracks",
         "owner": "enemy",
         "x": 13,
         "y": 2
       },
       {
-        "id": "spannisland-neutral-sector-9-2",
+        "id": "spann-island-neutral-sector-9-2",
         "type": "sector",
         "owner": "neutral",
         "x": 9,
         "y": 2
       },
       {
-        "id": "spannisland-neutral-sector-1-3",
+        "id": "spann-island-neutral-sector-1-3",
         "type": "sector",
         "owner": "neutral",
         "x": 1,
         "y": 3
       },
       {
-        "id": "spannisland-enemy-barracks-13-3",
+        "id": "spann-island-enemy-barracks-13-3",
         "type": "barracks",
         "owner": "enemy",
         "x": 13,
         "y": 3
       },
       {
-        "id": "spannisland-neutral-sector-2-3",
+        "id": "spann-island-neutral-sector-2-3",
         "type": "sector",
         "owner": "neutral",
         "x": 2,
         "y": 3
       },
       {
-        "id": "spannisland-neutral-sector-11-4",
+        "id": "spann-island-neutral-sector-11-4",
         "type": "sector",
         "owner": "neutral",
         "x": 11,
         "y": 4
       },
       {
-        "id": "spannisland-neutral-hospital-9-4",
+        "id": "spann-island-neutral-hospital-9-4",
         "type": "hospital",
         "owner": "neutral",
         "x": 9,
         "y": 4
       },
       {
-        "id": "spannisland-player-barracks-1-5",
+        "id": "spann-island-player-barracks-1-5",
         "type": "barracks",
         "owner": "player",
         "x": 1,
         "y": 5
       },
       {
-        "id": "spannisland-neutral-sector-13-5",
+        "id": "spann-island-neutral-sector-13-5",
         "type": "sector",
         "owner": "neutral",
         "x": 13,
         "y": 5
       },
       {
-        "id": "spannisland-neutral-sector-4-5",
+        "id": "spann-island-neutral-sector-4-5",
         "type": "sector",
         "owner": "neutral",
         "x": 4,
         "y": 5
       },
       {
-        "id": "spannisland-player-barracks-1-6",
+        "id": "spann-island-player-barracks-1-6",
         "type": "barracks",
         "owner": "player",
         "x": 1,
         "y": 6
       },
       {
-        "id": "spannisland-player-command-2-6",
+        "id": "spann-island-player-command-2-6",
         "type": "command",
         "owner": "player",
         "x": 2,
         "y": 6
       },
       {
-        "id": "spannisland-player-motor-pool-2-7",
+        "id": "spann-island-player-motor-pool-2-7",
         "type": "motor-pool",
         "owner": "player",
         "x": 2,
         "y": 7
       },
       {
-        "id": "spannisland-player-motor-pool-3-7",
+        "id": "spann-island-player-motor-pool-3-7",
         "type": "motor-pool",
         "owner": "player",
         "x": 3,
         "y": 7
       },
       {
-        "id": "spannisland-neutral-repair-station-12-8",
+        "id": "spann-island-neutral-repair-station-12-8",
         "type": "repair-station",
         "owner": "neutral",
         "x": 12,
         "y": 8
       },
       {
-        "id": "spannisland-neutral-sector-13-8",
+        "id": "spann-island-neutral-sector-13-8",
         "type": "sector",
         "owner": "neutral",
         "x": 13,
         "y": 8
       },
       {
-        "id": "spannisland-neutral-sector-5-8",
+        "id": "spann-island-neutral-sector-5-8",
         "type": "sector",
         "owner": "neutral",
         "x": 5,
         "y": 8
       },
       {
-        "id": "spannisland-neutral-sector-8-8",
+        "id": "spann-island-neutral-sector-8-8",
         "type": "sector",
         "owner": "neutral",
         "x": 8,
         "y": 8
       }
     ],
-    "units": []
+    "units": [],
+    "goal": {
+      "type": "hq-capture"
+    }
   }
 };

@@ -4,6 +4,10 @@
   .battle-rail {
     width: 15.5rem;
   }
+
+  .map-editor-shell {
+    --map-editor-rail-width: 15.5rem;
+  }
 }
 
 @media (max-width: 1120px) {
@@ -1100,25 +1104,142 @@
     display: none;
   }
 
-  .map-editor-shell .battle-rail {
-    top: calc(max(0.55rem, env(safe-area-inset-top)) + 6.5rem);
+  .map-editor-commanders {
+    gap: 0.45rem;
   }
 
-  .map-editor-header {
-    top: max(0.55rem, env(safe-area-inset-top));
-    left: 0.65rem;
-    right: 0.65rem;
+  .map-editor-topcard {
+    min-height: 0;
+    padding: 0.58rem 0.72rem 0.7rem;
+  }
+
+  .map-editor-topcard__body {
+    gap: 0.56rem;
+  }
+
+  .map-editor-topcard__eyebrow {
+    font-size: 0.54rem;
+  }
+
+  .map-editor-topcard__title {
+    font-size: 1.06rem;
+  }
+
+  .map-editor-topcard__summary {
+    font-size: 0.74rem;
+    line-height: 1.28;
+  }
+
+  .map-editor-topcard__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.36rem;
+  }
+
+  .map-editor-topcard__stat {
+    padding: 0.5rem 0.56rem 0.54rem;
+    border-radius: 0.74rem;
+  }
+
+  .map-editor-topcard__stat:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .map-editor-topcard__stat dt {
+    font-size: 0.5rem;
+  }
+
+  .map-editor-topcard__stat dd {
+    font-size: 0.68rem;
+  }
+
+  .map-editor-topcard__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-editor-topcard__actions > * {
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .map-editor-shell > .map-editor-rail {
+    display: none;
+  }
+
+  #battle-intel-drawer:checked ~ .map-editor-rail[data-map-editor-rail="left"],
+  #battle-command-drawer:checked ~ .map-editor-rail[data-map-editor-rail="right"] {
+    display: block;
+    top: calc(max(0.45rem, env(safe-area-inset-top)) + var(--compact-commanders-height) + 0.55rem);
+    left: var(--screen-edge-gutter);
+    right: var(--screen-edge-gutter);
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 8.35rem);
+    width: auto;
+    z-index: 10;
+    padding: 0.72rem;
+  }
+
+  .map-editor-footer-meta {
+    position: absolute;
+    left: var(--screen-edge-gutter);
+    right: var(--screen-edge-gutter);
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 5.2rem);
+    z-index: 8;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: auto;
     min-width: 0;
-    transform: none;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.65rem;
   }
 
-  .map-editor-header__meta,
-  .map-editor-header__actions {
-    justify-content: start;
-    grid-column: auto;
+  .map-editor-footer-meta .battle-footer-meta__item {
+    min-width: 0;
+    padding: 0.42rem 0.5rem;
+  }
+
+  .map-editor-footer-controls {
+    left: var(--screen-edge-gutter);
+    right: var(--screen-edge-gutter);
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    z-index: 8;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 0.45rem;
+    transform: none;
+    border: 1px solid rgba(255, 138, 61, 0.24);
+    border-radius: 1rem;
+    background:
+      radial-gradient(
+        circle at 8% 0%,
+        rgba(255, 79, 216, 0.16),
+        transparent 10rem
+      ),
+      radial-gradient(
+        circle at 92% 0%,
+        rgba(255, 138, 61, 0.13),
+        transparent 10rem
+      ),
+      rgba(12, 5, 24, 0.92);
+    box-shadow:
+      0 0 0 1px rgba(255, 79, 216, 0.08),
+      0 18px 46px rgba(5, 1, 14, 0.62);
+    backdrop-filter: blur(16px);
+  }
+
+  .map-editor-footer-controls__drawer {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .map-editor-footer-controls > * {
+    min-width: 0;
+    min-height: 2.85rem;
+    padding: 0.52rem 0.38rem;
+    border-radius: 0.72rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-align: center;
   }
 
   .battle-drawer-header {
@@ -1624,6 +1745,31 @@
 
   .battle-footer-actions .battle-footer-button--next {
     min-height: 2.4rem;
+  }
+
+  .map-editor-footer-meta {
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 8.2rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-editor-footer-meta .battle-footer-meta__item:first-child {
+    grid-column: auto;
+  }
+
+  .map-editor-footer-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.38rem;
+  }
+
+  .map-editor-footer-controls > * {
+    min-height: 2.4rem;
+    padding: 0.5rem 0.32rem;
+    font-size: 0.72rem;
+  }
+
+  #battle-intel-drawer:checked ~ .map-editor-rail[data-map-editor-rail="left"],
+  #battle-command-drawer:checked ~ .map-editor-rail[data-map-editor-rail="right"] {
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 11.2rem);
   }
 
   .battle-command-prompt {

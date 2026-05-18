@@ -8,7 +8,7 @@ import {
 import { BUILDING_KEYS } from "../src/game/core/constants.js";
 import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { RUN_CARD_TYPES } from "../src/game/content/runUpgrades.js";
-import { MAP_POOL } from "../src/game/content/maps.js";
+import { MAP_POOL, replaceCustomMaps, RUN_MAP_POOL } from "../src/game/content/maps.js";
 import { ARMOR_CLASSES, WEAPON_CLASSES } from "../src/game/content/weaponClasses.js";
 import {
   applyBattleVictoryToRun,
@@ -40,6 +40,10 @@ function createRunState(overrides = {}) {
 function uniquePositionCount(units) {
   return new Set(units.map((unit) => `${unit.x},${unit.y}`)).size;
 }
+
+test.afterEach(() => {
+  replaceCustomMaps([]);
+});
 
 test("createUnitFromType preserves armor and weapon classes in the new stat model", () => {
   const breaker = createUnitFromType("breaker", TURN_SIDES.PLAYER);
@@ -165,7 +169,7 @@ test("skirmish battle creation assigns deterministic enemy AI archetypes for the
 
 test("skirmish battle creation no longer injects commander starter squads on spawnless maps", () => {
   const battleState = createSkirmishBattleState({
-    mapId: "spannisland",
+    mapId: "spann-island",
     playerCommanderId: "rook",
     enemyCommanderId: "atlas",
     startingFunds: 1200,
@@ -178,7 +182,7 @@ test("skirmish battle creation no longer injects commander starter squads on spa
 
 test("run battle creation can deploy bought squads on maps without authored spawn points", () => {
   const battleState = createBattleStateForRun(createRunState({
-    mapSequence: ["spannisland-run"]
+    mapSequence: ["spann-island-run"]
   }));
 
   assert.ok(battleState.player.units.length > 0);
@@ -187,11 +191,61 @@ test("run battle creation can deploy bought squads on maps without authored spaw
   assert.equal(uniquePositionCount(battleState.enemy.units), battleState.enemy.units.length);
 });
 
+test("custom maps participate in live skirmish and run map creation", () => {
+  replaceCustomMaps([
+    {
+      id: "custom-district",
+      name: "Custom District",
+      theme: "ash",
+      width: 8,
+      height: 8,
+      units: [
+        {
+          id: "custom-district-player-grunt-1-1",
+          unitTypeId: "grunt",
+          owner: TURN_SIDES.PLAYER,
+          x: 1,
+          y: 1
+        }
+      ]
+    }
+  ]);
+
+  const skirmishState = createSkirmishBattleState({
+    mapId: "custom-district",
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
+  const runState = createBattleStateForRun(
+    createRunState({
+      mapSequence: ["custom-district-run"]
+    })
+  );
+
+  assert.ok(RUN_MAP_POOL.some((mapDefinition) => mapDefinition.id === "custom-district-run"));
+  assert.equal(skirmishState.map.id, "custom-district");
+  assert.equal(skirmishState.player.units[0]?.id, "custom-district-player-grunt-1-1");
+  assert.equal(runState.map.id, "custom-district-run");
+});
+
 test("enemy AI archetype rolls stay biased by commander weights across skirmish battle creation", () => {
+  replaceCustomMaps(
+    Array.from({ length: 120 }, (_, index) => ({
+      id: `ai-weight-check-${index}`,
+      name: `AI Weight Check ${index}`,
+      theme: "ash",
+      width: 8,
+      height: 8
+    }))
+  );
   const atlasCounts = new Map();
   const falconCounts = new Map();
 
-  for (const mapDefinition of MAP_POOL) {
+  for (const mapDefinition of MAP_POOL.filter((mapDefinition) =>
+    mapDefinition.id.startsWith("ai-weight-check-")
+  )) {
     const atlasBattle = createSkirmishBattleState({
       mapId: mapDefinition.id,
       playerCommanderId: "rook",
@@ -228,7 +282,13 @@ test("enemy AI archetype rolls stay biased by commander weights across skirmish 
 });
 
 test("legacy battle states normalize a missing enemy AI archetype to balanced", () => {
-  const battleState = createBattleStateForRun(createRunState());
+  const battleState = createSkirmishBattleState({
+    mapId: MAP_POOL.find((mapDefinition) => mapDefinition.goal?.type !== MAP_GOAL_TYPES.SURVIVE)?.id,
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
   delete battleState.enemy.aiArchetype;
 
   const normalized = normalizeBattleState(battleState);
@@ -280,7 +340,7 @@ test("battle state normalization backfills mission data from the map goal", () =
 
 test("survive missions force hyper-aggressive enemy AI when battle state is normalized", () => {
   const battleState = createSkirmishBattleState({
-    mapId: MAP_POOL[0].id,
+    mapId: MAP_POOL.find((mapDefinition) => mapDefinition.goal?.type !== MAP_GOAL_TYPES.SURVIVE)?.id,
     playerCommanderId: "rook",
     enemyCommanderId: "atlas",
     startingFunds: 1200,
@@ -292,6 +352,7 @@ test("survive missions force hyper-aggressive enemy AI when battle state is norm
     turnLimit: 4
   };
   battleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.TURTLE;
+  delete battleState.mission;
 
   const normalized = normalizeBattleState(battleState);
 

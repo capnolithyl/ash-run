@@ -19,15 +19,11 @@ const PRODUCTION_BUILDINGS = new Set([
   BUILDING_KEYS.AIRFIELD
 ]);
 
-function loadMapPool() {
-  return Object.values(RAW_MAP_MODULES)
-    .map((moduleValue) => exportMapDefinition(normalizeMapDefinition(moduleValue)))
-    .sort((left, right) => left.id.localeCompare(right.id));
+function toExportedMapDefinition(mapDefinition) {
+  return exportMapDefinition(normalizeMapDefinition(mapDefinition));
 }
 
-export const MAP_POOL = loadMapPool();
-
-export const RUN_MAP_POOL = MAP_POOL.map((mapDefinition) => {
+function createRunMapVariant(mapDefinition) {
   const runMap = structuredClone(mapDefinition);
   const goalTarget =
     runMap.goal &&
@@ -54,9 +50,68 @@ export const RUN_MAP_POOL = MAP_POOL.map((mapDefinition) => {
       : building
   );
   return runMap;
-});
+}
+
+function loadBundledMapPool() {
+  return Object.values(RAW_MAP_MODULES)
+    .map(toExportedMapDefinition)
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+const BUNDLED_MAP_POOL = loadBundledMapPool();
+const customMapPool = [];
+
+export const MAP_POOL = [...BUNDLED_MAP_POOL];
+export const RUN_MAP_POOL = [];
+
+function rebuildMapPools() {
+  const mergedMaps = new Map(
+    BUNDLED_MAP_POOL.map((mapDefinition) => [mapDefinition.id, mapDefinition])
+  );
+
+  for (const mapDefinition of customMapPool) {
+    mergedMaps.set(mapDefinition.id, mapDefinition);
+  }
+
+  const nextMapPool = [...mergedMaps.values()].sort((left, right) =>
+    left.id.localeCompare(right.id)
+  );
+  MAP_POOL.splice(0, MAP_POOL.length, ...nextMapPool);
+  RUN_MAP_POOL.splice(
+    0,
+    RUN_MAP_POOL.length,
+    ...nextMapPool.map((mapDefinition) => createRunMapVariant(mapDefinition))
+  );
+}
+
+export function replaceCustomMaps(customMaps = []) {
+  customMapPool.splice(
+    0,
+    customMapPool.length,
+    ...customMaps.map((mapDefinition) => toExportedMapDefinition(mapDefinition))
+  );
+  rebuildMapPools();
+}
+
+export function upsertCustomMap(mapDefinition) {
+  const exportedMap = toExportedMapDefinition(mapDefinition);
+  const existingIndex = customMapPool.findIndex(
+    (candidate) => candidate.id === exportedMap.id
+  );
+
+  if (existingIndex === -1) {
+    customMapPool.push(exportedMap);
+  } else {
+    customMapPool.splice(existingIndex, 1, exportedMap);
+  }
+
+  rebuildMapPools();
+  return exportedMap;
+}
 
 export function getMapById(mapId) {
   return MAP_POOL.find((mapDefinition) => mapDefinition.id === mapId)
     ?? RUN_MAP_POOL.find((mapDefinition) => mapDefinition.id === mapId);
 }
+
+rebuildMapPools();
