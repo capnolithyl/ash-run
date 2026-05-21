@@ -1443,6 +1443,18 @@
     padding: 0.55rem 0.45rem;
     font-size: 0.76rem;
   }
+
+  .overlay-card--level-up {
+    width: min(38rem, calc(100vw - 1.25rem));
+  }
+
+  .level-up-card__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .level-up-art {
+    min-height: 10rem;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1460,6 +1472,30 @@
     max-height: none;
     padding: 0.85rem;
     border-radius: 1rem;
+  }
+
+  .overlay-card--level-up {
+    width: calc(100vw - 1rem);
+    padding: 0.9rem 0.85rem 0.85rem;
+  }
+
+  .level-up-card__header h2 {
+    font-size: clamp(1.7rem, 8vw, 2.4rem);
+  }
+
+  .level-up-stat {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.3rem 0.65rem;
+    padding: 0.72rem 0.78rem;
+  }
+
+  .level-up-stat__values {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+
+  .level-up-stat__delta {
+    justify-self: end;
   }
 
   .tutorial-header {

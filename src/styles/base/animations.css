@@ -197,6 +197,23 @@
   }
 }
 
+@keyframes level-up-art-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 79, 216, 0.2))
+      drop-shadow(0 0 22px rgba(93, 184, 255, 0.14));
+  }
+
+  50% {
+    transform: translateY(-0.28rem) scale(1.015);
+    filter:
+      drop-shadow(0 0 22px rgba(255, 79, 216, 0.26))
+      drop-shadow(0 0 26px rgba(93, 184, 255, 0.18));
+  }
+}
+
 @keyframes overlay-fade-in {
   from {
     opacity: 0;

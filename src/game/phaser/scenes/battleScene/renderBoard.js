@@ -171,7 +171,7 @@ export const battleSceneRenderMethods = {
         .filter((event) => destroyEventByUnitId.has(event.targetId))
         .map((event) => event.targetId)
     );
-    const experienceRevealDelay = 180;
+    const combatCutsceneDuration = combatCutscene?.durationMs ?? 0;
 
     for (const unitId of attackDrivenDestroyUnitIds) {
       this.unitLayer.holdForDestroy(unitId);
@@ -228,11 +228,6 @@ export const battleSceneRenderMethods = {
        */
       const playAttackSequence = (index = 0) => {
         if (index >= attackEvents.length) {
-          if (experienceEvents.length > 0) {
-            this.fxLayer.schedule(experienceRevealDelay, () => {
-              experienceEvents.forEach((event) => this.fxLayer.playExperience(event, layout));
-            });
-          }
           return;
         }
 
@@ -303,11 +298,14 @@ export const battleSceneRenderMethods = {
 
         playAttackSequence(0);
       });
-    } else if (experienceEvents.length > 0) {
-      this.fxLayer.schedule(turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS, () => {
-        experienceEvents.forEach((event) => this.fxLayer.playExperience(event, layout));
-      });
     }
+
+    experienceEvents.forEach((event) => {
+      this.fxLayer.schedule(
+        Math.max(event.startDelayMs ?? (turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS), combatCutsceneDuration),
+        () => this.fxLayer.playExperience(event, layout)
+      );
+    });
 
     this.fxLayer.playEvents(
       animationEvents.filter(

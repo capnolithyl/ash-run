@@ -3,6 +3,9 @@ import { ARMOR_CLASSES, WEAPON_CLASSES } from "./weaponClasses.js";
 
 /**
  * All battlefield units use the same normalized stat shape.
+ * Optional `levelUpGrowths` overrides can be added per unit with partial
+ * `{ chance, increment, weight }` fields keyed by stat. Shared defaults live
+ * in `src/game/simulation/progression.js`.
  */
 export const UNIT_CATALOG = {
   grunt: {

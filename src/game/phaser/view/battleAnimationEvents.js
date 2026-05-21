@@ -1,6 +1,7 @@
 import {
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
+  BATTLE_TURN_BANNER_SETTLE_MS,
   getBattleMoveDuration
 } from "../../core/constants.js";
 import { getXpThreshold } from "../../simulation/progression.js";
@@ -71,6 +72,30 @@ function getGainedExperience(previousUnit, nextUnit) {
   return gained;
 }
 
+export const EXPERIENCE_SEGMENT_COMPLETE_MS = 440;
+export const EXPERIENCE_SEGMENT_GAIN_MS = 620;
+export const EXPERIENCE_LEVEL_CHAIN_DELAY_MS = 120;
+export const EXPERIENCE_REVEAL_DELAY_MS = 180;
+export const EXPERIENCE_EXIT_DELAY_MS = 120;
+export const EXPERIENCE_EXIT_DURATION_MS = 280;
+
+function getTurnTransitionDelayMs(previousSnapshot, nextSnapshot) {
+  if (!previousSnapshot || previousSnapshot.turn.activeSide === nextSnapshot.turn.activeSide) {
+    return 0;
+  }
+
+  return BATTLE_TURN_BANNER_SETTLE_MS;
+}
+
+function getMovementEventDurationMs(event) {
+  if (event.teleport) {
+    return 0;
+  }
+
+  const moveSegments = Math.max(0, (event.path?.length ?? 1) - 1);
+  return getBattleMoveDuration(moveSegments);
+}
+
 function buildExperienceSegments(previousUnit, nextUnit) {
   const segments = [];
 
@@ -100,17 +125,67 @@ function buildExperienceSegments(previousUnit, nextUnit) {
     });
   }
 
-  segments.push({
-    level: nextUnit.level,
-    threshold: getXpThreshold(nextUnit.level),
-    fromExperience: 0,
-    toExperience: nextUnit.experience
-  });
+  if (nextUnit.experience > 0) {
+    segments.push({
+      level: nextUnit.level,
+      threshold: getXpThreshold(nextUnit.level),
+      fromExperience: 0,
+      toExperience: nextUnit.experience
+    });
+  }
 
   return segments;
 }
 
+function buildExperienceTimingMetadata(event, startDelayMs) {
+  const segments = event.segments ?? [];
+  let cursor = startDelayMs;
+  const thresholdHitDelaysMs = [];
+  const segmentTimings = segments.map((segment, index) => {
+    const durationMs =
+      segment.toExperience >= segment.threshold
+        ? EXPERIENCE_SEGMENT_COMPLETE_MS
+        : EXPERIENCE_SEGMENT_GAIN_MS;
+    const thresholdHitDelayMs =
+      segment.toExperience >= segment.threshold ? cursor + durationMs : null;
+    const timing = {
+      ...segment,
+      startDelayMs: cursor,
+      durationMs,
+      endDelayMs: cursor + durationMs,
+      thresholdHitDelayMs
+    };
+
+    if (thresholdHitDelayMs !== null) {
+      thresholdHitDelaysMs.push(thresholdHitDelayMs);
+    }
+
+    cursor = timing.endDelayMs;
+
+    if (thresholdHitDelayMs !== null && index < segments.length - 1) {
+      cursor += EXPERIENCE_LEVEL_CHAIN_DELAY_MS;
+    }
+
+    return timing;
+  });
+
+  const endDelayMs =
+    cursor + EXPERIENCE_EXIT_DELAY_MS + (segments.length > 0 ? EXPERIENCE_EXIT_DURATION_MS : 0);
+
+  return {
+    startDelayMs,
+    segmentTimings,
+    thresholdHitDelaysMs,
+    durationMs: Math.max(0, endDelayMs - startDelayMs),
+    endDelayMs
+  };
+}
+
 function getExperienceEventDuration(event) {
+  if (Number.isFinite(event.durationMs)) {
+    return event.durationMs;
+  }
+
   const segments = event.segments ?? [];
 
   if (segments.length === 0) {
@@ -120,14 +195,16 @@ function getExperienceEventDuration(event) {
   let duration = 0;
 
   segments.forEach((segment, index) => {
-    duration += segment.toExperience >= segment.threshold ? 440 : 620;
+    duration += segment.toExperience >= segment.threshold
+      ? EXPERIENCE_SEGMENT_COMPLETE_MS
+      : EXPERIENCE_SEGMENT_GAIN_MS;
 
     if (segment.toExperience >= segment.threshold && index < segments.length - 1) {
-      duration += 120;
+      duration += EXPERIENCE_LEVEL_CHAIN_DELAY_MS;
     }
   });
 
-  return duration + 120 + 280;
+  return duration + EXPERIENCE_EXIT_DELAY_MS + EXPERIENCE_EXIT_DURATION_MS;
 }
 
 function getBattleAnimationDurationMs(events) {
@@ -135,12 +212,11 @@ function getBattleAnimationDurationMs(events) {
     return 0;
   }
 
-  const attackEvents = events.filter((event) => event.type === "attack");
-  const combatDelay = attackEvents.length
-    ? Math.max(...attackEvents.map((event) => event.delay ?? 0)) + BATTLE_ATTACK_WINDOW_MS
-    : 0;
-
   return events.reduce((maxDuration, event) => {
+    if (Number.isFinite(event.endDelayMs)) {
+      return Math.max(maxDuration, event.endDelayMs);
+    }
+
     switch (event.type) {
       case "move": {
         if (event.teleport) {
@@ -159,7 +235,7 @@ function getBattleAnimationDurationMs(events) {
       case "resupply":
         return Math.max(maxDuration, 560);
       case "experience":
-        return Math.max(maxDuration, combatDelay + getExperienceEventDuration(event));
+        return Math.max(maxDuration, getExperienceEventDuration(event));
       case "capture":
         return Math.max(maxDuration, 520);
       case "deploy":
@@ -456,8 +532,73 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
       delay: index * BATTLE_ATTACK_WINDOW_MS
     }));
 
+  const turnTransitionDelayMs = getTurnTransitionDelayMs(previousSnapshot, nextSnapshot);
+  const moveDurationsByUnitId = new Map(
+    movements.map((event) => [event.unitId, getMovementEventDurationMs(event)])
+  );
+  const maxMoveDurationMs = Math.max(0, ...moveDurationsByUnitId.values());
+  const firstAttack = orderedAttacks[0] ?? null;
+  const firstAttackMoveDurationMs = firstAttack
+    ? moveDurationsByUnitId.get(firstAttack.attackerId) ?? 0
+    : 0;
+  const attackBaseDelayMs =
+    turnTransitionDelayMs +
+    (firstAttackMoveDurationMs > 0 ? firstAttackMoveDurationMs + BATTLE_MOVE_SETTLE_MS : 0);
+  const experienceStartDelayMs = orderedAttacks.length
+    ? attackBaseDelayMs +
+      Math.max(...orderedAttacks.map((event) => event.delay ?? 0)) +
+      BATTLE_ATTACK_WINDOW_MS +
+      EXPERIENCE_REVEAL_DELAY_MS
+    : turnTransitionDelayMs + maxMoveDurationMs + BATTLE_MOVE_SETTLE_MS;
+
+  const timedMovements = movements.map((event) => ({
+    ...event,
+    startDelayMs: turnTransitionDelayMs,
+    durationMs: getMovementEventDurationMs(event),
+    endDelayMs: turnTransitionDelayMs + getMovementEventDurationMs(event) + BATTLE_MOVE_SETTLE_MS
+  }));
+  const timedAttacks = orderedAttacks.map((event) => ({
+    ...event,
+    startDelayMs: attackBaseDelayMs + (event.delay ?? 0),
+    durationMs: BATTLE_ATTACK_WINDOW_MS,
+    endDelayMs: attackBaseDelayMs + (event.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS
+  }));
+  const timedRestores = restores.map((event) => ({
+    ...event,
+    startDelayMs: turnTransitionDelayMs,
+    durationMs: 560,
+    endDelayMs: turnTransitionDelayMs + 560
+  }));
+  const timedExperience = experience.map((event) => ({
+    ...event,
+    ...buildExperienceTimingMetadata(event, experienceStartDelayMs)
+  }));
+  const timedCaptures = captures.map((event) => ({
+    ...event,
+    startDelayMs: turnTransitionDelayMs + maxMoveDurationMs + BATTLE_MOVE_SETTLE_MS,
+    durationMs: 520,
+    endDelayMs: turnTransitionDelayMs + maxMoveDurationMs + BATTLE_MOVE_SETTLE_MS + 520
+  }));
+  const timedDeployments = deployments.map((event) => {
+    const carrierMoveDurationMs = event.fromUnload
+      ? moveDurationsByUnitId.get(event.carrierId) ?? 0
+      : maxMoveDurationMs;
+    const startDelayMs =
+      turnTransitionDelayMs +
+      (carrierMoveDurationMs > 0 || !event.fromUnload
+        ? carrierMoveDurationMs + BATTLE_MOVE_SETTLE_MS
+        : 0);
+
+    return {
+      ...event,
+      startDelayMs,
+      durationMs: 420,
+      endDelayMs: startDelayMs + 420
+    };
+  });
+
   const destroyDelaysByUnitId = new Map(
-    orderedAttacks.map((event) => [
+    timedAttacks.map((event) => [
       event.targetId,
       (event.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS
     ])
@@ -466,14 +607,20 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
     ...event,
     delay: destroyDelaysByUnitId.get(event.unitId) ?? 0
   }));
+  const timedDestroys = orderedDestroys.map((event) => ({
+    ...event,
+    startDelayMs: attackBaseDelayMs + (event.delay ?? 0),
+    durationMs: 340,
+    endDelayMs: attackBaseDelayMs + (event.delay ?? 0) + 340
+  }));
 
   return [
-    ...movements,
-    ...orderedAttacks,
-    ...restores,
-    ...experience,
-    ...captures,
-    ...deployments,
-    ...orderedDestroys
+    ...timedMovements,
+    ...timedAttacks,
+    ...timedRestores,
+    ...timedExperience,
+    ...timedCaptures,
+    ...timedDeployments,
+    ...timedDestroys
   ];
 }

@@ -3,6 +3,13 @@ export const appShellUiStatePersistenceMethods = {
     const intelDrawer = this.root.querySelector("#battle-intel-drawer");
     const commandDrawer = this.root.querySelector("#battle-command-drawer");
     const selectedIntelTab = this.root.querySelector('[name="battle-intel-tab"]:checked');
+    const openDebugAccordion = this.root.querySelector("details[data-battle-debug-accordion][open]");
+    const selectedPanel = this.root.querySelector(".battle-side-panel--selected");
+    const targetPanel = this.root.querySelector(".battle-side-panel--target");
+    const feedPanel = this.root.querySelector(".battle-side-panel--feed");
+    const compactSelectedPanel = this.root.querySelector(".battle-compact-sheet__panel--selected");
+    const compactTargetPanel = this.root.querySelector(".battle-compact-sheet__panel--target");
+    const compactFeedPanel = this.root.querySelector(".battle-compact-sheet__panel--feed");
 
     if (intelDrawer) {
       this.battleDrawers.intel = intelDrawer.checked;
@@ -15,6 +22,14 @@ export const appShellUiStatePersistenceMethods = {
     if (selectedIntelTab?.value) {
       this.battleDrawers.intelTab = selectedIntelTab.value;
     }
+
+    this.battleDrawers.debugAccordion = openDebugAccordion?.dataset.battleDebugAccordion ?? null;
+    this.battleDrawers.selectedPanelScrollTop = selectedPanel?.scrollTop ?? 0;
+    this.battleDrawers.targetPanelScrollTop = targetPanel?.scrollTop ?? 0;
+    this.battleDrawers.feedPanelScrollTop = feedPanel?.scrollTop ?? 0;
+    this.battleDrawers.compactSelectedScrollTop = compactSelectedPanel?.scrollTop ?? 0;
+    this.battleDrawers.compactTargetScrollTop = compactTargetPanel?.scrollTop ?? 0;
+    this.battleDrawers.compactFeedScrollTop = compactFeedPanel?.scrollTop ?? 0;
   },
 
   applyBattleDrawerState() {
@@ -23,6 +38,17 @@ export const appShellUiStatePersistenceMethods = {
     const selectedIntelTab = this.root.querySelector(
       `[name="battle-intel-tab"][value="${this.battleDrawers.intelTab ?? "selected"}"]`
     );
+    const openDebugAccordion = this.battleDrawers.debugAccordion
+      ? this.root.querySelector(
+          `details[data-battle-debug-accordion="${this.battleDrawers.debugAccordion}"]`
+        )
+      : null;
+    const selectedPanel = this.root.querySelector(".battle-side-panel--selected");
+    const targetPanel = this.root.querySelector(".battle-side-panel--target");
+    const feedPanel = this.root.querySelector(".battle-side-panel--feed");
+    const compactSelectedPanel = this.root.querySelector(".battle-compact-sheet__panel--selected");
+    const compactTargetPanel = this.root.querySelector(".battle-compact-sheet__panel--target");
+    const compactFeedPanel = this.root.querySelector(".battle-compact-sheet__panel--feed");
 
     if (intelDrawer) {
       intelDrawer.checked = this.battleDrawers.intel;
@@ -34,6 +60,34 @@ export const appShellUiStatePersistenceMethods = {
 
     if (selectedIntelTab) {
       selectedIntelTab.checked = true;
+    }
+
+    if (openDebugAccordion) {
+      openDebugAccordion.open = true;
+    }
+
+    if (selectedPanel) {
+      selectedPanel.scrollTop = this.battleDrawers.selectedPanelScrollTop ?? 0;
+    }
+
+    if (targetPanel) {
+      targetPanel.scrollTop = this.battleDrawers.targetPanelScrollTop ?? 0;
+    }
+
+    if (feedPanel) {
+      feedPanel.scrollTop = this.battleDrawers.feedPanelScrollTop ?? 0;
+    }
+
+    if (compactSelectedPanel) {
+      compactSelectedPanel.scrollTop = this.battleDrawers.compactSelectedScrollTop ?? 0;
+    }
+
+    if (compactTargetPanel) {
+      compactTargetPanel.scrollTop = this.battleDrawers.compactTargetScrollTop ?? 0;
+    }
+
+    if (compactFeedPanel) {
+      compactFeedPanel.scrollTop = this.battleDrawers.compactFeedScrollTop ?? 0;
     }
   },
 

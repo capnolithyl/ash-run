@@ -12,6 +12,7 @@ import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
+import { getXpThreshold } from "../src/game/simulation/progression.js";
 import { renderBattleHudView } from "../src/ui/views/battleHudView.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
@@ -943,6 +944,135 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
   assert.doesNotMatch(html, /Armor Profile/);
 });
 
+test("battle HUD can render selected-unit experience from a presentation override", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    level: 3,
+    experience: 14
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView(
+    {
+      battleSnapshot: system.getSnapshot(),
+      runState: {
+        mapIndex: 0,
+        targetMapCount: 10
+      },
+      battleUi: {
+        pauseMenuOpen: false,
+        confirmAbandon: false,
+        fundsGain: null,
+        hoveredTile: null,
+        playerFocus: null,
+        enemyFocus: null
+      },
+      debugMode: false,
+      runStatus: null,
+      banner: ""
+    },
+    {
+      experiencePresentation: {
+        [unit.id]: {
+          level: 2,
+          experience: 96,
+          experienceToNextLevel: getXpThreshold(2),
+          ratio: 0.8
+        }
+      }
+    }
+  );
+
+  assert.match(html, /data-experience-level[^>]*>2<\/span>/);
+  assert.match(html, new RegExp(`data-experience-value>96\\/${getXpThreshold(2)}<`));
+  assert.doesNotMatch(html, /data-experience-level[^>]*>3<\/span>/);
+  assert.doesNotMatch(html, new RegExp(`data-experience-value>14\\/${getXpThreshold(3)}<`));
+});
+
+test("battle HUD renders the full level-up stat board, sprite art, and locked continue state", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    level: 3
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  battleState.levelUpQueue = [
+    {
+      unitId: unit.id,
+      unitTypeId: unit.unitTypeId,
+      owner: unit.owner,
+      unitName: unit.name,
+      previousLevel: 2,
+      newLevel: 3,
+      statSheet: [
+        { stat: "maxHealth", label: "Max HP", beforeValue: 100, afterValue: 102, delta: 2, changed: true },
+        { stat: "attack", label: "Attack", beforeValue: 62, afterValue: 63, delta: 1, changed: true },
+        { stat: "armor", label: "Armor", beforeValue: 6, afterValue: 7, delta: 1, changed: true },
+        { stat: "movement", label: "Movement", beforeValue: 4, afterValue: 4, delta: 0, changed: false },
+        { stat: "maxRange", label: "Range", beforeValue: 1, afterValue: 1, delta: 0, changed: false },
+        { stat: "staminaMax", label: "Stamina", beforeValue: 60, afterValue: 60, delta: 0, changed: false },
+        { stat: "ammoMax", label: "Ammo", beforeValue: 7, afterValue: 8, delta: 1, changed: true },
+        { stat: "luck", label: "Luck", beforeValue: 3, afterValue: 3, delta: 0, changed: false }
+      ],
+      statGains: [
+        { stat: "maxHealth", label: "Max HP", delta: 2, previousValue: 100, nextValue: 102 },
+        { stat: "attack", label: "Attack", delta: 1, previousValue: 62, nextValue: 63 },
+        { stat: "armor", label: "Armor", delta: 1, previousValue: 6, nextValue: 7 },
+        { stat: "ammoMax", label: "Ammo", delta: 1, previousValue: 7, nextValue: 8 }
+      ]
+    }
+  ];
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView(
+    {
+      battleSnapshot: system.getSnapshot(),
+      runState: {
+        mapIndex: 0,
+        targetMapCount: 10
+      },
+      battleUi: {
+        pauseMenuOpen: false,
+        confirmAbandon: false,
+        fundsGain: null,
+        hoveredTile: null,
+        playerFocus: null,
+        enemyFocus: null
+      },
+      debugMode: false,
+      runStatus: null,
+      banner: ""
+    },
+    {
+      levelUpPresentation: {
+        continueEnabled: false,
+        rows: [
+          { stat: "maxHealth", label: "Max HP", beforeValue: 100, afterValue: 102, displayValue: 101, delta: 2, changed: true, phase: "active" },
+          { stat: "attack", label: "Attack", beforeValue: 62, afterValue: 63, displayValue: 63, delta: 1, changed: true, phase: "settled" },
+          { stat: "armor", label: "Armor", beforeValue: 6, afterValue: 7, displayValue: 6, delta: 1, changed: true, phase: "pending" },
+          { stat: "movement", label: "Movement", beforeValue: 4, afterValue: 4, displayValue: 4, delta: 0, changed: false, phase: "static" },
+          { stat: "maxRange", label: "Range", beforeValue: 1, afterValue: 1, displayValue: 1, delta: 0, changed: false, phase: "static" },
+          { stat: "staminaMax", label: "Stamina", beforeValue: 60, afterValue: 60, displayValue: 60, delta: 0, changed: false, phase: "static" },
+          { stat: "ammoMax", label: "Ammo", beforeValue: 7, afterValue: 8, displayValue: 7, delta: 1, changed: true, phase: "pending" },
+          { stat: "luck", label: "Luck", beforeValue: 3, afterValue: 3, displayValue: 3, delta: 0, changed: false, phase: "static" }
+        ]
+      }
+    }
+  );
+
+  assert.match(html, new RegExp(`data-level-up-key=\"${unit.id}-2-3\"`));
+  assert.equal(countMatches(html, /data-level-up-stat=/g), 8);
+  assert.match(html, /Level 2 to 3/);
+  assert.match(html, /data-level-up-display="maxHealth">101<\/strong>/);
+  assert.match(html, /level-up-stat--active/);
+  assert.match(html, /level-up-stat--pending/);
+  assert.match(html, /level-up-stat--static/);
+  assert.match(html, /level-up-art__sheet/);
+  assert.match(html, /data-action="acknowledge-level-up" disabled/);
+});
+
 test("battle HUD shows the matching weapon icon for non-rifle weapon classes", () => {
   const unit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 2);
   const battleState = createTestBattleState({
@@ -1124,13 +1254,21 @@ test("debug pause menu groups tools into accordion sections", () => {
 
   assert.match(html, /class="pause-section" open/);
   assert.match(html, /<strong>Debug Toolkit<\/strong>/);
-  assert.match(html, /class="debug-section" open/);
+  assert.match(html, /<strong>Battlefield<\/strong>/);
+  assert.match(html, /data-battle-debug-accordion="battlefield" name="battle-debug-accordion"/);
+  assert.match(html, /data-battle-debug-accordion="spawn" name="battle-debug-accordion"/);
+  assert.match(html, /data-battle-debug-accordion="commanders" name="battle-debug-accordion"/);
+  assert.match(html, /data-battle-debug-accordion="shortcuts" name="battle-debug-accordion"/);
+  assert.match(html, /data-battle-debug-accordion="selected-unit" name="battle-debug-accordion"/);
+  assert.doesNotMatch(html, /<details class="debug-section"[^>]*\sopen/);
   assert.match(html, /<strong>Spawn Unit<\/strong>/);
   assert.match(html, /<strong>Commander Overrides<\/strong>/);
   assert.match(html, /<strong>Battle Shortcuts<\/strong>/);
   assert.match(html, /<strong>Selected Unit Overrides<\/strong>/);
   assert.match(html, /Bruiser \| Tile 2, 2/);
   assert.match(html, /data-debug-field="spawn-owner"/);
+  assert.match(html, /data-debug-field="sandbox-map"/);
+  assert.match(html, /data-action="debug-load-map"/);
   assert.match(html, /data-debug-field="player-commander"/);
   assert.match(html, /data-debug-field="enemy-commander"/);
   assert.match(html, /data-debug-field="enemy-ai-archetype"/);

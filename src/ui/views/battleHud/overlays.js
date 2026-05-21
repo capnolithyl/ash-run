@@ -3,6 +3,7 @@ import {
   canUnitEquipRunUpgrade,
   getRunUpgradeById
 } from "../../../game/content/runUpgrades.js";
+import { getUnitSpriteDefinition } from "../../../game/phaser/assets.js";
 import { renderOptionFields } from "../optionFieldsView.js";
 import { renderDebugControls } from "./interactionPanels.js";
 
@@ -24,33 +25,132 @@ function renderIntelBreakdown(runState) {
   `;
 }
 
-export function renderLevelUpOverlay(battleSnapshot) {
+function getStaticSpriteSheetPosition(frameIndex, columns, rows) {
+  const resolvedColumns = Math.max(1, columns);
+  const resolvedRows = Math.max(1, rows);
+  const column = Math.max(0, frameIndex % resolvedColumns);
+  const row = Math.max(0, Math.floor(frameIndex / resolvedColumns));
+  const x = resolvedColumns > 1 ? `${((column / (resolvedColumns - 1)) * 100).toFixed(4)}%` : "0%";
+  const y = resolvedRows > 1 ? `${((row / (resolvedRows - 1)) * 100).toFixed(4)}%` : "0%";
+
+  return { x, y };
+}
+
+function renderLevelUpUnitArt(levelUpEvent) {
+  const spriteDefinition = getUnitSpriteDefinition(levelUpEvent.unitTypeId, levelUpEvent.owner);
+  const idleAnimation = spriteDefinition?.idle ?? null;
+  const frameStart = idleAnimation?.ranges?.default?.start ?? 0;
+  const frameCount = idleAnimation?.ranges?.default
+    ? idleAnimation.ranges.default.end - idleAnimation.ranges.default.start + 1
+    : 1;
+  const columns = Math.max(1, idleAnimation?.sheetColumns ?? frameCount);
+  const rows = Math.max(1, idleAnimation?.sheetRows ?? 1);
+  const startPosition = getStaticSpriteSheetPosition(frameStart, columns, rows);
+
+  if (idleAnimation?.url) {
+    return `
+      <div class="level-up-art level-up-art--sheet" aria-hidden="true">
+        <div
+          class="level-up-art__sheet"
+          style="
+            --level-up-sheet-columns:${columns};
+            --level-up-sheet-rows:${rows};
+            --level-up-sheet-start-x:${startPosition.x};
+            --level-up-sheet-start-y:${startPosition.y};
+            background-image:url('${idleAnimation.url}');
+          "
+        ></div>
+      </div>
+    `;
+  }
+
+  if (spriteDefinition?.fallbackUrl) {
+    return `
+      <div class="level-up-art">
+        <img
+          class="level-up-art__image"
+          src="${spriteDefinition.fallbackUrl}"
+          alt=""
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+    `;
+  }
+
+  return `
+    <div class="level-up-art level-up-art--fallback" aria-hidden="true">
+      <span>${levelUpEvent.unitName.slice(0, 2).toUpperCase()}</span>
+    </div>
+  `;
+}
+
+function buildFinalLevelUpPresentation(levelUpEvent) {
+  const statSheet = levelUpEvent.statSheet ?? levelUpEvent.statGains?.map((gain) => ({
+    stat: gain.stat,
+    label: gain.label,
+    beforeValue: gain.previousValue,
+    afterValue: gain.nextValue,
+    delta: gain.delta,
+    changed: gain.delta > 0
+  })) ?? [];
+
+  return {
+    continueEnabled: true,
+    rows: statSheet.map((entry) => ({
+      ...entry,
+      displayValue: entry.afterValue,
+      phase: entry.changed ? "settled" : "static"
+    }))
+  };
+}
+
+export function renderLevelUpOverlay(battleSnapshot, presentation = null) {
   const levelUpEvent = battleSnapshot.levelUpQueue?.[0];
 
   if (!levelUpEvent) {
     return "";
   }
 
+  const resolvedPresentation = presentation ?? buildFinalLevelUpPresentation(levelUpEvent);
+  const rows = resolvedPresentation.rows ?? [];
+  const continueEnabled = resolvedPresentation.continueEnabled !== false;
+  const levelUpKey = `${levelUpEvent.unitId}-${levelUpEvent.previousLevel}-${levelUpEvent.newLevel}`;
+
   return `
-    <div class="battle-overlay battle-overlay--level-up">
-      <div class="overlay-card overlay-card--level-up">
-        <p class="eyebrow">Level Up</p>
-        <h2>${levelUpEvent.unitName}</h2>
-        <p>Level ${levelUpEvent.previousLevel} to ${levelUpEvent.newLevel}</p>
-        <div class="level-up-stats">
-          ${levelUpEvent.statGains
+    <div class="battle-overlay battle-overlay--level-up" data-level-up-key="${levelUpKey}">
+      <div class="overlay-card overlay-card--level-up${continueEnabled ? " overlay-card--level-up-ready" : ""}">
+        <div class="level-up-card__header">
+          <p class="eyebrow">Level Up</p>
+          <h2>${levelUpEvent.unitName}</h2>
+          <p>Level ${levelUpEvent.previousLevel} to ${levelUpEvent.newLevel}</p>
+        </div>
+        <div class="level-up-card__body">
+          <div class="level-up-card__stats">
+            ${rows
             .map(
-              (gain, index) => `
-                <div class="level-up-stat" style="animation-delay:${index * 120}ms">
-                  <span>${gain.label}</span>
-                  <strong>+${gain.delta}</strong>
-                  <small>${gain.previousValue} -> ${gain.nextValue}</small>
+              (entry) => `
+                <div
+                  class="level-up-stat level-up-stat--${entry.phase ?? "static"}${entry.changed ? " level-up-stat--changed" : ""}"
+                  data-level-up-stat="${entry.stat}"
+                >
+                  <span class="level-up-stat__label">${entry.label}</span>
+                  <div class="level-up-stat__values">
+                    <span class="level-up-stat__before">${entry.beforeValue}</span>
+                    <span class="level-up-stat__arrow" aria-hidden="true">></span>
+                    <strong data-level-up-display="${entry.stat}">${entry.displayValue}</strong>
+                  </div>
+                  <small class="level-up-stat__delta"${entry.changed ? "" : ' aria-hidden="true"'}>${entry.changed ? `+${entry.delta}` : ""}</small>
                 </div>
               `
             )
             .join("")}
+          </div>
+          ${renderLevelUpUnitArt(levelUpEvent)}
         </div>
-        <button class="menu-button" data-action="acknowledge-level-up">Continue</button>
+        <div class="level-up-card__footer${continueEnabled ? " level-up-card__footer--visible" : ""}">
+          <button class="menu-button" data-action="acknowledge-level-up" ${continueEnabled ? "" : "disabled"}>Continue</button>
+        </div>
       </div>
     </div>
   `;

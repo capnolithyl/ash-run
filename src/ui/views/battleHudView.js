@@ -86,7 +86,13 @@ function renderBattleFooterImageButton({
   `;
 }
 
-function renderCompactIntelSheet(playerFocusTile, battleSnapshot, hoveredTile, enemyFocusTile) {
+function renderCompactIntelSheet(
+  playerFocusTile,
+  battleSnapshot,
+  hoveredTile,
+  enemyFocusTile,
+  experiencePresentation = null
+) {
   return `
     <input
       class="battle-intel-tab-toggle"
@@ -128,7 +134,8 @@ function renderCompactIntelSheet(playerFocusTile, battleSnapshot, hoveredTile, e
           ${renderSelectionDetails(playerFocusTile, {
             title: "Selected Unit",
             emptyTitle: "Selected Unit",
-            emptyBody: "Select a friendly unit, building, or tile to inspect it here."
+            emptyBody: "Select a friendly unit, building, or tile to inspect it here.",
+            experiencePresentation
           })}
           ${renderRecruitPanel(battleSnapshot)}
         </section>
@@ -143,14 +150,21 @@ function renderCompactIntelSheet(playerFocusTile, battleSnapshot, hoveredTile, e
   `;
 }
 
-function renderDesktopBattlePanels(battleSnapshot, hoveredTile, playerFocusTile, enemyFocusTile) {
+function renderDesktopBattlePanels(
+  battleSnapshot,
+  hoveredTile,
+  playerFocusTile,
+  enemyFocusTile,
+  experiencePresentation = null
+) {
   return `
     <div class="battle-desktop-layout">
       <aside class="battle-side-panel battle-side-panel--selected" aria-label="Selected Unit Intel">
         ${renderSelectionDetails(playerFocusTile, {
           title: "Selected Unit",
           emptyTitle: "Selected Unit",
-          emptyBody: "Select a friendly unit, building, or tile to inspect it here."
+          emptyBody: "Select a friendly unit, building, or tile to inspect it here.",
+          experiencePresentation
         })}
         ${renderRecruitPanel(battleSnapshot)}
       </aside>
@@ -197,6 +211,8 @@ export function renderBattleHudView(state, options = {}) {
   const turnBanner = options.turnBanner ?? null;
   const combatCutscene = state.battleUi?.combatCutscene ?? null;
   const combatCutsceneActive = Boolean(combatCutscene);
+  const experiencePresentation = options.experiencePresentation ?? null;
+  const levelUpPresentation = options.levelUpPresentation ?? null;
 
   if (!battleSnapshot) {
     return "";
@@ -273,12 +289,19 @@ export function renderBattleHudView(state, options = {}) {
         </label>
       </div>
       ${renderBattleMeta(battleSnapshot)}
-      ${renderDesktopBattlePanels(battleSnapshot, hoveredTile, playerFocusTile, enemyFocusTile)}
+      ${renderDesktopBattlePanels(
+        battleSnapshot,
+        hoveredTile,
+        playerFocusTile,
+        enemyFocusTile,
+        experiencePresentation
+      )}
       ${renderCompactIntelSheet(
         playerFocusTile,
         battleSnapshot,
         hoveredTile,
-        enemyFocusTile
+        enemyFocusTile,
+        experiencePresentation
       )}
       ${renderActionPrompt(battleSnapshot)}
       ${renderTargetingPrompt(battleSnapshot)}
@@ -291,7 +314,11 @@ export function renderBattleHudView(state, options = {}) {
       ${combatCutsceneActive ? "" : renderTurnBanner(turnBanner)}
       ${combatCutsceneActive ? "" : renderPowerOverlay(state.battleUi?.powerOverlay)}
       ${renderCombatCutsceneOverlay(combatCutscene, state.metaState?.options)}
-      ${suppressLevelUpOverlay || combatCutsceneActive ? "" : renderLevelUpOverlay(battleSnapshot)}
+      ${
+        suppressLevelUpOverlay || combatCutsceneActive
+          ? ""
+          : renderLevelUpOverlay(battleSnapshot, levelUpPresentation)
+      }
       ${combatCutsceneActive ? "" : renderPauseOverlay(state, battleSnapshot)}
       ${suppressOutcomeOverlay || combatCutsceneActive ? "" : renderOutcomeOverlay(state, battleSnapshot)}
     </div>

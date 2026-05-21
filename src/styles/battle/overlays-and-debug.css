@@ -312,7 +312,17 @@
 }
 
 .overlay-card--level-up {
-  width: min(26rem, calc(100vw - 2rem));
+  width: min(48rem, calc(100vw - 2rem));
+  padding: 1.1rem 1.15rem 1rem;
+  border: 1px solid rgba(255, 129, 214, 0.3);
+  background:
+    linear-gradient(180deg, rgba(255, 79, 216, 0.08), rgba(93, 184, 255, 0.04)),
+    radial-gradient(circle at top left, rgba(255, 214, 102, 0.14), transparent 12rem),
+    rgba(11, 5, 24, 0.96);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 42px rgba(255, 79, 216, 0.14),
+    0 26px 50px rgba(5, 2, 14, 0.54);
   animation: level-up-overlay-in 260ms ease forwards;
 }
 
@@ -324,34 +334,243 @@
   animation: level-up-overlay-out 220ms ease forwards;
 }
 
-.level-up-stats {
+.level-up-card__header {
   display: grid;
-  gap: 0.75rem;
-  margin: 1rem 0 1.25rem;
+  justify-items: center;
+  gap: 0.1rem;
+  margin-bottom: 0.8rem;
+  text-align: center;
+}
+
+.level-up-card__header h2 {
+  margin: 0.12rem 0 0;
+  color: #fff8ea;
+  font-size: clamp(1.9rem, 4.5vw, 3rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 18px rgba(255, 79, 216, 0.28),
+    0 0 30px rgba(93, 184, 255, 0.16);
+}
+
+.level-up-card__header p:last-child {
+  margin: 0.1rem 0 0;
+  color: #ffd9f5;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.level-up-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(12rem, 0.82fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.level-up-card__stats {
+  display: grid;
+  gap: 0.65rem;
 }
 
 .level-up-stat {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.25rem 0.8rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  padding: 0.85rem 1rem;
+  gap: 0.5rem 0.8rem;
+  padding: 0.78rem 0.95rem;
   border-radius: 1rem;
-  border: 1px solid rgba(255, 79, 216, 0.18);
-  background: rgba(255, 79, 216, 0.08);
-  opacity: 0;
-  transform: translateY(8px) scale(0.98);
-  animation: level-up-pop 420ms ease forwards;
+  border: 1px solid rgba(255, 129, 214, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    rgba(255, 79, 216, 0.06);
+  box-shadow:
+    inset 0 0 18px rgba(255, 79, 216, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease,
+    opacity 140ms ease;
+}
+
+.level-up-stat--pending {
+  opacity: 0.68;
+}
+
+.level-up-stat--static {
+  opacity: 0.78;
+}
+
+.level-up-stat--active,
+.level-up-stat--active-static {
+  transform: translateX(0.15rem) scale(1.01);
+  border-color: rgba(255, 214, 102, 0.38);
+  background:
+    linear-gradient(135deg, rgba(255, 214, 102, 0.18), rgba(255, 79, 216, 0.14)),
+    rgba(18, 8, 34, 0.94);
+  box-shadow:
+    inset 0 0 18px rgba(255, 214, 102, 0.08),
+    0 0 26px rgba(255, 138, 61, 0.14);
+}
+
+.level-up-stat--settled {
+  border-color: rgba(93, 184, 255, 0.3);
+  box-shadow:
+    inset 0 0 18px rgba(93, 184, 255, 0.08),
+    0 0 26px rgba(93, 184, 255, 0.08);
+}
+
+.level-up-stat__label {
+  color: #fff4d3;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.level-up-stat__values {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  min-width: 0;
+  color: #fff8ea;
+}
+
+.level-up-stat__before,
+.level-up-stat__arrow {
+  color: rgba(255, 236, 214, 0.58);
+  font-size: 0.95rem;
 }
 
 .level-up-stat strong {
-  color: #fff3bf;
-  font-size: 1.15rem;
+  min-width: 2.1ch;
+  color: #fff5c8;
+  font-size: 1.3rem;
+  text-align: right;
+  text-shadow: 0 0 16px rgba(255, 214, 102, 0.22);
 }
 
-.level-up-stat small {
-  grid-column: 1 / -1;
-  color: var(--muted);
+.level-up-stat__delta {
+  min-width: 2.6rem;
+  color: #ffec9f;
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: right;
+}
+
+.level-up-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  border: 1px solid rgba(255, 129, 214, 0.2);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at center, rgba(93, 184, 255, 0.18), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
+    rgba(8, 4, 20, 0.94);
+  overflow: hidden;
+}
+
+.level-up-art::before,
+.level-up-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.level-up-art::before {
+  background:
+    linear-gradient(90deg, rgba(255, 79, 216, 0.2), transparent 42%),
+    radial-gradient(circle at 70% 28%, rgba(255, 214, 102, 0.16), transparent 20%);
+}
+
+.level-up-art::after {
+  inset: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.9rem;
+}
+
+.level-up-art__image {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 14rem);
+  height: auto;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 18px rgba(255, 79, 216, 0.18))
+    drop-shadow(0 0 22px rgba(93, 184, 255, 0.12));
+  image-rendering: pixelated;
+}
+
+.level-up-art--sheet {
+  padding: 1rem;
+}
+
+.level-up-art__sheet {
+  position: relative;
+  z-index: 1;
+  width: min(14rem, 100%);
+  aspect-ratio: 1;
+  background-position: var(--level-up-sheet-start-x) var(--level-up-sheet-start-y);
+  background-repeat: no-repeat;
+  background-size:
+    calc(var(--level-up-sheet-columns) * 100%)
+    calc(var(--level-up-sheet-rows) * 100%);
+  filter:
+    drop-shadow(0 0 18px rgba(255, 79, 216, 0.2))
+    drop-shadow(0 0 22px rgba(93, 184, 255, 0.14));
+  image-rendering: pixelated;
+  animation: level-up-art-float 1800ms ease-in-out infinite;
+}
+
+.level-up-art--fallback span {
+  position: relative;
+  z-index: 1;
+  color: #fff5d8;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  letter-spacing: 0.12em;
+}
+
+.level-up-card__footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.85rem;
+  opacity: 0;
+  transform: translateY(0.35rem);
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.level-up-card__footer--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-overlay--level-up,
+  .overlay-card--level-up,
+  .battle-overlay--closing,
+  .overlay-card--closing {
+    animation-duration: 1ms;
+  }
+
+  .level-up-art__sheet,
+  .level-up-card__footer,
+  .level-up-stat {
+    animation: none;
+    transition: none;
+  }
 }
 
 .battle-overlay--combat-cutscene {

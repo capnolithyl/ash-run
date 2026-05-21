@@ -437,6 +437,12 @@ export const appShellEventMethods = {
           enemyAiArchetype: this.getDebugField("enemy-ai-archetype", "balanced")
         });
         break;
+      case "debug-load-map":
+        this.controller.startDebugRun({
+          mapId: this.getDebugField("sandbox-map", ""),
+          keepPauseMenuOpen: true
+        });
+        break;
       case "debug-full-charge-player":
         await this.controller.debugSetCharge("player", 9999);
         break;

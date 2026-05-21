@@ -450,18 +450,32 @@ function createBattleRunLostState() {
 
 function createBattleLevelUpState() {
   const state = createBaseBattleScreenState();
+  const unit = state.battleSnapshot.player.units[0];
   state.battleSnapshot = {
     ...state.battleSnapshot,
     levelUpQueue: [
       {
-        unitId: "level-up-grunt",
-        unitName: "Grunt",
+        unitId: unit.id,
+        unitTypeId: unit.unitTypeId,
+        owner: unit.owner,
+        unitName: unit.name,
         previousLevel: 2,
         newLevel: 3,
+        statSheet: [
+          { stat: "maxHealth", label: "Max HP", beforeValue: 100, afterValue: 102, delta: 2, changed: true },
+          { stat: "attack", label: "Attack", beforeValue: 62, afterValue: 63, delta: 1, changed: true },
+          { stat: "armor", label: "Armor", beforeValue: 6, afterValue: 7, delta: 1, changed: true },
+          { stat: "movement", label: "Movement", beforeValue: 4, afterValue: 4, delta: 0, changed: false },
+          { stat: "maxRange", label: "Range", beforeValue: 1, afterValue: 1, delta: 0, changed: false },
+          { stat: "staminaMax", label: "Stamina", beforeValue: 60, afterValue: 60, delta: 0, changed: false },
+          { stat: "ammoMax", label: "Ammo", beforeValue: 7, afterValue: 8, delta: 1, changed: true },
+          { stat: "luck", label: "Luck", beforeValue: 3, afterValue: 3, delta: 0, changed: false }
+        ],
         statGains: [
-          { label: "Attack", delta: 1, previousValue: 7, nextValue: 8 },
-          { label: "Armor", delta: 1, previousValue: 2, nextValue: 3 },
-          { label: "Max HP", delta: 2, previousValue: 18, nextValue: 20 }
+          { stat: "attack", label: "Attack", delta: 1, previousValue: 62, nextValue: 63 },
+          { stat: "armor", label: "Armor", delta: 1, previousValue: 6, nextValue: 7 },
+          { stat: "maxHealth", label: "Max HP", delta: 2, previousValue: 100, nextValue: 102 },
+          { stat: "ammoMax", label: "Ammo", delta: 1, previousValue: 7, nextValue: 8 }
         ]
       }
     ]

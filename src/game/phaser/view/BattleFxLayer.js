@@ -295,6 +295,78 @@ export class BattleFxLayer {
     destroyAfterTween(sparkle, textTween);
   }
 
+  playLevelUpBurst(event, layout, level = null) {
+    const point = toWorldPoint(layout, event.x, event.y);
+    const color = ownerColor(event.owner);
+    const container = this.track(
+      this.scene.add.container(point.x, point.y - layout.cellSize * 1.02)
+    );
+    container.setDepth(48);
+
+    const halo = this.scene.add.circle(0, 0, layout.cellSize * 0.26, color, 0.18);
+    halo.setBlendMode(Phaser.BlendModes.ADD);
+    const flare = this.scene.add.circle(0, 0, layout.cellSize * 0.12, 0xfff6dd, 0.3);
+    flare.setBlendMode(Phaser.BlendModes.ADD);
+    const title = this.scene.add
+      .text(0, 0, "LEVEL UP!", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: `${Math.max(18, Math.floor(layout.cellSize * 0.28))}px`,
+        fontStyle: "bold",
+        color: "#fff6dd",
+        stroke: "#1b0622",
+        strokeThickness: 6,
+        letterSpacing: 1.8
+      })
+      .setOrigin(0.5);
+    title.setShadow(0, 0, "#ff5fd6", 22, false, true);
+    const subtitle = this.scene.add
+      .text(0, layout.cellSize * 0.22, level ? `Lv ${level}` : "", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.16))}px`,
+        color: "#ffd76b",
+        letterSpacing: 1.3
+      })
+      .setOrigin(0.5);
+    subtitle.setAlpha(level ? 0.9 : 0);
+
+    container.add([halo, flare, title, subtitle]);
+    container.setScale(0.72);
+    container.setAlpha(0);
+
+    this.scene.tweens.add({
+      targets: container,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 180,
+      ease: "Back.Out"
+    });
+    this.scene.tweens.add({
+      targets: halo,
+      alpha: 0,
+      scale: 3.2,
+      duration: 620,
+      ease: "Cubic.Out"
+    });
+    this.scene.tweens.add({
+      targets: flare,
+      alpha: 0,
+      scale: 4,
+      duration: 560,
+      ease: "Sine.Out"
+    });
+
+    const exitTween = this.scene.tweens.add({
+      targets: container,
+      alpha: 0,
+      y: container.y - layout.cellSize * 0.22,
+      delay: 280,
+      duration: 360,
+      ease: "Sine.Out"
+    });
+    destroyAfterTween(container, exitTween);
+  }
+
   playExperience(event, layout) {
     const point = toWorldPoint(layout, event.x, event.y);
     const container = this.track(
@@ -330,9 +402,10 @@ export class BattleFxLayer {
     background.strokeRoundedRect(-width / 2, -height / 2, width, height, height / 2);
     container.add([background, baseFill, gainFill, title, value]);
 
+    const segmentTimings = event.segmentTimings?.length ? event.segmentTimings : event.segments ?? [];
     const progress = { segmentIndex: 0, value: 0 };
     const updateValueLabel = () => {
-      const segment = event.segments[Math.min(progress.segmentIndex, event.segments.length - 1)];
+      const segment = segmentTimings[Math.min(progress.segmentIndex, segmentTimings.length - 1)];
 
       if (!segment) {
         return;
@@ -400,7 +473,7 @@ export class BattleFxLayer {
     };
 
     const playSegment = (segmentIndex) => {
-      if (segmentIndex >= event.segments.length) {
+      if (segmentIndex >= segmentTimings.length) {
         const exitTween = this.scene.tweens.add({
           targets: container,
           alpha: 0,
@@ -413,7 +486,7 @@ export class BattleFxLayer {
         return;
       }
 
-      const segment = event.segments[segmentIndex];
+      const segment = segmentTimings[segmentIndex];
       progress.segmentIndex = segmentIndex;
       progress.value = segment.fromExperience;
       drawSegment();
@@ -421,14 +494,18 @@ export class BattleFxLayer {
       this.scene.tweens.addCounter({
         from: segment.fromExperience,
         to: segment.toExperience,
-        duration: segment.toExperience >= segment.threshold ? 440 : 620,
+        duration: segment.durationMs ?? (segment.toExperience >= segment.threshold ? 440 : 620),
         ease: "Sine.Out",
         onUpdate: (tween) => {
           progress.value = tween.getValue();
           drawSegment();
         },
         onComplete: () => {
-          if (segment.toExperience >= segment.threshold && segmentIndex < event.segments.length - 1) {
+          if (segment.toExperience >= segment.threshold) {
+            this.playLevelUpBurst(event, layout, segment.level + 1);
+          }
+
+          if (segment.toExperience >= segment.threshold && segmentIndex < segmentTimings.length - 1) {
             this.scene.time.delayedCall(120, () => playSegment(segmentIndex + 1));
             return;
           }
@@ -438,7 +515,7 @@ export class BattleFxLayer {
       });
     };
 
-    const firstSegment = event.segments[0];
+    const firstSegment = segmentTimings[0];
 
     if (!firstSegment) {
       container.destroy();

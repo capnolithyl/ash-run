@@ -14,7 +14,16 @@ import {
 } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
-import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
+import { getXpThreshold } from "../src/game/simulation/progression.js";
+import {
+  EXPERIENCE_EXIT_DELAY_MS,
+  EXPERIENCE_EXIT_DURATION_MS,
+  EXPERIENCE_LEVEL_CHAIN_DELAY_MS,
+  EXPERIENCE_SEGMENT_COMPLETE_MS,
+  EXPERIENCE_SEGMENT_GAIN_MS,
+  deriveBattleAnimationEvents,
+  getBattleSnapshotTransitionDurationMs
+} from "../src/game/phaser/view/battleAnimationEvents.js";
 import { getAnimatedMovementPaths } from "../src/game/phaser/scenes/battleScene/renderBoard.js";
 import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
@@ -322,4 +331,164 @@ test("battle combat cutscene waits for move-and-settle before revealing the duel
       BATTLE_COMBAT_CUTSCENE_OPEN_MS +
       BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
   );
+});
+
+test("experience events expose threshold-hit timing metadata for a single level-up", () => {
+  const thresholdLevel1 = getXpThreshold(1);
+  const thresholdLevel2 = getXpThreshold(2);
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    level: 1,
+    experience: thresholdLevel1 - 8
+  });
+  const before = createTestBattleState({
+    playerUnits: [unit]
+  });
+  const after = structuredClone(before);
+  after.player.units[0].level = 2;
+  after.player.units[0].experience = 18;
+
+  const event = deriveBattleAnimationEvents(before, after).find(
+    (candidate) => candidate.type === "experience"
+  );
+
+  assert.ok(event);
+  assert.equal(event.startDelayMs, BATTLE_MOVE_SETTLE_MS);
+  assert.deepEqual(event.thresholdHitDelaysMs, [
+    BATTLE_MOVE_SETTLE_MS + EXPERIENCE_SEGMENT_COMPLETE_MS
+  ]);
+  assert.deepEqual(
+    event.segmentTimings.map((segment) => ({
+      level: segment.level,
+      threshold: segment.threshold,
+      fromExperience: segment.fromExperience,
+      toExperience: segment.toExperience,
+      startDelayMs: segment.startDelayMs,
+      durationMs: segment.durationMs,
+      endDelayMs: segment.endDelayMs,
+      thresholdHitDelayMs: segment.thresholdHitDelayMs
+    })),
+    [
+      {
+        level: 1,
+        threshold: thresholdLevel1,
+        fromExperience: thresholdLevel1 - 8,
+        toExperience: thresholdLevel1,
+        startDelayMs: BATTLE_MOVE_SETTLE_MS,
+        durationMs: EXPERIENCE_SEGMENT_COMPLETE_MS,
+        endDelayMs: BATTLE_MOVE_SETTLE_MS + EXPERIENCE_SEGMENT_COMPLETE_MS,
+        thresholdHitDelayMs: BATTLE_MOVE_SETTLE_MS + EXPERIENCE_SEGMENT_COMPLETE_MS
+      },
+      {
+        level: 2,
+        threshold: thresholdLevel2,
+        fromExperience: 0,
+        toExperience: 18,
+        startDelayMs:
+          BATTLE_MOVE_SETTLE_MS +
+          EXPERIENCE_SEGMENT_COMPLETE_MS +
+          EXPERIENCE_LEVEL_CHAIN_DELAY_MS,
+        durationMs: EXPERIENCE_SEGMENT_GAIN_MS,
+        endDelayMs:
+          BATTLE_MOVE_SETTLE_MS +
+          EXPERIENCE_SEGMENT_COMPLETE_MS +
+          EXPERIENCE_LEVEL_CHAIN_DELAY_MS +
+          EXPERIENCE_SEGMENT_GAIN_MS,
+        thresholdHitDelayMs: null
+      }
+    ]
+  );
+  assert.equal(
+    event.endDelayMs,
+    event.segmentTimings[1].endDelayMs + EXPERIENCE_EXIT_DELAY_MS + EXPERIENCE_EXIT_DURATION_MS
+  );
+  assert.equal(getBattleSnapshotTransitionDurationMs(before, after), event.endDelayMs);
+});
+
+test("experience events chain one threshold hit per filled bar on multi-level gains", () => {
+  const thresholdLevel1 = getXpThreshold(1);
+  const thresholdLevel2 = getXpThreshold(2);
+  const thresholdLevel3 = getXpThreshold(3);
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    level: 1,
+    experience: thresholdLevel1 - 5
+  });
+  const before = createTestBattleState({
+    playerUnits: [unit]
+  });
+  const after = structuredClone(before);
+  after.player.units[0].level = 3;
+  after.player.units[0].experience = 12;
+
+  const event = deriveBattleAnimationEvents(before, after).find(
+    (candidate) => candidate.type === "experience"
+  );
+
+  assert.ok(event);
+  assert.equal(event.segmentTimings.length, 3);
+  assert.deepEqual(event.thresholdHitDelaysMs, [
+    BATTLE_MOVE_SETTLE_MS + EXPERIENCE_SEGMENT_COMPLETE_MS,
+    BATTLE_MOVE_SETTLE_MS + EXPERIENCE_SEGMENT_COMPLETE_MS * 2 + EXPERIENCE_LEVEL_CHAIN_DELAY_MS
+  ]);
+  assert.deepEqual(
+    event.segmentTimings.map((segment) => ({
+      level: segment.level,
+      threshold: segment.threshold,
+      fromExperience: segment.fromExperience,
+      toExperience: segment.toExperience,
+      startDelayMs: segment.startDelayMs,
+      durationMs: segment.durationMs,
+      endDelayMs: segment.endDelayMs,
+      thresholdHitDelayMs: segment.thresholdHitDelayMs
+    })),
+    [
+      {
+        level: 1,
+        threshold: thresholdLevel1,
+        fromExperience: thresholdLevel1 - 5,
+        toExperience: thresholdLevel1,
+        startDelayMs: BATTLE_MOVE_SETTLE_MS,
+        durationMs: EXPERIENCE_SEGMENT_COMPLETE_MS,
+        endDelayMs: BATTLE_MOVE_SETTLE_MS + EXPERIENCE_SEGMENT_COMPLETE_MS,
+        thresholdHitDelayMs: BATTLE_MOVE_SETTLE_MS + EXPERIENCE_SEGMENT_COMPLETE_MS
+      },
+      {
+        level: 2,
+        threshold: thresholdLevel2,
+        fromExperience: 0,
+        toExperience: thresholdLevel2,
+        startDelayMs:
+          BATTLE_MOVE_SETTLE_MS +
+          EXPERIENCE_SEGMENT_COMPLETE_MS +
+          EXPERIENCE_LEVEL_CHAIN_DELAY_MS,
+        durationMs: EXPERIENCE_SEGMENT_COMPLETE_MS,
+        endDelayMs:
+          BATTLE_MOVE_SETTLE_MS +
+          EXPERIENCE_SEGMENT_COMPLETE_MS * 2 + EXPERIENCE_LEVEL_CHAIN_DELAY_MS,
+        thresholdHitDelayMs:
+          BATTLE_MOVE_SETTLE_MS +
+          EXPERIENCE_SEGMENT_COMPLETE_MS * 2 + EXPERIENCE_LEVEL_CHAIN_DELAY_MS
+      },
+      {
+        level: 3,
+        threshold: thresholdLevel3,
+        fromExperience: 0,
+        toExperience: 12,
+        startDelayMs:
+          BATTLE_MOVE_SETTLE_MS +
+          EXPERIENCE_SEGMENT_COMPLETE_MS * 2 + EXPERIENCE_LEVEL_CHAIN_DELAY_MS * 2,
+        durationMs: EXPERIENCE_SEGMENT_GAIN_MS,
+        endDelayMs:
+          BATTLE_MOVE_SETTLE_MS +
+          EXPERIENCE_SEGMENT_COMPLETE_MS * 2 +
+          EXPERIENCE_LEVEL_CHAIN_DELAY_MS * 2 +
+          EXPERIENCE_SEGMENT_GAIN_MS,
+        thresholdHitDelayMs: null
+      }
+    ]
+  );
+  assert.equal(
+    event.durationMs,
+    event.endDelayMs - event.startDelayMs
+  );
+  assert.equal(getBattleSnapshotTransitionDurationMs(before, after), event.endDelayMs);
 });

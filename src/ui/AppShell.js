@@ -33,10 +33,21 @@ export class AppShell {
     this.fundsAnimationFrame = null;
     this.activeFundsGainElement = null;
     this.activeFundsGainId = null;
+    this.battleExperienceAnimations = new Map();
+    this.levelUpRevealByKey = new Map();
+    this.activeLevelUpPlayback = null;
+    this.battlePresentationAnimationFrame = null;
     this.battleDrawers = {
       intel: false,
       command: false,
-      intelTab: "selected"
+      intelTab: "selected",
+      debugAccordion: null,
+      selectedPanelScrollTop: 0,
+      targetPanelScrollTop: 0,
+      feedPanelScrollTop: 0,
+      compactSelectedScrollTop: 0,
+      compactTargetScrollTop: 0,
+      compactFeedScrollTop: 0
     };
     this.mapEditorUi = {
       openAccordion: null,

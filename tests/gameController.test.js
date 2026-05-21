@@ -674,6 +674,40 @@ test("sandbox commander overrides update both battle sides without saving a run"
   assert.equal(state.battleSnapshot.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.HQ_RUSH);
 });
 
+test("sandbox map loading rebuilds the debug battle on the chosen battlefield", () => {
+  const controller = new GameController();
+
+  controller.state.metaState.unlockedCommanderIds = ["atlas", "viper"];
+  controller.startDebugRun();
+  controller.state.battleUi.pauseMenuOpen = true;
+  controller.battleSystem.setDebugCommanders({
+    [TURN_SIDES.PLAYER]: "atlas",
+    [TURN_SIDES.ENEMY]: "sable",
+    enemyAiArchetype: ENEMY_AI_ARCHETYPES.HQ_RUSH
+  });
+
+  const currentBaseMapId = controller.getState().battleSnapshot.map.id.replace(/-run$/, "");
+  const targetMap = MAP_POOL.find((mapDefinition) => mapDefinition.id !== currentBaseMapId) ?? MAP_POOL[0];
+
+  controller.startDebugRun({
+    mapId: targetMap.id,
+    keepPauseMenuOpen: true
+  });
+
+  const state = controller.getState();
+  assert.equal(state.debugMode, true);
+  assert.equal(state.screen, SCREEN_IDS.BATTLE);
+  assert.equal(state.battleUi.pauseMenuOpen, true);
+  assert.equal(state.battleSnapshot.map.id, `${targetMap.id}-run`);
+  assert.equal(state.battleSnapshot.player.commanderId, "atlas");
+  assert.equal(state.battleSnapshot.enemy.commanderId, "sable");
+  assert.equal(state.battleSnapshot.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.HQ_RUSH);
+  assert.equal(state.runState.mapSequence[0], `${targetMap.id}-run`);
+  assert.equal(state.battleUi.notice?.title, "Sandbox Battlefield Loaded");
+
+  controller.resetBattleUi();
+});
+
 test("sandbox debug spawning can equip infantry gear", async () => {
   const controller = new GameController();
   const system = new BattleSystem(createTestBattleState());

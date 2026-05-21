@@ -1,6 +1,7 @@
 import { BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
+import { getMapById } from "../content/maps.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
 import {
@@ -15,6 +16,22 @@ import {
   createDefaultRunLoadoutState,
   pickFirstAvailableSlot
 } from "./controllerShared.js";
+
+function resolveDebugRunMapId(mapId) {
+  if (!mapId) {
+    return null;
+  }
+
+  if (getMapById(`${mapId}-run`)) {
+    return `${mapId}-run`;
+  }
+
+  if (getMapById(mapId)) {
+    return mapId;
+  }
+
+  return null;
+}
 
 export const controllerFlowMethods = {
   resetBattleUi() {
@@ -68,29 +85,80 @@ export const controllerFlowMethods = {
     this.emit();
   },
 
-  startDebugRun() {
-    const commanderId = this.state.metaState.unlockedCommanderIds[0] ?? this.state.selectedCommanderId;
+  startDebugRun(options = {}) {
+    const currentBattleState = this.battleSystem?.getStateForSave?.() ?? null;
+    const commanderId =
+      options.playerCommanderId ??
+      currentBattleState?.player?.commanderId ??
+      this.state.metaState.unlockedCommanderIds[0] ??
+      this.state.selectedCommanderId;
 
     if (!commanderId) {
       return;
     }
 
+    const keepPauseMenuOpen = options.keepPauseMenuOpen === true;
+    const resolvedMapId = resolveDebugRunMapId(options.mapId);
     const runState = createNewRunState({
       slotId: this.state.selectedSlotId,
       commanderId
     });
-    runState.availableRunCardIds = [...this.state.metaState.unlockedRunCardIds];
-    runState.availableDraftUnitIds = [...this.state.metaState.unlockedUnitIds];
+    const previousRunState = normalizeRunState(this.state.runState);
+    runState.availableRunCardIds = [
+      ...(previousRunState?.availableRunCardIds?.length
+        ? previousRunState.availableRunCardIds
+        : this.state.metaState.unlockedRunCardIds)
+    ];
+    runState.availableDraftUnitIds = [
+      ...(previousRunState?.availableDraftUnitIds?.length
+        ? previousRunState.availableDraftUnitIds
+        : this.state.metaState.unlockedUnitIds)
+    ];
+    runState.roster = [...(previousRunState?.roster ?? [])];
+    runState.selectedRewards = [...(previousRunState?.selectedRewards ?? [])];
+    runState.pendingRewardChoices = [];
+    runState.pendingGearReward = null;
+
+    if (resolvedMapId) {
+      runState.mapSequence = [
+        resolvedMapId,
+        ...runState.mapSequence.filter((mapSequenceId) => mapSequenceId !== resolvedMapId)
+      ].slice(0, runState.targetMapCount);
+    }
+
     const battleState = createBattleStateForRun(runState);
+    const playerCommanderId = options.playerCommanderId ?? commanderId;
+    const enemyCommanderId = options.enemyCommanderId ?? currentBattleState?.enemy?.commanderId;
+    const enemyAiArchetype = options.enemyAiArchetype ?? currentBattleState?.enemy?.aiArchetype;
 
     this.battleSystem = new BattleSystem(battleState);
+    this.battleSystem.setDebugCommanders({
+      [TURN_SIDES.PLAYER]: playerCommanderId,
+      [TURN_SIDES.ENEMY]: enemyCommanderId,
+      enemyAiArchetype
+    });
     this.state.runState = runState;
     this.state.screen = SCREEN_IDS.BATTLE;
     this.state.runStatus = null;
     this.state.debugMode = true;
     this.state.banner = "Sandbox active: saves are disabled.";
     this.resetBattleUi();
+    this.state.battleUi.pauseMenuOpen = keepPauseMenuOpen;
     this.syncBattleState();
+
+    if (resolvedMapId) {
+      const loadedMapName =
+        getMapById(options.mapId)?.name ??
+        getMapById(resolvedMapId)?.name ??
+        this.state.battleSnapshot?.map?.name ??
+        "Sandbox battlefield";
+
+      this.showBattleNotice({
+        title: "Sandbox Battlefield Loaded",
+        message: `${loadedMapName} is ready for testing.`,
+        tone: "info"
+      });
+    }
   },
 
   openContinue() {

@@ -296,20 +296,24 @@ function renderUnitStatGrid(unit) {
   `;
 }
 
-function renderExperienceBar(unit) {
-  const experienceRatio = Math.max(6, unit.experienceRatio * 100);
+function renderExperienceBar(unit, experiencePresentation = null) {
+  const displayedExperience = experiencePresentation?.experience ?? unit.experience;
+  const displayedThreshold = experiencePresentation?.experienceToNextLevel ?? unit.experienceToNextLevel;
+  const displayedRatio = experiencePresentation?.ratio ?? unit.experienceRatio;
+  const experienceRatio = Math.max(6, displayedRatio * 100);
 
   return `
     <div class="selection-section selection-section--xp">
       <div class="selection-header">
         <strong>Experience</strong>
-        <span>${unit.experience}/${unit.experienceToNextLevel}</span>
+        <span data-experience-value>${Math.round(displayedExperience)}/${displayedThreshold}</span>
       </div>
       <div class="meter meter--exp">
         <div class="meter__bar">
           <div
             data-meter-fill="xp"
             data-meter-value="${experienceRatio}"
+            data-experience-threshold="${displayedThreshold}"
             style="width:${experienceRatio}%"
           ></div>
         </div>
@@ -320,16 +324,23 @@ function renderExperienceBar(unit) {
 
 function renderUnitSummary(
   unit,
-  { showExperience = false, showLoadout = true, showGear = true, terrainMarkup = "" } = {}
+  {
+    showExperience = false,
+    showLoadout = true,
+    showGear = true,
+    terrainMarkup = "",
+    experiencePresentation = null
+  } = {}
 ) {
   const attachedGear = unit.gear ?? null;
+  const displayedLevel = experiencePresentation?.level ?? unit.level;
 
   return `
     <div class="selection-section selection-section--unit" data-selection-unit-card="${unit.id ?? ""}">
       <div class="selection-unit-heading">
       <div class="selection-unit-heading__title">
         <strong>${unit.name}</strong>
-        <span class="selection-level-badge" aria-label="Level ${unit.level}">${unit.level}</span>
+        <span class="selection-level-badge" data-experience-level aria-label="Level ${displayedLevel}">${displayedLevel}</span>
         ${
           unit.isBurned
             ? `
@@ -345,7 +356,7 @@ function renderUnitSummary(
           }
         </div>
       </div>
-      ${showExperience ? renderExperienceBar(unit) : ""}
+      ${showExperience ? renderExperienceBar(unit, experiencePresentation) : ""}
       ${renderHealthBar(unit)}
       ${renderUnitStatGrid(unit)}
       ${
@@ -460,7 +471,10 @@ function renderTargetIntelCard(tile, { forecast = null } = {}) {
   `;
 }
 
-export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyBody } = {}) {
+export function renderSelectionDetails(
+  selectedTile,
+  { title, emptyTitle, emptyBody, experiencePresentation = null } = {}
+) {
   if (!selectedTile) {
     return `
       <div class="card-block">
@@ -476,10 +490,11 @@ export function renderSelectionDetails(selectedTile, { title, emptyTitle, emptyB
   return `
       <div class="card-block">
         ${title ? `<h3>${title}</h3>` : ""}
-      ${
+        ${
         unit
           ? renderUnitSummary(unit, {
               showExperience: true,
+              experiencePresentation: experiencePresentation?.[unit.id] ?? null,
               terrainMarkup: building ? "" : renderTerrainLoadoutSection(selectedTile.terrain)
             })
           : ""

@@ -1,22 +1,64 @@
+import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { pickOne, randomInt } from "../core/random.js";
 
-const LEVEL_UP_GROWTHS = [
-  { stat: "attack", chance: 50, weight: 4, increment: 1 },
-  { stat: "armor", chance: 50, weight: 4, increment: 1 },
-  { stat: "maxHealth", chance: 50, weight: 4, increment: 2 },
-  { stat: "movement", chance: 10, weight: 1, increment: 1 },
-  { stat: "maxRange", chance: 5, weight: 1, increment: 1 },
-  { stat: "staminaMax", chance: 25, weight: 2, increment: 1 },
-  { stat: "ammoMax", chance: 20, weight: 2, increment: 1 },
-  { stat: "luck", chance: 20, weight: 2, increment: 1 }
+export const LEVEL_UP_STAT_ORDER = [
+  "maxHealth",
+  "attack",
+  "armor",
+  "movement",
+  "maxRange",
+  "staminaMax",
+  "ammoMax",
+  "luck"
 ];
+
+const LEVEL_UP_GROWTH_ROLL_ORDER = [
+  "attack",
+  "armor",
+  "maxHealth",
+  "movement",
+  "maxRange",
+  "staminaMax",
+  "ammoMax",
+  "luck"
+];
+
+// Shared defaults for level-up growth rolls. Override per-unit entries in
+// `UNIT_CATALOG[unitTypeId].levelUpGrowths` when a unit needs custom rates.
+export const DEFAULT_LEVEL_UP_GROWTHS = {
+  attack: { chance: 50, weight: 4, increment: 1 },
+  armor: { chance: 50, weight: 4, increment: 1 },
+  maxHealth: { chance: 50, weight: 4, increment: 2 },
+  movement: { chance: 10, weight: 1, increment: 1 },
+  maxRange: { chance: 5, weight: 1, increment: 1 },
+  staminaMax: { chance: 25, weight: 2, increment: 1 },
+  ammoMax: { chance: 20, weight: 2, increment: 1 },
+  luck: { chance: 20, weight: 2, increment: 1 }
+};
+
+function snapshotGrowthStats(unit) {
+  return Object.fromEntries(
+    LEVEL_UP_STAT_ORDER.map((stat) => [stat, unit.stats[stat]])
+  );
+}
+
+function getLevelUpGrowthEntries(unit) {
+  const unitType = UNIT_CATALOG[unit.unitTypeId] ?? {};
+  const overrides = unitType.levelUpGrowths ?? {};
+
+  return LEVEL_UP_GROWTH_ROLL_ORDER.map((stat) => ({
+    stat,
+    ...DEFAULT_LEVEL_UP_GROWTHS[stat],
+    ...(overrides[stat] ?? {})
+  }));
+}
 
 function isGrowthEligible(unit, entry) {
   return !(entry.stat === "maxRange" && unit.stats.maxRange === 0);
 }
 
 function getEligibleGrowths(unit) {
-  return LEVEL_UP_GROWTHS.filter((entry) => isGrowthEligible(unit, entry));
+  return getLevelUpGrowthEntries(unit).filter((entry) => isGrowthEligible(unit, entry));
 }
 
 function buildWeightedStats(unit) {
@@ -78,6 +120,7 @@ export function awardExperience(unit, amount, seed) {
   while (nextUnit.experience >= getXpThreshold(nextUnit.level)) {
     nextUnit.experience -= getXpThreshold(nextUnit.level);
     const previousLevel = nextUnit.level;
+    const beforeStats = snapshotGrowthStats(nextUnit);
     nextUnit.level += 1;
 
     const statGains = [];
@@ -106,7 +149,13 @@ export function awardExperience(unit, amount, seed) {
       previousLevel,
       newLevel: nextUnit.level,
       usedFallback,
-      statGains
+      statGains,
+      statSheet: LEVEL_UP_STAT_ORDER.map((stat) => ({
+        stat,
+        beforeValue: beforeStats[stat],
+        afterValue: nextUnit.stats[stat],
+        delta: nextUnit.stats[stat] - beforeStats[stat]
+      }))
     });
   }
 

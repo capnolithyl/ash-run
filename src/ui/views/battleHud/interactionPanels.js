@@ -5,6 +5,7 @@ import {
   getCommanderById,
   getEnemyAiArchetypeLabel
 } from "../../../game/content/commanders.js";
+import { MAP_POOL } from "../../../game/content/maps.js";
 import { ENEMY_AI_ARCHETYPE_ORDER } from "../../../game/core/constants.js";
 import { RUN_CARD_TYPES, RUN_UPGRADES } from "../../../game/content/runUpgrades.js";
 import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
@@ -32,6 +33,26 @@ function renderDebugGearOptions(selectedSlot = null, eligibleFamily = null) {
       >${upgrade.name}${labelSuffix}</option>`;
     })
   ].join("");
+}
+
+function getSandboxBaseMapId(mapId) {
+  if (!mapId) {
+    return MAP_POOL[0]?.id ?? "";
+  }
+
+  if (MAP_POOL.some((mapDefinition) => mapDefinition.id === mapId)) {
+    return mapId;
+  }
+
+  if (mapId.endsWith("-run")) {
+    const baseMapId = mapId.slice(0, -4);
+
+    if (MAP_POOL.some((mapDefinition) => mapDefinition.id === baseMapId)) {
+      return baseMapId;
+    }
+  }
+
+  return MAP_POOL[0]?.id ?? "";
 }
 
 function getBattleLayout(battleSnapshot) {
@@ -345,10 +366,40 @@ export function renderDebugControls(state, battleSnapshot) {
     .join("");
   const spawnX = selectedTile?.x ?? 0;
   const spawnY = selectedTile?.y ?? 0;
+  const selectedSandboxMapId = getSandboxBaseMapId(battleSnapshot.map.id);
+  const selectedSandboxMap =
+    MAP_POOL.find((mapDefinition) => mapDefinition.id === selectedSandboxMapId) ?? MAP_POOL[0] ?? null;
+  const sandboxMapOptions = MAP_POOL.map((mapDefinition) => `
+      <option value="${mapDefinition.id}" ${mapDefinition.id === selectedSandboxMapId ? "selected" : ""}>
+        ${mapDefinition.name} | ${mapDefinition.width}x${mapDefinition.height}
+      </option>
+    `).join("");
 
   return `
     <div class="debug-panel">
-      <details class="debug-section" open>
+      <details class="debug-section" data-battle-debug-accordion="battlefield" name="battle-debug-accordion">
+        <summary>
+          <span>
+            <strong>Battlefield</strong>
+            <small>${
+              selectedSandboxMap
+                ? `${selectedSandboxMap.name} | ${selectedSandboxMap.width}x${selectedSandboxMap.height}`
+                : "Load a sandbox map"
+            }</small>
+          </span>
+        </summary>
+        <div class="debug-grid">
+          <label>Map
+            <select data-debug-field="sandbox-map">
+              ${sandboxMapOptions}
+            </select>
+          </label>
+        </div>
+        <div class="debug-actions">
+          <button class="menu-button menu-button--small" data-action="debug-load-map">Load Fresh Map</button>
+        </div>
+      </details>
+      <details class="debug-section" data-battle-debug-accordion="spawn" name="battle-debug-accordion">
         <summary>
           <span>
             <strong>Spawn Unit</strong>
@@ -390,7 +441,7 @@ export function renderDebugControls(state, battleSnapshot) {
           <button class="menu-button menu-button--small" data-action="debug-spawn-unit">Spawn Unit</button>
         </div>
       </details>
-      <details class="debug-section">
+      <details class="debug-section" data-battle-debug-accordion="commanders" name="battle-debug-accordion">
         <summary>
           <span>
             <strong>Commander Overrides</strong>
@@ -431,7 +482,7 @@ export function renderDebugControls(state, battleSnapshot) {
           </button>
         </div>
       </details>
-      <details class="debug-section">
+      <details class="debug-section" data-battle-debug-accordion="shortcuts" name="battle-debug-accordion">
         <summary>
           <span>
             <strong>Battle Shortcuts</strong>
@@ -445,7 +496,7 @@ export function renderDebugControls(state, battleSnapshot) {
           <button class="ghost-button ghost-button--small" data-action="debug-refresh-enemy-actions">Refresh Enemy Actions</button>
         </div>
       </details>
-      <details class="debug-section">
+      <details class="debug-section" data-battle-debug-accordion="selected-unit" name="battle-debug-accordion">
         <summary>
           <span>
             <strong>Selected Unit Overrides</strong>
