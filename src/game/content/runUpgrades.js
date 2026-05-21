@@ -6,7 +6,7 @@ export const RUN_CARD_TYPES = {
   UNIT: "unit"
 };
 
-export const GEAR_DEFAULTS = {
+const GEAR_DEFAULTS = {
   "gear-aa-kit": {
     ammoPerMap: 6,
     badgeLabel: "AA"

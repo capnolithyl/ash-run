@@ -12,6 +12,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/player/grunt/grunt-idle.png",
           "frameRate": 5,
           "frameCount": 2,
+          "sheetWidth": 204,
+          "sheetHeight": 128,
+          "sheetColumns": 2,
+          "sheetRows": 1,
           "animationKeyBase": "animation:units:player:grunt:idle",
           "ranges": {
             "default": {
@@ -25,6 +29,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/player/grunt/grunt-attack.png",
           "frameRate": 5,
           "frameCount": 3,
+          "sheetWidth": 204,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
           "animationKeyBase": "animation:units:player:grunt:attack",
           "ranges": {
             "left": {
@@ -44,6 +52,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/enemy/grunt/grunt-idle.png",
           "frameRate": 5,
           "frameCount": 2,
+          "sheetWidth": 204,
+          "sheetHeight": 128,
+          "sheetColumns": 2,
+          "sheetRows": 1,
           "animationKeyBase": "animation:units:enemy:grunt:idle",
           "ranges": {
             "default": {
@@ -57,6 +69,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/enemy/grunt/grunt-attack.png",
           "frameRate": 5,
           "frameCount": 3,
+          "sheetWidth": 204,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:grunt:attack",
           "ranges": {
             "left": {
@@ -78,6 +94,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/player/breaker/breaker-idle.png",
           "frameRate": 5,
           "frameCount": 2,
+          "sheetWidth": 204,
+          "sheetHeight": 128,
+          "sheetColumns": 2,
+          "sheetRows": 1,
           "animationKeyBase": "animation:units:player:breaker:idle",
           "ranges": {
             "default": {
@@ -91,6 +111,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/player/breaker/breaker-attack.png",
           "frameRate": 5,
           "frameCount": 3,
+          "sheetWidth": 204,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
           "animationKeyBase": "animation:units:player:breaker:attack",
           "ranges": {
             "left": {
@@ -110,6 +134,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/enemy/breaker/breaker-idle.png",
           "frameRate": 5,
           "frameCount": 2,
+          "sheetWidth": 204,
+          "sheetHeight": 128,
+          "sheetColumns": 2,
+          "sheetRows": 1,
           "animationKeyBase": "animation:units:enemy:breaker:idle",
           "ranges": {
             "default": {
@@ -123,7 +151,93 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/enemy/breaker/breaker-attack.png",
           "frameRate": 5,
           "frameCount": 3,
+          "sheetWidth": 204,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:breaker:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "runner": {
+    "player": {
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:runner:idle",
+          "url": "./assets/sprites/units/player/runner/runner-idle.png",
+          "frameRate": 5,
+          "frameCount": 4,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:runner:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 3
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:player:runner:attack",
+          "url": "./assets/sprites/units/player/runner/runner-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:runner:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    },
+    "enemy": {
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:enemy:runner:idle",
+          "url": "./assets/sprites/units/enemy/runner/runner-idle.png",
+          "frameRate": 5,
+          "frameCount": 4,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:enemy:runner:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 3
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:enemy:runner:attack",
+          "url": "./assets/sprites/units/enemy/runner/runner-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:enemy:runner:attack",
           "ranges": {
             "left": {
               "start": 0,
@@ -144,6 +258,10 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/player/bruiser/bruiser-idle.png",
           "frameRate": 5,
           "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
           "animationKeyBase": "animation:units:player:bruiser:idle",
           "ranges": {
             "default": {
@@ -163,11 +281,179 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/enemy/bruiser/bruiser-idle.png",
           "frameRate": 5,
           "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:bruiser:idle",
           "ranges": {
             "default": {
               "start": 0,
               "end": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "skyguard": {
+    "player": {
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:skyguard:idle",
+          "url": "./assets/sprites/units/player/skyguard/skyguard-idle.png",
+          "frameRate": 5,
+          "frameCount": 6,
+          "sheetWidth": 256,
+          "sheetHeight": 384,
+          "sheetColumns": 2,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:player:skyguard:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 5
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:player:skyguard:attack",
+          "url": "./assets/sprites/units/player/skyguard/skyguard-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:skyguard:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    },
+    "enemy": {
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:enemy:skyguard:idle",
+          "url": "./assets/sprites/units/enemy/skyguard/skyguard-idle.png",
+          "frameRate": 5,
+          "frameCount": 6,
+          "sheetWidth": 256,
+          "sheetHeight": 384,
+          "sheetColumns": 2,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:enemy:skyguard:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 5
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:enemy:skyguard:attack",
+          "url": "./assets/sprites/units/enemy/skyguard/skyguard-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:enemy:skyguard:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "gunship": {
+    "player": {
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:gunship:idle",
+          "url": "./assets/sprites/units/player/gunship/gunship-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 64,
+          "sheetHeight": 128,
+          "sheetColumns": 1,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:gunship:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:player:gunship:attack",
+          "url": "./assets/sprites/units/player/gunship/gunship-attack.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 64,
+          "sheetHeight": 128,
+          "sheetColumns": 1,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:gunship:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        }
+      }
+    },
+    "enemy": {
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:enemy:gunship:idle",
+          "url": "./assets/sprites/units/enemy/gunship/gunship-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 64,
+          "sheetHeight": 128,
+          "sheetColumns": 1,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:enemy:gunship:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:enemy:gunship:attack",
+          "url": "./assets/sprites/units/enemy/gunship/gunship-attack.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 64,
+          "sheetHeight": 128,
+          "sheetColumns": 1,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:enemy:gunship:attack",
+          "ranges": {
+            "left": {
+              "start": 0,
+              "end": 1
             }
           }
         }

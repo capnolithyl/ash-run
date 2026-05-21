@@ -164,6 +164,10 @@ async function readOwnerAnimationSpec(root, owner, unitTypeId, animationMetadata
         url: `./${relativePath}`,
         frameRate: Number.isFinite(animationSpec.frameRate) ? animationSpec.frameRate : 5,
         frameCount,
+        sheetWidth: width,
+        sheetHeight: height,
+        sheetColumns: width / frameWidth,
+        sheetRows: height / frameHeight,
         animationKeyBase: `animation:units:${owner}:${unitTypeId}:${animationId}`,
         ranges: normalizedRanges,
       };

@@ -397,7 +397,7 @@ export function getAttackPowerForProfile(state, unit, attackProfile) {
   return Math.max(0, Math.round(baseAttack * getAttackMultiplier(state, unit)));
 }
 
-export function getFinalStrikeModifiers(state, attacker, defender) {
+function getFinalStrikeModifiers(state, attacker, defender) {
   const attackerCommander = getCommanderForSide(state, attacker.owner);
   let damageMultiplier = 1;
 

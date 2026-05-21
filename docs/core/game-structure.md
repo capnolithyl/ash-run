@@ -38,16 +38,19 @@
 - `src/game/content` owns static gameplay data: maps, terrain, buildings, commanders, and unit catalog entries.
 - `src/game/state/runFactory.js` assembles runs and battles, delegating roster templates, deployment placement, and enemy scaling to focused state modules.
 - `src/game/simulation/battleSystem.js` is the battle facade: it owns battle state, snapshots, selection helpers, and stable public method names while delegating rules to focused modules.
-- `src/game/simulation/playerActions.js` owns player-facing commands such as movement, attacks, capture, support, transport prompts, recruitment, and commander activation.
+- `src/game/simulation/playerActions.js` stays the player-action facade, while `src/game/simulation/playerActions/` splits that work into support actions, combat resolution, selection flow, pending-action transitions, and recruitment/power handling.
 - `src/game/simulation/turnFlow.js` owns turn lifecycle, income, action refresh, temporary status expiration, enemy turn stepping, enemy end-turn recruitment, and victory checks.
 - `src/game/simulation/transportRules.js` owns Runner load/unload validation and cargo position rules.
 - `src/game/simulation/debugActions.js` owns debug-only spawning, stat patching, charge, and action refresh tools.
 - `src/game/simulation/combatResolver.js` owns attack range, damage resolution, target restrictions, counter forecasts, combat-XP formulas, and casualty removal.
-- `src/game/simulation/enemyAi.js` owns enemy recruitment scoring, favorable-trade evaluation, repair mode, capture plans, and fallback/staging movement choices.
+- `src/game/simulation/enemyAi.js` stays the enemy-AI facade, while `src/game/simulation/enemyAi/` separates archetype profiles, recruitment scoring, attack-trade scoring, map-position scoring, and runner transport planning.
+- `src/game/simulation/supportScoring.js` centralizes shared service-need math used by both player support actions and enemy support planning.
 - `src/game/simulation/battlePresentation.js` converts battle state into HUD/render-friendly presentation data without mutating the battle.
 - `src/game/simulation/battleServicing.js`, `captureRules.js`, `battleLog.js`, and `battleUnits.js` hold small shared battle helpers that keep the orchestrator lean.
 - `src/game/simulation/selectors.js`, `commanderEffects.js`, `unitFactory.js`, and `progression.js` own read helpers, commander modifiers, unit creation, and leveling.
 - `src/game/phaser` adapts simulation snapshots into canvas rendering, animation, effects, and compact board layout sizing.
+- `src/game/phaser/scenes/BattleScene.js` stays the Phaser scene owner, while `src/game/phaser/scenes/battleScene/` holds camera, pointer, gamepad, screen-state, and board-render helpers.
 - `src/game/phaser/audio` owns music playback, fades, and state-driven track selection.
 - `src/ui` owns DOM menus and HUD surfaces.
 - `src/ui/AppShell.js` coordinates the DOM render lifecycle, responsive commander carousel controls, and persistent battle drawer state across rerenders.
+- `src/ui/appShell/renderMethods.js` stays the AppShell render facade, while `src/ui/appShell/render/` splits screen routing, battle-screen orchestration, combat-cutscene playback, battle meter animation, and UI state persistence.

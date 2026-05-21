@@ -334,6 +334,10 @@ export class SelectionLayer {
       drawMovementPath(this.graphics, layout, hoveredMovementPath);
     }
 
+    for (const movementPath of options.enemyMovementPaths ?? []) {
+      drawMovementPath(this.graphics, layout, movementPath);
+    }
+
     for (const spawn of options.editorSpawns?.player ?? []) {
       markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, 0x66ffbf, "P"));
     }

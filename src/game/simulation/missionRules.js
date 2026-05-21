@@ -1,7 +1,6 @@
 import { BUILDING_KEYS, TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 import {
   DEFEND_OBJECTIVE_MAX_HP,
-  HOSTAGE_MOVEMENT_PENALTY,
   MAP_GOAL_TYPES,
   formatGoalSectorLabel,
   getCommandBuildingForSide,
@@ -57,7 +56,7 @@ function setHostageCarrierFlag(unit, isCarrier) {
   }
 }
 
-export function getMissionTargetBuilding(state, mission = state.mission) {
+function getMissionTargetBuilding(state, mission = state.mission) {
   if (!mission?.target) {
     return null;
   }
@@ -69,7 +68,7 @@ export function getMissionTargetBuilding(state, mission = state.mission) {
   );
 }
 
-export function syncMissionUnitState(state) {
+function syncMissionUnitState(state) {
   const carrierUnitId = state.mission?.rescue?.carrierUnitId ?? null;
 
   for (const side of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
@@ -79,7 +78,7 @@ export function syncMissionUnitState(state) {
   }
 }
 
-export function createMissionState(state) {
+function createMissionState(state) {
   const goal = normalizeMapGoal(state.map?.goal, state.map);
   const playerHq = getCommandBuildingForSide(state.map, TURN_SIDES.PLAYER);
   const enemyHq = getCommandBuildingForSide(state.map, TURN_SIDES.ENEMY);
@@ -515,8 +514,3 @@ export function getMissionMarkers(state) {
 
   return markers;
 }
-
-export function getHostageMovementPenalty(unit) {
-  return unit?.temporary?.hostageCarrier ? HOSTAGE_MOVEMENT_PENALTY : 0;
-}
-

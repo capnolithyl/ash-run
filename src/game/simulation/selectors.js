@@ -84,7 +84,7 @@ export function getAntiAirGearAmmo(unit) {
   return Math.max(0, unit?.gearState?.aaKitAmmo ?? 0);
 }
 
-export function hasUsableAntiAirKit(unit) {
+function hasUsableAntiAirKit(unit) {
   return unit?.gear?.slot === "gear-aa-kit" && getAntiAirGearAmmo(unit) > 0;
 }
 

@@ -358,19 +358,17 @@
   overflow: hidden;
 }
 
-.run-unit-card__preview-strip {
-  width: calc(var(--frame-count) * 100%);
-  height: 100%;
-  animation: run-unit-sheet-play var(--sheet-duration) steps(var(--frame-count))
-    infinite;
-  will-change: transform;
-}
-
-.run-unit-card__preview-sheet-image {
-  display: block;
+.run-unit-card__preview-sheet-surface {
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  background-position: var(--preview-start-x, 0%) var(--preview-start-y, 0%);
+  background-repeat: no-repeat;
+  background-size: calc(var(--preview-columns, 1) * 100%)
+    calc(var(--preview-rows, 1) * 100%);
+  animation-duration: var(--sheet-duration, 0.6s);
+  animation-timing-function: steps(1, end);
+  animation-iteration-count: infinite;
+  will-change: background-position;
   image-rendering: pixelated;
 }
 

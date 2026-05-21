@@ -251,6 +251,48 @@ test("unit animation manifest supports owner-specific omissions and mirrored att
   assert.equal(enemyBruiserDefinition.attack, null);
 });
 
+test("gunship, runner, and skyguard sheets use the expected frame geometry", () => {
+  const animatedUnits = [
+    {
+      unitTypeId: "gunship",
+      frameWidth: 64,
+      frameHeight: 64,
+      idleRange: { start: 0, end: 1 },
+      attackRange: { start: 0, end: 1 },
+    },
+    {
+      unitTypeId: "runner",
+      frameWidth: 128,
+      frameHeight: 128,
+      idleRange: { start: 0, end: 3 },
+      attackRange: { start: 0, end: 2 },
+    },
+    {
+      unitTypeId: "skyguard",
+      frameWidth: 128,
+      frameHeight: 128,
+      idleRange: { start: 0, end: 5 },
+      attackRange: { start: 0, end: 2 },
+    },
+  ];
+
+  for (const { unitTypeId, frameWidth, frameHeight, idleRange, attackRange } of animatedUnits) {
+    for (const owner of UNIT_OWNER_VARIANTS) {
+      const spriteDefinition = getUnitSpriteDefinition(unitTypeId, owner);
+      const generatedDefinition = GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[owner];
+
+      assert.ok(spriteDefinition, `missing sprite definition for ${owner} ${unitTypeId}`);
+      assert.equal(spriteDefinition.type, "spritesheet");
+      assert.equal(spriteDefinition.idle.key, `spritesheet:units:${owner}:${unitTypeId}:idle`);
+      assert.deepEqual(spriteDefinition.idle.ranges.default, idleRange);
+      assert.equal(spriteDefinition.attack.key, `spritesheet:units:${owner}:${unitTypeId}:attack`);
+      assert.deepEqual(spriteDefinition.attack.ranges.left, attackRange);
+      assert.equal(generatedDefinition.frameWidth, frameWidth);
+      assert.equal(generatedDefinition.frameHeight, frameHeight);
+    }
+  }
+});
+
 test("sprite folders only contain manifest assets or documented source masters", () => {
   const manifestPaths = new Set(SPRITE_ASSETS.map((asset) => resolveSpritePath(asset.url)));
   const spriteFiles = collectSpriteFiles(path.resolve(process.cwd(), "assets/sprites"));

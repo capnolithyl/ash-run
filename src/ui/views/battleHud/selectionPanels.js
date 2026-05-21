@@ -7,10 +7,11 @@ import { getBuildingArmorBonusForType } from "../../../game/content/buildings.js
 import { getPositionArmorBonus } from "../../../game/simulation/combatResolver.js";
 import { buildFocusedTile, describeUnit } from "../../../game/simulation/battlePresentation.js";
 import {
+  getBattleHudArmorIconFileName,
   formatRangeLabel,
   getBattleHudArmorIconUrl,
-  getBattleHudStatIconUrl,
   getBattleHudWeaponIconUrl,
+  renderBattleHudStatBackground,
   renderSelectionIcon
 } from "../../shared/unitStatPresentation.js";
 
@@ -66,25 +67,6 @@ const CORRUPTED_ICON_URL = "./assets/img/icons/battle-hud/conditions/corrupted.p
 const SLOW_ICON_URL = "./assets/img/icons/battle-hud/conditions/slow.png";
 const BURN_ICON_URL = "./assets/img/icons/battle-hud/conditions/burn.png";
 
-function getStatBackgroundUrl(iconName) {
-  switch (iconName) {
-    case "attack":
-      return getBattleHudStatIconUrl("atk.png");
-    case "armor":
-      return getBattleHudStatIconUrl("arm.png");
-    case "movement":
-      return getBattleHudStatIconUrl("mov.png");
-    case "range":
-      return getBattleHudStatIconUrl("rng.png");
-    case "ammo":
-      return getBattleHudStatIconUrl("ammo.png");
-    case "stamina":
-      return getBattleHudStatIconUrl("sta.png");
-    default:
-      return "";
-  }
-}
-
 function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed = false } = {}) {
   const conditionLabels = [];
 
@@ -115,8 +97,8 @@ function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed 
     <div
       class="selection-stat${isCorrupted ? " selection-stat--corrupted" : ""}${isSlowed ? " selection-stat--slowed" : ""}"
       aria-label="${ariaLabel}"
-      style="--stat-bg-image:url('${getStatBackgroundUrl(iconName)}')"
     >
+      ${renderBattleHudStatBackground(iconName)}
       ${
         conditionIcon
           ? `
@@ -154,7 +136,7 @@ function getWeaponClassIconFileName(weaponClass) {
 }
 
 function getArmorClassIconFileName(armorClass) {
-  return armorClass ? `${armorClass.replaceAll("_", "-")}.png` : null;
+  return armorClass ? getBattleHudArmorIconFileName(armorClass) : null;
 }
 
 function renderLoadoutSection(iconUrl, label, value) {
@@ -585,7 +567,7 @@ function getHoveredTargetReference(battleSnapshot, hoveredTile) {
   };
 }
 
-export function renderTargetReference(battleSnapshot, hoveredTile) {
+function renderTargetReference(battleSnapshot, hoveredTile) {
   const targetReference = getHoveredTargetReference(battleSnapshot, hoveredTile);
 
   if (!targetReference) {

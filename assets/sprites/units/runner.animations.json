@@ -1,0 +1,26 @@
+{
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "animations": {
+    "idle": {
+      "file": "runner-idle.png",
+      "frameRate": 5,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 3
+        }
+      }
+    },
+    "attack": {
+      "file": "runner-attack.png",
+      "frameRate": 5,
+      "ranges": {
+        "left": {
+          "start": 0,
+          "end": 2
+        }
+      }
+    }
+  }
+}

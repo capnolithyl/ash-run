@@ -2,13 +2,13 @@
 // Each unit entry can either be:
 // - "grunt"
 // - { unitTypeId: "gunship", level: 3 }
-export const RUN_ENEMY_STARTING_LEVEL_BY_MAP_NUMBER = [
+const RUN_ENEMY_STARTING_LEVEL_BY_MAP_NUMBER = [
   1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
 ];
 
 // Tweak these arrays to rebalance how strong the enemy opening squad feels.
 // The per-map default level above applies unless a unit entry overrides it.
-export const RUN_ENEMY_STARTING_SQUADS_BY_MAP_NUMBER = [
+const RUN_ENEMY_STARTING_SQUADS_BY_MAP_NUMBER = [
   ["grunt", { unitTypeId: "grunt", level: 2 }, "medic"],
   ["grunt", "runner", { unitTypeId: "longshot", level: 2 }],
   ["grunt", "runner", "breaker", "medic"],

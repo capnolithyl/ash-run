@@ -143,7 +143,7 @@ function getCutsceneRevealStartMs(snapshot, animationEvents, attackerId) {
   return getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS;
 }
 
-export function getBattleCombatCutsceneElapsedMs(cutscene, now = Date.now()) {
+function getBattleCombatCutsceneElapsedMs(cutscene, now = Date.now()) {
   return clamp(now - (cutscene?.startedAt ?? 0), 0, Math.max(0, (cutscene?.durationMs ?? 1) - 1));
 }
 

@@ -18,7 +18,6 @@ export const MAP_GOAL_ORDER = [
 ];
 
 export const DEFEND_OBJECTIVE_MAX_HP = 2;
-export const HOSTAGE_MOVEMENT_PENALTY = 1;
 
 function isInsideMap(mapData, x, y) {
   return Boolean(mapData) && x >= 0 && y >= 0 && x < mapData.width && y < mapData.height;

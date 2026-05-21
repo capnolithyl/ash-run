@@ -24,7 +24,7 @@ export const WEAPON_CLASSES = {
   INTERCEPTOR_CANNONS: "interceptor_cannons"
 };
 
-export const WEAPON_CLASS_PROFILES = {
+const WEAPON_CLASS_PROFILES = {
   [WEAPON_CLASSES.RIFLE]: {
     role: "Baseline infantry weapon. Good into infantry, chips armor, cannot target air.",
     targetProfiles: {
@@ -165,10 +165,6 @@ export function getArmorClassForUnit(unit) {
 
 export function getWeaponClassForUnit(unit) {
   return unit?.stats?.weaponClass ?? unit?.weaponClass ?? null;
-}
-
-export function getWeaponClassProfile(weaponClass) {
-  return WEAPON_CLASS_PROFILES[weaponClass] ?? null;
 }
 
 export function getTargetProfileForAttack(attacker, defender, attackProfile = null) {

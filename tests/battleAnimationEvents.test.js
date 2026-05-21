@@ -15,6 +15,7 @@ import {
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { deriveBattleAnimationEvents } from "../src/game/phaser/view/battleAnimationEvents.js";
+import { getAnimatedMovementPaths } from "../src/game/phaser/scenes/battleScene/renderBoard.js";
 import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
@@ -170,6 +171,38 @@ test("battle animation events keep normal order when both graves powers are acti
   assert.equal(attackEvents[1].attackerId, defender.id);
   assert.equal(attackEvents[1].targetId, attacker.id);
   assert.equal(attackEvents[1].isInitiator, false);
+});
+
+test("battle render exposes enemy movement paths for transient move arrows", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3);
+  const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 3);
+  const battleState = createTestBattleState({
+    id: "enemy-arrow-path",
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.processEnemyTurnStep().type, "move");
+
+  const afterMove = system.getSnapshot();
+  const movementEvents = deriveBattleAnimationEvents(before, afterMove).filter(
+    (event) => event.type === "move"
+  );
+
+  assert.deepEqual(getAnimatedMovementPaths(movementEvents, TURN_SIDES.ENEMY), [
+    [
+      { x: 6, y: 3 },
+      { x: 5, y: 3 }
+    ]
+  ]);
 });
 
 test("battle combat cutscene payload keeps player-left mapping, split terrain ids, and HP beats", () => {

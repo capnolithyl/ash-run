@@ -4,6 +4,25 @@ export function formatRangeLabel(minimumRange, maximumRange) {
     : `${minimumRange}-${maximumRange}`;
 }
 
+const STAT_ICON_FILE_NAMES = {
+  attack: "atk.png",
+  armor: "arm.png",
+  movement: "mov.png",
+  range: "rng.png",
+  ammo: "ammo.png",
+  stamina: "sta.png",
+};
+
+const ARMOR_ICON_FILE_NAMES = {
+  infantry: "infantry.png",
+  light: "light.png",
+  medium: "medium.png",
+  heavy: "medium.png",
+  air_light: "light.png",
+  air_heavy: "medium.png",
+  air_fast: "light.png",
+};
+
 export function getBattleHudStatIconUrl(fileName) {
   return `./assets/img/icons/battle-hud/stats/${encodeURIComponent(fileName)}`;
 }
@@ -16,31 +35,52 @@ export function getBattleHudArmorIconUrl(fileName) {
   return `./assets/img/icons/battle-hud/armor/${encodeURIComponent(fileName)}`;
 }
 
+export function getBattleHudStatIconUrlForName(iconName) {
+  const fileName = STAT_ICON_FILE_NAMES[iconName] ?? null;
+  return fileName ? getBattleHudStatIconUrl(fileName) : "";
+}
+
+export function getBattleHudArmorIconFileName(armorClass) {
+  return ARMOR_ICON_FILE_NAMES[armorClass] ?? null;
+}
+
+export function renderBattleHudStatBackground(iconName, className = "selection-stat__background-icon") {
+  const src = getBattleHudStatIconUrlForName(iconName);
+
+  if (!src) {
+    return "";
+  }
+
+  return `
+    <img class="${className}" src="${src}" alt="" loading="lazy" decoding="async" />
+  `;
+}
+
 export function renderSelectionIcon(iconName) {
   switch (iconName) {
     case "attack":
       return `
-        <img src="${getBattleHudStatIconUrl("atk.png")}" alt="" loading="lazy" decoding="async" />
+        <img src="${getBattleHudStatIconUrlForName("attack")}" alt="" loading="lazy" decoding="async" />
       `;
     case "armor":
       return `
-        <img src="${getBattleHudStatIconUrl("arm.png")}" alt="" loading="lazy" decoding="async" />
+        <img src="${getBattleHudStatIconUrlForName("armor")}" alt="" loading="lazy" decoding="async" />
       `;
     case "movement":
       return `
-        <img src="${getBattleHudStatIconUrl("mov.png")}" alt="" loading="lazy" decoding="async" />
+        <img src="${getBattleHudStatIconUrlForName("movement")}" alt="" loading="lazy" decoding="async" />
       `;
     case "range":
       return `
-        <img src="${getBattleHudStatIconUrl("rng.png")}" alt="" loading="lazy" decoding="async" />
+        <img src="${getBattleHudStatIconUrlForName("range")}" alt="" loading="lazy" decoding="async" />
       `;
     case "ammo":
       return `
-        <img src="${getBattleHudStatIconUrl("ammo.png")}" alt="" loading="lazy" decoding="async" />
+        <img src="${getBattleHudStatIconUrlForName("ammo")}" alt="" loading="lazy" decoding="async" />
       `;
     case "stamina":
       return `
-        <img src="${getBattleHudStatIconUrl("sta.png")}" alt="" loading="lazy" decoding="async" />
+        <img src="${getBattleHudStatIconUrlForName("stamina")}" alt="" loading="lazy" decoding="async" />
       `;
     case "luck":
       return `

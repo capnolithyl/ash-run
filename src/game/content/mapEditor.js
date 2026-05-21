@@ -329,7 +329,7 @@ export function normalizeMapDefinition(mapInput = {}) {
   return mapData;
 }
 
-export function normalizeBuildings(buildings, mapData) {
+function normalizeBuildings(buildings, mapData) {
   const takenPositions = new Set();
   const unique = [];
 

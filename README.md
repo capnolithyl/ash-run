@@ -162,7 +162,7 @@ tests/                    Node tests and UI coverage
 docs/                     Core design, systems, and planning docs
 ```
 
-Architecturally, `src/game/simulation/battleSystem.js` now acts as the battle facade/orchestrator, while focused modules own combat math, turn flow, AI, transport rules, progression, debug actions, and presentation shaping.
+Architecturally, `src/game/simulation/battleSystem.js` acts as the battle facade/orchestrator, while focused helper folders now split player actions, enemy AI, Phaser battle-scene behavior, and AppShell rendering into smaller modules behind stable entrypoints.
 
 ## Commands
 

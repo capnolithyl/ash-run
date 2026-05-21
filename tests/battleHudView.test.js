@@ -930,6 +930,7 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
     html,
     /<strong>Grunt<\/strong>[\s\S]*?<strong>Experience<\/strong>[\s\S]*?selection-health__label">HP<\/span>/
   );
+  assert.match(html, /class="selection-stat__background-icon" src="\.\/*assets\/img\/icons\/battle-hud\/stats\/atk\.png"/);
   assert.match(html, /<strong>Rifle<\/strong>/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/weapons\/rifle\.png/);
   assert.match(html, /<strong>Infantry Armor<\/strong>/);
@@ -953,6 +954,20 @@ test("battle HUD shows the matching weapon icon for non-rifle weapon classes", (
 
   assert.match(html, /<strong>Autocannon<\/strong>/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/weapons\/autocannon\.png/);
+});
+
+test("battle HUD falls back to existing armor icons for air armor classes", () => {
+  const unit = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /<strong>Air Light Armor<\/strong>/);
+  assert.match(html, /assets\/img\/icons\/battle-hud\/armor\/light\.png/);
+  assert.doesNotMatch(html, /assets\/img\/icons\/battle-hud\/armor\/air-light\.png/);
 });
 
 test("medics with field medpacks show separate heal and medpack actions", () => {

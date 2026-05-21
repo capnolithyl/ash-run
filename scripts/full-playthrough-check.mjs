@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { GameController } from '../src/game/app/GameController.js';
 import { SLOT_IDS, TURN_SIDES } from '../src/game/core/constants.js';
+import { canUnitEquipRunUpgrade } from '../src/game/content/runUpgrades.js';
 
 class MemoryStorage {
   constructor() {
@@ -50,7 +51,10 @@ function forceBattleWinner(controller, winner) {
   } else {
     state.player.units = [];
   }
-  controller.battleSystem.updateVictoryState();
+  state.victory = {
+    winner,
+    message: winner === TURN_SIDES.PLAYER ? 'Forced clear.' : 'Forced defeat.'
+  };
 }
 
 async function startConfiguredRun(controller) {
@@ -80,6 +84,20 @@ async function runFullClearScenario() {
       continue;
     }
 
+    if (loopState.runStatus === 'reward-equip') {
+      const reward = loopState.runState?.pendingGearReward ?? null;
+      const eligibleUnit = (loopState.runState?.roster ?? []).find((unit) =>
+        canUnitEquipRunUpgrade(unit, reward)
+      );
+
+      if (eligibleUnit) {
+        await controller.equipPendingRunGear(eligibleUnit.id);
+      } else {
+        await controller.discardPendingRunGear();
+      }
+      continue;
+    }
+
     assert.equal(loopState.screen, 'battle');
     assert.ok(controller.battleSystem, 'battle system should exist while run is active');
 
@@ -92,7 +110,7 @@ async function runFullClearScenario() {
       throw new Error('run unexpectedly failed during forced clear scenario');
     }
 
-    if (battlesCleared > 20) {
+    if (battlesCleared > (loopState.runState?.targetMapCount ?? 20)) {
       throw new Error('playthrough exceeded expected battle count');
     }
   }
