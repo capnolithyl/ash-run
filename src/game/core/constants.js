@@ -36,6 +36,7 @@ export const BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS = 960;
 export const BATTLE_COMBAT_CUTSCENE_IMPACT_DELAY_MS = 360;
 export const BATTLE_COMBAT_CUTSCENE_LOOP_MIN = 4;
 export const BATTLE_COMBAT_CUTSCENE_LOOP_MAX = 5;
+export const BATTLE_POST_COMBAT_PAUSE_MS = 180;
 
 export function getBattleMoveDuration(moveSegments = 0) {
   return Math.max(0, moveSegments) * BATTLE_MOVE_SEGMENT_DURATION_MS;

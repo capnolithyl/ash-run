@@ -1444,8 +1444,9 @@
     font-size: 0.76rem;
   }
 
-  .overlay-card--level-up {
-    width: min(38rem, calc(100vw - 1.25rem));
+  .overlay-card.overlay-card--level-up {
+    width: fit-content;
+    max-width: calc(100vw - 24px);
   }
 
   .level-up-card__body {
@@ -1474,7 +1475,7 @@
     border-radius: 1rem;
   }
 
-  .overlay-card--level-up {
+  .overlay-card.overlay-card--level-up {
     width: calc(100vw - 1rem);
     padding: 0.9rem 0.85rem 0.85rem;
   }
@@ -1483,19 +1484,34 @@
     font-size: clamp(1.7rem, 8vw, 2.4rem);
   }
 
+  .level-up-card__stats-header,
   .level-up-stat {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.3rem 0.65rem;
+    grid-template-columns: minmax(0, 1fr) 72px 72px;
+    gap: 0.38rem 0.72rem;
+  }
+
+  .level-up-card__stats-header {
+    padding: 0 0.78rem 0.08rem;
+  }
+
+  .level-up-card__stats-head {
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+  }
+
+  .level-up-stat {
+    align-items: center;
     padding: 0.72rem 0.78rem;
   }
 
-  .level-up-stat__values {
-    grid-column: 1 / -1;
-    justify-content: space-between;
+  .level-up-stat__label {
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
   }
 
-  .level-up-stat__delta {
-    justify-self: end;
+  .level-up-stat__current,
+  .level-up-stat__next {
+    font-size: 1.02rem;
   }
 
   .tutorial-header {

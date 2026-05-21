@@ -6,6 +6,7 @@ import {
   BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
   BATTLE_COMBAT_CUTSCENE_OPEN_MS,
   BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS,
+  BATTLE_POST_COMBAT_PAUSE_MS,
   BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
   TERRAIN_KEYS,
@@ -402,6 +403,13 @@ test("experience events expose threshold-hit timing metadata for a single level-
     event.segmentTimings[1].endDelayMs + EXPERIENCE_EXIT_DELAY_MS + EXPERIENCE_EXIT_DURATION_MS
   );
   assert.equal(getBattleSnapshotTransitionDurationMs(before, after), event.endDelayMs);
+  assert.equal(
+    getBattleSnapshotTransitionDurationMs(before, after, {
+      combatCutsceneDurationMs: event.endDelayMs + 20,
+      postCombatDelayMs: BATTLE_POST_COMBAT_PAUSE_MS
+    }),
+    event.endDelayMs + 20 + BATTLE_POST_COMBAT_PAUSE_MS + event.durationMs
+  );
 });
 
 test("experience events chain one threshold hit per filled bar on multi-level gains", () => {

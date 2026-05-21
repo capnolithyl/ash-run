@@ -1,7 +1,7 @@
-import { SCREEN_IDS } from "../../../game/core/constants.js";
+import { BATTLE_POST_COMBAT_PAUSE_MS, SCREEN_IDS } from "../../../game/core/constants.js";
 import { deriveBattleAnimationEvents } from "../../../game/phaser/view/battleAnimationEvents.js";
 
-const LEVEL_UP_REVEAL_HOLD_MS = 420;
+const LEVEL_UP_REVEAL_HOLD_MS = 760;
 const LEVEL_UP_POPUP_INTRO_MS = 180;
 const LEVEL_UP_CHANGED_STAT_MS = 260;
 const LEVEL_UP_UNCHANGED_STAT_MS = 120;
@@ -242,8 +242,17 @@ function updateLevelUpOverlay(overlay, presentation) {
       continue;
     }
 
+    const showNewValue = row.changed && row.phase !== "pending";
+
     rowElement.className = `level-up-stat level-up-stat--${row.phase}${row.changed ? " level-up-stat--changed" : ""}`;
-    displayValue.textContent = `${row.displayValue}`;
+    displayValue.className = `level-up-stat__next${showNewValue ? "" : " level-up-stat__next--empty"}`;
+    displayValue.textContent = showNewValue ? `${row.displayValue}` : "--";
+
+    if (showNewValue) {
+      displayValue.removeAttribute("aria-hidden");
+    } else {
+      displayValue.setAttribute("aria-hidden", "true");
+    }
   }
 }
 
@@ -306,6 +315,7 @@ export const appShellBattlePresentationPlaybackMethods = {
     const now = getPlaybackNow();
     const revealNow = Date.now();
     const combatCutsceneDuration = state.battleUi?.combatCutscene?.durationMs ?? 0;
+    const postCombatPauseMs = combatCutsceneDuration > 0 ? BATTLE_POST_COMBAT_PAUSE_MS : 0;
     const experienceEvents = deriveBattleAnimationEvents(
       this.previousBattleSnapshot,
       state.battleSnapshot
@@ -313,7 +323,10 @@ export const appShellBattlePresentationPlaybackMethods = {
 
     for (const event of experienceEvents) {
       const signature = buildExperienceAnimationKey(state.battleSnapshot, event);
-      const effectiveStartDelayMs = Math.max(event.startDelayMs ?? 0, combatCutsceneDuration);
+      const effectiveStartDelayMs = Math.max(
+        event.startDelayMs ?? 0,
+        combatCutsceneDuration + postCombatPauseMs
+      );
       const delayOffsetMs = effectiveStartDelayMs - (event.startDelayMs ?? 0);
       const effectiveEndDelayMs = (event.endDelayMs ?? 0) + delayOffsetMs;
 

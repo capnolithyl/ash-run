@@ -207,49 +207,82 @@ function getExperienceEventDuration(event) {
   return duration + EXPERIENCE_EXIT_DELAY_MS + EXPERIENCE_EXIT_DURATION_MS;
 }
 
-function getBattleAnimationDurationMs(events) {
+function getBattleAnimationEventDurationMs(event) {
+  if (Number.isFinite(event.durationMs)) {
+    return event.durationMs;
+  }
+
+  switch (event.type) {
+    case "move": {
+      if (event.teleport) {
+        return 0;
+      }
+
+      const moveSegments = Math.max(0, (event.path?.length ?? 1) - 1);
+      return getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS;
+    }
+    case "attack":
+      return BATTLE_ATTACK_WINDOW_MS;
+    case "heal":
+    case "resupply":
+      return 560;
+    case "experience":
+      return getExperienceEventDuration(event);
+    case "capture":
+      return 520;
+    case "deploy":
+      return 420;
+    case "destroy":
+      return 340;
+    default:
+      return 0;
+  }
+}
+
+function getBattleAnimationEventStartDelayMs(event) {
+  if (Number.isFinite(event.startDelayMs)) {
+    return event.startDelayMs;
+  }
+
+  if (event.type === "attack" || event.type === "destroy") {
+    return event.delay ?? 0;
+  }
+
+  return 0;
+}
+
+function getBattleAnimationDurationMs(
+  events,
+  { combatCutsceneDurationMs = 0, postCombatDelayMs = 0 } = {}
+) {
   if (!events?.length) {
     return 0;
   }
 
   return events.reduce((maxDuration, event) => {
-    if (Number.isFinite(event.endDelayMs)) {
-      return Math.max(maxDuration, event.endDelayMs);
-    }
+    const durationMs = getBattleAnimationEventDurationMs(event);
+    const startDelayMs = getBattleAnimationEventStartDelayMs(event);
+    const effectiveStartDelayMs =
+      combatCutsceneDurationMs > 0 && (event.type === "experience" || event.type === "destroy")
+        ? Math.max(startDelayMs, combatCutsceneDurationMs + postCombatDelayMs)
+        : startDelayMs;
+    const endDelayMs = Number.isFinite(event.endDelayMs)
+      ? effectiveStartDelayMs + durationMs
+      : effectiveStartDelayMs + durationMs;
 
-    switch (event.type) {
-      case "move": {
-        if (event.teleport) {
-          return maxDuration;
-        }
-
-        const moveSegments = Math.max(0, (event.path?.length ?? 1) - 1);
-        return Math.max(
-          maxDuration,
-          getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS
-        );
-      }
-      case "attack":
-        return Math.max(maxDuration, (event.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS);
-      case "heal":
-      case "resupply":
-        return Math.max(maxDuration, 560);
-      case "experience":
-        return Math.max(maxDuration, getExperienceEventDuration(event));
-      case "capture":
-        return Math.max(maxDuration, 520);
-      case "deploy":
-        return Math.max(maxDuration, 420);
-      case "destroy":
-        return Math.max(maxDuration, (event.delay ?? 0) + 340);
-      default:
-        return maxDuration;
-    }
+    return Math.max(maxDuration, endDelayMs);
   }, 0);
 }
 
-export function getBattleSnapshotTransitionDurationMs(previousSnapshot, nextSnapshot) {
-  return getBattleAnimationDurationMs(deriveBattleAnimationEvents(previousSnapshot, nextSnapshot));
+export function getBattleSnapshotTransitionDurationMs(
+  previousSnapshot,
+  nextSnapshot,
+  { combatCutsceneDurationMs = 0, postCombatDelayMs = 0 } = {}
+) {
+  return getBattleAnimationDurationMs(
+    deriveBattleAnimationEvents(previousSnapshot, nextSnapshot),
+    { combatCutsceneDurationMs, postCombatDelayMs }
+  );
 }
 
 export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {

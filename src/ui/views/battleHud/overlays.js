@@ -127,6 +127,11 @@ export function renderLevelUpOverlay(battleSnapshot, presentation = null) {
         </div>
         <div class="level-up-card__body">
           <div class="level-up-card__stats">
+            <div class="level-up-card__stats-header" aria-hidden="true">
+              <span class="level-up-card__stats-head level-up-card__stats-head--label">Stat</span>
+              <span class="level-up-card__stats-head">Current</span>
+              <span class="level-up-card__stats-head">New</span>
+            </div>
             ${rows
             .map(
               (entry) => `
@@ -135,12 +140,12 @@ export function renderLevelUpOverlay(battleSnapshot, presentation = null) {
                   data-level-up-stat="${entry.stat}"
                 >
                   <span class="level-up-stat__label">${entry.label}</span>
-                  <div class="level-up-stat__values">
-                    <span class="level-up-stat__before">${entry.beforeValue}</span>
-                    <span class="level-up-stat__arrow" aria-hidden="true">></span>
-                    <strong data-level-up-display="${entry.stat}">${entry.displayValue}</strong>
-                  </div>
-                  <small class="level-up-stat__delta"${entry.changed ? "" : ' aria-hidden="true"'}>${entry.changed ? `+${entry.delta}` : ""}</small>
+                  <span class="level-up-stat__current">${entry.beforeValue}</span>
+                  <strong
+                    class="level-up-stat__next${entry.changed && entry.phase !== "pending" ? "" : " level-up-stat__next--empty"}"
+                    data-level-up-display="${entry.stat}"
+                    ${entry.changed && entry.phase !== "pending" ? "" : ' aria-hidden="true"'}
+                  >${entry.changed && entry.phase !== "pending" ? entry.displayValue : "--"}</strong>
                 </div>
               `
             )

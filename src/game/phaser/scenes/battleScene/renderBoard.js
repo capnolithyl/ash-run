@@ -2,6 +2,7 @@ import {
   BATTLE_ATTACK_IMPACT_DELAY_MS,
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
+  BATTLE_POST_COMBAT_PAUSE_MS,
   BATTLE_TURN_BANNER_SETTLE_MS
 } from "../../../core/constants.js";
 import { getBattlefieldLayout } from "../../../core/battlefieldLayout.js";
@@ -166,12 +167,14 @@ export const battleSceneRenderMethods = {
     );
     const combatCutscene = this.latestState?.battleUi?.combatCutscene ?? null;
     const combatCutsceneActive = Boolean(combatCutscene);
+    const postCombatPauseMs = combatCutsceneActive ? BATTLE_POST_COMBAT_PAUSE_MS : 0;
     const attackDrivenDestroyUnitIds = new Set(
       attackEvents
         .filter((event) => destroyEventByUnitId.has(event.targetId))
         .map((event) => event.targetId)
     );
     const combatCutsceneDuration = combatCutscene?.durationMs ?? 0;
+    const combatFollowThroughStartMs = combatCutsceneDuration + postCombatPauseMs;
 
     for (const unitId of attackDrivenDestroyUnitIds) {
       this.unitLayer.holdForDestroy(unitId);
@@ -210,8 +213,12 @@ export const battleSceneRenderMethods = {
           continue;
         }
 
-        this.unitLayer.scheduleDestroy(event.unitId, turnTransitionDelay + (event.delay ?? 0));
-        this.fxLayer.schedule(turnTransitionDelay + (event.delay ?? 0), () =>
+        const destroyStartDelayMs = combatCutsceneActive
+          ? Math.max(turnTransitionDelay + (event.delay ?? 0), combatFollowThroughStartMs)
+          : turnTransitionDelay + (event.delay ?? 0);
+
+        this.unitLayer.scheduleDestroy(event.unitId, destroyStartDelayMs);
+        this.fxLayer.schedule(destroyStartDelayMs, () =>
           this.fxLayer.playDestroy(event, layout)
         );
       }
@@ -237,6 +244,9 @@ export const battleSceneRenderMethods = {
         const attackWindowMs = cutsceneStep?.windowMs ?? BATTLE_ATTACK_WINDOW_MS;
         const impactDelayMs =
           (cutsceneStep?.impactMs ?? 0) - (cutsceneStep?.startMs ?? 0) || BATTLE_ATTACK_IMPACT_DELAY_MS;
+        const destroyDelayMs = combatCutsceneActive
+          ? Math.max(attackWindowMs, combatFollowThroughStartMs - (cutsceneStep?.startMs ?? 0))
+          : attackWindowMs;
 
         this.unitLayer.playAttack(
           event.attackerId,
@@ -251,8 +261,8 @@ export const battleSceneRenderMethods = {
               }
 
               if (destroyEvent) {
-                this.unitLayer.scheduleDestroy(event.targetId, attackWindowMs);
-                this.fxLayer.schedule(attackWindowMs, () =>
+                this.unitLayer.scheduleDestroy(event.targetId, destroyDelayMs);
+                this.fxLayer.schedule(destroyDelayMs, () =>
                   this.fxLayer.playDestroy(destroyEvent, layout)
                 );
               }
@@ -302,7 +312,10 @@ export const battleSceneRenderMethods = {
 
     experienceEvents.forEach((event) => {
       this.fxLayer.schedule(
-        Math.max(event.startDelayMs ?? (turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS), combatCutsceneDuration),
+        Math.max(
+          event.startDelayMs ?? (turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS),
+          combatFollowThroughStartMs
+        ),
         () => this.fxLayer.playExperience(event, layout)
       );
     });

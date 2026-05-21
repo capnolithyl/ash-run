@@ -299,69 +299,69 @@ export class BattleFxLayer {
     const point = toWorldPoint(layout, event.x, event.y);
     const color = ownerColor(event.owner);
     const container = this.track(
-      this.scene.add.container(point.x, point.y - layout.cellSize * 1.02)
+      this.scene.add.container(point.x, point.y - layout.cellSize * 1.14)
     );
     container.setDepth(48);
 
-    const halo = this.scene.add.circle(0, 0, layout.cellSize * 0.26, color, 0.18);
+    const halo = this.scene.add.circle(0, 0, layout.cellSize * 0.34, color, 0.22);
     halo.setBlendMode(Phaser.BlendModes.ADD);
-    const flare = this.scene.add.circle(0, 0, layout.cellSize * 0.12, 0xfff6dd, 0.3);
+    const flare = this.scene.add.circle(0, 0, layout.cellSize * 0.17, 0xfff6dd, 0.34);
     flare.setBlendMode(Phaser.BlendModes.ADD);
     const title = this.scene.add
       .text(0, 0, "LEVEL UP!", {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
-        fontSize: `${Math.max(18, Math.floor(layout.cellSize * 0.28))}px`,
+        fontSize: `${Math.max(24, Math.floor(layout.cellSize * 0.38))}px`,
         fontStyle: "bold",
         color: "#fff6dd",
         stroke: "#1b0622",
         strokeThickness: 6,
-        letterSpacing: 1.8
+        letterSpacing: 2.6
       })
       .setOrigin(0.5);
-    title.setShadow(0, 0, "#ff5fd6", 22, false, true);
+    title.setShadow(0, 0, "#ff5fd6", 30, false, true);
     const subtitle = this.scene.add
       .text(0, layout.cellSize * 0.22, level ? `Lv ${level}` : "", {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
-        fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.16))}px`,
+        fontSize: `${Math.max(13, Math.floor(layout.cellSize * 0.19))}px`,
         color: "#ffd76b",
-        letterSpacing: 1.3
+        letterSpacing: 1.5
       })
       .setOrigin(0.5);
     subtitle.setAlpha(level ? 0.9 : 0);
 
     container.add([halo, flare, title, subtitle]);
-    container.setScale(0.72);
+    container.setScale(0.66);
     container.setAlpha(0);
 
     this.scene.tweens.add({
       targets: container,
       alpha: 1,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 180,
+      scaleX: 1.16,
+      scaleY: 1.16,
+      duration: 220,
       ease: "Back.Out"
     });
     this.scene.tweens.add({
       targets: halo,
       alpha: 0,
-      scale: 3.2,
-      duration: 620,
+      scale: 3.8,
+      duration: 860,
       ease: "Cubic.Out"
     });
     this.scene.tweens.add({
       targets: flare,
       alpha: 0,
-      scale: 4,
-      duration: 560,
+      scale: 4.8,
+      duration: 780,
       ease: "Sine.Out"
     });
 
     const exitTween = this.scene.tweens.add({
       targets: container,
       alpha: 0,
-      y: container.y - layout.cellSize * 0.22,
-      delay: 280,
-      duration: 360,
+      y: container.y - layout.cellSize * 0.28,
+      delay: 560,
+      duration: 460,
       ease: "Sine.Out"
     });
     destroyAfterTween(container, exitTween);

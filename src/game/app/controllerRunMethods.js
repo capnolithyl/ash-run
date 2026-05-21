@@ -1,4 +1,5 @@
 import {
+  BATTLE_POST_COMBAT_PAUSE_MS,
   BATTLE_FUNDS_GAIN_ANIMATION_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
   TURN_SIDES
@@ -377,11 +378,15 @@ export const controllerRunMethods = {
         await delay(100);
       }
 
+      const combatCutsceneDuration = this.state.battleUi.combatCutscene?.durationMs ?? 0;
       const stepDelay = getBattleSnapshotTransitionDurationMs(
         previousSnapshot,
-        this.state.battleSnapshot
+        this.state.battleSnapshot,
+        {
+          combatCutsceneDurationMs: combatCutsceneDuration,
+          postCombatDelayMs: combatCutsceneDuration > 0 ? BATTLE_POST_COMBAT_PAUSE_MS : 0
+        }
       );
-      const combatCutsceneDuration = this.state.battleUi.combatCutscene?.durationMs ?? 0;
       await delay(Math.max(stepDelay, combatCutsceneDuration));
     }
 

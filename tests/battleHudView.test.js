@@ -1065,7 +1065,9 @@ test("battle HUD renders the full level-up stat board, sprite art, and locked co
   assert.match(html, new RegExp(`data-level-up-key=\"${unit.id}-2-3\"`));
   assert.equal(countMatches(html, /data-level-up-stat=/g), 8);
   assert.match(html, /Level 2 to 3/);
-  assert.match(html, /data-level-up-display="maxHealth">101<\/strong>/);
+  assert.match(html, /data-level-up-display="maxHealth"[\s\S]*?>101<\/strong>/);
+  assert.match(html, /level-up-card__stats-head">Current<\/span>/);
+  assert.match(html, /level-up-card__stats-head">New<\/span>/);
   assert.match(html, /level-up-stat--active/);
   assert.match(html, /level-up-stat--pending/);
   assert.match(html, /level-up-stat--static/);
