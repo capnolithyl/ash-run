@@ -32,6 +32,20 @@ import {
   renderTargetIntelPanel
 } from "./battleHud/selectionPanels.js";
 
+const BATTLE_CHROME_GLOW_CYCLE_MS = 4200;
+const BATTLE_CHROME_SWEEP_CYCLE_MS = 6800;
+
+function getBattleChromeStyle(animationClockMs) {
+  const animationClock = Number.isFinite(animationClockMs) ? animationClockMs : 0;
+
+  return [
+    `--battle-chrome-glow-duration:${BATTLE_CHROME_GLOW_CYCLE_MS}ms`,
+    `--battle-chrome-sweep-duration:${BATTLE_CHROME_SWEEP_CYCLE_MS}ms`,
+    `--battle-chrome-glow-delay:${-Math.floor(animationClock % BATTLE_CHROME_GLOW_CYCLE_MS)}ms`,
+    `--battle-chrome-sweep-delay:${-Math.floor(animationClock % BATTLE_CHROME_SWEEP_CYCLE_MS)}ms`
+  ].join("; ");
+}
+
 function renderBattleMeta(battleSnapshot) {
   const mapName = battleSnapshot.map?.name ?? "Unknown Map";
   const turnLabel = battleSnapshot.turn?.number ?? 1;
@@ -232,11 +246,12 @@ export function renderBattleHudView(state, options = {}) {
     typeof performance !== "undefined" && typeof performance.now === "function"
       ? performance.now()
       : Date.now();
+  const battleChromeStyle = getBattleChromeStyle(commanderAnimationClockMs);
   const playerFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.PLAYER);
   const enemyFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.ENEMY);
 
   return `
-    <div class="battle-shell">
+    <div class="battle-shell battle-shell--animated-chrome" style="${battleChromeStyle}">
       <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
       <div class="battle-commanders">

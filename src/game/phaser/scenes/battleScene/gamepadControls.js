@@ -13,6 +13,10 @@ export function bindBattleSceneGamepadControls(scene) {
 export const battleSceneGamepadMethods = {
   update(time) {
     this.pollGamepadInput(time);
+
+    if (isBattleScreen(this.latestState) && this.gridLayer?.renderFrameOverlay) {
+      this.gridLayer.renderFrameOverlay(time);
+    }
   },
 
   pollGamepadInput(time) {

@@ -2,6 +2,8 @@ import Phaser from "phaser";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "../../content/terrain.js";
 import { BATTLEFIELD_ASSET_IDS, getBattlefieldAssetKey, getTerrainSpriteDefinition } from "../assets.js";
 
+const BATTLEFIELD_FRAME_ANIMATION_BUCKET_MS = 60;
+
 function getTerrainFrameIndices(scene, animationSpec) {
   const texture = scene.textures.get(animationSpec?.key);
 
@@ -90,6 +92,8 @@ export class GridLayer {
     this.overlayGraphics.setDepth(6);
     this.terrainSprites = [];
     this.terrainRenderKey = null;
+    this.cachedFrameState = null;
+    this.lastFrameAnimationBucket = null;
   }
 
   clear() {
@@ -100,6 +104,8 @@ export class GridLayer {
     this.graphics.clear();
     this.overlayGraphics.clear();
     this.clearTerrainSprites();
+    this.cachedFrameState = null;
+    this.lastFrameAnimationBucket = null;
   }
 
   ensureBackgroundImage() {
@@ -126,6 +132,14 @@ export class GridLayer {
     this.terrainSprites.forEach((sprite) => sprite.destroy());
     this.terrainSprites = [];
     this.terrainRenderKey = null;
+  }
+
+  prefersReducedMotion() {
+    return (
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
   }
 
   getTerrainRenderKey(snapshot, layout) {
@@ -190,6 +204,122 @@ export class GridLayer {
     this.terrainRenderKey = renderKey;
   }
 
+  renderFrameOverlay(timeMs = 0, force = false) {
+    if (!this.cachedFrameState) {
+      this.glowGraphics.clear();
+      this.overlayGraphics.clear();
+      return;
+    }
+
+    const reducedMotion = this.prefersReducedMotion();
+    const animationBucket = reducedMotion
+      ? 0
+      : Math.floor(Math.max(0, Number(timeMs) || 0) / BATTLEFIELD_FRAME_ANIMATION_BUCKET_MS);
+
+    if (!force && animationBucket === this.lastFrameAnimationBucket) {
+      return;
+    }
+
+    this.lastFrameAnimationBucket = animationBucket;
+
+    const {
+      useBattlefieldBackdrop,
+      boardLeft,
+      boardTop,
+      boardWidth,
+      boardHeight,
+      frameLeft,
+      frameTop,
+      frameWidth,
+      frameHeight,
+      frameRadius,
+      accentColor,
+      secondaryAccentColor,
+      gridGlowColor,
+      cellSize
+    } = this.cachedFrameState;
+    const resolvedTimeMs = Math.max(0, Number(timeMs) || 0);
+    const glowPulse = reducedMotion ? 0 : (Math.sin(resolvedTimeMs / 760) + 1) / 2;
+    const borderPulse = reducedMotion ? 0 : (Math.sin(resolvedTimeMs / 1120 + Math.PI / 4) + 1) / 2;
+
+    this.glowGraphics.clear();
+    this.overlayGraphics.clear();
+
+    this.glowGraphics.fillStyle(
+      0xff4fd8,
+      Phaser.Math.Linear(0.032, useBattlefieldBackdrop ? 0.072 : 0.058, glowPulse)
+    );
+    this.glowGraphics.fillRoundedRect(
+      boardLeft - 18,
+      boardTop - 18,
+      boardWidth + 36,
+      boardHeight + 36,
+      24
+    );
+    this.glowGraphics.lineStyle(
+      4,
+      accentColor,
+      Phaser.Math.Linear(useBattlefieldBackdrop ? 0.08 : 0.06, useBattlefieldBackdrop ? 0.16 : 0.11, glowPulse)
+    );
+    this.glowGraphics.strokeRoundedRect(
+      frameLeft - 6,
+      frameTop - 6,
+      frameWidth + 12,
+      frameHeight + 12,
+      frameRadius + 4
+    );
+
+    this.overlayGraphics.lineStyle(
+      3,
+      accentColor,
+      Phaser.Math.Linear(useBattlefieldBackdrop ? 0.24 : 0.2, useBattlefieldBackdrop ? 0.38 : 0.3, borderPulse)
+    );
+    this.overlayGraphics.strokeRoundedRect(frameLeft, frameTop, frameWidth, frameHeight, frameRadius);
+    this.overlayGraphics.lineStyle(
+      1.5,
+      secondaryAccentColor,
+      Phaser.Math.Linear(useBattlefieldBackdrop ? 0.3 : 0.24, useBattlefieldBackdrop ? 0.44 : 0.34, borderPulse)
+    );
+    this.overlayGraphics.strokeRoundedRect(
+      frameLeft + 4,
+      frameTop + 4,
+      frameWidth - 8,
+      frameHeight - 8,
+      frameRadius - 4
+    );
+    this.overlayGraphics.lineStyle(1.5, gridGlowColor, Phaser.Math.Linear(0.24, 0.34, glowPulse));
+    this.overlayGraphics.strokeRoundedRect(frameLeft + 8, frameTop + 8, frameWidth - 16, frameHeight - 16, 12);
+
+    const cornerLength = Math.max(18, Math.round(cellSize * 0.75));
+    const outerLeft = frameLeft + 6;
+    const outerRight = frameLeft + frameWidth - 6;
+    const outerTop = frameTop + 6;
+    const outerBottom = frameTop + frameHeight - 6;
+
+    this.overlayGraphics.lineStyle(
+      4,
+      secondaryAccentColor,
+      Phaser.Math.Linear(useBattlefieldBackdrop ? 0.28 : 0.24, useBattlefieldBackdrop ? 0.4 : 0.32, glowPulse)
+    );
+    this.overlayGraphics.beginPath();
+    this.overlayGraphics.moveTo(outerLeft, outerTop + cornerLength);
+    this.overlayGraphics.lineTo(outerLeft, outerTop);
+    this.overlayGraphics.lineTo(outerLeft + cornerLength, outerTop);
+
+    this.overlayGraphics.moveTo(outerRight - cornerLength, outerTop);
+    this.overlayGraphics.lineTo(outerRight, outerTop);
+    this.overlayGraphics.lineTo(outerRight, outerTop + cornerLength);
+
+    this.overlayGraphics.moveTo(outerLeft, outerBottom - cornerLength);
+    this.overlayGraphics.lineTo(outerLeft, outerBottom);
+    this.overlayGraphics.lineTo(outerLeft + cornerLength, outerBottom);
+
+    this.overlayGraphics.moveTo(outerRight - cornerLength, outerBottom);
+    this.overlayGraphics.lineTo(outerRight, outerBottom);
+    this.overlayGraphics.lineTo(outerRight, outerBottom - cornerLength);
+    this.overlayGraphics.strokePath();
+  }
+
   render(snapshot, layout, options = {}) {
     const theme = MAP_THEME_PALETTES[snapshot.map.theme];
     const useBattlefieldBackdrop = options.useBattlefieldBackdrop === true;
@@ -232,60 +362,8 @@ export class GridLayer {
       boardHeight + 36,
       24
     );
-    this.glowGraphics.lineStyle(4, accentColor, useBattlefieldBackdrop ? 0.08 : 0.06);
-    this.glowGraphics.strokeRoundedRect(
-      frameLeft - 6,
-      frameTop - 6,
-      frameWidth + 12,
-      frameHeight + 12,
-      frameRadius + 4
-    );
 
     this.renderTerrainSprites(snapshot, layout);
-
-    this.overlayGraphics.lineStyle(3, accentColor, useBattlefieldBackdrop ? 0.26 : 0.2);
-    this.overlayGraphics.strokeRoundedRect(
-      frameLeft,
-      frameTop,
-      frameWidth,
-      frameHeight,
-      frameRadius
-    );
-    this.overlayGraphics.lineStyle(1.5, secondaryAccentColor, useBattlefieldBackdrop ? 0.34 : 0.24);
-    this.overlayGraphics.strokeRoundedRect(
-      frameLeft + 4,
-      frameTop + 4,
-      frameWidth - 8,
-      frameHeight - 8,
-      frameRadius - 4
-    );
-    this.overlayGraphics.lineStyle(1.5, Phaser.Display.Color.HexStringToColor(theme.gridGlow).color, 0.28);
-    this.overlayGraphics.strokeRoundedRect(frameLeft + 8, frameTop + 8, frameWidth - 16, frameHeight - 16, 12);
-
-    const cornerLength = Math.max(18, Math.round(layout.cellSize * 0.75));
-    const outerLeft = frameLeft + 6;
-    const outerRight = frameLeft + frameWidth - 6;
-    const outerTop = frameTop + 6;
-    const outerBottom = frameTop + frameHeight - 6;
-
-    this.overlayGraphics.lineStyle(4, secondaryAccentColor, useBattlefieldBackdrop ? 0.32 : 0.24);
-    this.overlayGraphics.beginPath();
-    this.overlayGraphics.moveTo(outerLeft, outerTop + cornerLength);
-    this.overlayGraphics.lineTo(outerLeft, outerTop);
-    this.overlayGraphics.lineTo(outerLeft + cornerLength, outerTop);
-
-    this.overlayGraphics.moveTo(outerRight - cornerLength, outerTop);
-    this.overlayGraphics.lineTo(outerRight, outerTop);
-    this.overlayGraphics.lineTo(outerRight, outerTop + cornerLength);
-
-    this.overlayGraphics.moveTo(outerLeft, outerBottom - cornerLength);
-    this.overlayGraphics.lineTo(outerLeft, outerBottom);
-    this.overlayGraphics.lineTo(outerLeft + cornerLength, outerBottom);
-
-    this.overlayGraphics.moveTo(outerRight - cornerLength, outerBottom);
-    this.overlayGraphics.lineTo(outerRight, outerBottom);
-    this.overlayGraphics.lineTo(outerRight, outerBottom - cornerLength);
-    this.overlayGraphics.strokePath();
 
     for (let row = 0; row < snapshot.map.height; row += 1) {
       for (let column = 0; column < snapshot.map.width; column += 1) {
@@ -297,5 +375,24 @@ export class GridLayer {
         this.graphics.fillRect(x, y, layout.cellSize, layout.cellSize);
       }
     }
+
+    this.cachedFrameState = {
+      useBattlefieldBackdrop,
+      boardLeft,
+      boardTop,
+      boardWidth,
+      boardHeight,
+      frameLeft,
+      frameTop,
+      frameWidth,
+      frameHeight,
+      frameRadius,
+      accentColor,
+      secondaryAccentColor,
+      gridGlowColor: Phaser.Display.Color.HexStringToColor(theme.gridGlow).color,
+      cellSize: layout.cellSize
+    };
+    this.lastFrameAnimationBucket = null;
+    this.renderFrameOverlay(options.animationTimeMs ?? 0, true);
   }
 }

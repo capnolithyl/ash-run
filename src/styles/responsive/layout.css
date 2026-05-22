@@ -1038,6 +1038,8 @@
   }
 
   .battle-footer-actions {
+    --battle-shell-color: rgba(255, 79, 216, 0.26);
+    --battle-shell-accent: rgba(255, 138, 61, 0.24);
     position: absolute;
     left: var(--screen-edge-gutter);
     right: var(--screen-edge-gutter);
@@ -1068,6 +1070,60 @@
       0 0 0 1px rgba(255, 79, 216, 0.08),
       0 18px 46px rgba(5, 1, 14, 0.62);
     backdrop-filter: blur(16px);
+  }
+
+  .battle-footer-actions::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .battle-footer-actions::after {
+    z-index: 0;
+    inset: 0.18rem;
+    padding: 1px;
+    border-radius: calc(1rem - 0.18rem);
+    background:
+      linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--battle-shell-color) 38%, transparent) 16%,
+        rgba(255, 255, 255, 0.1) 24%,
+        transparent 34%,
+        transparent 64%,
+        rgba(255, 255, 255, 0.08) 74%,
+        color-mix(in srgb, var(--battle-shell-accent) 44%, transparent) 86%,
+        transparent 100%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--battle-shell-color) 54%, rgba(255, 255, 255, 0.08)),
+        color-mix(in srgb, var(--battle-shell-accent) 58%, rgba(255, 255, 255, 0.06))
+      );
+    background-size: 220% 100%, 100% 100%;
+    background-position: 18% 50%, 50% 50%;
+    background-repeat: no-repeat;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    opacity: 0.42;
+    animation:
+      battle-chrome-border-sweep var(--battle-chrome-sweep-duration, 6800ms) linear infinite,
+      battle-chrome-glow-breathe var(--battle-chrome-glow-duration, 4200ms) ease-in-out infinite;
+    animation-delay:
+      var(--battle-chrome-sweep-delay, 0ms),
+      var(--battle-chrome-glow-delay, 0ms);
+  }
+
+  .battle-footer-actions > * {
+    position: relative;
+    z-index: 1;
   }
 
   .battle-footer-actions .battle-footer-button {
@@ -1270,6 +1326,8 @@
   }
 
   .battle-compact-sheet {
+    --battle-shell-color: rgba(255, 79, 216, 0.24);
+    --battle-shell-accent: rgba(255, 138, 61, 0.22);
     position: absolute;
     left: var(--screen-edge-gutter);
     right: var(--screen-edge-gutter);

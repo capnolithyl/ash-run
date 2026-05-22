@@ -4,6 +4,10 @@
   position: relative;
   min-height: 100%;
   overflow: hidden;
+  --battle-chrome-glow-duration: 4200ms;
+  --battle-chrome-sweep-duration: 6800ms;
+  --battle-chrome-glow-delay: 0ms;
+  --battle-chrome-sweep-delay: 0ms;
   --battle-desktop-inset: clamp(1rem, 1.25vw, 1.45rem);
   --battle-desktop-gap: clamp(1rem, 1.15vw, 1.35rem);
   --battle-desktop-left-width: clamp(17rem, 18vw, 18.75rem);
@@ -129,9 +133,42 @@
 .battle-side-panel::after {
   z-index: 0;
   inset: 0.18rem;
-  border: 1px solid
-    color-mix(in srgb, var(--battle-side-color) 46%, rgba(255, 255, 255, 0.08));
-  opacity: 0.82;
+  padding: 1px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--battle-side-color) 18%, transparent) 16%,
+      rgba(255, 255, 255, 0.1) 24%,
+      transparent 34%,
+      transparent 64%,
+      rgba(255, 255, 255, 0.08) 74%,
+      color-mix(in srgb, var(--battle-side-accent) 16%, transparent) 86%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--battle-side-color) 44%, rgba(255, 255, 255, 0.08)),
+      color-mix(in srgb, var(--battle-side-accent) 48%, rgba(255, 255, 255, 0.06))
+    );
+  background-size: 220% 100%, 100% 100%;
+  background-position: 18% 50%, 50% 50%;
+  background-repeat: no-repeat;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.44;
+  animation:
+    battle-chrome-border-sweep var(--battle-chrome-sweep-duration, 6800ms) linear infinite,
+    battle-chrome-glow-breathe var(--battle-chrome-glow-duration, 4200ms) ease-in-out infinite;
+  animation-delay:
+    var(--battle-chrome-sweep-delay, 0ms),
+    var(--battle-chrome-glow-delay, 0ms);
 }
 
 .battle-side-panel--selected {
@@ -250,12 +287,15 @@
   padding: 0;
   border: 0;
   border-radius: 0;
+  isolation: isolate;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
 }
 
 .battle-footer-meta {
+  --battle-shell-color: rgba(255, 79, 216, 0.26);
+  --battle-shell-accent: rgba(255, 138, 61, 0.22);
   position: absolute;
   left: var(--battle-desktop-inset);
   bottom: max(0.85rem, env(safe-area-inset-bottom));
@@ -264,6 +304,7 @@
   align-items: stretch;
   gap: 0;
   padding: 0.28rem;
+  isolation: isolate;
   border: 1px solid rgba(255, 79, 216, 0.24);
   background:
     linear-gradient(
@@ -292,6 +333,63 @@
     0.92rem 100%,
     0 calc(100% - 0.92rem)
   );
+}
+
+.battle-footer-meta::after,
+.battle-compact-sheet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.battle-footer-meta::after,
+.battle-compact-sheet::after {
+  z-index: 0;
+  inset: 0.18rem;
+  padding: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--battle-shell-color) 38%, transparent) 16%,
+      rgba(255, 255, 255, 0.1) 24%,
+      transparent 34%,
+      transparent 64%,
+      rgba(255, 255, 255, 0.08) 74%,
+      color-mix(in srgb, var(--battle-shell-accent) 44%, transparent) 86%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--battle-shell-color) 54%, rgba(255, 255, 255, 0.08)),
+      color-mix(in srgb, var(--battle-shell-accent) 58%, rgba(255, 255, 255, 0.06))
+    );
+  background-size: 220% 100%, 100% 100%;
+  background-position: 18% 50%, 50% 50%;
+  background-repeat: no-repeat;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.42;
+  animation:
+    battle-chrome-border-sweep var(--battle-chrome-sweep-duration, 6800ms) linear infinite,
+    battle-chrome-glow-breathe var(--battle-chrome-glow-duration, 4200ms) ease-in-out infinite;
+  animation-delay:
+    var(--battle-chrome-sweep-delay, 0ms),
+    var(--battle-chrome-glow-delay, 0ms);
+}
+
+.battle-footer-meta > *,
+.battle-compact-sheet > * {
+  position: relative;
+  z-index: 1;
 }
 
 .battle-footer-meta__item {
@@ -554,5 +652,14 @@
 
 .battle-rail--right::before {
   inset: 0 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-shell--animated-chrome .battle-side-panel::after,
+  .battle-shell--animated-chrome .battle-footer-meta::after,
+  .battle-shell--animated-chrome .battle-compact-sheet::after,
+  .battle-shell--animated-chrome .battle-footer-actions::after {
+    animation: none;
+  }
 }
 

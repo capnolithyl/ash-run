@@ -61,6 +61,10 @@ function getBattleSidePanel(html, panelModifierClass) {
   );
 }
 
+function getBattleShellOpenTag(html) {
+  return html.match(/<div class="battle-shell[^"]*" style="[^"]*">/)?.[0] ?? "";
+}
+
 test("battle HUD shows hovered enemy stats while targeting", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 2);
@@ -176,9 +180,15 @@ test("battle HUD replaces unload command menu with a cancellable unload prompt",
 test("battle HUD shows compact commander strips with hover-only commander tooltips and no funds", () => {
   const battleState = createTestBattleState();
   const html = renderHudForBattleState(battleState);
+  const battleShellTag = getBattleShellOpenTag(html);
 
   assert.match(html, /assets\/img\/commanders\/viper\/Viper%20-%20Portrait\.png/);
   assert.match(html, /assets\/img\/commanders\/rook\/Rook%20-%20Portrait\.png/);
+  assert.match(battleShellTag, /class="battle-shell battle-shell--animated-chrome"/);
+  assert.match(battleShellTag, /--battle-chrome-glow-duration:4200ms/);
+  assert.match(battleShellTag, /--battle-chrome-sweep-duration:6800ms/);
+  assert.match(battleShellTag, /--battle-chrome-glow-delay:-?\d+ms/);
+  assert.match(battleShellTag, /--battle-chrome-sweep-delay:-?\d+ms/);
   assert.match(html, /battle-commanders[\s\S]*?commander-panel--player[\s\S]*?<h2>Viper<\/h2>/);
   assert.match(html, /battle-commanders[\s\S]*?commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>/);
   assert.equal(countMatches(html, /role="tooltip"/g), 4);
