@@ -360,6 +360,97 @@
   }
 }
 
+@keyframes power-overlay-orbit {
+  0% {
+    opacity: 0;
+    transform: translate3d(-1.4rem, 0.8rem, 0) scale(0.88);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  78% {
+    opacity: 0.9;
+    transform: translate3d(1.1rem, -0.35rem, 0) scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(1.7rem, -0.8rem, 0) scale(1.14);
+  }
+}
+
+@keyframes power-overlay-scan {
+  0% {
+    opacity: 0;
+    transform: translate3d(30%, 1.2rem, 0) rotate(-12deg) scaleX(0.84);
+  }
+
+  28% {
+    opacity: 0.86;
+  }
+
+  76% {
+    opacity: 0.76;
+    transform: translate3d(-18%, -1.3rem, 0) rotate(-12deg) scaleX(1.12);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(-30%, -1.7rem, 0) rotate(-12deg) scaleX(1.2);
+  }
+}
+
+@keyframes power-portrait-surge {
+  0% {
+    opacity: 0;
+    transform: scale(1.16) translateY(0.85rem);
+  }
+
+  16% {
+    opacity: 1;
+    transform: scale(1.08) translateY(0.16rem);
+  }
+
+  78% {
+    opacity: 1;
+    transform: scale(1.06) translateY(0.05rem);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.1) translateY(-0.3rem);
+  }
+}
+
+@keyframes power-title-slam {
+  0% {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.94);
+    letter-spacing: 0.12em;
+  }
+
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    letter-spacing: 0.03em;
+  }
+
+  82% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    letter-spacing: 0.02em;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-0.42rem) scale(1.02);
+    letter-spacing: 0.05em;
+  }
+}
+
 @keyframes battle-chrome-glow-breathe {
   0%,
   100% {

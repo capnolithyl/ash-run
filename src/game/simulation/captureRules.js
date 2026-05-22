@@ -24,6 +24,7 @@ export function captureBuildingForUnit(state, unit, building) {
   building.owner = unit.owner;
   if (
     state.mode !== BATTLE_MODES.RUN &&
+    state.mode !== BATTLE_MODES.TUTORIAL &&
     previousOwner !== unit.owner &&
     building.type === BUILDING_KEYS.SECTOR
   ) {

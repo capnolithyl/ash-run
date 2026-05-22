@@ -4,13 +4,12 @@ import {
   SCREEN_IDS,
   TURN_SIDES
 } from "../core/constants.js";
-import { COMMANDERS } from "../content/commanders.js";
+import { getCommanderPortraitImageUrl } from "../content/commanderArt.js";
 import {
   BATTLE_CONTEXT_ACTION_DEDUPE_MS,
   RUN_CAPTURE_EXPERIENCE_REWARD,
   RUN_CAPTURE_INTEL_REWARD,
-  delay,
-  getCommanderPowerTitle
+  delay
 } from "./controllerShared.js";
 import { addRunIntel, createEmptyBattleRewardLedger } from "../state/runFactory.js";
 
@@ -35,6 +34,13 @@ function getPendingCaptureRewardContext(controller) {
     unitId: unit.id,
     buildingId: building.id
   };
+}
+
+function getUnitIdAt(controller, x, y) {
+  const battleState = controller.battleSystem?.state ?? controller.battleSystem?.getStateForSave?.();
+  return [...(battleState?.player?.units ?? []), ...(battleState?.enemy?.units ?? [])].find(
+    (unit) => unit.x === x && unit.y === y && unit.current?.hp > 0
+  )?.id ?? null;
 }
 
 export const controllerBattleMethods = {
@@ -105,11 +111,9 @@ export const controllerBattleMethods = {
   },
 
   async playPowerOverlay(side) {
-    const battleState = this.battleSystem?.getStateForSave();
-    const commanderId = battleState?.[side]?.commanderId;
-    const commander = COMMANDERS.find((candidate) => candidate.id === commanderId);
+    const powerResult = this.battleSystem?.getLastPowerResult?.() ?? null;
 
-    if (!commander) {
+    if (!powerResult || powerResult.side !== side) {
       this.syncBattleState();
       return;
     }
@@ -117,10 +121,11 @@ export const controllerBattleMethods = {
     const overlay = {
       id: `power-${++this.battlePowerOverlaySequence}`,
       side,
-      commanderName: commander.name,
-      title: getCommanderPowerTitle(commander),
-      summary: commander.active.summary,
-      accent: commander.accent
+      commanderName: powerResult.commanderName,
+      commanderTitle: powerResult.commanderTitle,
+      powerName: powerResult.powerName,
+      portraitImageUrl: getCommanderPortraitImageUrl(powerResult.commanderId),
+      accent: powerResult.accent
     };
 
     this.state.battleUi.powerOverlay = overlay;
@@ -178,9 +183,17 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const targetUnitId = getUnitIdAt(this, x, y);
+
+    if (!this.guardTutorialBattleAction?.("tile", { x, y, targetUnitId })) {
+      return;
+    }
+
     const changed = this.battleSystem.handleTileSelection(x, y);
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("tile", { x, y, targetUnitId }, changed);
+
       if (this.battleSystem.isEnemyTurnActive?.()) {
         this.syncBattleState({ allowEnemyFocusDuringEnemyTurn: true });
         return;
@@ -234,6 +247,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (this.isTutorialBattle?.()) {
+      this.showTutorialNudge?.("Recruitment is covered after the sim. This guided match uses a fixed squad.");
+      return;
+    }
+
     if (this.state.runState && !this.state.debugMode) {
       this.showBattleNotice({
         title: "Run Rules",
@@ -266,6 +284,10 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("select-next-unit")) {
+      return;
+    }
+
     const changed = this.battleSystem.selectNextReadyUnit();
 
     if (changed) {
@@ -275,6 +297,10 @@ export const controllerBattleMethods = {
 
   async waitWithSelectedUnit() {
     if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    if (!this.guardTutorialBattleAction?.("wait-unit")) {
       return;
     }
 
@@ -290,10 +316,16 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("capture-building")) {
+      return;
+    }
+
     const captureRewardContext = getPendingCaptureRewardContext(this);
     const changed = this.battleSystem.captureWithPendingUnit();
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("capture-building", {}, changed);
+
       if (captureRewardContext && !this.state.debugMode) {
         const rewardLedger = this.battleSystem.state.rewardLedger ??= createEmptyBattleRewardLedger();
         const rewardAlreadyClaimed = rewardLedger.rewardedCaptureBuildingIds.includes(
@@ -412,15 +444,24 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("begin-attack")) {
+      return;
+    }
+
     const changed = this.battleSystem.beginPendingAttack();
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("begin-attack", {}, changed);
       await this.persistCurrentRun();
     }
   },
 
   async cancelSelectedAttack() {
     if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    if (!this.guardTutorialBattleAction?.("cancel-attack")) {
       return;
     }
 
@@ -436,6 +477,10 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("redo-move")) {
+      return;
+    }
+
     const changed = this.battleSystem.redoPendingMove();
 
     if (changed) {
@@ -445,6 +490,10 @@ export const controllerBattleMethods = {
 
   async endTurn() {
     if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    if (!this.guardTutorialBattleAction?.("end-turn")) {
       return;
     }
 
@@ -459,6 +508,8 @@ export const controllerBattleMethods = {
 
     if (this.battleSystem.isEnemyTurnActive()) {
       await this.runEnemyTurnSequence();
+      await this.handleTutorialBattleActionResult?.("end-turn", {}, changed);
+      this.syncBattleState();
       return;
     }
 
@@ -466,6 +517,7 @@ export const controllerBattleMethods = {
       this.battleSystem.finalizeEnemyTurn();
     }
 
+    await this.handleTutorialBattleActionResult?.("end-turn", {}, changed);
     await this.persistCurrentRun();
   },
 
@@ -478,6 +530,10 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("activate-power")) {
+      return;
+    }
+
     if (this.state.debugMode) {
       this.battleSystem.setDebugCharge(TURN_SIDES.PLAYER, 9999);
     }
@@ -486,6 +542,7 @@ export const controllerBattleMethods = {
 
     if (changed) {
       await this.playPowerOverlay(TURN_SIDES.PLAYER);
+      await this.handleTutorialBattleActionResult?.("activate-power", {}, changed);
       await this.persistCurrentRun();
       return;
     }

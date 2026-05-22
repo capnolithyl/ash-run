@@ -234,6 +234,8 @@ export class UnitLayer {
       afterMoveCallbacks: [],
       awaitingDeploy: false,
       awaitingDestroy: false,
+      awaitingRestore: false,
+      awaitingPowerEffect: false,
       destroyTimer: null,
       animationTimer: null,
       transportIcon,
@@ -525,6 +527,8 @@ export class UnitLayer {
     entity.queuedAttack = null;
     entity.afterMoveCallbacks = [];
     entity.awaitingDestroy = false;
+    entity.awaitingRestore = false;
+    entity.awaitingPowerEffect = false;
     this.stopMoveTween(entity);
     this.stopDestroyTimer(entity);
     this.stopAnimationTimer(entity);
@@ -613,6 +617,41 @@ export class UnitLayer {
       duration: 460,
       ease: "Back.Out"
     });
+  }
+
+  animateDisplayedHp(entity, duration = 220, ease = "Sine.Out") {
+    const pendingHp = entity.pendingHp;
+
+    if (!Number.isFinite(pendingHp) || pendingHp === entity.displayedHp) {
+      return false;
+    }
+
+    this.scene.tweens.addCounter({
+      from: entity.displayedHp,
+      to: pendingHp,
+      duration,
+      ease,
+      onUpdate: (tween) => {
+        entity.displayedHp = tween.getValue();
+        this.drawHealthMeter(entity);
+      },
+      onComplete: () => {
+        entity.displayedHp = pendingHp;
+        this.drawHealthMeter(entity);
+      }
+    });
+
+    return true;
+  }
+
+  preparePowerEffect(unitId) {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    entity.awaitingPowerEffect = true;
   }
 
   playAttack(unitId, directionX = 0, directionY = 0, callbacks = {}) {
@@ -723,28 +762,10 @@ export class UnitLayer {
       return;
     }
 
+    entity.awaitingRestore = false;
+    entity.awaitingPowerEffect = false;
     this.stopEffectTweens(entity);
-    const damageFromHp = entity.pendingHp;
-
-    if (Number.isFinite(damageFromHp) && damageFromHp !== entity.displayedHp) {
-      const hpTweenState = { hp: entity.displayedHp };
-
-      this.scene.tweens.addCounter({
-        from: entity.displayedHp,
-        to: damageFromHp,
-        duration: 220,
-        ease: "Sine.Out",
-        onUpdate: (tween) => {
-          hpTweenState.hp = tween.getValue();
-          entity.displayedHp = hpTweenState.hp;
-          this.drawHealthMeter(entity);
-        },
-        onComplete: () => {
-          entity.displayedHp = damageFromHp;
-          this.drawHealthMeter(entity);
-        }
-      });
-    }
+    this.animateDisplayedHp(entity);
 
     entity.aura.setAlpha(0.5);
     entity.glow.setAlpha(0.3);
@@ -777,23 +798,131 @@ export class UnitLayer {
     }));
   }
 
-  playHeal(unitId) {
+  playRestore(unitId, { tone = "heal" } = {}) {
     const entity = this.entities.get(unitId);
 
     if (!entity) {
       return;
     }
 
+    entity.awaitingRestore = false;
+    entity.awaitingPowerEffect = false;
     this.stopEffectTweens(entity);
+    this.animateDisplayedHp(entity, tone === "power-heal" ? 320 : 260, "Sine.Out");
 
-    entity.glow.setAlpha(0.28);
-    entity.aura.setAlpha(0.38);
+    const isPowerHeal = tone === "power-heal";
+    entity.glow.setAlpha(isPowerHeal ? 0.34 : 0.28);
+    entity.aura.setAlpha(isPowerHeal ? 0.44 : 0.38);
     this.trackEffectTween(entity, this.scene.tweens.add({
       targets: [entity.glow, entity.aura],
-      scale: 1.42,
-      duration: 240,
+      scale: isPowerHeal ? 1.65 : 1.42,
+      duration: isPowerHeal ? 320 : 240,
       yoyo: true,
       ease: "Sine.InOut",
+      onComplete: () => {
+        this.resetEntityEffects(entity);
+      }
+    }));
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.container,
+      y: entity.targetY - (isPowerHeal ? this.cellSize * 0.1 : this.cellSize * 0.06),
+      duration: isPowerHeal ? 180 : 140,
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        entity.container.y = entity.targetY;
+      }
+    }));
+  }
+
+  playHeal(unitId) {
+    this.playRestore(unitId, { tone: "heal" });
+  }
+
+  playPowerPulse(unitId, tone = "boost") {
+    const entity = this.entities.get(unitId);
+
+    if (!entity) {
+      return;
+    }
+
+    entity.awaitingPowerEffect = false;
+    this.stopEffectTweens(entity);
+
+    const config = {
+      boost: {
+        containerOffset: this.cellSize * 0.09,
+        visualScale: 1.14,
+        auraScale: 1.6,
+        auraAlpha: 0.46,
+        duration: 260
+      },
+      shield: {
+        containerOffset: this.cellSize * 0.06,
+        visualScale: 1.1,
+        auraScale: 1.72,
+        auraAlpha: 0.42,
+        duration: 300
+      },
+      disrupt: {
+        containerOffset: this.cellSize * 0.05,
+        visualScale: 1.08,
+        auraScale: 1.4,
+        auraAlpha: 0.36,
+        duration: 220
+      },
+      fortune: {
+        containerOffset: this.cellSize * 0.07,
+        visualScale: 1.16,
+        auraScale: 1.68,
+        auraAlpha: 0.48,
+        duration: 280
+      },
+      deploy: {
+        containerOffset: this.cellSize * 0.08,
+        visualScale: 1.12,
+        auraScale: 1.52,
+        auraAlpha: 0.44,
+        duration: 280
+      }
+    }[tone] ?? {
+      containerOffset: this.cellSize * 0.08,
+      visualScale: 1.12,
+      auraScale: 1.54,
+      auraAlpha: 0.42,
+      duration: 260
+    };
+
+    entity.glow.setAlpha(config.auraAlpha * 0.72);
+    entity.aura.setAlpha(config.auraAlpha);
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.container,
+      y: entity.targetY - config.containerOffset,
+      duration: config.duration,
+      yoyo: true,
+      ease: tone === "disrupt" ? "Sine.InOut" : "Back.Out",
+      onComplete: () => {
+        entity.container.y = entity.targetY;
+      }
+    }));
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: entity.visual,
+      scaleX: entity.visualBaseScaleX * config.visualScale,
+      scaleY: entity.visualBaseScaleY * config.visualScale,
+      duration: Math.round(config.duration * 0.72),
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        this.setVisualScale(entity, 1);
+      }
+    }));
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: [entity.glow, entity.aura],
+      scale: config.auraScale,
+      alpha: { from: config.auraAlpha, to: Math.max(0.16, config.auraAlpha * 0.45) },
+      duration: config.duration,
+      yoyo: true,
+      ease: tone === "disrupt" ? "Sine.InOut" : "Cubic.Out",
       onComplete: () => {
         this.resetEntityEffects(entity);
       }
@@ -816,6 +945,7 @@ export class UnitLayer {
     const deployUnitIds = lifecycleEvents.deployUnitIds ?? new Set();
     const destroyUnitIds = lifecycleEvents.destroyUnitIds ?? new Set();
     const damageByUnitId = lifecycleEvents.damageByUnitId ?? new Map();
+    const restoreByUnitId = lifecycleEvents.restoreByUnitId ?? new Map();
 
     for (const unit of units) {
       activeIds.add(unit.id);
@@ -848,10 +978,23 @@ export class UnitLayer {
       }
       entity.fallbackLabel?.setText(unit.name.slice(0, 2).toUpperCase());
       const pendingDamage = damageByUnitId.get(unit.id);
+      const pendingRestore = restoreByUnitId.get(unit.id);
       entity.maxHealth = unit.stats.maxHealth;
-      entity.pendingHp = pendingDamage ? pendingDamage.nextHp : unit.current.hp;
+      entity.pendingHp =
+        pendingDamage?.nextHp ??
+        pendingRestore?.nextHp ??
+        unit.current.hp;
 
-      if (!pendingDamage) {
+      if (pendingRestore) {
+        entity.awaitingRestore = true;
+      }
+
+      if (
+        !pendingDamage &&
+        !pendingRestore &&
+        !entity.awaitingRestore &&
+        !entity.awaitingPowerEffect
+      ) {
         entity.displayedHp = unit.current.hp;
       }
 

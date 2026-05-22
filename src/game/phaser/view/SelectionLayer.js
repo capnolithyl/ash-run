@@ -162,6 +162,101 @@ function drawObjectiveMarker(graphics, layout, marker) {
     .setDepth(CURSOR_DEPTH + 1);
 }
 
+function getTutorialHighlightColor(tone) {
+  switch (tone) {
+    case "ally":
+      return 0x66ffbf;
+    case "danger":
+      return 0xff6f78;
+    case "goal":
+      return 0xffc45a;
+    default:
+      return 0x7fd8ff;
+  }
+}
+
+function resolveTutorialHighlight(snapshot, highlight) {
+  if (!highlight) {
+    return null;
+  }
+
+  if (highlight.type === "tile" && Number.isInteger(highlight.x) && Number.isInteger(highlight.y)) {
+    return {
+      ...highlight,
+      x: highlight.x,
+      y: highlight.y
+    };
+  }
+
+  if (highlight.type === "unit") {
+    const unit = [...(snapshot.player?.units ?? []), ...(snapshot.enemy?.units ?? [])].find(
+      (candidate) => candidate.id === highlight.id
+    );
+
+    return unit
+      ? {
+          ...highlight,
+          x: unit.x,
+          y: unit.y
+        }
+      : null;
+  }
+
+  if (highlight.type === "building") {
+    const building = (snapshot.map?.buildings ?? []).find((candidate) => candidate.id === highlight.id);
+
+    return building
+      ? {
+          ...highlight,
+          x: building.x,
+          y: building.y
+        }
+      : null;
+  }
+
+  return null;
+}
+
+function drawTutorialHighlight(graphics, layout, snapshot, highlight, index) {
+  const resolved = resolveTutorialHighlight(snapshot, highlight);
+
+  if (!resolved) {
+    return null;
+  }
+
+  const color = getTutorialHighlightColor(resolved.tone);
+  const x = layout.originX + resolved.x * layout.cellSize;
+  const y = layout.originY + resolved.y * layout.cellSize;
+  const inset = Math.max(3, Math.floor(layout.cellSize * 0.06));
+  const labelText = resolved.label ?? String(index + 1);
+
+  graphics.fillStyle(color, 0.16);
+  graphics.fillRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 8);
+  graphics.lineStyle(4, 0x12061f, 0.72);
+  graphics.strokeRoundedRect(x + inset - 1, y + inset - 1, layout.cellSize - inset * 2, layout.cellSize - inset * 2, 8);
+  graphics.lineStyle(3, color, 0.98);
+  graphics.strokeRoundedRect(x + inset, y + inset, layout.cellSize - inset * 2, layout.cellSize - inset * 2, 8);
+  drawCornerMarkers(graphics, x + 5, y + 5, layout.cellSize - 12, 0xfff2d4, 0.94);
+
+  const badgeX = x + layout.cellSize * 0.5;
+  const badgeY = y - Math.max(8, layout.cellSize * 0.12);
+  const label = graphics.scene.add
+    .text(badgeX, badgeY, labelText, {
+      fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+      fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.18))}px`,
+      color: "#12061f",
+      backgroundColor: "#fff2d4",
+      padding: {
+        x: 7,
+        y: 3
+      }
+    })
+    .setOrigin(0.5)
+    .setDepth(CURSOR_DEPTH + 2);
+
+  return label;
+}
+
 export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
@@ -348,6 +443,14 @@ export class SelectionLayer {
 
     for (const marker of presentation.mission?.markers ?? []) {
       markerLabels.push(drawObjectiveMarker(this.cursorGraphics, layout, marker));
+    }
+
+    for (const [index, highlight] of (options.tutorialHighlights ?? []).entries()) {
+      const label = drawTutorialHighlight(this.cursorGraphics, layout, snapshot, highlight, index);
+
+      if (label) {
+        markerLabels.push(label);
+      }
     }
 
     if (presentation.selectedTile) {

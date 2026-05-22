@@ -6,6 +6,7 @@ import {
   BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
   BATTLE_COMBAT_CUTSCENE_OPEN_MS,
   BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS,
+  BATTLE_POWER_OVERLAY_DISPLAY_MS,
   BATTLE_POST_COMBAT_PAUSE_MS,
   BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
@@ -17,6 +18,8 @@ import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { getXpThreshold } from "../src/game/simulation/progression.js";
 import {
+  COMMANDER_POWER_PULSE_DURATION_MS,
+  COMMANDER_POWER_TARGET_STAGGER_MS,
   EXPERIENCE_EXIT_DELAY_MS,
   EXPERIENCE_EXIT_DURATION_MS,
   EXPERIENCE_LEVEL_CHAIN_DELAY_MS,
@@ -181,6 +184,81 @@ test("battle animation events keep normal order when both graves powers are acti
   assert.equal(attackEvents[1].attackerId, defender.id);
   assert.equal(attackEvents[1].targetId, attacker.id);
   assert.equal(attackEvents[1].isInitiator, false);
+});
+
+test("battle animation events emit staged restore pulses for atlas power", () => {
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 3, {
+    current: {
+      hp: 40
+    },
+    statuses: [{ type: "burn", tickDamageRatio: 0.1, negative: true }]
+  });
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 4, 1, {
+    current: {
+      hp: 70
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [bruiser, runner],
+    enemyUnits: [enemy]
+  });
+  battleState.player.commanderId = "atlas";
+  battleState.player.charge = getCommanderPowerMax("atlas");
+
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+  assert.equal(system.activatePower(), true);
+  const after = system.getSnapshot();
+  const event = deriveBattleAnimationEvents(before, after).find(
+    (candidate) => candidate.type === "power"
+  );
+
+  assert.ok(event);
+  assert.equal(event.side, TURN_SIDES.PLAYER);
+  assert.equal(event.commanderId, "atlas");
+  assert.equal(event.powerName, "Overhaul");
+  assert.equal(event.startDelayMs, BATTLE_POWER_OVERLAY_DISPLAY_MS);
+  assert.equal(event.targetStaggerMs, COMMANDER_POWER_TARGET_STAGGER_MS);
+  assert.equal(event.pulseDurationMs, COMMANDER_POWER_PULSE_DURATION_MS);
+  assert.equal(event.targets.length, 2);
+  assert.equal(event.targets[0].pulse, "restore");
+  assert.equal(event.targets[1].pulse, "restore");
+  assert.ok(event.targets.some((target) => target.unitId === bruiser.id && target.label === "CLEANSE"));
+  assert.ok(event.targets.some((target) => target.unitId === bruiser.id && target.amount > 0));
+  assert.equal(
+    event.endDelayMs,
+    BATTLE_POWER_OVERLAY_DISPLAY_MS +
+      COMMANDER_POWER_PULSE_DURATION_MS +
+      COMMANDER_POWER_TARGET_STAGGER_MS
+  );
+});
+
+test("battle animation events emit damage pulses for blaze ignition", () => {
+  const enemyA = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 2);
+  const enemyB = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: [enemyA, enemyB]
+  });
+  battleState.player.commanderId = "blaze";
+  battleState.player.charge = getCommanderPowerMax("blaze");
+
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+  assert.equal(system.activatePower(), true);
+  const after = system.getSnapshot();
+  const event = deriveBattleAnimationEvents(before, after).find(
+    (candidate) => candidate.type === "power"
+  );
+
+  assert.ok(event);
+  assert.equal(event.commanderId, "blaze");
+  assert.equal(event.powerName, "Ignition");
+  assert.equal(event.targets.length, 2);
+  assert.equal(event.targets.every((target) => target.pulse === "damage"), true);
+  assert.ok(event.targets.every((target) => target.amount === 10));
+  assert.ok(event.targets.every((target) => target.label === "BURN"));
 });
 
 test("battle render exposes enemy movement paths for transient move arrows", () => {

@@ -3,6 +3,7 @@ import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { BUILDING_KEYS } from "../src/game/core/constants.js";
+import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
 import {
   getMapById,
   MAP_POOL,
@@ -36,6 +37,13 @@ test("getMapById resolves both base maps and run variants", () => {
   assert.ok(runMap);
   assert.equal(getMapById(baseMap.id)?.id, baseMap.id);
   assert.equal(getMapById(runMap.id)?.id, runMap.id);
+});
+
+test("tutorial map stays outside skirmish and run map pools", () => {
+  assert.equal(MAP_POOL.some((mapDefinition) => mapDefinition.id === TUTORIAL_IDS.MAP), false);
+  assert.equal(RUN_MAP_POOL.some((mapDefinition) => mapDefinition.id === TUTORIAL_IDS.MAP), false);
+  assert.equal(RUN_MAP_POOL.some((mapDefinition) => mapDefinition.id === `${TUTORIAL_IDS.MAP}-run`), false);
+  assert.equal(getMapById(TUTORIAL_IDS.MAP), undefined);
 });
 
 test("run map pool strips player production buildings while preserving enemy production sites", () => {

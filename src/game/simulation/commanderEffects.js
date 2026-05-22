@@ -246,6 +246,10 @@ function isNegativeStatus(status) {
     (Number(status.value) || 0) < 0;
 }
 
+function countNegativeStatuses(unit) {
+  return (unit?.statuses ?? []).filter((status) => isNegativeStatus(status)).length;
+}
+
 function cleanseNegativeStatusesFromUnit(unit) {
   const previousCount = unit.statuses.length;
   unit.statuses = unit.statuses.filter((status) => !isNegativeStatus(status));
@@ -307,6 +311,23 @@ function applyCorruptedToUnit(state, unit, sourceSide) {
 
 function getImmediateDamageAmount(unit, ratio) {
   return Math.max(1, Math.ceil(unit.stats.maxHealth * ratio));
+}
+
+function createPowerTarget(unit, pulse, options = {}) {
+  return {
+    unitId: unit.id,
+    owner: unit.owner,
+    x: unit.x,
+    y: unit.y,
+    pulse,
+    amount: Math.max(0, Number(options.amount) || 0),
+    ammoAmount: Math.max(0, Number(options.ammoAmount) || 0),
+    staminaAmount: Math.max(0, Number(options.staminaAmount) || 0),
+    destroyed: options.destroyed === true,
+    stat: options.stat ?? null,
+    unitTypeId: unit.unitTypeId,
+    label: options.label ?? null
+  };
 }
 
 function canSpawnAirUnitAt(state, x, y) {
@@ -540,6 +561,18 @@ export function applyChargeFromCombat(state, attackingSide, defendingSide, damag
 }
 
 function applyAtlasOverhaul(state, side, commander, notes) {
+  const previousByUnitId = new Map(
+    getLivingUnits(state, side).map((unit) => [
+      unit.id,
+      {
+        hp: unit.current.hp,
+        ammo: unit.current.ammo,
+        stamina: unit.current.stamina,
+        negativeStatusCount: countNegativeStatuses(unit)
+      }
+    ])
+  );
+
   healSide(state, side, commander.active.healRatio ?? 0.33);
 
   for (const unit of getLivingUnits(state, side)) {
@@ -550,7 +583,24 @@ function applyAtlasOverhaul(state, side, commander, notes) {
 
   applyStatusToSide(state, side, "shield", commander.active.armor ?? 3);
   notes.push(`${commander.name} overhauled the line and restored allied systems.`);
-  return { applied: true };
+
+  return {
+    applied: true,
+    targets: getLivingUnits(state, side).map((unit) => {
+      const previous = previousByUnitId.get(unit.id);
+      const negativeStatusCount = countNegativeStatuses(unit);
+      const hadCleanse =
+        (previous?.negativeStatusCount ?? 0) > 0 &&
+        negativeStatusCount < (previous?.negativeStatusCount ?? 0);
+
+      return createPowerTarget(unit, "restore", {
+        amount: unit.current.hp - (previous?.hp ?? unit.current.hp),
+        ammoAmount: unit.current.ammo - (previous?.ammo ?? unit.current.ammo),
+        staminaAmount: unit.current.stamina - (previous?.stamina ?? unit.current.stamina),
+        label: hadCleanse ? "CLEANSE" : null
+      });
+    })
+  };
 }
 
 function applyViperBlitzSurge(state, side, commander, notes) {
@@ -563,33 +613,75 @@ function applyViperBlitzSurge(state, side, commander, notes) {
   );
   applyStatusToGroup(state, side, commander.active.movementGroup, "mobility", commander.active.movement ?? 2);
   notes.push(`${commander.name} pushed the fast wing forward.`);
-  return { applied: true };
+
+  return {
+    applied: true,
+    targets: getLivingUnits(state, side)
+      .filter(
+        (unit) =>
+          unitMatchesGroup(unit, commander.active.attackGroup) ||
+          unitMatchesGroup(unit, commander.active.movementGroup)
+      )
+      .map((unit) =>
+        createPowerTarget(unit, "boost", {
+          label:
+            unitMatchesGroup(unit, commander.active.attackGroup) &&
+            unitMatchesGroup(unit, commander.active.movementGroup)
+              ? "RUSH"
+              : unitMatchesGroup(unit, commander.active.movementGroup)
+                ? "MOB"
+                : "ATK"
+        })
+      )
+  };
 }
 
 function applyRookHostileTakeover(state, side, commander, notes) {
   addSideEffect(state, side, { type: "rook-hostile-takeover" });
   notes.push(`${commander.name} turned every owned property into a front-line bonus.`);
-  return { applied: true };
+  return {
+    applied: true,
+    targets: getLivingUnits(state, side).map((unit) =>
+      createPowerTarget(unit, "boost", {
+        label: "GAIN"
+      })
+    )
+  };
 }
 
 function applyEchoDisruption(state, side, commander, notes) {
+  const opposingSide = getOpposingSide(side);
   applyStatusToSide(
     state,
-    getOpposingSide(side),
+    opposingSide,
     "mobility",
     -(commander.active.movementPenalty ?? 1),
     { tickSide: side, negative: true }
   );
 
-  for (const unit of getLivingUnits(state, getOpposingSide(side))) {
+  const targets = [];
+
+  for (const unit of getLivingUnits(state, opposingSide)) {
     applyCorruptedToUnit(state, unit, side);
+    const corruptedStatus = [...(unit.statuses ?? [])]
+      .reverse()
+      .find((status) => status.type === "corrupted");
+
+    targets.push(
+      createPowerTarget(unit, "disrupt", {
+        stat: corruptedStatus?.stat ?? null,
+        label: "JAM"
+      })
+    );
   }
 
   notes.push(`${commander.name} disrupted enemy movement patterns.`);
-  return { applied: true };
+  return { applied: true, targets };
 }
 
 function applyBlazeIgnition(state, side, commander, notes) {
+  const targets = [];
+
   for (const unit of getLivingUnits(state, getOpposingSide(side))) {
     const damage = getImmediateDamageAmount(unit, commander.active.damageRatio ?? 0.1);
     unit.current.hp = Math.max(0, unit.current.hp - damage);
@@ -599,10 +691,18 @@ function applyBlazeIgnition(state, side, commander, notes) {
       tickDamageRatio: commander.active.damageRatio ?? 0.1,
       negative: true
     });
+
+    targets.push(
+      createPowerTarget(unit, "damage", {
+        amount: damage,
+        destroyed: unit.current.hp <= 0,
+        label: "BURN"
+      })
+    );
   }
 
   notes.push(`${commander.name} ignited the enemy line.`);
-  return { applied: true };
+  return { applied: true, targets };
 }
 
 function applyKnoxFortressProtocol(state, side, commander, notes) {
@@ -612,7 +712,14 @@ function applyKnoxFortressProtocol(state, side, commander, notes) {
     remainingNoDamageCombats: 1
   });
   notes.push(`${commander.name} locked the line into fortress mode.`);
-  return { applied: true };
+  return {
+    applied: true,
+    targets: getLivingUnits(state, side).map((unit) =>
+      createPowerTarget(unit, "shield", {
+        label: "AEGIS"
+      })
+    )
+  };
 }
 
 function applyFalconReinforcements(state, side, commander, notes) {
@@ -637,16 +744,32 @@ function applyFalconReinforcements(state, side, commander, notes) {
   }
 
   notes.push(`${commander.name} called in a Gunship near HQ.`);
-  return { applied: true };
+  return {
+    applied: true,
+    targets: [
+      createPowerTarget(summon, "deploy", {
+        label: "DROP"
+      })
+    ]
+  };
 }
 
 function applyGravesExecutionWindow(state, side, commander, notes) {
   addSideEffect(state, side, { type: "graves-execution-window" });
   notes.push(`${commander.name} opened a brutal counter window.`);
-  return { applied: true };
+  return {
+    applied: true,
+    targets: getLivingUnits(state, side).map((unit) =>
+      createPowerTarget(unit, "boost", {
+        label: "READY"
+      })
+    )
+  };
 }
 
 function applyNovaOverload(state, side, commander, notes) {
+  const targets = [];
+
   for (const unit of getLivingUnits(state, side)) {
     const ammoSpent = Math.max(0, unit.current.ammo);
     unit.current.ammo = 0;
@@ -657,17 +780,31 @@ function applyNovaOverload(state, side, commander, notes) {
         value: ammoSpent * (commander.active.attackPercentPerAmmo ?? 0.1),
         currentTurnOnly: true
       });
+
+      targets.push(
+        createPowerTarget(unit, "boost", {
+          amount: ammoSpent,
+          label: "OVER"
+        })
+      );
     }
   }
 
   notes.push(`${commander.name} dumped every magazine into overload mode.`);
-  return { applied: true };
+  return { applied: true, targets };
 }
 
 function applySableLuckySeven(state, side, commander, notes) {
   addSideEffect(state, side, { type: "sable-lucky-seven" });
   notes.push(`${commander.name} tilted the odds in every exchange.`);
-  return { applied: true };
+  return {
+    applied: true,
+    targets: getLivingUnits(state, side).map((unit) =>
+      createPowerTarget(unit, "fortune", {
+        label: "LUCK"
+      })
+    )
+  };
 }
 
 const activeHandlers = {
@@ -708,10 +845,26 @@ export function activateCommanderPower(state, side, seed) {
     return { changed: false, applied: false, seed: state.seed, notes };
   }
 
+  const activationId = (state.powerActivationCounter ?? 0) + 1;
+  state.powerActivationCounter = activationId;
   state[side].charge = 0;
   state[side].powerUsedTurn = state.turn?.number ?? null;
 
-  return { changed: true, applied: true, seed: state.seed, notes };
+  return {
+    changed: true,
+    applied: true,
+    activationId,
+    side,
+    commanderId: commander.id,
+    commanderName: commander.name,
+    commanderTitle: commander.title ?? "Commander",
+    powerName: commander.active.name,
+    powerType: commander.active.type,
+    accent: commander.accent,
+    targets: outcome.targets ?? [],
+    seed: state.seed,
+    notes
+  };
 }
 
 export function expireCurrentTurnStatuses(state, side) {

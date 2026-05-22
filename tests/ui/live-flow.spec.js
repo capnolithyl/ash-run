@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 async function gotoTitle(page) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".screen--title")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".screen--title")).toBeVisible({ timeout: 45_000 });
 }
 
 test("new run flow reaches battle from the live app", async ({ page }) => {
@@ -33,6 +33,18 @@ test("skirmish flow reaches battle from the live app", async ({ page }) => {
   await page.locator('[data-action="start-skirmish"]').click({ force: true });
 
   await expect(page.locator(".battle-shell")).toBeVisible();
+});
+
+test("tutorial flow reaches the guided battle from the live app", async ({ page }) => {
+  await gotoTitle(page);
+
+  await page.locator('[data-action="open-tutorial"]').click({ force: true });
+  await expect(page.locator('[data-screen-id="tutorial"]')).toBeVisible();
+  await page.locator('[data-action="start-tutorial"]').click({ force: true });
+
+  await expect(page.locator(".battle-shell")).toBeVisible();
+  await expect(page.locator(".tutorial-guide")).toBeVisible();
+  await expect(page.locator(".tutorial-guide")).toContainText("Pip");
 });
 
 test("title utility screens open and return cleanly", async ({ page }) => {

@@ -1,4 +1,4 @@
-import { BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../../game/core/constants.js";
+import { BATTLE_MODES, BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../../game/core/constants.js";
 import {
   canUnitEquipRunUpgrade,
   getRunUpgradeById
@@ -200,14 +200,37 @@ export function renderPowerOverlay(powerOverlay) {
   }
 
   const sideLabel = powerOverlay.side === TURN_SIDES.PLAYER ? "Player Power" : "Enemy Power";
+  const portraitMarkup = powerOverlay.portraitImageUrl
+    ? `
+      <div class="power-overlay__portrait-frame" aria-hidden="true">
+        <div class="power-overlay__portrait-shell">
+          <img
+            class="power-overlay__portrait"
+            src="${powerOverlay.portraitImageUrl}"
+            alt=""
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      </div>
+    `
+    : "";
 
   return `
     <div class="battle-overlay battle-overlay--power battle-overlay--power-${powerOverlay.side}" style="--accent:${powerOverlay.accent}">
       <div class="overlay-card overlay-card--power">
-        <p class="eyebrow">${sideLabel} Activated</p>
-        <h2>${powerOverlay.title}</h2>
-        <strong>${powerOverlay.commanderName}</strong>
-        <p>${powerOverlay.summary}</p>
+        <div class="power-overlay__fx power-overlay__fx--back" aria-hidden="true"></div>
+        <div class="power-overlay__fx power-overlay__fx--front" aria-hidden="true"></div>
+        <div class="power-overlay__content">
+          ${portraitMarkup}
+          <div class="power-overlay__copy">
+            <p class="eyebrow">${sideLabel} Activated</p>
+            <span class="power-overlay__commander-kicker">Commander</span>
+            <strong class="power-overlay__commander-name">${powerOverlay.commanderName}</strong>
+            <span class="power-overlay__commander-title">${powerOverlay.commanderTitle ?? "Commander"}</span>
+            <h2>${powerOverlay.powerName}</h2>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -271,6 +294,22 @@ export function renderPauseOverlay(state, battleSnapshot) {
 export function renderOutcomeOverlay(state, battleSnapshot) {
   if (!battleSnapshot?.victory) {
     return "";
+  }
+
+  if (battleSnapshot.mode === BATTLE_MODES.TUTORIAL) {
+    return `
+      <div class="battle-overlay">
+        <div class="overlay-card">
+          <p class="eyebrow">Training Complete</p>
+          <h2>${battleSnapshot.victory.message}</h2>
+          <p>Pip logged the sim as practice only: no saves, Intel, unlocks, or run progress changed.</p>
+          <div class="battle-actions">
+            <button class="menu-button" data-action="tutorial-epilogue">Field Notes</button>
+            <button class="ghost-button" data-action="start-tutorial">Replay Training</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   if (battleSnapshot.victory.winner === TURN_SIDES.PLAYER && state.runStatus === "complete") {

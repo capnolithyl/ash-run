@@ -1,4 +1,4 @@
-import { TURN_SIDES } from "../../core/constants.js";
+import { BATTLE_MODES, TURN_SIDES } from "../../core/constants.js";
 import { appendLog, pushLevelUpEvents } from "../battleLog.js";
 import { findUnitById } from "../battleUnits.js";
 import {
@@ -72,6 +72,10 @@ function canDefenderCounter(state, attacker, defender, distance) {
 }
 
 function awardCombatXpToUnit(system, unit, target, damageDealt, killed) {
+  if (system.state.mode === BATTLE_MODES.TUTORIAL) {
+    return;
+  }
+
   let xpGain = getCombatExperience(unit, target, damageDealt, killed);
   xpGain = Math.round(xpGain * (1 + getExperienceModifier(system.state, unit, { combatXp: xpGain > 0, killed })));
 

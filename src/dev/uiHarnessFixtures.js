@@ -8,6 +8,12 @@ import {
 } from "../game/core/constants.js";
 import { createBlankMapDefinition, createDefaultMapEditorState } from "../game/content/mapEditor.js";
 import { RUN_UPGRADES } from "../game/content/runUpgrades.js";
+import {
+  createTutorialBattleSession,
+  createTutorialBattleState,
+  createTutorialIntroState,
+  createTutorialPresentation
+} from "../game/content/tutorial.js";
 import { createBattlefield } from "../game/content/mapFactory.js";
 import { createDefaultMetaState, createEmptySlotSummaries } from "../game/state/defaults.js";
 import { BattleSystem } from "../game/simulation/battleSystem.js";
@@ -201,6 +207,25 @@ function createProgressionState() {
   return {
     screen: SCREEN_IDS.PROGRESSION,
     metaState
+  };
+}
+
+function createTutorialIntroHarnessState() {
+  return {
+    screen: SCREEN_IDS.TUTORIAL,
+    tutorial: createTutorialIntroState(),
+    metaState: createBaseMetaState()
+  };
+}
+
+function createTutorialEpilogueHarnessState() {
+  return {
+    screen: SCREEN_IDS.TUTORIAL,
+    tutorial: createTutorialIntroState({
+      phase: "epilogue",
+      completed: true
+    }),
+    metaState: createBaseMetaState()
   };
 }
 
@@ -484,8 +509,38 @@ function createBattleLevelUpState() {
   return state;
 }
 
+function createTutorialBattleHarnessState() {
+  const tutorial = createTutorialBattleSession();
+  const system = new BattleSystem(createTutorialBattleState());
+  const battleSnapshot = system.getSnapshot();
+  battleSnapshot.presentation.tutorial = createTutorialPresentation(tutorial);
+
+  return {
+    screen: SCREEN_IDS.BATTLE,
+    battleSnapshot,
+    runState: null,
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      notice: null,
+      powerOverlay: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    tutorial,
+    debugMode: false,
+    runStatus: null,
+    banner: "",
+    metaState: createBaseMetaState()
+  };
+}
+
 export const UI_HARNESS_SCENES = [
   { id: "title", label: "Title Screen", locator: "#ui-root" },
+  { id: "tutorial-intro", label: "Tutorial Intro", locator: "#ui-root" },
+  { id: "tutorial-epilogue", label: "Tutorial Epilogue", locator: "#ui-root" },
   { id: "commander-select", label: "Commander Select", locator: "#ui-root" },
   { id: "run-loadout", label: "Run Loadout", locator: "#ui-root" },
   { id: "skirmish-commanders", label: "Skirmish Commanders", locator: "#ui-root" },
@@ -495,6 +550,7 @@ export const UI_HARNESS_SCENES = [
   { id: "map-editor", label: "Map Editor", locator: ".battle-shell" },
   { id: "battle-commander-layout", label: "Battle Commander Layout", locator: ".battle-shell" },
   { id: "battle-targeting", label: "Battle HUD Targeting", locator: ".battle-shell" },
+  { id: "battle-tutorial", label: "Battle Tutorial Guide", locator: ".battle-shell" },
   { id: "battle-pause", label: "Battle HUD Pause", locator: ".battle-shell" },
   { id: "battle-reward", label: "Battle Reward", locator: ".battle-shell" },
   { id: "battle-run-complete", label: "Battle Run Complete", locator: ".battle-shell" },
@@ -504,6 +560,16 @@ export const UI_HARNESS_SCENES = [
 
 export function createUiHarnessScene(sceneId) {
   switch (sceneId) {
+    case "tutorial-intro":
+      return {
+        sceneId,
+        state: createTutorialIntroHarnessState()
+      };
+    case "tutorial-epilogue":
+      return {
+        sceneId,
+        state: createTutorialEpilogueHarnessState()
+      };
     case "commander-select":
       return {
         sceneId,
@@ -543,6 +609,11 @@ export function createUiHarnessScene(sceneId) {
       return {
         sceneId,
         state: createBattleTargetingState()
+      };
+    case "battle-tutorial":
+      return {
+        sceneId,
+        state: createTutorialBattleHarnessState()
       };
     case "battle-commander-layout":
       return {

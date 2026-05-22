@@ -24,6 +24,7 @@ export class BattleSystem {
     this.state.enemyTurn ??= null;
     this.state.levelUpQueue ??= [];
     this.state.lastPowerResult ??= null;
+    this.state.powerActivationCounter ??= 0;
     if (this.state.enemyTurn && !("pendingAttack" in this.state.enemyTurn)) {
       this.state.enemyTurn.pendingAttack = null;
     }

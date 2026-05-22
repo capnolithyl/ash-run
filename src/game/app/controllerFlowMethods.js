@@ -181,6 +181,17 @@ export const controllerFlowMethods = {
   },
   openTutorial() {
     this.state.screen = SCREEN_IDS.TUTORIAL;
+    if (!this.state.tutorial) {
+      this.resetTutorialToIntro?.();
+    }
+    if (this.state.tutorial?.completed) {
+      this.state.tutorial = {
+        ...this.state.tutorial,
+        phase: "epilogue"
+      };
+    } else if (!this.state.tutorial || this.state.tutorial.phase === "battle") {
+      this.resetTutorialToIntro?.();
+    }
     this.state.banner = "";
     this.resetBattleUi();
     this.emit();

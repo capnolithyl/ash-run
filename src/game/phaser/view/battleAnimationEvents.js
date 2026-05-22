@@ -1,6 +1,7 @@
 import {
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
+  BATTLE_POWER_OVERLAY_DISPLAY_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
   getBattleMoveDuration
 } from "../../core/constants.js";
@@ -78,6 +79,8 @@ export const EXPERIENCE_LEVEL_CHAIN_DELAY_MS = 120;
 export const EXPERIENCE_REVEAL_DELAY_MS = 180;
 export const EXPERIENCE_EXIT_DELAY_MS = 120;
 export const EXPERIENCE_EXIT_DURATION_MS = 280;
+export const COMMANDER_POWER_TARGET_STAGGER_MS = 85;
+export const COMMANDER_POWER_PULSE_DURATION_MS = 620;
 
 function getTurnTransitionDelayMs(previousSnapshot, nextSnapshot) {
   if (!previousSnapshot || previousSnapshot.turn.activeSide === nextSnapshot.turn.activeSide) {
@@ -228,6 +231,8 @@ function getBattleAnimationEventDurationMs(event) {
       return 560;
     case "experience":
       return getExperienceEventDuration(event);
+    case "power":
+      return COMMANDER_POWER_PULSE_DURATION_MS;
     case "capture":
       return 520;
     case "deploy":
@@ -272,6 +277,77 @@ function getBattleAnimationDurationMs(
 
     return Math.max(maxDuration, endDelayMs);
   }, 0);
+}
+
+function sortPowerTargets(targets, side) {
+  const horizontalDirection = side === "enemy" ? -1 : 1;
+
+  return [...targets].sort(
+    (left, right) =>
+      left.y - right.y ||
+      horizontalDirection * (left.x - right.x) ||
+      left.unitId.localeCompare(right.unitId)
+  );
+}
+
+function buildCommanderPowerEvent(previousSnapshot, nextSnapshot, previousUnits, nextUnits) {
+  const previousActivationId = previousSnapshot?.lastPowerResult?.activationId ?? null;
+  const powerResult = nextSnapshot?.lastPowerResult ?? null;
+
+  if (!powerResult?.activationId || powerResult.activationId === previousActivationId) {
+    return null;
+  }
+
+  const targets = sortPowerTargets(
+    (powerResult.targets ?? [])
+      .map((target) => {
+        const nextUnit = nextUnits.get(target.unitId) ?? null;
+        const previousUnit = previousUnits.get(target.unitId) ?? null;
+        const unit = nextUnit ?? previousUnit;
+
+        return unit &&
+          Number.isInteger(target.x ?? unit.x) &&
+          Number.isInteger(target.y ?? unit.y)
+          ? {
+              ...target,
+              owner: target.owner ?? unit.owner,
+              x: target.x ?? unit.x,
+              y: target.y ?? unit.y,
+              unitTypeId: target.unitTypeId ?? unit.unitTypeId
+            }
+          : null;
+      })
+      .filter(Boolean),
+    powerResult.side
+  );
+
+  if (targets.length === 0) {
+    return null;
+  }
+
+  const startDelayMs = BATTLE_POWER_OVERLAY_DISPLAY_MS;
+  const endDelayMs =
+    startDelayMs +
+    Math.max(0, targets.length - 1) * COMMANDER_POWER_TARGET_STAGGER_MS +
+    COMMANDER_POWER_PULSE_DURATION_MS;
+
+  return {
+    type: "power",
+    activationId: powerResult.activationId,
+    side: powerResult.side,
+    commanderId: powerResult.commanderId,
+    commanderName: powerResult.commanderName,
+    commanderTitle: powerResult.commanderTitle,
+    powerName: powerResult.powerName,
+    powerType: powerResult.powerType,
+    accent: powerResult.accent,
+    targets,
+    targetStaggerMs: COMMANDER_POWER_TARGET_STAGGER_MS,
+    pulseDurationMs: COMMANDER_POWER_PULSE_DURATION_MS,
+    startDelayMs,
+    durationMs: endDelayMs - startDelayMs,
+    endDelayMs
+  };
 }
 
 export function getBattleSnapshotTransitionDurationMs(
@@ -646,8 +722,15 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
     durationMs: 340,
     endDelayMs: attackBaseDelayMs + (event.delay ?? 0) + 340
   }));
+  const commanderPowerEvent = buildCommanderPowerEvent(
+    previousSnapshot,
+    nextSnapshot,
+    previousUnits,
+    nextUnits
+  );
 
   return [
+    ...(commanderPowerEvent ? [commanderPowerEvent] : []),
     ...timedMovements,
     ...timedAttacks,
     ...timedRestores,

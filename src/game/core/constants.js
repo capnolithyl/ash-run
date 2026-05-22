@@ -68,6 +68,7 @@ export const SCREEN_IDS = {
 export const BATTLE_MODES = {
   RUN: "run",
   SKIRMISH: "skirmish",
+  TUTORIAL: "tutorial",
 };
 
 export const TURN_SIDES = {

@@ -9,6 +9,11 @@ import {
 } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
+import {
+  createTutorialBattleSession,
+  createTutorialBattleState,
+  createTutorialPresentation
+} from "../src/game/content/tutorial.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
@@ -487,8 +492,9 @@ test("battle HUD renders commander power activation overlays", () => {
       powerOverlay: {
         side: TURN_SIDES.PLAYER,
         commanderName: "Viper",
-        title: "Blitz Surge",
-        summary: "Infantry and Runners gain +3 attack; Infantry also gain +2 movement for 1 turn.",
+        commanderTitle: "Femme Fatale",
+        powerName: "Blitz Surge",
+        portraitImageUrl: "./assets/img/commanders/viper/Viper%20-%20Portrait.png",
         accent: "#ec775e"
       },
       hoveredTile: null
@@ -502,6 +508,38 @@ test("battle HUD renders commander power activation overlays", () => {
   assert.match(html, /Player Power Activated/);
   assert.match(html, /Blitz Surge/);
   assert.match(html, /Viper/);
+  assert.match(html, /Femme Fatale/);
+  assert.match(html, /power-overlay__portrait/);
+  assert.doesNotMatch(html, /Infantry and Runners gain \+3 attack/);
+});
+
+test("battle HUD renders tutorial guide and highlights", () => {
+  const system = new BattleSystem(createTutorialBattleState());
+  const tutorialSession = createTutorialBattleSession();
+  const battleSnapshot = system.getSnapshot();
+  battleSnapshot.presentation.tutorial = createTutorialPresentation(tutorialSession);
+  const html = renderBattleHudView({
+    battleSnapshot,
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    tutorial: tutorialSession,
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /class="tutorial-guide"/);
+  assert.match(html, /Pip Says/);
+  assert.match(html, /Read the mission first/);
+  assert.match(html, /1\/23/);
+  assert.match(html, /data-action="tutorial-next"/);
+  assert.match(html, /data-action="skip-tutorial"/);
 });
 
 test("battle HUD renders the combat cutscene overlay with stable sprite layers and split lanes", () => {

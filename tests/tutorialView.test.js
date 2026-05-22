@@ -29,24 +29,30 @@ test("title screen links to the tutorial", () => {
 });
 
 test("tutorial covers basics, economy, commanders, and advanced tools", () => {
-  const html = renderTutorialView();
+  const html = renderTutorialView({
+    tutorial: {
+      phase: "epilogue"
+    }
+  });
 
-  assert.match(html, /Training Sim/);
-  assert.match(html, /Clear ten maps/);
-  assert.match(html, /Select, move, act/);
-  assert.match(html, /Ranges, armor, ammo/);
-  assert.match(html, /Capture intel/);
-  assert.match(html, /Passives are constant/);
-  assert.match(html, /Transport, support, terrain/);
+  assert.match(html, /Training Complete/);
+  assert.match(html, /Field Notes/);
+  assert.match(html, /Run Mode/);
+  assert.match(html, /Mission Goals/);
+  assert.match(html, /Upgrades/);
+  assert.match(html, /Intel &amp; Unlocks|Intel & Unlocks/);
+  assert.match(html, /Commanders/);
+  assert.match(html, /Skirmish/);
   assert.match(html, /data-action="open-new-run"/);
   assert.match(html, /data-action="back-to-title"/);
 });
 
-test("tutorial exposes interactive step controls", () => {
+test("tutorial intro starts the guided match", () => {
   const html = renderTutorialView();
 
-  assert.match(html, /id="tutorial-step-run"[\s\S]*checked/);
-  assert.match(html, /for="tutorial-step-combat"/);
-  assert.match(html, /for="tutorial-step-advanced"/);
-  assert.match(html, /class="tutorial-checklist"/);
+  assert.match(html, /Guided Match/);
+  assert.match(html, /Pip the tactical gremlin/);
+  assert.match(html, /Start Training/);
+  assert.match(html, /data-action="start-tutorial"/);
+  assert.match(html, /no save slots/i);
 });

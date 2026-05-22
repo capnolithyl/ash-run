@@ -13,6 +13,7 @@ import {
 } from "../src/game/core/constants.js";
 import { GameController } from "../src/game/app/GameController.js";
 import { getMapById, MAP_POOL, replaceCustomMaps } from "../src/game/content/maps.js";
+import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { createBattleStateForRun } from "../src/game/state/runFactory.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
@@ -303,6 +304,82 @@ test("startSkirmish opens an unsaved battle with configured economy", async () =
   assert.equal(state.battleSnapshot.player.commanderId, "atlas");
   assert.equal(state.battleSnapshot.enemy.commanderId, "viper");
   assert.equal(state.battleSnapshot.economy.incomeByType.sector, 250);
+});
+
+test("tutorial launch creates an unsaved tutorial battle", () => {
+  let saveSlotCalls = 0;
+  const controller = new GameController({
+    async saveSlot() {
+      saveSlotCalls += 1;
+    },
+    async listSlots() {
+      return [];
+    }
+  });
+
+  controller.startTutorialBattle();
+
+  const state = controller.getState();
+  assert.equal(state.screen, SCREEN_IDS.BATTLE);
+  assert.equal(state.runState, null);
+  assert.equal(state.runStatus, null);
+  assert.equal(state.battleSnapshot.mode, BATTLE_MODES.TUTORIAL);
+  assert.equal(state.battleSnapshot.map.id, TUTORIAL_IDS.MAP);
+  assert.equal(state.tutorial.phase, "battle");
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "mission-goal");
+  assert.equal(saveSlotCalls, 0);
+});
+
+test("tutorial blocks wrong actions with a guide nudge", async () => {
+  const controller = new GameController();
+
+  controller.startTutorialBattle();
+  controller.continueTutorialStep();
+  await controller.handleBattleTileClick(2, 5);
+
+  const state = controller.getState();
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "select-grunt");
+  assert.match(state.tutorial.nudge.message, /Grunt/);
+  assert.equal(state.battleSnapshot.selection.type, null);
+});
+
+test("tutorial correct capture advances without writing a save", async () => {
+  let saveSlotCalls = 0;
+  const controller = new GameController({
+    async saveSlot() {
+      saveSlotCalls += 1;
+    },
+    async listSlots() {
+      return [];
+    }
+  });
+
+  controller.startTutorialBattle();
+  controller.continueTutorialStep();
+  await controller.handleBattleTileClick(1, 4);
+  await controller.handleBattleTileClick(3, 4);
+  await controller.captureWithSelectedUnit();
+
+  const battleState = controller.battleSystem.getStateForSave();
+  const captured = battleState.map.buildings.find((building) => building.id === TUTORIAL_IDS.NEUTRAL_SECTOR);
+  const state = controller.getState();
+  assert.equal(captured.owner, TURN_SIDES.PLAYER);
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "building-brief");
+  assert.equal(state.battleSnapshot.player.funds, 0);
+  assert.equal(state.runState, null);
+  assert.equal(saveSlotCalls, 0);
+});
+
+test("tutorial can return cleanly to the title", async () => {
+  const controller = new GameController();
+
+  controller.startTutorialBattle();
+  await controller.returnToTitle();
+
+  const state = controller.getState();
+  assert.equal(state.screen, SCREEN_IDS.TITLE);
+  assert.equal(state.battleSnapshot, null);
+  assert.equal(state.runState, null);
 });
 
 test("new run can advance to loadout once a commander is selected", () => {

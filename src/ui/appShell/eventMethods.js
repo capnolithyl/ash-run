@@ -133,6 +133,18 @@ export const appShellEventMethods = {
       case "open-tutorial":
         this.controller.openTutorial();
         break;
+      case "start-tutorial":
+        this.controller.startTutorialBattle();
+        break;
+      case "tutorial-next":
+        this.controller.continueTutorialStep();
+        break;
+      case "skip-tutorial":
+        this.controller.skipTutorial();
+        break;
+      case "tutorial-epilogue":
+        this.controller.openTutorialEpilogue();
+        break;
       case "open-map-editor":
         this.controller.openMapEditor();
         break;

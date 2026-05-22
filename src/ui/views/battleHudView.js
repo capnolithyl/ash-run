@@ -26,6 +26,7 @@ import {
   renderTurnBanner
 } from "./battleHud/overlays.js";
 import { renderCombatCutsceneOverlay } from "./battleHud/combatCutsceneOverlay.js";
+import { renderTutorialGuide } from "./battleHud/tutorialGuide.js";
 import {
   getFocusTileForSide,
   renderSelectionDetails,
@@ -325,6 +326,7 @@ export function renderBattleHudView(state, options = {}) {
       ${renderSupportPrompt(battleSnapshot)}
       ${renderMedpackPrompt(battleSnapshot)}
       ${renderExtinguishPrompt(battleSnapshot)}
+      ${renderTutorialGuide(battleSnapshot)}
       ${combatCutsceneActive ? "" : renderBattleNotice(state.battleUi?.notice)}
       ${combatCutsceneActive ? "" : renderTurnBanner(turnBanner)}
       ${combatCutsceneActive ? "" : renderPowerOverlay(state.battleUi?.powerOverlay)}

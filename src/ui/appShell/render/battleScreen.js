@@ -94,11 +94,34 @@ function buildBattleRenderSignature(state) {
     enemyFocusKey: getFocusKey(battleUi.enemyFocus),
     debugMode: state.debugMode === true,
     runStatus: state.runStatus ?? null,
-    banner: state.banner ?? ""
+    banner: state.banner ?? "",
+    tutorialKey: state.battleSnapshot?.presentation?.tutorial
+      ? [
+          state.battleSnapshot.presentation.tutorial.phase ?? "",
+          state.battleSnapshot.presentation.tutorial.stepId ?? "",
+          state.battleSnapshot.presentation.tutorial.nudge ?? ""
+        ].join(":")
+      : ""
   };
 }
 
 export const appShellBattleScreenMethods = {
+  applyTutorialHighlights(state) {
+    for (const element of this.root.querySelectorAll("[data-tutorial-highlight]")) {
+      element.removeAttribute("data-tutorial-highlight");
+      element.classList.remove("tutorial-highlight");
+    }
+
+    const selectors = state.battleSnapshot?.presentation?.tutorial?.uiSelectors ?? [];
+
+    selectors.forEach((selector, index) => {
+      for (const element of this.root.querySelectorAll(selector)) {
+        element.dataset.tutorialHighlight = String(index + 1);
+        element.classList.add("tutorial-highlight");
+      }
+    });
+  },
+
   isHoverOnlyBattleUpdate(state) {
     const previousSignature = this.previousBattleRenderSignature;
     const nextSignature = buildBattleRenderSignature(state);
@@ -132,7 +155,8 @@ export const appShellBattleScreenMethods = {
       previousSignature.enemyFocusKey !== nextSignature.enemyFocusKey ||
       previousSignature.debugMode !== nextSignature.debugMode ||
       previousSignature.runStatus !== nextSignature.runStatus ||
-      previousSignature.banner !== nextSignature.banner
+      previousSignature.banner !== nextSignature.banner ||
+      previousSignature.tutorialKey !== nextSignature.tutorialKey
     ) {
       return false;
     }
@@ -188,6 +212,7 @@ export const appShellBattleScreenMethods = {
   renderBattleScreen(state) {
     if (this.isHoverOnlyBattleUpdate(state) && this.root.querySelector(".battle-shell")) {
       this.updateBattleHoverPanels(state);
+      this.applyTutorialHighlights(state);
       this.previousBattleSnapshot = state.battleSnapshot;
       this.previousBattleRenderSignature = buildBattleRenderSignature(state);
       return;
@@ -214,6 +239,7 @@ export const appShellBattleScreenMethods = {
     this.animateFundsGain(state);
     this.syncCombatCutscenePlayback(state);
     this.syncBattlePresentationPlayback(state, { suppressLevelUpOverlay });
+    this.applyTutorialHighlights(state);
     this.previousBattleSnapshot = state.battleSnapshot;
     this.previousBattleRenderSignature = buildBattleRenderSignature(state);
   },

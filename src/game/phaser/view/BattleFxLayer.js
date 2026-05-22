@@ -7,6 +7,18 @@ function ownerColor(owner) {
   return owner === "player" ? 0xff5fd6 : 0xff8a3d;
 }
 
+function resolveAccentColor(accent, fallback) {
+  if (typeof accent !== "string" || accent.length === 0) {
+    return fallback;
+  }
+
+  try {
+    return Phaser.Display.Color.HexStringToColor(accent).color;
+  } catch {
+    return fallback;
+  }
+}
+
 function toWorldPoint(layout, x, y) {
   return {
     x: layout.originX + x * layout.cellSize + layout.cellSize / 2,
@@ -233,6 +245,153 @@ export class BattleFxLayer {
       ease: "Cubic.Out"
     });
     destroyAfterTween(label, tween);
+  }
+
+  playCommanderPowerWave(event, layout) {
+    const color = resolveAccentColor(event.accent, ownerColor(event.side));
+    const width = this.scene.scale.width * 0.88;
+    const height = Math.max(layout.cellSize * 0.7, 26);
+    const centerX = this.scene.scale.width / 2;
+    const averageTargetRow =
+      (event.targets ?? []).reduce((sum, target) => sum + target.y, 0) /
+      Math.max(1, event.targets?.length ?? 1);
+    const centerY = layout.originY + (averageTargetRow + 0.5) * layout.cellSize;
+    const sweep = this.track(
+      this.scene.add
+        .rectangle(centerX, centerY, width, height, color, 0.18)
+        .setDepth(37)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+    const line = this.track(
+      this.scene.add
+        .rectangle(centerX, centerY, width, Math.max(4, height * 0.16), 0xfff6dd, 0.92)
+        .setDepth(38)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+    sweep.setScale(0.52, 1.2);
+    line.setScale(0.4, 1);
+
+    const sweepTween = this.scene.tweens.add({
+      targets: sweep,
+      alpha: 0,
+      scaleX: 1.12,
+      duration: 420,
+      ease: "Cubic.Out"
+    });
+    destroyAfterTween(sweep, sweepTween);
+
+    const lineTween = this.scene.tweens.add({
+      targets: line,
+      alpha: 0,
+      scaleX: 1.14,
+      duration: 320,
+      ease: "Sine.Out"
+    });
+    destroyAfterTween(line, lineTween);
+  }
+
+  playCommanderPowerTarget(target, layout, event) {
+    const fallbackColor =
+      target.pulse === "damage"
+        ? 0xff8a3d
+        : target.pulse === "shield"
+          ? 0x8fd6ff
+          : target.pulse === "disrupt"
+            ? 0x78f5d9
+            : target.pulse === "fortune"
+              ? 0x8ac79b
+              : ownerColor(target.owner);
+    const color = resolveAccentColor(event.accent, fallbackColor);
+    const point = toWorldPoint(layout, target.x, target.y);
+    const outerRing = this.track(
+      this.scene.add
+        .circle(point.x, point.y, layout.cellSize * 0.18, color, target.pulse === "damage" ? 0.2 : 0.16)
+        .setDepth(40)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+    const ring = this.track(
+      this.scene.add
+        .circle(point.x, point.y, layout.cellSize * 0.12, 0xfff6dd, target.pulse === "damage" ? 0.32 : 0.24)
+        .setDepth(41)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+    const verticalSpark = this.track(
+      this.scene.add
+        .rectangle(point.x, point.y, layout.cellSize * 0.16, layout.cellSize * 0.92, color, 0.18)
+        .setDepth(39)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+    const labelText =
+      target.pulse === "damage" && target.amount > 0
+        ? `-${target.amount}`
+        : target.pulse === "restore" && target.amount > 0
+          ? `+${target.amount}`
+          : target.label ?? "";
+    const label = labelText
+      ? this.track(
+          this.scene.add
+            .text(point.x, point.y - layout.cellSize * 0.34, labelText, {
+              fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+              fontSize: `${Math.max(12, Math.floor(layout.cellSize * 0.19))}px`,
+              color: "#fff6dd",
+              stroke: "#120812",
+              strokeThickness: 5,
+              letterSpacing: target.label ? 1.4 : 0
+            })
+            .setOrigin(0.5)
+            .setDepth(42)
+        )
+      : null;
+
+    if (label) {
+      label.setShadow(0, 0, `#${color.toString(16).padStart(6, "0")}`, 16, false, true);
+    }
+
+    outerRing.setScale(target.pulse === "damage" ? 0.9 : 0.8);
+    ring.setScale(0.72);
+    verticalSpark.setScale(1, 0.65);
+
+    const outerTween = this.scene.tweens.add({
+      targets: outerRing,
+      alpha: 0,
+      scale: target.pulse === "damage" ? 3.6 : 3.1,
+      duration: target.pulse === "damage" ? 360 : 420,
+      ease: "Cubic.Out"
+    });
+    destroyAfterTween(outerRing, outerTween);
+
+    const ringTween = this.scene.tweens.add({
+      targets: ring,
+      alpha: 0,
+      scale: target.pulse === "damage" ? 2.3 : 2.7,
+      duration: 320,
+      ease: "Sine.Out"
+    });
+    destroyAfterTween(ring, ringTween);
+
+    const sparkTween = this.scene.tweens.add({
+      targets: verticalSpark,
+      alpha: 0,
+      scaleY: target.pulse === "damage" ? 1.2 : 1.5,
+      duration: 340,
+      ease: "Cubic.Out"
+    });
+    destroyAfterTween(verticalSpark, sparkTween);
+
+    if (label) {
+      const labelTween = this.scene.tweens.add({
+        targets: label,
+        alpha: 0,
+        y: label.y - layout.cellSize * 0.26,
+        duration: 540,
+        ease: "Sine.Out"
+      });
+      destroyAfterTween(label, labelTween);
+    }
+
+    if (target.pulse === "damage" && this.screenShakeEnabled) {
+      this.scene.cameras.main.shake(80, 0.0026);
+    }
   }
 
   playRestore(event, layout) {

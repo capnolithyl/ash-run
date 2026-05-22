@@ -27,6 +27,12 @@ export function getAnimatedMovementPaths(movementEvents = [], owner = null) {
     .map((event) => event.path);
 }
 
+function getCommanderPowerTargetUnitIds(powerEvents = []) {
+  return new Set(
+    powerEvents.flatMap((event) => (event.targets ?? []).map((target) => target.unitId))
+  );
+}
+
 export const battleSceneRenderMethods = {
   getBoardLayout(snapshot) {
     return getBattlefieldLayout({
@@ -93,6 +99,8 @@ export const battleSceneRenderMethods = {
 
     const animationEvents = deriveBattleAnimationEvents(previousSnapshot, snapshot);
     const movementEvents = animationEvents.filter((event) => event.type === "move");
+    const powerEvents = animationEvents.filter((event) => event.type === "power");
+    const powerTargetUnitIds = getCommanderPowerTargetUnitIds(powerEvents);
     const enemyMovementPaths = getAnimatedMovementPaths(movementEvents, "enemy");
     const attackEvents = animationEvents
       .filter((event) => event.type === "attack")
@@ -120,6 +128,27 @@ export const battleSceneRenderMethods = {
     const nextUnitsById = new Map(
       [...snapshot.player.units, ...snapshot.enemy.units].map((unit) => [unit.id, unit])
     );
+    const restoreByUnitId = new Map(
+      animationEvents
+        .filter((event) => event.type === "heal" || event.type === "resupply")
+        .map((event) => {
+          const nextUnit = nextUnitsById.get(event.unitId);
+
+          return nextUnit
+            ? [
+                event.unitId,
+                {
+                  type: event.type,
+                  amount: event.amount ?? 0,
+                  ammoAmount: event.ammoAmount ?? 0,
+                  staminaAmount: event.staminaAmount ?? 0,
+                  nextHp: nextUnit.current.hp
+                }
+              ]
+            : null;
+        })
+        .filter(Boolean)
+    );
 
     previousUnitsById.forEach((previousUnit, unitId) => {
       const nextUnit = nextUnitsById.get(unitId);
@@ -144,14 +173,16 @@ export const battleSceneRenderMethods = {
       hoveredMovementPath,
       hoveredAttackForecast,
       {
-        enemyMovementPaths
+        enemyMovementPaths,
+        tutorialHighlights: snapshot.presentation?.tutorial?.battlefieldHighlights ?? []
       }
     );
     this.buildingLayer.render(snapshot, layout);
     this.unitLayer.render(snapshot, layout, movementEvents, {
       deployUnitIds,
       destroyUnitIds,
-      damageByUnitId
+      damageByUnitId,
+      restoreByUnitId
     });
     const maxMoveDelay = movementEvents.length
       ? Math.max(
@@ -182,6 +213,10 @@ export const battleSceneRenderMethods = {
 
     for (const event of animationEvents) {
       if (event.type === "deploy") {
+        if (powerTargetUnitIds.has(event.unitId)) {
+          continue;
+        }
+
         if (event.fromUnload && event.carrierId) {
           this.fxLayer.schedule(turnTransitionDelay, () => {
             this.unitLayer.queueAfterMovement(
@@ -209,6 +244,10 @@ export const battleSceneRenderMethods = {
       }
 
       if (event.type === "destroy") {
+        if (powerTargetUnitIds.has(event.unitId)) {
+          continue;
+        }
+
         if (attackDrivenDestroyUnitIds.has(event.unitId)) {
           continue;
         }
@@ -224,9 +263,53 @@ export const battleSceneRenderMethods = {
       }
 
       if (event.type === "heal" || event.type === "resupply") {
-        this.fxLayer.schedule(turnTransitionDelay, () => this.unitLayer.playHeal(event.unitId));
+        if (powerTargetUnitIds.has(event.unitId)) {
+          continue;
+        }
+
+        this.fxLayer.schedule(event.startDelayMs ?? turnTransitionDelay, () =>
+          this.unitLayer.playRestore(event.unitId, {
+            tone: event.type === "heal" ? "heal" : "resupply"
+          })
+        );
       }
     }
+
+    powerEvents.forEach((event) => {
+      this.fxLayer.schedule(Math.max(0, (event.startDelayMs ?? 0) - 90), () =>
+        this.fxLayer.playCommanderPowerWave(event, layout)
+      );
+
+      (event.targets ?? []).forEach((target, index) => {
+        const targetDelayMs =
+          (event.startDelayMs ?? 0) + index * (event.targetStaggerMs ?? 0);
+
+        this.unitLayer.preparePowerEffect(target.unitId);
+        this.fxLayer.schedule(targetDelayMs, () => {
+          if (target.pulse === "damage") {
+            this.unitLayer.playDamage(target.unitId);
+          } else if (target.pulse === "restore") {
+            this.unitLayer.playRestore(target.unitId, { tone: "power-heal" });
+          } else if (target.pulse === "deploy") {
+            if (deployUnitIds.has(target.unitId)) {
+              this.unitLayer.playDeploy(target.unitId);
+              this.fxLayer.playDeploy(
+                {
+                  owner: target.owner,
+                  x: target.x,
+                  y: target.y
+                },
+                layout
+              );
+            }
+          } else {
+            this.unitLayer.playPowerPulse(target.unitId, target.pulse);
+          }
+
+          this.fxLayer.playCommanderPowerTarget(target, layout, event);
+        });
+      });
+    });
 
     if (attackEvents.length > 0) {
       /**
@@ -323,11 +406,13 @@ export const battleSceneRenderMethods = {
     this.fxLayer.playEvents(
       animationEvents.filter(
         (event) =>
+          event.type !== "power" &&
           event.type !== "attack" &&
           event.type !== "experience" &&
           event.type !== "capture" &&
           event.type !== "deploy" &&
-          event.type !== "destroy"
+          event.type !== "destroy" &&
+          !(powerTargetUnitIds.has(event.unitId) && (event.type === "heal" || event.type === "resupply"))
       ),
       layout,
       {

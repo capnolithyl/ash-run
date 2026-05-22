@@ -5,7 +5,11 @@ import {
   TURN_SIDES
 } from "../core/constants.js";
 import { canUnitEquipRunUpgrade, isGearUpgrade } from "../content/runUpgrades.js";
-import { getBattleSnapshotTransitionDurationMs } from "../phaser/view/battleAnimationEvents.js";
+import {
+  COMMANDER_POWER_PULSE_DURATION_MS,
+  COMMANDER_POWER_TARGET_STAGGER_MS,
+  getBattleSnapshotTransitionDurationMs
+} from "../phaser/view/battleAnimationEvents.js";
 import { deriveBattleCombatCutscene } from "../phaser/view/battleCombatCutscene.js";
 import {
   addRunIntel,
@@ -352,6 +356,15 @@ export const controllerRunMethods = {
 
     if (enemyPowerUsed) {
       await this.playPowerOverlay(TURN_SIDES.ENEMY);
+      const enemyPowerResult = this.battleSystem?.getLastPowerResult?.() ?? null;
+      const enemyPowerTailMs = enemyPowerResult?.targets?.length
+        ? Math.max(0, enemyPowerResult.targets.length - 1) * COMMANDER_POWER_TARGET_STAGGER_MS +
+          COMMANDER_POWER_PULSE_DURATION_MS
+        : 0;
+
+      if (enemyPowerTailMs > 0) {
+        await delay(enemyPowerTailMs);
+      }
 
       if (this.state.battleSnapshot?.victory) {
         await this.persistCurrentRun();
@@ -426,7 +439,8 @@ export const controllerRunMethods = {
 
   syncBattleState({ allowEnemyFocusDuringEnemyTurn = false } = {}) {
     const previousSnapshot = this.state.battleSnapshot;
-    const nextSnapshot = this.battleSystem?.getSnapshot() ?? null;
+    const rawSnapshot = this.battleSystem?.getSnapshot() ?? null;
+    const nextSnapshot = this.decorateTutorialSnapshot?.(rawSnapshot) ?? rawSnapshot;
     const shouldShowFunds = !this.isRunBattle(nextSnapshot);
 
     if (!shouldShowFunds) {
