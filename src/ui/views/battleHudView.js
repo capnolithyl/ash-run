@@ -36,6 +36,14 @@ import {
 const BATTLE_CHROME_GLOW_CYCLE_MS = 4200;
 const BATTLE_CHROME_SWEEP_CYCLE_MS = 6800;
 
+function getCommanderTurnState(activeSide, side) {
+  if (!activeSide) {
+    return "neutral";
+  }
+
+  return activeSide === side ? "active" : "inactive";
+}
+
 function getBattleChromeStyle(animationClockMs) {
   const animationClock = Number.isFinite(animationClockMs) ? animationClockMs : 0;
 
@@ -174,22 +182,28 @@ function renderDesktopBattlePanels(
 ) {
   return `
     <div class="battle-desktop-layout">
-      <aside class="battle-side-panel battle-side-panel--selected" aria-label="Selected Unit Intel">
-        ${renderSelectionDetails(playerFocusTile, {
-          title: "Selected Unit",
-          emptyTitle: "Selected Unit",
-          emptyBody: "Select a friendly unit, building, or tile to inspect it here.",
-          experiencePresentation
-        })}
-        ${renderRecruitPanel(battleSnapshot)}
-      </aside>
+      <div class="battle-side-panel-shell battle-side-panel-shell--selected">
+        <aside class="battle-side-panel battle-side-panel--selected" aria-label="Selected Unit Intel">
+          ${renderSelectionDetails(playerFocusTile, {
+            title: "Selected Unit",
+            emptyTitle: "Selected Unit",
+            emptyBody: "Select a friendly unit, building, or tile to inspect it here.",
+            experiencePresentation
+          })}
+          ${renderRecruitPanel(battleSnapshot)}
+        </aside>
+      </div>
       <div class="battle-side-stack battle-side-stack--right" aria-label="Target Intel and Command Feed">
-        <aside class="battle-side-panel battle-side-panel--target" aria-label="Target Intel">
-          ${renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)}
-        </aside>
-        <aside class="battle-side-panel battle-side-panel--feed" aria-label="Command Feed">
-          ${renderCommandFeed(battleSnapshot.log, hoveredTile)}
-        </aside>
+        <div class="battle-side-panel-shell battle-side-panel-shell--target">
+          <aside class="battle-side-panel battle-side-panel--target" aria-label="Target Intel">
+            ${renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)}
+          </aside>
+        </div>
+        <div class="battle-side-panel-shell battle-side-panel-shell--feed">
+          <aside class="battle-side-panel battle-side-panel--feed" aria-label="Command Feed">
+            ${renderCommandFeed(battleSnapshot.log, hoveredTile)}
+          </aside>
+        </div>
       </div>
     </div>
   `;
@@ -228,6 +242,7 @@ export function renderBattleHudView(state, options = {}) {
   const combatCutsceneActive = Boolean(combatCutscene);
   const experiencePresentation = options.experiencePresentation ?? null;
   const levelUpPresentation = options.levelUpPresentation ?? null;
+  const commanderTurnAnimationFromSide = options.commanderTurnAnimationFromSide ?? null;
 
   if (!battleSnapshot) {
     return "";
@@ -243,6 +258,15 @@ export function renderBattleHudView(state, options = {}) {
   const showFunds = battleSnapshot.mode !== BATTLE_MODES.RUN;
   const playerPowerActive = isCommanderPowerActiveForSide(battleSnapshot, TURN_SIDES.PLAYER);
   const enemyPowerActive = isCommanderPowerActiveForSide(battleSnapshot, TURN_SIDES.ENEMY);
+  const activeSide = battleSnapshot?.turn?.activeSide;
+  const playerTurnState = getCommanderTurnState(activeSide, TURN_SIDES.PLAYER);
+  const enemyTurnState = getCommanderTurnState(activeSide, TURN_SIDES.ENEMY);
+  const playerTurnAnimationFromState = commanderTurnAnimationFromSide
+    ? getCommanderTurnState(commanderTurnAnimationFromSide, TURN_SIDES.PLAYER)
+    : null;
+  const enemyTurnAnimationFromState = commanderTurnAnimationFromSide
+    ? getCommanderTurnState(commanderTurnAnimationFromSide, TURN_SIDES.ENEMY)
+    : null;
   const commanderAnimationClockMs =
     typeof performance !== "undefined" && typeof performance.now === "function"
       ? performance.now()
@@ -257,6 +281,8 @@ export function renderBattleHudView(state, options = {}) {
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
       <div class="battle-commanders">
         ${renderCommanderPanel(playerCommander, battleSnapshot.player, "player", {
+          turnState: playerTurnState,
+          turnAnimationFromState: playerTurnAnimationFromState,
           fundsGain,
           showFunds,
           canActivatePower: playerPowerEnabled,
@@ -265,6 +291,8 @@ export function renderBattleHudView(state, options = {}) {
           animationClockMs: commanderAnimationClockMs
         })}
         ${renderCommanderPanel(enemyCommander, battleSnapshot.enemy, "enemy", {
+          turnState: enemyTurnState,
+          turnAnimationFromState: enemyTurnAnimationFromState,
           fundsGain,
           showFunds,
           isActive: enemyPowerActive,

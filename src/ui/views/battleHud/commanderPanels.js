@@ -206,6 +206,8 @@ export function renderCommanderPanel(
   sideState,
   side,
   {
+    turnState = "neutral",
+    turnAnimationFromState = null,
     fundsGain = null,
     canActivatePower = false,
     isCharged = false,
@@ -217,9 +219,13 @@ export function renderCommanderPanel(
   const sideLabel = side === TURN_SIDES.PLAYER ? "Player Commander" : "Enemy Commander";
   const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
   const shellClassName = `commander-panel-shell commander-panel-shell--${side} ${
+    turnState ? `commander-panel-shell--turn-${turnState}` : ""
+  } ${
     isActive ? "commander-panel-shell--power-active" : ""
   }`.trim();
   const panelClassName = `commander-panel commander-panel--${side} ${
+    turnState ? `commander-panel--turn-${turnState}` : ""
+  } ${
     isActive ? "commander-panel--power-active" : ""
   }`.trim();
   const resolvedAnimationClockMs = Number.isFinite(animationClockMs)
@@ -229,10 +235,13 @@ export function renderCommanderPanel(
     isActive,
     animationClockMs: resolvedAnimationClockMs
   });
+  const turnAnimationFromAttribute = turnAnimationFromState
+    ? ` data-turn-animation-from="${turnAnimationFromState}"`
+    : "";
 
   return `
-    <div class="${shellClassName}" style="${panelStyle}">
-      <div class="${panelClassName}">
+    <div class="${shellClassName}" data-turn-state="${turnState}"${turnAnimationFromAttribute} style="${panelStyle}">
+      <div class="${panelClassName}" data-turn-state="${turnState}"${turnAnimationFromAttribute}>
         <div class="commander-panel__identity">
           ${
             portraitImageUrl

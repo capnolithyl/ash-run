@@ -196,6 +196,12 @@ test("battle HUD shows compact commander strips with hover-only commander toolti
   assert.match(battleShellTag, /--battle-chrome-sweep-delay:-?\d+ms/);
   assert.match(html, /battle-commanders[\s\S]*?commander-panel--player[\s\S]*?<h2>Viper<\/h2>/);
   assert.match(html, /battle-commanders[\s\S]*?commander-panel--enemy[\s\S]*?<h2>Rook<\/h2>/);
+  assert.match(html, /class="commander-panel-shell commander-panel-shell--player commander-panel-shell--turn-active"/);
+  assert.match(html, /class="commander-panel commander-panel--player commander-panel--turn-active"/);
+  assert.match(html, /class="commander-panel-shell commander-panel-shell--enemy commander-panel-shell--turn-inactive"/);
+  assert.match(html, /class="commander-panel commander-panel--enemy commander-panel--turn-inactive"/);
+  assert.match(html, /data-turn-state="active"/);
+  assert.match(html, /data-turn-state="inactive"/);
   assert.equal(countMatches(html, /role="tooltip"/g), 4);
   assert.equal(countMatches(html, /data-tooltip-trigger="trait"/g), 2);
   assert.equal(countMatches(html, /data-tooltip-trigger="active"/g), 2);
@@ -228,6 +234,39 @@ test("battle HUD keeps blaze and echo ability summaries inside commander tooltip
   assert.doesNotMatch(html, /halves attack/i);
   assert.doesNotMatch(html, /randomly halves one visible stat/i);
   assert.match(html, /data-tooltip-panel="active"/);
+});
+
+test("battle HUD can stage commander turn styling from the previous active side", () => {
+  const battleState = createTestBattleState();
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView(
+    {
+      battleSnapshot: system.getSnapshot(),
+      runState: {
+        mapIndex: 0,
+        targetMapCount: 10
+      },
+      battleUi: {
+        pauseMenuOpen: false,
+        confirmAbandon: false,
+        fundsGain: null,
+        hoveredTile: null,
+        playerFocus: null,
+        enemyFocus: null
+      },
+      debugMode: false,
+      runStatus: null,
+      banner: ""
+    },
+    {
+      commanderTurnAnimationFromSide: TURN_SIDES.ENEMY
+    }
+  );
+
+  assert.match(html, /commander-panel-shell--player commander-panel-shell--turn-active/);
+  assert.match(html, /commander-panel-shell--enemy commander-panel-shell--turn-inactive/);
+  assert.match(html, /commander-panel-shell--player[^"]*" data-turn-state="active" data-turn-animation-from="inactive"/);
+  assert.match(html, /commander-panel-shell--enemy[^"]*" data-turn-state="inactive" data-turn-animation-from="active"/);
 });
 
 test("battle HUD marks corrupted stats on the unit sidebar", () => {
@@ -327,8 +366,20 @@ test("battle HUD keeps player and enemy intel in separate sidebars", () => {
   });
 
   assert.match(html, /class="battle-desktop-layout"/);
+  assert.match(
+    html,
+    /class="battle-side-panel-shell battle-side-panel-shell--selected"[\s\S]*?<aside class="battle-side-panel battle-side-panel--selected"/
+  );
   assert.match(html, /battle-side-panel--selected[\s\S]*?Selected Unit[\s\S]*?Bruiser/);
+  assert.match(
+    html,
+    /class="battle-side-panel-shell battle-side-panel-shell--target"[\s\S]*?<aside class="battle-side-panel battle-side-panel--target"/
+  );
   assert.match(html, /battle-side-stack--right[\s\S]*?Target Intel[\s\S]*?Runner/);
+  assert.match(
+    html,
+    /class="battle-side-panel-shell battle-side-panel-shell--feed"[\s\S]*?<aside class="battle-side-panel battle-side-panel--feed"/
+  );
   assert.match(html, /battle-side-panel--feed[\s\S]*?Command Feed/);
   assert.doesNotMatch(html, /Player Intel/);
   assert.doesNotMatch(html, /Enemy Intel/);
@@ -756,6 +807,8 @@ test("battle HUD keeps the power meter visually active through the opposing turn
   assert.match(html, /commander-power-button--active/);
   assert.match(html, /commander-meter__segments--active/);
   assert.match(html, /commander-meter__active-label[^>]*>ACTIVE<\/span>/);
+  assert.match(html, /commander-panel-shell--player commander-panel-shell--turn-active/);
+  assert.match(html, /commander-panel-shell--enemy commander-panel-shell--turn-inactive/);
   assert.match(html, /commander-panel-shell--power-active/);
   assert.match(html, /commander-panel--power-active/);
   assert.match(html, /--commander-active-glow-delay:-\d+ms/);
@@ -789,6 +842,8 @@ test("battle HUD keeps the power meter visually active through the opposing turn
 
   assert.match(enemyTurnHtml, /commander-power-button--active/);
   assert.match(enemyTurnHtml, /commander-meter__active-label[^>]*>ACTIVE<\/span>/);
+  assert.match(enemyTurnHtml, /commander-panel-shell--player commander-panel-shell--turn-inactive/);
+  assert.match(enemyTurnHtml, /commander-panel-shell--enemy commander-panel-shell--turn-active/);
   assert.match(enemyTurnHtml, /commander-panel-shell--power-active/);
 
   assert.equal(system.finalizeEnemyTurn().changed, true);
@@ -813,6 +868,8 @@ test("battle HUD keeps the power meter visually active through the opposing turn
   });
 
   assert.doesNotMatch(nextPlayerTurnHtml, /commander-meter__active-label[^>]*>ACTIVE<\/span>/);
+  assert.match(nextPlayerTurnHtml, /commander-panel-shell--player commander-panel-shell--turn-active/);
+  assert.match(nextPlayerTurnHtml, /commander-panel-shell--enemy commander-panel-shell--turn-inactive/);
   assert.doesNotMatch(nextPlayerTurnHtml, /commander-panel-shell--power-active/);
 });
 

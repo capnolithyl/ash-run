@@ -63,6 +63,7 @@
 }
 
 .battle-side-stack,
+.battle-side-panel-shell,
 .battle-side-panel {
   min-height: 0;
 }
@@ -73,9 +74,121 @@
   pointer-events: none;
 }
 
+.battle-side-panel-shell {
+  --battle-side-shell-tilt: 0deg;
+  --battle-side-shell-shift: 0rem;
+  --battle-side-backplate-shift: 0rem;
+  --battle-side-backplate-opacity: 0.38;
+  --battle-side-highlight-opacity: 0.34;
+  position: relative;
+  display: flex;
+  min-height: 0;
+  isolation: isolate;
+  pointer-events: none;
+  transform:
+    perspective(1400px)
+    rotateY(var(--battle-side-shell-tilt))
+    translateX(var(--battle-side-shell-shift));
+  filter: drop-shadow(0 1.2rem 2.8rem rgba(5, 1, 14, 0.4));
+  transition:
+    transform 220ms ease,
+    filter 220ms ease;
+  will-change: transform, filter;
+}
+
+.battle-side-panel-shell::before,
+.battle-side-panel-shell::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.battle-side-panel-shell::before {
+  inset: 0.85rem 0.3rem -0.8rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--battle-side-color) 24%, rgba(255, 255, 255, 0.06)),
+      rgba(10, 5, 22, 0.78) 46%,
+      rgba(5, 1, 14, 0.28)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.1),
+      transparent 28%,
+      transparent 72%,
+      color-mix(in srgb, var(--battle-side-accent) 22%, transparent)
+    );
+  opacity: var(--battle-side-backplate-opacity);
+  transform: translateX(var(--battle-side-backplate-shift)) scale(0.992);
+  z-index: -2;
+}
+
+.battle-side-panel-shell::after {
+  inset: 0.42rem 0.95rem auto;
+  height: 1.05rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2) 18%,
+    color-mix(in srgb, var(--battle-side-accent) 34%, transparent) 50%,
+    transparent 100%
+  );
+  opacity: var(--battle-side-highlight-opacity);
+  transform: translateX(calc(var(--battle-side-backplate-shift) * 0.4));
+  z-index: -1;
+}
+
 .battle-side-stack--right {
   grid-column: 3;
   grid-template-rows: minmax(0, 1.08fr) minmax(12.25rem, 0.72fr);
+}
+
+.battle-side-panel-shell--selected {
+  --battle-side-color: #ff4fd8;
+  --battle-side-accent: #6ee4ff;
+  --battle-side-shell-tilt: 4deg;
+  --battle-side-shell-shift: -0.18rem;
+  --battle-side-backplate-shift: 0.92rem;
+  grid-column: 1;
+}
+
+.battle-side-panel-shell--target,
+.battle-side-panel-shell--feed {
+  --battle-side-color: #ff8a3d;
+  --battle-side-accent: #ff54da;
+  --battle-side-shell-tilt: -4deg;
+  --battle-side-shell-shift: 0.18rem;
+  --battle-side-backplate-shift: -0.92rem;
+}
+
+.battle-side-panel-shell--selected::before {
+  clip-path: polygon(
+    0 1.1rem,
+    1.24rem 0,
+    100% 0,
+    100% calc(100% - 1.54rem),
+    calc(100% - 1.38rem) 100%,
+    0.88rem 100%,
+    0 calc(100% - 0.96rem)
+  );
+}
+
+.battle-side-panel-shell--target::before,
+.battle-side-panel-shell--feed::before {
+  clip-path: polygon(
+    1.1rem 0,
+    100% 0,
+    100% calc(100% - 0.94rem),
+    calc(100% - 0.88rem) 100%,
+    0 100%,
+    0 1.28rem
+  );
+}
+
+.battle-side-panel-shell > .battle-side-panel {
+  width: 100%;
+  height: 100%;
 }
 
 .battle-side-panel {
@@ -103,6 +216,10 @@
     inset 0 0 30px color-mix(in srgb, var(--battle-side-color) 10%, transparent),
     0 0 24px var(--battle-side-glow),
     0 28px 72px rgba(5, 1, 14, 0.68);
+  transition:
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    filter 220ms ease;
 }
 
 .battle-side-panel::before,
@@ -655,6 +772,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .battle-side-panel-shell,
+  .battle-side-panel {
+    transition: none;
+  }
+
   .battle-shell--animated-chrome .battle-side-panel::after,
   .battle-shell--animated-chrome .battle-footer-meta::after,
   .battle-shell--animated-chrome .battle-compact-sheet::after,

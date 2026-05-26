@@ -10,6 +10,8 @@ import {
   renderTargetIntelPanel
 } from "../../views/battleHud/selectionPanels.js";
 
+const COMMANDER_TURN_TRANSITION_CLEAR_MS = 420;
+
 function getTileKey(tile) {
   if (!tile || !Number.isInteger(tile.x) || !Number.isInteger(tile.y)) {
     return null;
@@ -106,6 +108,40 @@ function buildBattleRenderSignature(state) {
 }
 
 export const appShellBattleScreenMethods = {
+  queueCommanderTurnTransition() {
+    if (this.commanderTurnAnimationFrame) {
+      window.cancelAnimationFrame(this.commanderTurnAnimationFrame);
+      this.commanderTurnAnimationFrame = null;
+    }
+
+    if (this.commanderTurnAnimationSettleFrame) {
+      window.cancelAnimationFrame(this.commanderTurnAnimationSettleFrame);
+      this.commanderTurnAnimationSettleFrame = null;
+    }
+
+    if (this.commanderTurnAnimationClearTimer) {
+      window.clearTimeout(this.commanderTurnAnimationClearTimer);
+      this.commanderTurnAnimationClearTimer = null;
+    }
+
+    this.commanderTurnAnimationFrame = window.requestAnimationFrame(() => {
+      this.commanderTurnAnimationFrame = null;
+      this.commanderTurnAnimationSettleFrame = window.requestAnimationFrame(() => {
+        this.commanderTurnAnimationSettleFrame = null;
+
+        for (const element of this.root.querySelectorAll("[data-turn-animation-from]")) {
+          element.removeAttribute("data-turn-animation-from");
+        }
+      });
+    });
+
+    this.commanderTurnAnimationClearTimer = window.setTimeout(() => {
+      this.commanderTurnAnimationClearTimer = null;
+      this.pendingCommanderTurnAnimationFromSide = null;
+      this.pendingCommanderTurnAnimationTurnKey = null;
+    }, COMMANDER_TURN_TRANSITION_CLEAR_MS);
+  },
+
   applyTutorialHighlights(state) {
     for (const element of this.root.querySelectorAll("[data-tutorial-highlight]")) {
       element.removeAttribute("data-tutorial-highlight");
@@ -224,6 +260,19 @@ export const appShellBattleScreenMethods = {
     const turnBanner = this.getTurnBanner(state);
     const experiencePresentation = this.getBattleExperiencePresentation();
     const levelUpPresentation = this.getLevelUpPresentation(state, { suppressLevelUpOverlay });
+    const previousActiveSide = this.previousBattleSnapshot?.turn?.activeSide ?? null;
+    const currentActiveSide = state.battleSnapshot?.turn?.activeSide ?? null;
+    const currentTurnKey = this.getTurnKey(state.battleSnapshot);
+    const detectedCommanderTurnAnimationFromSide =
+      previousActiveSide && previousActiveSide !== currentActiveSide ? previousActiveSide : null;
+    if (detectedCommanderTurnAnimationFromSide && currentTurnKey) {
+      this.pendingCommanderTurnAnimationFromSide = detectedCommanderTurnAnimationFromSide;
+      this.pendingCommanderTurnAnimationTurnKey = currentTurnKey;
+    }
+    const commanderTurnAnimationFromSide =
+      currentTurnKey && this.pendingCommanderTurnAnimationTurnKey === currentTurnKey
+        ? this.pendingCommanderTurnAnimationFromSide
+        : detectedCommanderTurnAnimationFromSide;
     const previousMeterState = this.captureBattleMeterState();
     this.captureBattleDrawerState();
     this.root.innerHTML = renderBattleHudView(state, {
@@ -231,8 +280,12 @@ export const appShellBattleScreenMethods = {
       suppressOutcomeOverlay,
       turnBanner,
       experiencePresentation,
-      levelUpPresentation
+      levelUpPresentation,
+      commanderTurnAnimationFromSide
     });
+    if (commanderTurnAnimationFromSide) {
+      this.queueCommanderTurnTransition();
+    }
     this.syncDebugSpawnStatFields();
     this.applyBattleDrawerState();
     this.animateBattleMeters(previousMeterState);
@@ -265,6 +318,21 @@ export const appShellBattleScreenMethods = {
       this.fundsAnimationFrame = null;
     }
 
+    if (this.commanderTurnAnimationFrame) {
+      window.cancelAnimationFrame(this.commanderTurnAnimationFrame);
+      this.commanderTurnAnimationFrame = null;
+    }
+
+    if (this.commanderTurnAnimationSettleFrame) {
+      window.cancelAnimationFrame(this.commanderTurnAnimationSettleFrame);
+      this.commanderTurnAnimationSettleFrame = null;
+    }
+
+    if (this.commanderTurnAnimationClearTimer) {
+      window.clearTimeout(this.commanderTurnAnimationClearTimer);
+      this.commanderTurnAnimationClearTimer = null;
+    }
+
     this.stopCombatCutscenePlayback();
     this.clearBattlePresentationPlayback();
 
@@ -285,6 +353,8 @@ export const appShellBattleScreenMethods = {
     this.battleDrawers.compactSelectedScrollTop = 0;
     this.battleDrawers.compactTargetScrollTop = 0;
     this.battleDrawers.compactFeedScrollTop = 0;
+    this.pendingCommanderTurnAnimationFromSide = null;
+    this.pendingCommanderTurnAnimationTurnKey = null;
     this.previousBattleRenderSignature = null;
   },
 

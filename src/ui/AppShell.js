@@ -29,6 +29,11 @@ export class AppShell {
     this.turnBannerUntil = 0;
     this.turnBannerTimer = null;
     this.lastTurnBannerKey = null;
+    this.commanderTurnAnimationFrame = null;
+    this.commanderTurnAnimationSettleFrame = null;
+    this.commanderTurnAnimationClearTimer = null;
+    this.pendingCommanderTurnAnimationFromSide = null;
+    this.pendingCommanderTurnAnimationTurnKey = null;
     this.combatCutscenePlayback = null;
     this.fundsAnimationFrame = null;
     this.activeFundsGainElement = null;
