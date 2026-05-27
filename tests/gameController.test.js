@@ -22,6 +22,23 @@ test.afterEach(() => {
   replaceCustomMaps([]);
 });
 
+test("updateOptions persists string-valued visual effect selections", async () => {
+  let savedMeta = null;
+  const controller = new GameController({
+    async saveMeta(metaState) {
+      savedMeta = structuredClone(metaState);
+      return metaState;
+    }
+  });
+
+  await controller.updateOptions({
+    visualEffectsQuality: "full"
+  });
+
+  assert.equal(controller.getState().metaState.options.visualEffectsQuality, "full");
+  assert.equal(savedMeta?.options?.visualEffectsQuality, "full");
+});
+
 test("initialize seeds custom maps before the first ready state emit", async () => {
   const emittedStates = [];
   const controller = new GameController({

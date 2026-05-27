@@ -11,6 +11,7 @@ import {
   normalizeBattleState,
   normalizeRunState
 } from "../state/runFactory.js";
+import { normalizeMetaOptions } from "../state/options.js";
 import {
   createBattleUiState,
   createDefaultRunLoadoutState,
@@ -434,10 +435,10 @@ export const controllerFlowMethods = {
   },
 
   async updateOptions(patch) {
-    this.state.metaState.options = {
+    this.state.metaState.options = normalizeMetaOptions({
       ...this.state.metaState.options,
       ...patch
-    };
+    });
     await this.storage.saveMeta(this.state.metaState);
     this.emit();
   },

@@ -62,9 +62,15 @@ test("new audio options default to a quiet master volume", () => {
   const fallbackOptionsHtml = renderOptionFields({});
 
   assert.equal(metaState.options.combatCutsceneAnimations, true);
+  assert.equal(metaState.options.visualEffectsQuality, "low");
   assert.equal(metaState.options.masterVolume, 0.4);
   assert.equal(metaState.options.muted, false);
   assert.match(fallbackOptionsHtml, /Combat Cutscene Animations/);
+  assert.match(fallbackOptionsHtml, /Visual Effects/);
+  assert.match(
+    fallbackOptionsHtml,
+    /<option value="low" selected>Low<\/option>/
+  );
   assert.match(
     fallbackOptionsHtml,
     /<input type="checkbox"[^>]*checked[^>]*data-option="combatCutsceneAnimations"/

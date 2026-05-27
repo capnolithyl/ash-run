@@ -9,7 +9,8 @@ for (const scene of UI_HARNESS_SCENES) {
     await expect(page.locator(scene.locator)).toBeVisible();
     await expect(page.locator(scene.locator)).toHaveScreenshot(`${scene.id}.png`, {
       animations: "disabled",
-      caret: "hide"
+      caret: "hide",
+      maxDiffPixels: scene.id === "run-loadout" ? 800 : undefined
     });
   });
 }

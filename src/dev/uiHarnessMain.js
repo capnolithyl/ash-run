@@ -46,6 +46,9 @@ function renderSceneMarkup(sceneId, state) {
       return renderMapEditorView(state);
     case "battle-commander-layout":
     case "battle-targeting":
+    case "battle-power-activation":
+    case "battle-combat-cutscene":
+    case "battle-tutorial":
     case "battle-pause":
     case "battle-reward":
     case "battle-run-complete":

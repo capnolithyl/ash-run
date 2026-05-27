@@ -6,6 +6,8 @@ import {
   TERRAIN_KEYS,
   TURN_SIDES
 } from "../game/core/constants.js";
+import { getCommanderPortraitImageUrl } from "../game/content/commanderArt.js";
+import { getCommanderById, getCommanderPowerMax } from "../game/content/commanders.js";
 import { createBlankMapDefinition, createDefaultMapEditorState } from "../game/content/mapEditor.js";
 import { RUN_UPGRADES } from "../game/content/runUpgrades.js";
 import {
@@ -18,6 +20,7 @@ import { createBattlefield } from "../game/content/mapFactory.js";
 import { createDefaultMetaState, createEmptySlotSummaries } from "../game/state/defaults.js";
 import { BattleSystem } from "../game/simulation/battleSystem.js";
 import { createUnitFromType } from "../game/simulation/unitFactory.js";
+import { deriveBattleCombatCutscene } from "../game/phaser/view/battleCombatCutscene.js";
 
 function createPlacedUnit(unitTypeId, owner, x, y, overrides = {}) {
   const unit = createUnitFromType(unitTypeId, owner, overrides.level ?? 1);
@@ -188,6 +191,7 @@ function createOptionsState() {
     ...metaState.options,
     showGrid: false,
     screenShake: true,
+    visualEffectsQuality: "full",
     masterVolume: 0.65,
     muted: false
   };
@@ -397,6 +401,83 @@ function createBattlePauseState() {
   return state;
 }
 
+function createBattlePowerActivationState() {
+  const state = createBattleCommanderLayoutState();
+  const commander = getCommanderById("atlas");
+
+  state.metaState.options = {
+    ...state.metaState.options,
+    visualEffectsQuality: "full"
+  };
+  state.battleSnapshot.player.commanderId = commander.id;
+  state.battleSnapshot.player.charge = getCommanderPowerMax(commander.id);
+  state.battleSnapshot.player.powerUsedTurn = state.battleSnapshot.turn.number;
+  state.battleUi.powerOverlay = {
+    id: "power-preview",
+    side: TURN_SIDES.PLAYER,
+    commanderName: commander.name,
+    commanderTitle: commander.title,
+    powerName: commander.active.name,
+    portraitImageUrl: getCommanderPortraitImageUrl(commander.id),
+    accent: commander.accent
+  };
+
+  return state;
+}
+
+function createBattleCombatCutsceneState() {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 2);
+  const battleState = createTestBattleState({
+    id: "ui-harness-cutscene",
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  const system = new BattleSystem(battleState);
+  const previousSnapshot = system.getSnapshot();
+
+  system.attackTarget(attacker.id, defender.id);
+
+  const nextSnapshot = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(previousSnapshot, nextSnapshot);
+
+  return {
+    screen: SCREEN_IDS.BATTLE,
+    battleSnapshot: nextSnapshot,
+    runState: {
+      mapIndex: 1,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      notice: null,
+      powerOverlay: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null,
+      combatCutscene: cutscene
+        ? {
+            id: "combat-cutscene-preview",
+            startedAt: Date.now() - (cutscene.revealStartMs + cutscene.openMs + 80),
+            ...cutscene
+          }
+        : null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: "",
+    metaState: {
+      ...createBaseMetaState(),
+      options: {
+        ...createBaseMetaState().options,
+        visualEffectsQuality: "full"
+      }
+    }
+  };
+}
+
 function createBattleRewardState() {
   const state = createBaseBattleScreenState();
   state.runStatus = "reward";
@@ -550,6 +631,8 @@ export const UI_HARNESS_SCENES = [
   { id: "map-editor", label: "Map Editor", locator: ".battle-shell" },
   { id: "battle-commander-layout", label: "Battle Commander Layout", locator: ".battle-shell" },
   { id: "battle-targeting", label: "Battle HUD Targeting", locator: ".battle-shell" },
+  { id: "battle-power-activation", label: "Battle Power Activation", locator: ".battle-shell" },
+  { id: "battle-combat-cutscene", label: "Battle Combat Cutscene", locator: ".battle-shell" },
   { id: "battle-tutorial", label: "Battle Tutorial Guide", locator: ".battle-shell" },
   { id: "battle-pause", label: "Battle HUD Pause", locator: ".battle-shell" },
   { id: "battle-reward", label: "Battle Reward", locator: ".battle-shell" },
@@ -609,6 +692,16 @@ export function createUiHarnessScene(sceneId) {
       return {
         sceneId,
         state: createBattleTargetingState()
+      };
+    case "battle-power-activation":
+      return {
+        sceneId,
+        state: createBattlePowerActivationState()
+      };
+    case "battle-combat-cutscene":
+      return {
+        sceneId,
+        state: createBattleCombatCutsceneState()
       };
     case "battle-tutorial":
       return {

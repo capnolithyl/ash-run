@@ -5,6 +5,9 @@ const { contextBridge, ipcRenderer } = require("electron");
  * Keeping the bridge in `.cjs` avoids the module-loader mismatch shown in devtools.
  */
 contextBridge.exposeInMainWorld("ashRun84Api", {
+  getRuntimeConfig: () => ({
+    phaserRenderer: process.env.ASH_RUN_84_PHASER_RENDERER ?? null
+  }),
   loadMeta: () => ipcRenderer.invoke("storage:load-meta"),
   saveMeta: (metaState) => ipcRenderer.invoke("storage:save-meta", metaState),
   listSlots: () => ipcRenderer.invoke("storage:list-slots"),

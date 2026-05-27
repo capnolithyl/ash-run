@@ -125,6 +125,10 @@ export class UnitLayer {
     this.cellSize = null;
   }
 
+  getEntity(unitId) {
+    return this.entities.get(unitId) ?? null;
+  }
+
   createEntity(unit, layout) {
     const color = getOwnerColor(unit.owner);
     const visualSpec = getUnitVisualSpec(this.scene, unit);

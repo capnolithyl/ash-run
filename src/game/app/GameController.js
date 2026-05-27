@@ -2,6 +2,7 @@ import { createEmitter } from "../core/emitter.js";
 import { BATTLE_MODES, SCREEN_IDS, SLOT_IDS } from "../core/constants.js";
 import { StorageRepository } from "../services/StorageRepository.js";
 import { createDefaultMetaState } from "../state/defaults.js";
+import { normalizeMetaOptions } from "../state/options.js";
 import {
   createBattleUiState,
   createDefaultRunLoadoutState,
@@ -81,10 +82,10 @@ export class GameController {
     this.state.metaState = {
       ...defaultMeta,
       ...loadedMeta,
-      options: {
+      options: normalizeMetaOptions({
         ...defaultMeta.options,
         ...(loadedMeta?.options ?? {})
-      }
+      })
     };
     replaceCustomMaps((await this.storage.listCustomMaps?.()) ?? []);
     this.state.slots = await this.storage.listSlots();

@@ -7,6 +7,9 @@ import path from "node:path";
 export default {
   root: process.cwd(),
   assetsInclude: ["**/*.cur", "**/*.ani"],
+  define: {
+    __ASH_RUN_84_PHASER_RENDERER__: JSON.stringify(process.env.ASH_RUN_84_PHASER_RENDERER ?? "")
+  },
   server: {
     host: "127.0.0.1",
     port: 5173,

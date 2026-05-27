@@ -6,6 +6,7 @@ import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifes
 
 const root = process.cwd();
 const port = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
+const phaserRendererOverride = JSON.stringify(process.env.ASH_RUN_84_PHASER_RENDERER ?? "");
 
 await generateBuildingSpriteManifest({ root });
 await generateMapManifest({ root });
@@ -15,6 +16,9 @@ await generateUnitSpriteSheetManifest({ root });
 const server = await createServer({
   configFile: false,
   root,
+  define: {
+    __ASH_RUN_84_PHASER_RENDERER__: phaserRendererOverride
+  },
   server: {
     host: "127.0.0.1",
     port,

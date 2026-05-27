@@ -1,4 +1,5 @@
 import { SCREEN_IDS } from "../../../game/core/constants.js";
+import { normalizeVisualEffectsQuality } from "../../../game/state/options.js";
 import { titleCaseSlot } from "../../formatters.js";
 import { renderCommanderSelectView } from "../../views/commanderSelectView.js";
 import { renderMapEditorView } from "../../views/mapEditorView.js";
@@ -12,6 +13,10 @@ import { renderTutorialView } from "../../views/tutorialView.js";
 
 export const appShellScreenRouterMethods = {
   render(state) {
+    this.root.dataset.visualEffectsQuality = normalizeVisualEffectsQuality(
+      state.metaState?.options?.visualEffectsQuality
+    );
+
     if (state.screen !== SCREEN_IDS.MAP_EDITOR) {
       this.resetMapEditorUiState();
     }

@@ -1,12 +1,14 @@
 import { DEFAULT_SAVE_VERSION, PROTOTYPE_RUN_GOAL, SLOT_IDS } from "../core/constants.js";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
+import { DEFAULT_VISUAL_EFFECTS_QUALITY } from "./options.js";
 
 function createDefaultOptions() {
   return {
     showGrid: true,
     screenShake: true,
     combatCutsceneAnimations: true,
+    visualEffectsQuality: DEFAULT_VISUAL_EFFECTS_QUALITY,
     masterVolume: 0.4,
     muted: false
   };

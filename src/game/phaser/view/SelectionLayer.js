@@ -1,7 +1,15 @@
 import Phaser from "phaser";
+import { canCaptureBuilding } from "../../simulation/captureRules.js";
+import {
+  getBuildingAt,
+  getSelectedBuilding,
+  getSelectedUnit
+} from "../../simulation/selectors.js";
 import { buildForecastTooltipLabel } from "./selectionTooltip.js";
 
-const SELECTION_DEPTH = 24;
+const RANGE_DEPTH = 24;
+const BUILDING_HIGHLIGHT_DEPTH = 25;
+const FOCUS_DEPTH = 26;
 const CURSOR_DEPTH = 34;
 const TOOLTIP_BACKGROUND_DEPTH = 62;
 const TOOLTIP_LABEL_DEPTH = 63;
@@ -110,6 +118,17 @@ function drawMovementPath(graphics, layout, path) {
   graphics.strokePath();
 }
 
+function drawTileFrame(graphics, layout, tile, color, fillAlpha, strokeAlpha) {
+  const x = layout.originX + tile.x * layout.cellSize;
+  const y = layout.originY + tile.y * layout.cellSize;
+
+  graphics.fillStyle(color, fillAlpha);
+  graphics.fillRoundedRect(x + 1, y + 1, layout.cellSize - 4, layout.cellSize - 4, 7);
+  graphics.lineStyle(3, color, strokeAlpha);
+  graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+  drawCornerMarkers(graphics, x + 5, y + 5, layout.cellSize - 12, 0xfff2d4, 0.88);
+}
+
 function drawSpawnMarker(graphics, layout, spawn, color, label) {
   const center = getTileCenter(layout, spawn);
   const radius = Math.max(8, layout.cellSize * 0.16);
@@ -121,15 +140,32 @@ function drawSpawnMarker(graphics, layout, spawn, color, label) {
   graphics.lineStyle(2, 0xfff2d4, 0.95);
   graphics.strokeCircle(center.x, center.y, radius + 1);
   graphics.fillStyle(0xfff8ef, 0.96);
-  graphics.fillRoundedRect(center.x - radius * 0.55, center.y - radius * 0.7, radius * 1.1, radius * 1.3, 4);
+  graphics.fillRoundedRect(
+    center.x - radius * 0.55,
+    center.y - radius * 0.7,
+    radius * 1.1,
+    radius * 1.3,
+    4
+  );
   graphics.lineStyle(1.5, 0x12061f, 0.7);
-  graphics.strokeRoundedRect(center.x - radius * 0.55, center.y - radius * 0.7, radius * 1.1, radius * 1.3, 4);
+  graphics.strokeRoundedRect(
+    center.x - radius * 0.55,
+    center.y - radius * 0.7,
+    radius * 1.1,
+    radius * 1.3,
+    4
+  );
   graphics.lineStyle(2.2, 0x12061f, 0.92);
   graphics.strokeLineShape(
-    new Phaser.Geom.Line(center.x, center.y + radius * 0.65, center.x, center.y + radius * 1.65)
+    new Phaser.Geom.Line(
+      center.x,
+      center.y + radius * 0.65,
+      center.x,
+      center.y + radius * 1.65
+    )
   );
 
-  const text = graphics.scene.add
+  return graphics.scene.add
     .text(center.x, center.y - 1, label, {
       fontFamily: "Bahnschrift SemiCondensed, sans-serif",
       fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.18))}px`,
@@ -137,8 +173,6 @@ function drawSpawnMarker(graphics, layout, spawn, color, label) {
     })
     .setOrigin(0.5)
     .setDepth(CURSOR_DEPTH + 1);
-
-  return text;
 }
 
 function drawObjectiveMarker(graphics, layout, marker) {
@@ -203,7 +237,9 @@ function resolveTutorialHighlight(snapshot, highlight) {
   }
 
   if (highlight.type === "building") {
-    const building = (snapshot.map?.buildings ?? []).find((candidate) => candidate.id === highlight.id);
+    const building = (snapshot.map?.buildings ?? []).find(
+      (candidate) => candidate.id === highlight.id
+    );
 
     return building
       ? {
@@ -233,14 +269,27 @@ function drawTutorialHighlight(graphics, layout, snapshot, highlight, index) {
   graphics.fillStyle(color, 0.16);
   graphics.fillRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 8);
   graphics.lineStyle(4, 0x12061f, 0.72);
-  graphics.strokeRoundedRect(x + inset - 1, y + inset - 1, layout.cellSize - inset * 2, layout.cellSize - inset * 2, 8);
+  graphics.strokeRoundedRect(
+    x + inset - 1,
+    y + inset - 1,
+    layout.cellSize - inset * 2,
+    layout.cellSize - inset * 2,
+    8
+  );
   graphics.lineStyle(3, color, 0.98);
-  graphics.strokeRoundedRect(x + inset, y + inset, layout.cellSize - inset * 2, layout.cellSize - inset * 2, 8);
+  graphics.strokeRoundedRect(
+    x + inset,
+    y + inset,
+    layout.cellSize - inset * 2,
+    layout.cellSize - inset * 2,
+    8
+  );
   drawCornerMarkers(graphics, x + 5, y + 5, layout.cellSize - 12, 0xfff2d4, 0.94);
 
   const badgeX = x + layout.cellSize * 0.5;
   const badgeY = y - Math.max(8, layout.cellSize * 0.12);
-  const label = graphics.scene.add
+
+  return graphics.scene.add
     .text(badgeX, badgeY, labelText, {
       fontFamily: "Bahnschrift SemiCondensed, sans-serif",
       fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.18))}px`,
@@ -253,18 +302,144 @@ function drawTutorialHighlight(graphics, layout, snapshot, highlight, index) {
     })
     .setOrigin(0.5)
     .setDepth(CURSOR_DEPTH + 2);
+}
 
-  return label;
+function getRelevantBuildingToneRank(tone) {
+  switch (tone) {
+    case "selected":
+      return 3;
+    case "capture":
+      return 2;
+    case "mission":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function addRelevantBuildingHighlight(highlights, building, tone) {
+  if (!building) {
+    return;
+  }
+
+  const key = `${building.x},${building.y}`;
+  const nextHighlight = {
+    x: building.x,
+    y: building.y,
+    tone
+  };
+  const existingHighlight = highlights.get(key);
+
+  if (
+    !existingHighlight ||
+    getRelevantBuildingToneRank(tone) > getRelevantBuildingToneRank(existingHighlight.tone)
+  ) {
+    highlights.set(key, nextHighlight);
+  }
+}
+
+function buildRelevantBuildingHighlights(snapshot) {
+  const highlights = new Map();
+  const selectedBuilding = getSelectedBuilding(snapshot);
+  const selectedUnit = getSelectedUnit(snapshot);
+  const presentation = snapshot.presentation ?? {};
+  const pendingAction = presentation.pendingAction ?? snapshot.pendingAction ?? null;
+  const unitsById = new Map(
+    [...(snapshot.player?.units ?? []), ...(snapshot.enemy?.units ?? [])].map((unit) => [
+      unit.id,
+      unit
+    ])
+  );
+  const reachableTileKeys = new Set(
+    (presentation.reachableTiles ?? []).map((tile) => `${tile.x},${tile.y}`)
+  );
+
+  if (selectedBuilding) {
+    addRelevantBuildingHighlight(highlights, selectedBuilding, "selected");
+  }
+
+  if (selectedUnit?.owner === "player" && reachableTileKeys.size > 0) {
+    for (const building of snapshot.map?.buildings ?? []) {
+      if (
+        reachableTileKeys.has(`${building.x},${building.y}`) &&
+        canCaptureBuilding(selectedUnit, building)
+      ) {
+        addRelevantBuildingHighlight(highlights, building, "capture");
+      }
+    }
+  }
+
+  if (
+    pendingAction?.unitId &&
+    Number.isInteger(pendingAction.toX) &&
+    Number.isInteger(pendingAction.toY)
+  ) {
+    const actingUnit = unitsById.get(pendingAction.unitId);
+    const pendingBuilding = getBuildingAt(snapshot, pendingAction.toX, pendingAction.toY);
+
+    if (canCaptureBuilding(actingUnit, pendingBuilding)) {
+      addRelevantBuildingHighlight(highlights, pendingBuilding, "capture");
+    }
+  }
+
+  for (const marker of presentation.mission?.markers ?? []) {
+    const missionBuilding = getBuildingAt(snapshot, marker.x, marker.y);
+
+    if (missionBuilding) {
+      addRelevantBuildingHighlight(highlights, missionBuilding, "mission");
+    }
+  }
+
+  return [...highlights.values()];
+}
+
+function drawRelevantBuildingOverlay(graphics, layout, highlight) {
+  const color =
+    highlight.tone === "selected"
+      ? 0xffd06a
+      : highlight.tone === "capture"
+        ? 0x78dcff
+        : 0xff8a3d;
+  const fillAlpha =
+    highlight.tone === "selected"
+      ? 0.18
+      : highlight.tone === "capture"
+        ? 0.14
+        : 0.12;
+  const strokeAlpha = highlight.tone === "mission" ? 0.84 : 0.92;
+
+  drawTileFrame(graphics, layout, highlight, color, fillAlpha, strokeAlpha);
+}
+
+function drawUnitFocusOverlay(graphics, layout, unit, config = {}) {
+  if (!unit) {
+    return;
+  }
+
+  drawTileFrame(
+    graphics,
+    layout,
+    unit,
+    config.color ?? 0xfff2d4,
+    config.fillAlpha ?? 0.1,
+    config.strokeAlpha ?? 0.92
+  );
 }
 
 export class SelectionLayer {
   constructor(scene) {
     this.scene = scene;
-    this.graphics = scene.add.graphics();
-    this.graphics.setDepth(SELECTION_DEPTH);
+    this.rangeGraphics = scene.add.graphics();
+    this.rangeGraphics.setDepth(RANGE_DEPTH);
+    this.buildingGraphics = scene.add.graphics();
+    this.buildingGraphics.setDepth(BUILDING_HIGHLIGHT_DEPTH);
+    this.focusGraphics = scene.add.graphics();
+    this.focusGraphics.setDepth(FOCUS_DEPTH);
     this.cursorGraphics = scene.add.graphics();
     this.cursorGraphics.setDepth(CURSOR_DEPTH);
-    this.tooltipBackground = scene.add.rectangle(0, 0, 10, 10, 0x12061f, 0.9).setVisible(false);
+    this.tooltipBackground = scene.add
+      .rectangle(0, 0, 10, 10, 0x12061f, 0.9)
+      .setVisible(false);
     this.tooltipBackground.setStrokeStyle(2, 0xff8a3d, 0.95);
     this.tooltipLabel = scene.add
       .text(0, 0, "", {
@@ -278,15 +453,39 @@ export class SelectionLayer {
     this.tooltipBackground.setDepth(TOOLTIP_BACKGROUND_DEPTH);
     this.tooltipLabel.setDepth(TOOLTIP_LABEL_DEPTH);
     this.markerLabels = [];
+    this.fxState = {
+      hasRangeHighlights: false,
+      hasFocusHighlights: false,
+      hasBuildingHighlights: false
+    };
   }
 
   clear() {
-    this.graphics.clear();
+    this.rangeGraphics.clear();
+    this.buildingGraphics.clear();
+    this.focusGraphics.clear();
     this.cursorGraphics.clear();
     this.markerLabels.forEach((label) => label.destroy());
     this.markerLabels = [];
     this.tooltipBackground.setVisible(false);
     this.tooltipLabel.setVisible(false);
+    this.fxState = {
+      hasRangeHighlights: false,
+      hasFocusHighlights: false,
+      hasBuildingHighlights: false
+    };
+  }
+
+  getFxTargets() {
+    return {
+      rangeGraphics: this.rangeGraphics,
+      buildingGraphics: this.buildingGraphics,
+      focusGraphics: this.focusGraphics
+    };
+  }
+
+  getFxState() {
+    return { ...this.fxState };
   }
 
   render(
@@ -300,45 +499,84 @@ export class SelectionLayer {
   ) {
     this.clear();
     const markerLabels = [];
+    let hasRangeHighlights = false;
+    let hasFocusHighlights = false;
+    let hasBuildingHighlights = false;
 
     const presentation = snapshot.presentation ?? {};
+    const selectedUnit = getSelectedUnit(snapshot);
+    const activeUnitId = presentation.pendingAction?.unitId ?? snapshot.pendingAction?.unitId ?? null;
+    const activeUnit = activeUnitId
+      ? [...snapshot.player.units, ...snapshot.enemy.units].find((unit) => unit.id === activeUnitId) ??
+        null
+      : null;
     const unloadTiles =
       presentation.pendingAction?.mode === "unload"
-        ? presentation.pendingAction.unloadPreviewTiles ?? presentation.unloadPreviewTiles ?? []
+        ? presentation.pendingAction.unloadPreviewTiles ??
+          presentation.unloadPreviewTiles ??
+          []
         : presentation.unloadPreviewTiles ?? [];
 
     for (const tile of unloadTiles) {
       const x = layout.originX + tile.x * layout.cellSize;
       const y = layout.originY + tile.y * layout.cellSize;
-      this.graphics.fillStyle(0x66ffbf, 0.28);
-      this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-      this.graphics.lineStyle(3, 0xf6fffe, 0.78);
-      this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 4);
-      drawCornerMarkers(this.graphics, x + 4, y + 4, layout.cellSize - 10, 0x66ffbf, 0.95);
+      this.rangeGraphics.fillStyle(0x66ffbf, 0.28);
+      this.rangeGraphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+      this.rangeGraphics.lineStyle(3, 0xf6fffe, 0.78);
+      this.rangeGraphics.strokeRoundedRect(
+        x + 3,
+        y + 3,
+        layout.cellSize - 8,
+        layout.cellSize - 8,
+        4
+      );
+      drawCornerMarkers(
+        this.rangeGraphics,
+        x + 4,
+        y + 4,
+        layout.cellSize - 10,
+        0x66ffbf,
+        0.95
+      );
+      hasRangeHighlights = true;
     }
 
     if (showGridHighlights) {
       const moveTiles =
         presentation.reachableTiles?.length > 0
           ? presentation.reachableTiles
-          : (presentation.movePreviewTiles ?? []);
+          : presentation.movePreviewTiles ?? [];
       const moveFillAlpha = presentation.reachableTiles?.length > 0 ? 0.22 : 0.12;
       const moveStrokeAlpha = presentation.reachableTiles?.length > 0 ? 0.42 : 0.24;
 
       for (const tile of moveTiles) {
         const x = layout.originX + tile.x * layout.cellSize;
         const y = layout.originY + tile.y * layout.cellSize;
-        this.graphics.fillStyle(0x985dff, moveFillAlpha);
-        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-        this.graphics.lineStyle(2, 0xff4fd8, moveStrokeAlpha);
-        this.graphics.strokeRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 4);
+        this.rangeGraphics.fillStyle(0x985dff, moveFillAlpha);
+        this.rangeGraphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.rangeGraphics.lineStyle(2, 0xff4fd8, moveStrokeAlpha);
+        this.rangeGraphics.strokeRoundedRect(
+          x + 2,
+          y + 2,
+          layout.cellSize - 6,
+          layout.cellSize - 6,
+          4
+        );
+        hasRangeHighlights = true;
       }
 
       for (const tile of presentation.attackPreviewTiles ?? []) {
         const x = layout.originX + tile.x * layout.cellSize;
         const y = layout.originY + tile.y * layout.cellSize;
-        this.graphics.lineStyle(1.8, 0xff8a3d, 0.36);
-        this.graphics.strokeRoundedRect(x + 6, y + 6, layout.cellSize - 14, layout.cellSize - 14, 6);
+        this.rangeGraphics.lineStyle(1.8, 0xff8a3d, 0.36);
+        this.rangeGraphics.strokeRoundedRect(
+          x + 6,
+          y + 6,
+          layout.cellSize - 14,
+          layout.cellSize - 14,
+          6
+        );
+        hasRangeHighlights = true;
       }
 
       for (const unitId of presentation.attackableUnitIds ?? []) {
@@ -352,8 +590,15 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.lineStyle(3, 0xff8a3d, 0.92);
-        this.graphics.strokeRoundedRect(x + 4, y + 4, layout.cellSize - 10, layout.cellSize - 10, 6);
+        this.focusGraphics.lineStyle(3, 0xff8a3d, 0.92);
+        this.focusGraphics.strokeRoundedRect(
+          x + 4,
+          y + 4,
+          layout.cellSize - 10,
+          layout.cellSize - 10,
+          6
+        );
+        hasFocusHighlights = true;
       }
 
       for (const unitId of presentation.transportTargetUnitIds ?? []) {
@@ -367,9 +612,23 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
-        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
+        this.focusGraphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.focusGraphics.strokeRoundedRect(
+          x + 3,
+          y + 3,
+          layout.cellSize - 8,
+          layout.cellSize - 8,
+          6
+        );
+        drawCornerMarkers(
+          this.focusGraphics,
+          x + 5,
+          y + 5,
+          layout.cellSize - 12,
+          0xf6fffe,
+          0.9
+        );
+        hasFocusHighlights = true;
       }
 
       for (const unitId of presentation.supportTargetUnitIds ?? []) {
@@ -383,11 +642,25 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.fillStyle(0x66ffbf, 0.2);
-        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
-        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
+        this.focusGraphics.fillStyle(0x66ffbf, 0.2);
+        this.focusGraphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.focusGraphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.focusGraphics.strokeRoundedRect(
+          x + 3,
+          y + 3,
+          layout.cellSize - 8,
+          layout.cellSize - 8,
+          6
+        );
+        drawCornerMarkers(
+          this.focusGraphics,
+          x + 5,
+          y + 5,
+          layout.cellSize - 12,
+          0xf6fffe,
+          0.9
+        );
+        hasFocusHighlights = true;
       }
 
       for (const unitId of presentation.medpackTargetUnitIds ?? []) {
@@ -401,11 +674,25 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.fillStyle(0x9fffa8, 0.18);
-        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-        this.graphics.lineStyle(3, 0x9fffa8, 0.96);
-        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xfefae0, 0.9);
+        this.focusGraphics.fillStyle(0x9fffa8, 0.18);
+        this.focusGraphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.focusGraphics.lineStyle(3, 0x9fffa8, 0.96);
+        this.focusGraphics.strokeRoundedRect(
+          x + 3,
+          y + 3,
+          layout.cellSize - 8,
+          layout.cellSize - 8,
+          6
+        );
+        drawCornerMarkers(
+          this.focusGraphics,
+          x + 5,
+          y + 5,
+          layout.cellSize - 12,
+          0xfefae0,
+          0.9
+        );
+        hasFocusHighlights = true;
       }
 
       for (const unitId of presentation.extinguishTargetUnitIds ?? []) {
@@ -419,18 +706,55 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.fillStyle(0x7be3ff, 0.18);
-        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-        this.graphics.lineStyle(3, 0x7be3ff, 0.96);
-        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xe8fbff, 0.9);
+        this.focusGraphics.fillStyle(0x7be3ff, 0.18);
+        this.focusGraphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.focusGraphics.lineStyle(3, 0x7be3ff, 0.96);
+        this.focusGraphics.strokeRoundedRect(
+          x + 3,
+          y + 3,
+          layout.cellSize - 8,
+          layout.cellSize - 8,
+          6
+        );
+        drawCornerMarkers(
+          this.focusGraphics,
+          x + 5,
+          y + 5,
+          layout.cellSize - 12,
+          0xe8fbff,
+          0.9
+        );
+        hasFocusHighlights = true;
       }
 
-      drawMovementPath(this.graphics, layout, hoveredMovementPath);
+      drawMovementPath(this.rangeGraphics, layout, hoveredMovementPath);
+      hasRangeHighlights = hasRangeHighlights || hoveredMovementPath.length > 1;
+    }
+
+    for (const buildingHighlight of buildRelevantBuildingHighlights(snapshot)) {
+      drawRelevantBuildingOverlay(this.buildingGraphics, layout, buildingHighlight);
+      hasBuildingHighlights = true;
+    }
+
+    drawUnitFocusOverlay(this.focusGraphics, layout, selectedUnit, {
+      color: 0xfff2d4,
+      fillAlpha: 0.08,
+      strokeAlpha: 0.84
+    });
+    hasFocusHighlights = hasFocusHighlights || Boolean(selectedUnit);
+
+    if (activeUnit) {
+      drawUnitFocusOverlay(this.focusGraphics, layout, activeUnit, {
+        color: activeUnit.owner === "player" ? 0x7be3ff : 0xffb068,
+        fillAlpha: 0.1,
+        strokeAlpha: 0.92
+      });
+      hasFocusHighlights = true;
     }
 
     for (const movementPath of options.enemyMovementPaths ?? []) {
-      drawMovementPath(this.graphics, layout, movementPath);
+      drawMovementPath(this.rangeGraphics, layout, movementPath);
+      hasRangeHighlights = hasRangeHighlights || movementPath.length > 1;
     }
 
     for (const spawn of options.editorSpawns?.player ?? []) {
@@ -456,8 +780,15 @@ export class SelectionLayer {
     if (presentation.selectedTile) {
       const x = layout.originX + presentation.selectedTile.x * layout.cellSize;
       const y = layout.originY + presentation.selectedTile.y * layout.cellSize;
-      this.graphics.lineStyle(3, 0xff4fd8, 0.98);
-      this.graphics.strokeRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 6);
+      this.focusGraphics.lineStyle(3, 0xff4fd8, 0.98);
+      this.focusGraphics.strokeRoundedRect(
+        x + 2,
+        y + 2,
+        layout.cellSize - 6,
+        layout.cellSize - 6,
+        6
+      );
+      hasFocusHighlights = true;
     }
 
     if (hoveredTile) {
@@ -491,5 +822,10 @@ export class SelectionLayer {
     }
 
     this.markerLabels = markerLabels;
+    this.fxState = {
+      hasRangeHighlights,
+      hasFocusHighlights,
+      hasBuildingHighlights
+    };
   }
 }

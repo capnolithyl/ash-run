@@ -1159,6 +1159,55 @@
     drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 18%, transparent));
 }
 
+.battle-shell[data-visual-effects-quality="off"] .commander-power-button--ready {
+  animation: none;
+}
+
+.battle-shell[data-visual-effects-quality="off"] .commander-power-button--charged::before {
+  animation: none;
+  opacity: 0.3;
+}
+
+.battle-shell[data-visual-effects-quality="off"] .commander-power-button--charged,
+.battle-shell[data-visual-effects-quality="off"] .commander-power-button--active {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--side-color) 14%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--side-color) 10%, transparent);
+}
+
+.battle-shell[data-visual-effects-quality="off"] .commander-meter__segment--half,
+.battle-shell[data-visual-effects-quality="off"] .commander-meter__segment--full,
+.battle-shell[data-visual-effects-quality="off"] .commander-meter__segments--active .commander-meter__segment {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--side-color) 10%, transparent));
+}
+
+.battle-shell[data-visual-effects-quality="full"] .commander-power-button--charged,
+.battle-shell[data-visual-effects-quality="full"] .commander-power-button--active,
+.battle-shell[data-visual-effects-quality="full"] .commander-power-button--ready:not(:disabled) {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--side-color) 26%, transparent),
+    0 0 1.9rem color-mix(in srgb, var(--side-color) 24%, transparent),
+    0 0 2.8rem color-mix(in srgb, var(--accent) 16%, transparent),
+    inset 0 0 26px color-mix(in srgb, var(--side-color) 16%, transparent);
+}
+
+.battle-shell[data-visual-effects-quality="full"] .commander-power-button--charged::before {
+  opacity: 0.92;
+}
+
+.battle-shell[data-visual-effects-quality="full"] .commander-meter__segment--half,
+.battle-shell[data-visual-effects-quality="full"] .commander-meter__segment--full {
+  filter:
+    drop-shadow(0 0 10px color-mix(in srgb, var(--side-color) 22%, transparent))
+    drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 18%, transparent));
+}
+
+.battle-shell[data-visual-effects-quality="full"] .commander-panel__system:is(:hover, :focus-visible) {
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--side-color) 20%, transparent),
+    0 0 28px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .commander-panel-shell,
   .commander-panel,

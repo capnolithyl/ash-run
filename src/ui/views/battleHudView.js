@@ -1,5 +1,6 @@
 import { BATTLE_MODES, TURN_SIDES } from "../../game/core/constants.js";
 import { getCommanderById } from "../../game/content/commanders.js";
+import { normalizeVisualEffectsQuality } from "../../game/state/options.js";
 import {
   canActivatePlayerPower,
   canSelectNextReadyUnit,
@@ -274,9 +275,16 @@ export function renderBattleHudView(state, options = {}) {
   const battleChromeStyle = getBattleChromeStyle(commanderAnimationClockMs);
   const playerFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.PLAYER);
   const enemyFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.ENEMY);
+  const visualEffectsQuality = normalizeVisualEffectsQuality(
+    state.metaState?.options?.visualEffectsQuality
+  );
 
   return `
-    <div class="battle-shell battle-shell--animated-chrome" style="${battleChromeStyle}">
+    <div
+      class="battle-shell battle-shell--animated-chrome"
+      data-visual-effects-quality="${visualEffectsQuality}"
+      style="${battleChromeStyle}"
+    >
       <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
       <div class="battle-commanders">

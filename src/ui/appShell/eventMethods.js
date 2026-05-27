@@ -1,4 +1,5 @@
 import { SCREEN_IDS } from "../../game/core/constants.js";
+import { coerceOptionInputValue } from "../../game/state/options.js";
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
@@ -513,8 +514,7 @@ export const appShellEventMethods = {
       return;
     }
 
-    const nextValue =
-      event.target.type === "checkbox" ? event.target.checked : Number(event.target.value);
+    const nextValue = coerceOptionInputValue(optionKey, event.target);
 
     await this.controller.updateOptions({
       [optionKey]: nextValue

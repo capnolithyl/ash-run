@@ -94,6 +94,7 @@ function buildBattleRenderSignature(state) {
     combatCutsceneId: battleUi.combatCutscene?.id ?? null,
     playerFocusKey: getFocusKey(battleUi.playerFocus),
     enemyFocusKey: getFocusKey(battleUi.enemyFocus),
+    visualEffectsQuality: state.metaState?.options?.visualEffectsQuality ?? null,
     debugMode: state.debugMode === true,
     runStatus: state.runStatus ?? null,
     banner: state.banner ?? "",
@@ -189,6 +190,7 @@ export const appShellBattleScreenMethods = {
       previousSignature.combatCutsceneId !== nextSignature.combatCutsceneId ||
       previousSignature.playerFocusKey !== nextSignature.playerFocusKey ||
       previousSignature.enemyFocusKey !== nextSignature.enemyFocusKey ||
+      previousSignature.visualEffectsQuality !== nextSignature.visualEffectsQuality ||
       previousSignature.debugMode !== nextSignature.debugMode ||
       previousSignature.runStatus !== nextSignature.runStatus ||
       previousSignature.banner !== nextSignature.banner ||

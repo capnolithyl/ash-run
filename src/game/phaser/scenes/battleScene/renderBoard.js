@@ -54,6 +54,7 @@ export const battleSceneRenderMethods = {
       this.buildingLayer.clear();
       this.unitLayer.clear();
       this.fxLayer.clear();
+      this.visualEffects?.clear();
       this.hoveredTile = null;
       this.previousSnapshot = null;
       return;
@@ -72,6 +73,7 @@ export const battleSceneRenderMethods = {
 
     if (!isBattle) {
       this.fxLayer.clear();
+      this.visualEffects?.clear();
       this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: true });
       this.selectionLayer.render(snapshot, layout, false, this.hoveredTile, [], null, {
         editorSpawns: {
@@ -95,6 +97,7 @@ export const battleSceneRenderMethods = {
 
     if (!previousSnapshot && this.previousSnapshot) {
       this.fxLayer.clear();
+      this.visualEffects?.clear();
     }
 
     const animationEvents = deriveBattleAnimationEvents(previousSnapshot, snapshot);
@@ -163,6 +166,8 @@ export const battleSceneRenderMethods = {
 
     const turnTransitionDelay = getTurnTransitionDelay(previousSnapshot, snapshot);
     this.fxLayer.setScreenShakeEnabled(this.latestState.metaState.options.screenShake !== false);
+    const combatCutscene = this.latestState?.battleUi?.combatCutscene ?? null;
+    const combatCutsceneActive = Boolean(combatCutscene);
 
     this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: true });
     this.selectionLayer.render(
@@ -184,6 +189,13 @@ export const battleSceneRenderMethods = {
       damageByUnitId,
       restoreByUnitId
     });
+    this.visualEffects?.syncBattlefield({
+      requestedQuality: this.latestState.metaState.options.visualEffectsQuality,
+      snapshot,
+      selectionLayer: this.selectionLayer,
+      unitLayer: this.unitLayer,
+      combatCutsceneActive
+    });
     const maxMoveDelay = movementEvents.length
       ? Math.max(
           ...movementEvents.map((event) =>
@@ -196,8 +208,6 @@ export const battleSceneRenderMethods = {
         .filter((event) => event.type === "destroy")
         .map((event) => [event.unitId, event])
     );
-    const combatCutscene = this.latestState?.battleUi?.combatCutscene ?? null;
-    const combatCutsceneActive = Boolean(combatCutscene);
     const postCombatPauseMs = combatCutsceneActive ? BATTLE_POST_COMBAT_PAUSE_MS : 0;
     const attackDrivenDestroyUnitIds = new Set(
       attackEvents
@@ -276,6 +286,9 @@ export const battleSceneRenderMethods = {
     }
 
     powerEvents.forEach((event) => {
+      this.visualEffects?.schedule(event.startDelayMs ?? 0, () =>
+        this.visualEffects?.playCommanderPowerPulse(event)
+      );
       this.fxLayer.schedule(Math.max(0, (event.startDelayMs ?? 0) - 90), () =>
         this.fxLayer.playCommanderPowerWave(event, layout)
       );

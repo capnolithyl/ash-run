@@ -67,7 +67,7 @@ function getBattleSidePanel(html, panelModifierClass) {
 }
 
 function getBattleShellOpenTag(html) {
-  return html.match(/<div class="battle-shell[^"]*" style="[^"]*">/)?.[0] ?? "";
+  return html.match(/<div\s+class="battle-shell[^"]*"[\s\S]*?>/)?.[0] ?? "";
 }
 
 test("battle HUD shows hovered enemy stats while targeting", () => {
@@ -190,6 +190,7 @@ test("battle HUD shows compact commander strips with hover-only commander toolti
   assert.match(html, /assets\/img\/commanders\/viper\/Viper%20-%20Portrait\.png/);
   assert.match(html, /assets\/img\/commanders\/rook\/Rook%20-%20Portrait\.png/);
   assert.match(battleShellTag, /class="battle-shell battle-shell--animated-chrome"/);
+  assert.match(battleShellTag, /data-visual-effects-quality="low"/);
   assert.match(battleShellTag, /--battle-chrome-glow-duration:4200ms/);
   assert.match(battleShellTag, /--battle-chrome-sweep-duration:6800ms/);
   assert.match(battleShellTag, /--battle-chrome-glow-delay:-?\d+ms/);
@@ -219,6 +220,36 @@ test("battle HUD shows compact commander strips with hover-only commander toolti
   assert.doesNotMatch(html, /data-funds-panel=/);
   assert.doesNotMatch(html, /commander-panel__sigil/);
   assert.doesNotMatch(html, /battle-topbar/);
+});
+
+test("battle HUD exposes the selected visual effects quality on the battle shell", () => {
+  const battleState = createTestBattleState();
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    metaState: {
+      options: {
+        visualEffectsQuality: "full"
+      }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(getBattleShellOpenTag(html), /data-visual-effects-quality="full"/);
 });
 
 test("battle HUD keeps blaze and echo ability summaries inside commander tooltips", () => {

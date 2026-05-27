@@ -5,6 +5,7 @@ import { BuildingLayer } from "../view/BuildingLayer.js";
 import { GridLayer } from "../view/GridLayer.js";
 import { SelectionLayer } from "../view/SelectionLayer.js";
 import { UnitLayer } from "../view/UnitLayer.js";
+import { VisualEffectsManager } from "../view/VisualEffectsManager.js";
 import { battleSceneCameraMethods } from "./battleScene/cameraControls.js";
 import {
   battleSceneGamepadMethods,
@@ -51,6 +52,23 @@ export class BattleScene extends Phaser.Scene {
     this.buildingLayer = new BuildingLayer(this);
     this.unitLayer = new UnitLayer(this);
     this.fxLayer = new BattleFxLayer(this);
+    this.visualEffects = new VisualEffectsManager(this);
+    this.visualEffects.updateOverlayPlateBounds();
+
+    const handleResize = () => {
+      this.visualEffects?.updateOverlayPlateBounds();
+      this.renderBattle();
+    };
+    const shutdown = () => {
+      this.scale.off("resize", handleResize);
+      this.unsubscribeController?.();
+      this.unsubscribeController = null;
+      this.visualEffects?.destroy();
+      this.visualEffects = null;
+    };
+
+    this.scale.on("resize", handleResize);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, shutdown);
 
     if (!this.controller) {
       return;
@@ -62,12 +80,8 @@ export class BattleScene extends Phaser.Scene {
     this.latestState = this.controller.getState();
     this.renderBattle();
 
-    this.controller.subscribe((state) => {
+    this.unsubscribeController = this.controller.subscribe((state) => {
       this.latestState = state;
-      this.renderBattle();
-    });
-
-    this.scale.on("resize", () => {
       this.renderBattle();
     });
 

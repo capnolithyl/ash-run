@@ -17,6 +17,22 @@
   --battle-desktop-bottom: 6.7rem;
 }
 
+.battle-shell[data-visual-effects-quality="off"] {
+  --battle-footer-hover-brightness: 1.02;
+  --battle-footer-hover-shadow-cool: rgba(110, 228, 255, 0.12);
+  --battle-footer-hover-shadow-hot: rgba(255, 79, 216, 0.08);
+  --battle-drawer-hover-background: rgba(255, 255, 255, 0.03);
+  --battle-drawer-hover-shadow: rgba(110, 228, 255, 0.08);
+}
+
+.battle-shell[data-visual-effects-quality="full"] {
+  --battle-footer-hover-brightness: 1.12;
+  --battle-footer-hover-shadow-cool: rgba(110, 228, 255, 0.3);
+  --battle-footer-hover-shadow-hot: rgba(255, 79, 216, 0.22);
+  --battle-drawer-hover-background: rgba(255, 255, 255, 0.06);
+  --battle-drawer-hover-shadow: rgba(110, 228, 255, 0.2);
+}
+
 .battle-commanders {
   position: absolute;
   top: var(--battle-commanders-top);
@@ -597,6 +613,10 @@
   text-align: center;
   cursor: var(--cursor-action);
   user-select: none;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
 }
 
 .battle-footer-actions .battle-drawer-button {
@@ -651,9 +671,9 @@
   animation: title-menu-pulse 900ms ease-in-out infinite;
   transform-origin: center;
   filter:
-    brightness(1.08)
-    drop-shadow(0 0 0.45rem rgba(110, 228, 255, 0.22))
-    drop-shadow(0 0 0.85rem rgba(255, 79, 216, 0.14));
+    brightness(var(--battle-footer-hover-brightness, 1.08))
+    drop-shadow(0 0 0.45rem var(--battle-footer-hover-shadow-cool, rgba(110, 228, 255, 0.22)))
+    drop-shadow(0 0 0.85rem var(--battle-footer-hover-shadow-hot, rgba(255, 79, 216, 0.14)));
 }
 
 .battle-footer-actions .battle-footer-button.title-button--has-image .title-button__image {
@@ -673,6 +693,14 @@
 .battle-footer-actions .battle-footer-button:disabled.title-button--image-loaded {
   opacity: 0.45;
   filter: saturate(0.7);
+}
+
+.battle-shell .battle-drawer-button:is(:hover, :focus-visible) {
+  background: var(--battle-drawer-hover-background, rgba(255, 255, 255, 0.04));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.08)),
+    0 0 1rem var(--battle-drawer-hover-shadow, rgba(110, 228, 255, 0.14));
+  filter: brightness(1.04);
 }
 
 .battle-rail {

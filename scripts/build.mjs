@@ -9,6 +9,7 @@ import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifes
 const root = process.cwd();
 const distRoot = path.resolve(root, "dist");
 const assetsRoot = path.join(distRoot, "assets");
+const phaserRendererOverride = JSON.stringify(process.env.ASH_RUN_84_PHASER_RENDERER ?? "");
 
 /**
  * Production builds use esbuild directly because it handles the current
@@ -31,6 +32,9 @@ await build({
   minify: false,
   platform: "browser",
   sourcemap: true,
+  define: {
+    __ASH_RUN_84_PHASER_RENDERER__: phaserRendererOverride
+  },
   loader: {
     ".ani": "file",
     ".css": "css",
