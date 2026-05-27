@@ -21,22 +21,22 @@ test("attack playback helper resolves the clip and duration for directional atta
     key: "spritesheet:units:player:grunt:attack",
     frameRate: 5,
     ranges: {
-      left: { start: 0, end: 2 },
-      right: { start: 3, end: 5 },
+      right: { start: 0, end: 2 },
+      left: { start: 3, end: 5 },
     },
   };
 
   assert.deepEqual(getAttackAnimationPlayback("player", attackAnimation, 1), {
     rangeName: "right",
-    range: { start: 3, end: 5 },
-    startFrame: 3,
+    range: { start: 0, end: 2 },
+    startFrame: 0,
     flipX: false,
     durationMs: 600,
   });
   assert.deepEqual(getAttackAnimationPlayback("enemy", attackAnimation, 0), {
     rangeName: "left",
-    range: { start: 0, end: 2 },
-    startFrame: 0,
+    range: { start: 3, end: 5 },
+    startFrame: 3,
     flipX: false,
     durationMs: 600,
   });
@@ -47,19 +47,26 @@ test("attack playback helper mirrors a single directional attack clip when neede
     key: "spritesheet:units:player:grunt:attack",
     frameRate: 5,
     ranges: {
-      left: { start: 0, end: 2 },
+      right: { start: 0, end: 2 },
     },
   };
 
-  assert.deepEqual(getAttackAnimationPlayback("player", attackAnimation, -1), {
-    rangeName: "left",
+  assert.deepEqual(getAttackAnimationPlayback("player", attackAnimation, 1), {
+    rangeName: "right",
     range: { start: 0, end: 2 },
     startFrame: 0,
     flipX: false,
     durationMs: 600,
   });
-  assert.deepEqual(getAttackAnimationPlayback("player", attackAnimation, 1), {
-    rangeName: "left",
+  assert.deepEqual(getAttackAnimationPlayback("player", attackAnimation, -1), {
+    rangeName: "right",
+    range: { start: 0, end: 2 },
+    startFrame: 0,
+    flipX: true,
+    durationMs: 600,
+  });
+  assert.deepEqual(getAttackAnimationPlayback("enemy", attackAnimation, 0), {
+    rangeName: "right",
     range: { start: 0, end: 2 },
     startFrame: 0,
     flipX: true,
@@ -85,7 +92,7 @@ test("default texture helper prefers idle animation and otherwise falls back to 
   assert.deepEqual(getUnitDefaultTexture(visualWithIdle, "enemy"), {
     key: "spritesheet:units:enemy:grunt:idle",
     frame: 0,
-    flipX: false,
+    flipX: true,
   });
   assert.deepEqual(getUnitDefaultTexture(visualWithoutIdle, "player"), {
     key: "sprite:units:player:grunt",

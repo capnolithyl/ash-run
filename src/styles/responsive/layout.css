@@ -941,13 +941,23 @@
 
   .battle-commanders .commander-panel {
     min-height: 0;
-    padding: 0.55rem 0.65rem 0.6rem;
+    padding: 0.46rem 0.52rem 0.52rem;
+    gap: 0.44rem;
     clip-path: none;
   }
 
   .battle-commanders .commander-panel-shell {
     flex: 1 1 0;
     min-width: 0;
+    width: auto;
+    max-width: none;
+    transform: none;
+    filter: none;
+  }
+
+  .battle-commanders .commander-panel-shell::before,
+  .battle-commanders .commander-panel-shell::after {
+    display: none;
   }
 
   .battle-commanders .commander-panel__details {
@@ -961,11 +971,17 @@
   }
 
   .battle-commanders .commander-panel__portrait-frame {
-    width: 3.7rem;
+    width: 2.4rem;
   }
 
   .battle-commanders .commander-panel__summary h2 {
-    font-size: 1.18rem;
+    font-size: 0.82rem;
+    min-height: 0;
+  }
+
+  .battle-commanders .commander-panel__summary .eyebrow {
+    font-size: 0.48rem;
+    letter-spacing: 0.12em;
   }
 
   .battle-commanders .commander-panel__title {
@@ -979,14 +995,17 @@
   }
 
   .battle-commanders .commander-panel__system {
-    min-height: 2.85rem;
-    padding: 0.84rem 0.5rem 0.4rem;
+    min-height: 2.25rem;
+    padding: 0.58rem 0.28rem 0.22rem;
   }
 
   .battle-commanders .commander-panel__system strong {
-    font-size: 0.62rem;
-    line-height: 1.12;
-    letter-spacing: 0.05em;
+    font-size: 0.44rem;
+    line-height: 1.04;
+    letter-spacing: 0.03em;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .battle-commanders .commander-panel__charge-row {
@@ -994,7 +1013,8 @@
   }
 
   .battle-commanders .commander-panel__charge-row .commander-power-button {
-    max-width: none;
+    width: min(100%, var(--commander-meter-shell-width));
+    max-width: 100%;
   }
 
   .battle-commanders .commander-panel::after {
@@ -1027,10 +1047,25 @@
   }
 
   .battle-commanders .commander-power-button {
-    width: 100%;
-    justify-content: space-between;
-    padding: 0.3rem 0.45rem;
-    border-radius: 0.72rem;
+    width: min(100%, var(--commander-meter-shell-width));
+    --commander-meter-cell-size: 0.82rem;
+    --commander-meter-cell-gap: 0.28rem;
+    --commander-meter-glass-inset-block: 0.56rem;
+    --commander-meter-glass-inset-inline: 1rem;
+    padding: 0;
+  }
+
+  .battle-commanders .commander-meter--interactive {
+    min-height: 0;
+  }
+
+  .battle-commanders .commander-meter__segments {
+    min-height: var(--commander-meter-cell-size);
+  }
+
+  .battle-commanders .commander-meter__active-label {
+    top: -0.16rem;
+    font-size: 0.42rem;
   }
 
   .battle-footer-meta {

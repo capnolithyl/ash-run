@@ -412,6 +412,28 @@ test("battle combat cutscene waits for move-and-settle before revealing the duel
   );
 });
 
+test("battle combat cutscene lets longshot play its one-shot attack clip at full length", () => {
+  const attacker = createPlacedUnit("longshot", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 1);
+  const system = new BattleSystem(
+    createTestBattleState({
+      playerUnits: [attacker],
+      enemyUnits: [defender]
+    })
+  );
+
+  const before = system.getSnapshot();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  const after = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(before, after);
+
+  assert.ok(cutscene);
+  assert.equal(cutscene.steps.length, 1);
+  assert.equal(cutscene.steps[0].loopCount, 1);
+  assert.ok(cutscene.steps[0].windowMs > BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS);
+  assert.equal(cutscene.steps[0].windowMs, 1800);
+});
+
 test("experience events expose threshold-hit timing metadata for a single level-up", () => {
   const thresholdLevel1 = getXpThreshold(1);
   const thresholdLevel2 = getXpThreshold(2);

@@ -470,7 +470,12 @@ export class UnitLayer {
 
     if (idleAnimationKey) {
       const range = getAnimationRange(idleAnimation, "default");
-      this.setVisualTexture(entity, idleAnimation.key, range.start, false);
+      this.setVisualTexture(
+        entity,
+        idleAnimation.key,
+        range.start,
+        getOwnerIdleFlipX(entity.owner),
+      );
       entity.visual.play?.(idleAnimationKey);
       return;
     }
@@ -496,7 +501,12 @@ export class UnitLayer {
 
     this.stopAnimationTimer(entity);
     const range = getAnimationRange(walkAnimation, "default");
-    this.setVisualTexture(entity, walkAnimation.key, range.start, false);
+    this.setVisualTexture(
+      entity,
+      walkAnimation.key,
+      range.start,
+      getOwnerIdleFlipX(entity.owner),
+    );
     entity.visual.play?.(walkAnimationKey);
   }
 

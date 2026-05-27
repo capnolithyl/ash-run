@@ -1,9 +1,9 @@
 {
-  "frameWidth": 102,
-  "frameHeight": 128,
+  "frameWidth": 128,
+  "frameHeight": 160,
   "animations": {
     "idle": {
-      "file": "breaker-idle.png",
+      "file": "longshot-idle.png",
       "frameRate": 5,
       "ranges": {
         "default": {
@@ -13,12 +13,13 @@
       }
     },
     "attack": {
-      "file": "breaker-attack.png",
+      "file": "longshot-attack.png",
       "frameRate": 5,
+      "cutsceneLoopCount": 1,
       "ranges": {
         "right": {
           "start": 0,
-          "end": 2
+          "end": 8
         }
       }
     }

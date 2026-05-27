@@ -74,11 +74,25 @@ function getCutsceneLoopCount(unit, side, stepWindowMs) {
     : BATTLE_COMBAT_CUTSCENE_LOOP_MIN;
 }
 
-function getCutsceneWindowMs(unit, side, loopCount) {
-  void unit;
-  void side;
-  void loopCount;
-  return BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS;
+function getCutsceneStepPlayback(unit, side, stepWindowMs) {
+  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, side);
+  const attackAnimation = spriteDefinition?.attack ?? null;
+  const attackPlayback = getAttackAnimationPlayback(side, attackAnimation, 0);
+  const explicitLoopCount = Number.isInteger(attackAnimation?.cutsceneLoopCount)
+    ? attackAnimation.cutsceneLoopCount
+    : null;
+
+  if (explicitLoopCount && explicitLoopCount > 0 && attackPlayback?.durationMs) {
+    return {
+      loopCount: explicitLoopCount,
+      windowMs: Math.max(stepWindowMs, attackPlayback.durationMs * explicitLoopCount),
+    };
+  }
+
+  return {
+    loopCount: getCutsceneLoopCount(unit, side, stepWindowMs),
+    windowMs: stepWindowMs,
+  };
 }
 
 function getCutsceneRevealStartMsFromPendingMove(snapshot, attackerId) {
@@ -253,8 +267,11 @@ export function deriveBattleCombatCutscene(previousSnapshot, nextSnapshot) {
     const attackerUnit = attackerSide === TURN_SIDES.PLAYER ? playerUnit : enemyUnit;
     const targetHpBefore = hpBySide[targetSide];
     const targetHpAfter = Math.max(0, targetHpBefore - Math.max(0, event.damage ?? 0));
-    const loopCount = getCutsceneLoopCount(attackerUnit, attackerSide, BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS);
-    const windowMs = getCutsceneWindowMs(attackerUnit, attackerSide, loopCount);
+    const { loopCount, windowMs } = getCutsceneStepPlayback(
+      attackerUnit,
+      attackerSide,
+      BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS,
+    );
     const impactDelayMs = Math.min(
       windowMs - 220,
       BATTLE_COMBAT_CUTSCENE_IMPACT_DELAY_MS

@@ -265,8 +265,14 @@ test("battle HUD can stage commander turn styling from the previous active side"
 
   assert.match(html, /commander-panel-shell--player commander-panel-shell--turn-active/);
   assert.match(html, /commander-panel-shell--enemy commander-panel-shell--turn-inactive/);
-  assert.match(html, /commander-panel-shell--player[^"]*" data-turn-state="active" data-turn-animation-from="inactive"/);
-  assert.match(html, /commander-panel-shell--enemy[^"]*" data-turn-state="inactive" data-turn-animation-from="active"/);
+  assert.match(
+    html,
+    /commander-panel-shell--player[^>]*data-turn-state="active"[^>]*data-turn-animation-from="inactive"/,
+  );
+  assert.match(
+    html,
+    /commander-panel-shell--enemy[^>]*data-turn-state="inactive"[^>]*data-turn-animation-from="active"/,
+  );
 });
 
 test("battle HUD marks corrupted stats on the unit sidebar", () => {
@@ -657,10 +663,61 @@ test("battle HUD renders the combat cutscene overlay with stable sprite layers a
   assert.match(html, /data-cutscene-attack-strip="enemy"/);
   assert.match(html, /assets\/sprites\/units\/player\/grunt\/grunt-attack\.png/);
   assert.match(html, /assets\/sprites\/units\/enemy\/grunt\/grunt-attack\.png/);
+  assert.match(html, /assets\/sprites\/units\/player\/grunt\/grunt-idle\.png/);
+  assert.match(html, /assets\/sprites\/units\/enemy\/grunt\/grunt-idle\.png/);
   assert.doesNotMatch(html, /assets\/sprites\/units\/player\/grunt\.svg/);
-  assert.doesNotMatch(html, /grunt-idle\.png/);
   assert.doesNotMatch(html, /combat-cutscene__sprite-figure/);
   assert.match(html, /combat-cutscene__footer[\s\S]*Rifle/i);
+});
+
+test("battle HUD combat cutscene uses idle sheets and mirrors the enemy lane", () => {
+  const attacker = createPlacedUnit("longshot", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 1);
+  const system = new BattleSystem(
+    createTestBattleState({
+      playerUnits: [attacker],
+      enemyUnits: [defender]
+    })
+  );
+
+  const before = system.getSnapshot();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  const after = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(before, after);
+  const html = renderBattleHudView({
+    battleSnapshot: after,
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null,
+      combatCutscene: {
+        id: "cutscene-facing",
+        startedAt: Date.now(),
+        ...cutscene
+      }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /assets\/sprites\/units\/player\/longshot\/longshot-idle\.png/);
+  assert.match(html, /assets\/sprites\/units\/player\/longshot\/longshot-attack\.png/);
+  assert.match(
+    html,
+    /data-cutscene-lane="enemy"[\s\S]*?--sheet-flip-x:-1;[\s\S]*?data-cutscene-sheet="enemy:idle"/
+  );
+  assert.match(
+    html,
+    /data-cutscene-lane="enemy"[\s\S]*?--sheet-flip-x:-1;[\s\S]*?data-cutscene-sheet="enemy:attack"/
+  );
 });
 
 test("battle HUD keeps the combat cutscene overlay hidden until movement lead-in finishes", () => {
@@ -741,14 +798,15 @@ test("battle HUD includes drawer toggles and footer turn controls", () => {
 });
 
 test("battle HUD turns the power meter into the activation control", () => {
+  const segmentValue = 50;
   const chargingState = createTestBattleState();
   chargingState.player.charge = getCommanderPowerMax(chargingState.player.commanderId) - 1;
   const chargingButton = getActionButton(renderHudForBattleState(chargingState), "activate-power");
-  const chargingSegmentCount = Math.ceil(getCommanderPowerMax(chargingState.player.commanderId) / 25);
+  const chargingSegmentCount = Math.ceil(getCommanderPowerMax(chargingState.player.commanderId) / segmentValue);
 
   assert.match(chargingButton, /disabled/);
   assert.match(chargingButton, new RegExp(`data-segment-count="${chargingSegmentCount}"`));
-  assert.match(chargingButton, /data-segment-value="25"/);
+  assert.match(chargingButton, new RegExp(`data-segment-value="${segmentValue}"`));
   assert.equal(countMatches(chargingButton, /commander-meter__segment--full/g), chargingSegmentCount - 1);
   assert.equal(countMatches(chargingButton, /commander-meter__segment--half/g), 1);
   assert.doesNotMatch(chargingButton, /commander-meter__value/);
@@ -756,7 +814,7 @@ test("battle HUD turns the power meter into the activation control", () => {
   const readyState = createTestBattleState();
   readyState.player.charge = getCommanderPowerMax(readyState.player.commanderId);
   const readyButton = getActionButton(renderHudForBattleState(readyState), "activate-power");
-  const readySegmentCount = Math.ceil(getCommanderPowerMax(readyState.player.commanderId) / 25);
+  const readySegmentCount = Math.ceil(getCommanderPowerMax(readyState.player.commanderId) / segmentValue);
 
   assert.doesNotMatch(readyButton, /disabled/);
   assert.match(readyButton, /commander-power-button--charged/);
@@ -774,13 +832,43 @@ test("battle HUD turns the power meter into the activation control", () => {
   assert.match(renderHudForBattleState(enemyTurnState), /commander-power-button--readonly/);
 });
 
+test("battle HUD sizes the power meter tray to each commander cap", () => {
+  const cases = [
+    ["viper", 250, 5],
+    ["knox", 275, 6],
+    ["atlas", 300, 6],
+    ["rook", 325, 7],
+    ["blaze", 350, 7]
+  ];
+
+  for (const [commanderId, powerMax, expectedSegments] of cases) {
+    const battleState = createTestBattleState();
+    battleState.player.commanderId = commanderId;
+    battleState.player.charge = 0;
+    const buttonHtml = getActionButton(
+      renderHudForBattleState(battleState),
+      "activate-power"
+    );
+
+    assert.equal(getCommanderPowerMax(commanderId), powerMax);
+    assert.match(
+      buttonHtml,
+      new RegExp(`data-segment-count="${expectedSegments}"`)
+    );
+    assert.equal(
+      countMatches(buttonHtml, /class="commander-meter__segment /g),
+      expectedSegments
+    );
+  }
+});
+
 test("battle HUD keeps the power meter visually active through the opposing turn", () => {
   const battleState = createTestBattleState({
     playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2)],
     enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2)]
   });
   battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
-  const segmentCount = Math.ceil(getCommanderPowerMax(battleState.player.commanderId) / 25);
+  const segmentCount = Math.ceil(getCommanderPowerMax(battleState.player.commanderId) / 50);
   const system = new BattleSystem(battleState);
 
   assert.equal(system.activatePower(), true);

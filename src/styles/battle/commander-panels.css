@@ -169,6 +169,10 @@
 .commander-panel {
   --side-color: var(--accent-hot);
   --side-glow: rgba(255, 79, 216, 0.18);
+  --commander-details-summary-min: 10.8rem;
+  --commander-details-systems-min: 13.1rem;
+  --commander-details-systems-max: 14.9rem;
+  --commander-details-gap: 0.86rem;
   position: relative;
   display: flex;
   align-items: stretch;
@@ -209,6 +213,13 @@
     box-shadow 220ms ease,
     border-color 220ms ease;
   will-change: opacity, filter, box-shadow;
+}
+
+.commander-panel[data-power-segment-count="7"] {
+  --commander-details-summary-min: 11.7rem;
+  --commander-details-systems-min: 12.7rem;
+  --commander-details-systems-max: 14.45rem;
+  --commander-details-gap: 0.78rem;
 }
 
 .commander-panel::before {
@@ -481,12 +492,17 @@
 
 .commander-panel__details {
   display: grid;
-  grid-template-columns: minmax(10.4rem, 1fr) minmax(13.4rem, 15rem);
+  grid-template-columns:
+    minmax(var(--commander-details-summary-min), 1fr)
+    minmax(
+      var(--commander-details-systems-min),
+      var(--commander-details-systems-max)
+    );
   grid-template-areas:
     "name systems"
     "charge systems";
   align-items: stretch;
-  column-gap: 1.02rem;
+  column-gap: var(--commander-details-gap);
   row-gap: 0.5rem;
   min-height: 5.3rem;
 }
@@ -528,6 +544,14 @@
 
 .commander-panel--player .commander-panel__systems {
   padding-inline-end: 0.56rem;
+}
+
+.commander-panel--player[data-power-segment-count="7"] .commander-panel__summary {
+  padding-inline-end: 1rem;
+}
+
+.commander-panel--player[data-power-segment-count="7"] .commander-panel__systems {
+  padding-inline-end: 0.42rem;
 }
 
 .commander-panel__portrait-frame {
@@ -627,7 +651,7 @@
   min-height: clamp(3.15rem, 3.45vw, 3.45rem);
   aspect-ratio: var(--system-frame-aspect);
   position: relative;
-  padding: 0.96rem 0.95rem 0.62rem;
+  padding: 0.96rem 0.78rem 0.62rem;
   align-items: center;
   justify-content: center;
   appearance: none;
@@ -688,12 +712,12 @@
   max-width: 100%;
   color: #fff6e3;
   font-family: var(--font-display);
-  font-size: clamp(0.78rem, 0.8vw, 0.92rem);
+  font-size: clamp(0.74rem, 0.78vw, 0.88rem);
   font-weight: 700;
-  line-height: 1.16;
-  letter-spacing: 0.07em;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  line-height: 1.08;
+  letter-spacing: 0.055em;
+  white-space: nowrap;
+  overflow-wrap: normal;
   text-align: center;
   text-shadow: 0 1px 10px rgba(5, 1, 14, 0.62);
   text-transform: uppercase;
@@ -843,12 +867,17 @@
 }
 
 .commander-panel__charge-row .commander-power-button {
-  width: 100%;
-  max-width: 15.4rem;
+  width: min(100%, var(--commander-meter-shell-width));
+  max-width: 100%;
 }
 
 .commander-panel--enemy .commander-panel__details {
-  grid-template-columns: minmax(13.4rem, 15rem) minmax(10.4rem, 1fr);
+  grid-template-columns:
+    minmax(
+      var(--commander-details-systems-min),
+      var(--commander-details-systems-max)
+    )
+    minmax(var(--commander-details-summary-min), 1fr);
   grid-template-areas:
     "systems name"
     "systems charge";
@@ -857,6 +886,11 @@
 .commander-panel--enemy .commander-panel__summary {
   padding-inline-end: 0.94rem;
   padding-inline-start: 0.86rem;
+}
+
+.commander-panel--enemy[data-power-segment-count="7"] .commander-panel__summary {
+  padding-inline-end: 0.82rem;
+  padding-inline-start: 0.72rem;
 }
 
 .commander-panel--enemy .commander-panel__identity {
@@ -890,61 +924,42 @@
 }
 
 .commander-power-button {
+  --commander-meter-shell-width: 170.7px;
+  --commander-meter-cell-size: 1.08rem;
+  --commander-meter-cell-gap: 0.44rem;
+  --commander-meter-glass-inset-block: 0.78rem;
+  --commander-meter-glass-inset-inline: 1.42rem;
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0;
-  width: auto;
+  justify-content: stretch;
+  inline-size: var(--commander-meter-shell-width);
+  max-inline-size: 100%;
   margin-top: 0;
-  padding: 0.42rem 0.74rem;
-  border: 1px solid
-    color-mix(in srgb, var(--side-color) 34%, rgba(255, 255, 255, 0.14));
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.015) 38%,
-      rgba(5, 2, 14, 0.22)
-    ),
-    radial-gradient(
-      circle at 14% 50%,
-      color-mix(in srgb, var(--side-color) 18%, transparent),
-      transparent 56%
-    ),
-    radial-gradient(
-      circle at 86% 50%,
-      color-mix(in srgb, var(--accent) 18%, transparent),
-      transparent 52%
-    ),
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.015)
-    ),
-    rgba(8, 4, 17, 0.8);
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text);
   text-align: left;
   cursor: var(--cursor-action);
   isolation: isolate;
-  clip-path: polygon(
-    0 0.78rem,
-    0.78rem 0,
-    calc(100% - 0.95rem) 0,
-    100% 50%,
-    calc(100% - 0.82rem) 100%,
-    0.78rem 100%,
-    0 calc(100% - 0.78rem)
-  );
   transition:
     transform 150ms ease,
-    border-color 150ms ease,
-    box-shadow 150ms ease,
-    background 150ms ease;
-  overflow: hidden;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 0 22px color-mix(in srgb, var(--side-color) 12%, transparent),
-    0 0 18px color-mix(in srgb, var(--side-color) 12%, transparent);
+    filter 150ms ease;
+  overflow: visible;
+  box-shadow: none;
+}
+
+.commander-power-button[data-segment-count="5"] {
+  --commander-meter-shell-width: 154.7px;
+}
+
+.commander-power-button[data-segment-count="6"] {
+  --commander-meter-shell-width: 170.7px;
+}
+
+.commander-power-button[data-segment-count="7"] {
+  --commander-meter-shell-width: 186.7px;
 }
 
 .commander-panel--enemy .commander-power-button {
@@ -952,65 +967,19 @@
 }
 
 .commander-power-button::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border: 1px solid
-    color-mix(in srgb, var(--side-color) 58%, rgba(255, 255, 255, 0.14));
-  clip-path: polygon(
-    0 0.68rem,
-    0.68rem 0,
-    calc(100% - 0.86rem) 0,
-    100% 50%,
-    calc(100% - 0.72rem) 100%,
-    0.68rem 100%,
-    0 calc(100% - 0.68rem)
-  );
-  background:
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      color-mix(in srgb, var(--side-color) 36%, transparent) 16%,
-      rgba(255, 255, 255, 0.18) 28%,
-      transparent 44%,
-      transparent 58%,
-      rgba(255, 255, 255, 0.16) 72%,
-      color-mix(in srgb, var(--accent) 30%, transparent) 86%,
-      transparent 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.16),
-      transparent 30%,
-      transparent 72%,
-      color-mix(in srgb, var(--accent) 16%, transparent)
-    );
-  box-shadow:
-    inset 0 0 18px color-mix(in srgb, var(--side-color) 16%, transparent),
-    0 0 12px color-mix(in srgb, var(--side-color) 18%, transparent);
-  opacity: 0.92;
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
 .commander-power-button:hover {
   transform: translateY(-1px);
-  border-color: color-mix(
-    in srgb,
-    var(--side-color) 54%,
-    rgba(255, 255, 255, 0.14)
-  );
-  box-shadow:
-    0 0 24px color-mix(in srgb, var(--side-color) 22%, transparent),
-    0 0 36px color-mix(in srgb, var(--accent) 12%, transparent),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  filter: brightness(1.06);
 }
 
 .commander-power-button:disabled {
   cursor: var(--cursor-disabled);
   opacity: 1;
   transform: none;
-  filter: saturate(0.6);
+  filter: saturate(0.8);
 }
 
 .commander-power-button--readonly {
@@ -1019,40 +988,33 @@
 
 .commander-power-button--readonly:hover {
   transform: none;
-  border-color: color-mix(
-    in srgb,
-    var(--side-color) 26%,
-    rgba(255, 255, 255, 0.12)
-  );
-  box-shadow: none;
+  filter: none;
 }
 
 .commander-power-button--charged {
-  border-color: color-mix(
-    in srgb,
-    var(--side-color) 72%,
-    rgba(255, 214, 102, 0.44)
-  );
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--side-color) 22%, transparent),
-    0 0 28px color-mix(in srgb, var(--side-color) 22%, transparent),
-    inset 0 0 24px color-mix(in srgb, var(--side-color) 14%, transparent);
+  filter: brightness(1.04);
 }
 
 .commander-power-button--charged::before {
   content: "";
   position: absolute;
-  inset: -30% auto -30% -35%;
-  width: 45%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.34),
-    transparent
-  );
-  transform: rotate(18deg);
+  inset: 0.18rem auto 0.18rem -16%;
+  width: 32%;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.46),
+      rgba(255, 255, 255, 0.18),
+      transparent
+    );
+  opacity: 0.72;
+  border-radius: 999px;
+  transform: skewX(-22deg);
   animation: commander-power-shine 2.4s ease-in-out infinite;
   pointer-events: none;
+  z-index: 3;
 }
 
 .commander-power-button--ready {
@@ -1060,103 +1022,273 @@
 }
 
 .commander-power-button--active {
-  border-color: color-mix(
-    in srgb,
-    var(--side-color) 74%,
-    rgba(255, 255, 255, 0.28)
-  );
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--side-color) 26%, transparent),
-    0 0 30px color-mix(in srgb, var(--side-color) 30%, transparent),
-    inset 0 0 26px color-mix(in srgb, var(--side-color) 18%, transparent);
+  filter: brightness(1.08);
 }
 
 .commander-meter--interactive {
   position: relative;
   z-index: 1;
   margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  background: center / 100% 100% no-repeat var(--commander-meter-frame-image);
+  filter:
+    drop-shadow(0 0 0.55rem color-mix(in srgb, var(--side-color) 18%, transparent))
+    drop-shadow(0 0 0.9rem color-mix(in srgb, var(--accent) 14%, transparent));
+}
+
+.commander-meter--interactive[data-segment-count="5"] {
+  --commander-meter-frame-image: url("../../../assets/img/icons/battle-hud/power-meter/power-meter-empty-5.png");
+  aspect-ratio: 500 / 141;
+}
+
+.commander-meter--interactive[data-segment-count="6"] {
+  --commander-meter-frame-image: url("../../../assets/img/icons/battle-hud/power-meter/power-meter-empty-6.png");
+  aspect-ratio: 552 / 141;
+}
+
+.commander-meter--interactive[data-segment-count="7"] {
+  --commander-meter-frame-image: url("../../../assets/img/icons/battle-hud/power-meter/power-meter-empty-7.png");
+  aspect-ratio: 604 / 141;
+}
+
+.commander-meter--interactive::before,
+.commander-meter--interactive::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.commander-meter--interactive::before {
+  inset: var(--commander-meter-glass-inset-block)
+    var(--commander-meter-glass-inset-inline);
+  z-index: 0;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.02) 24%,
+      rgba(10, 2, 22, 0.96)
+    ),
+    radial-gradient(
+      circle at 50% 44%,
+      rgba(39, 11, 66, 0.5),
+      rgba(10, 2, 22, 0.94) 68%
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 0 2px color-mix(in srgb, var(--side-color) 10%, transparent),
+    inset 0 0 18px rgba(0, 0, 0, 0.38);
+}
+
+.commander-meter--interactive::after {
+  inset: var(--commander-meter-glass-inset-block)
+    var(--commander-meter-glass-inset-inline);
+  z-index: 1;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1),
+      transparent 26%
+    )
+    center top / 100% 42% no-repeat,
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 72%
+    )
+    center / 100% 100% no-repeat;
+  filter:
+    drop-shadow(0 0 0.42rem color-mix(in srgb, var(--side-color) 12%, transparent))
+    drop-shadow(0 0 0.6rem color-mix(in srgb, var(--accent) 10%, transparent));
 }
 
 .commander-meter--interactive .meter__bar {
   position: relative;
-  min-height: 1.35rem;
+  z-index: 2;
+  min-height: var(--commander-meter-cell-size);
+  width: fit-content;
 }
 
 .commander-meter__segments {
   display: grid;
-  grid-template-columns: repeat(var(--meter-segment-count), minmax(0, 1fr));
-  gap: 0.2rem;
-  min-height: 1.35rem;
+  grid-template-columns: repeat(
+    var(--meter-segment-count),
+    minmax(0, var(--commander-meter-cell-size))
+  );
+  gap: var(--commander-meter-cell-gap);
+  min-height: var(--commander-meter-cell-size);
   height: auto;
   margin-top: 0;
   padding: 0;
   border-radius: 0;
   overflow: visible;
   background: transparent;
+  justify-content: center;
 }
 
 .commander-meter__active-label {
   position: absolute;
-  top: 50%;
+  top: -0.22rem;
   left: 50%;
   z-index: 3;
-  padding: 0.08rem 0.46rem 0.02rem;
-  border-radius: 999px;
+  padding: 0.08rem 0.34rem 0.12rem;
+  border: 1px solid
+    color-mix(in srgb, var(--side-color) 40%, rgba(255, 255, 255, 0.16));
   color: #fff9e8;
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.18),
-      rgba(255, 255, 255, 0.03) 32%
+      rgba(255, 255, 255, 0.22),
+      rgba(255, 255, 255, 0.04) 42%
     ),
-    rgba(11, 4, 20, 0.7);
+    rgba(20, 6, 34, 0.92);
   box-shadow:
-    0 0 14px color-mix(in srgb, var(--side-color) 18%, transparent),
-    0 0 22px color-mix(in srgb, var(--accent) 12%, transparent);
+    0 0 14px color-mix(in srgb, var(--side-color) 22%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent) 18%, transparent);
   font-family: var(--font-display);
-  font-size: 0.62rem;
+  font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   line-height: 1;
   text-transform: uppercase;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
+  clip-path: polygon(
+    0 0.45rem,
+    0.45rem 0,
+    calc(100% - 0.45rem) 0,
+    100% 0.45rem,
+    100% calc(100% - 0.45rem),
+    calc(100% - 0.45rem) 100%,
+    0.45rem 100%,
+    0 calc(100% - 0.45rem)
+  );
   pointer-events: none;
 }
 
 .commander-meter__segment {
+  --commander-meter-fill-stop: 0%;
+  --commander-meter-fill-opacity: 0.12;
   position: relative;
   display: block;
+  inline-size: var(--commander-meter-cell-size);
   min-width: 0;
-  aspect-ratio: 0.94;
-  background-image: url("../../../assets/img/icons/battle-hud/power-meter/empty.png");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  filter: drop-shadow(0 0 8px rgba(5, 2, 14, 0.2));
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 255, 255, 0.08) 0 12%,
+      rgba(31, 10, 54, 0.9) 48%,
+      rgba(85, 35, 122, 0.8) 63%,
+      rgba(255, 111, 231, 0.18) 71%,
+      rgba(255, 255, 255, 0) 76%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(8, 3, 18, 0.94) 0 54%,
+      rgba(0, 0, 0, 0) 76%
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 0 0 2px color-mix(in srgb, var(--side-color) 12%, transparent),
+    0 0 0.42rem rgba(3, 1, 10, 0.4);
+}
+
+.commander-meter__segment::before,
+.commander-meter__segment::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.commander-meter__segment::before {
+  inset: 0.14rem;
+  background:
+    radial-gradient(
+      circle at 50% 38%,
+      rgba(255, 255, 255, 0.12),
+      rgba(48, 16, 80, 0.08) 34%,
+      rgba(10, 2, 22, 0.98) 68%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(6, 2, 14, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -0.16rem 0.28rem rgba(0, 0, 0, 0.4);
+}
+
+.commander-meter__segment::after {
+  inset: 0.22rem;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--side-color) 78%, #ff4fe4) 0
+        var(--commander-meter-fill-stop),
+      rgba(24, 7, 40, 0.1) var(--commander-meter-fill-stop) 100%
+    ),
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(255, 255, 255, 0.42),
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 50% 65%,
+      color-mix(in srgb, var(--accent) 46%, transparent),
+      rgba(17, 4, 34, 0.26) 74%
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 0.4rem color-mix(in srgb, var(--side-color) 24%, transparent),
+    0 0 0.72rem color-mix(in srgb, var(--accent) 18%, transparent);
+  opacity: var(--commander-meter-fill-opacity);
 }
 
 .commander-meter__segment--half {
-  background-image: url("../../../assets/img/icons/battle-hud/power-meter/half.png");
-  filter: drop-shadow(
-      0 0 8px color-mix(in srgb, var(--side-color) 14%, transparent)
-    )
-    drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 12%, transparent));
+  --commander-meter-fill-stop: 54%;
+  --commander-meter-fill-opacity: 0.84;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--side-color) 30%, rgba(255, 255, 255, 0.1)),
+    inset 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent),
+    0 0 0.55rem color-mix(in srgb, var(--side-color) 18%, transparent),
+    0 0 0.9rem color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .commander-meter__segment--full {
-  background-image: url("../../../assets/img/icons/battle-hud/power-meter/full.png");
-  filter: drop-shadow(
-      0 0 8px color-mix(in srgb, var(--side-color) 18%, transparent)
-    )
-    drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 16%, transparent));
+  --commander-meter-fill-stop: 100%;
+  --commander-meter-fill-opacity: 1;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--side-color) 40%, rgba(255, 255, 255, 0.12)),
+    inset 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 0.7rem color-mix(in srgb, var(--side-color) 22%, transparent),
+    0 0 1rem color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .commander-meter__segments--active .commander-meter__segment {
-  opacity: 0.42;
-  filter: brightness(1.08) saturate(1.08)
-    drop-shadow(0 0 10px color-mix(in srgb, var(--side-color) 22%, transparent))
-    drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 18%, transparent));
+  opacity: 1;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--side-color) 54%, rgba(255, 255, 255, 0.16)),
+    inset 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 0 0.8rem color-mix(in srgb, var(--side-color) 26%, transparent),
+    0 0 1.18rem color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.commander-meter__segments--active .commander-meter__segment::after {
+  opacity: 1;
+  filter:
+    brightness(1.16)
+    saturate(1.08)
+    drop-shadow(0 0 0.4rem color-mix(in srgb, var(--side-color) 34%, transparent))
+    drop-shadow(0 0 0.78rem color-mix(in srgb, var(--accent) 30%, transparent));
 }
 
 @media (prefers-reduced-motion: reduce) {

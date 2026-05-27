@@ -3,7 +3,7 @@
   "frameHeight": 128,
   "animations": {
     "idle": {
-      "file": "breaker-idle.png",
+      "file": "medic-idle.png",
       "frameRate": 5,
       "ranges": {
         "default": {
@@ -13,7 +13,7 @@
       }
     },
     "attack": {
-      "file": "breaker-attack.png",
+      "file": "medic-attack.png",
       "frameRate": 5,
       "ranges": {
         "right": {

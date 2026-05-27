@@ -33,7 +33,7 @@ export function getUnitDefaultTexture(visualSpec, owner = "player") {
     return {
       key: visualSpec.idle.key,
       frame: idleRange.start,
-      flipX: false,
+      flipX: getOwnerIdleFlipX(owner),
     };
   }
 

@@ -16,7 +16,7 @@
       "file": "skyguard-attack.png",
       "frameRate": 5,
       "ranges": {
-        "left": {
+        "right": {
           "start": 0,
           "end": 2
         }

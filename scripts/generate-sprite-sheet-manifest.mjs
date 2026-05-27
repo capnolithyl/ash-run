@@ -136,6 +136,15 @@ async function readOwnerAnimationSpec(root, owner, unitTypeId, animationMetadata
       throw new Error(`${unitTypeId} ${animationId} animation metadata must include a file.`);
     }
 
+    if (
+      animationSpec.cutsceneLoopCount !== undefined &&
+      (!Number.isInteger(animationSpec.cutsceneLoopCount) || animationSpec.cutsceneLoopCount <= 0)
+    ) {
+      throw new Error(
+        `${unitTypeId} ${animationId} cutsceneLoopCount must be a positive integer when provided.`,
+      );
+    }
+
     const relativePath = `assets/sprites/units/${owner}/${unitTypeId}/${animationSpec.file}`;
     const filePath = path.resolve(root, relativePath);
 
@@ -171,6 +180,10 @@ async function readOwnerAnimationSpec(root, owner, unitTypeId, animationMetadata
         animationKeyBase: `animation:units:${owner}:${unitTypeId}:${animationId}`,
         ranges: normalizedRanges,
       };
+
+      if (Number.isInteger(animationSpec.cutsceneLoopCount) && animationSpec.cutsceneLoopCount > 0) {
+        ownerSpec.animations[animationId].cutsceneLoopCount = animationSpec.cutsceneLoopCount;
+      }
     } catch (error) {
       if (error?.code !== "ENOENT") {
         throw error;

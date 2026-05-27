@@ -4,7 +4,8 @@ import { getBattleCombatCutsceneState } from "../../../game/phaser/view/battleCo
 import {
   getAnimationRange,
   getAnimationRangeFrameCount,
-  getAttackAnimationPlayback
+  getAttackAnimationPlayback,
+  getOwnerIdleFlipX,
 } from "../../../game/phaser/view/unitAnimationHelpers.js";
 
 function clamp(value, min, max) {
@@ -36,6 +37,7 @@ function getIdleAnimationConfig(unit, side) {
       frameHeight: spriteDefinition?.frameHeight ?? null,
       frameCount: idleFrameCount,
       frameStart: idleRange.start,
+      flipX: getOwnerIdleFlipX(side),
       durationMs: Math.max(
         320,
         Math.round((idleFrameCount / Math.max(1, idleAnimation.frameRate ?? 1)) * 1000)
@@ -47,7 +49,8 @@ function getIdleAnimationConfig(unit, side) {
   if (spriteDefinition?.fallbackUrl) {
     return {
       mode: "image",
-      url: spriteDefinition.fallbackUrl
+      url: spriteDefinition.fallbackUrl,
+      flipX: getOwnerIdleFlipX(side),
     };
   }
 
@@ -85,17 +88,25 @@ function getAttackSheetConfig(unit, side, cutscene) {
 }
 
 function getIdleLayerConfig(unit, side, cutscene) {
+  const idleAnimationConfig = getIdleAnimationConfig(unit, side);
+
+  if (idleAnimationConfig.mode !== "text") {
+    return idleAnimationConfig;
+  }
+
   const attackSheetConfig = getAttackSheetConfig(unit, side, cutscene);
 
   if (attackSheetConfig) {
     return {
       ...attackSheetConfig,
-      staticFrame: true,
+      frameCount: 1,
+      frameStart: attackSheetConfig.frameStart,
+      flipX: getOwnerIdleFlipX(side),
       iterations: 1
     };
   }
 
-  return getIdleAnimationConfig(unit, side);
+  return idleAnimationConfig;
 }
 
 function getAttackLayerConfig(unit, side, cutscene) {
@@ -160,6 +171,7 @@ function renderSpriteLayer(layerConfig, side, layerType) {
           alt=""
           loading="eager"
           decoding="async"
+          style="transform:scaleX(${layerConfig.flipX ? -1 : 1});"
         />
       </div>
     `;

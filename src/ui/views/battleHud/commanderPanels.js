@@ -2,29 +2,37 @@ import { TURN_SIDES } from "../../../game/core/constants.js";
 import { getCommanderPortraitImageUrl } from "../../../game/content/commanderArt.js";
 import { getCommanderPowerMax } from "../../../game/content/commanders.js";
 
-const COMMANDER_POWER_SEGMENT_VALUE = 25;
+const COMMANDER_POWER_SEGMENT_VALUE = 50;
 const COMMANDER_POWER_SEGMENT_HALF_STEPS = 2;
 const COMMANDER_PANEL_ACTIVE_GLOW_CYCLE_MS = 2400;
 const COMMANDER_PANEL_ACTIVE_BORDER_CYCLE_MS = 3100;
 const COMMANDER_PANEL_ACTIVE_SPINE_CYCLE_MS = 1500;
 
 function getCommanderAnimationClockMs() {
-  if (typeof performance !== "undefined" && typeof performance.now === "function") {
+  if (
+    typeof performance !== "undefined" &&
+    typeof performance.now === "function"
+  ) {
     return performance.now();
   }
 
   return Date.now();
 }
 
-function getCommanderPanelStyle(commanderAccent, { isActive = false, animationClockMs = 0 } = {}) {
+function getCommanderPanelStyle(
+  commanderAccent,
+  { isActive = false, animationClockMs = 0 } = {},
+) {
   const styleParts = [`--accent:${commanderAccent}`];
 
   if (isActive) {
-    const animationClock = Number.isFinite(animationClockMs) ? animationClockMs : 0;
+    const animationClock = Number.isFinite(animationClockMs)
+      ? animationClockMs
+      : 0;
     styleParts.push(
       `--commander-active-glow-delay:${-Math.floor(animationClock % COMMANDER_PANEL_ACTIVE_GLOW_CYCLE_MS)}ms`,
       `--commander-active-border-delay:${-Math.floor(animationClock % COMMANDER_PANEL_ACTIVE_BORDER_CYCLE_MS)}ms`,
-      `--commander-active-spine-delay:${-Math.floor(animationClock % COMMANDER_PANEL_ACTIVE_SPINE_CYCLE_MS)}ms`
+      `--commander-active-spine-delay:${-Math.floor(animationClock % COMMANDER_PANEL_ACTIVE_SPINE_CYCLE_MS)}ms`,
     );
   }
 
@@ -80,17 +88,20 @@ export function canSelectNextReadyUnit(battleSnapshot) {
     return false;
   }
 
-  return battleSnapshot.player.units.some((unit) => !unit.hasMoved && unit.current.hp > 0);
+  return battleSnapshot.player.units.some(
+    (unit) => !unit.hasMoved && unit.current.hp > 0,
+  );
 }
 
 export function canActivatePlayerPower(battleSnapshot) {
   return Boolean(
     battleSnapshot &&
-      !battleSnapshot.victory &&
-      battleSnapshot.turn.activeSide === TURN_SIDES.PLAYER &&
-      !battleSnapshot.presentation?.pendingAction &&
-      battleSnapshot.player.powerUsedTurn !== battleSnapshot.turn.number &&
-      battleSnapshot.player.charge >= getCommanderPowerMax(battleSnapshot.player.commanderId)
+    !battleSnapshot.victory &&
+    battleSnapshot.turn.activeSide === TURN_SIDES.PLAYER &&
+    !battleSnapshot.presentation?.pendingAction &&
+    battleSnapshot.player.powerUsedTurn !== battleSnapshot.turn.number &&
+    battleSnapshot.player.charge >=
+      getCommanderPowerMax(battleSnapshot.player.commanderId),
   );
 }
 
@@ -99,7 +110,10 @@ export function isPlayerPowerCharged(battleSnapshot) {
     return false;
   }
 
-  return battleSnapshot.player.charge >= getCommanderPowerMax(battleSnapshot.player.commanderId);
+  return (
+    battleSnapshot.player.charge >=
+    getCommanderPowerMax(battleSnapshot.player.commanderId)
+  );
 }
 
 function getCommanderPowerSegmentCount(powerMax) {
@@ -120,20 +134,37 @@ function getCommanderPowerHalfSteps(charge, powerMax, isActive = false) {
     Math.min(
       segmentCount * COMMANDER_POWER_SEGMENT_HALF_STEPS,
       Math.floor(
-        (clampedCharge / COMMANDER_POWER_SEGMENT_VALUE) * COMMANDER_POWER_SEGMENT_HALF_STEPS + Number.EPSILON
-      )
-    )
+        (clampedCharge / COMMANDER_POWER_SEGMENT_VALUE) *
+          COMMANDER_POWER_SEGMENT_HALF_STEPS +
+          Number.EPSILON,
+      ),
+    ),
   );
 }
 
-function renderCommanderPowerSegments(sideState, powerMax, { isActive = false } = {}) {
-  const segmentCount = getCommanderPowerSegmentCount(powerMax);
-  const filledHalfSteps = getCommanderPowerHalfSteps(sideState.charge, powerMax, isActive);
-  const displayCharge = Math.max(0, Math.min(powerMax, Math.floor(Number(sideState.charge) || 0)));
-  const segments = Array.from({ length: segmentCount }, (_, index) => {
+function renderCommanderPowerSegments(
+  sideState,
+  powerMax,
+  { isActive = false, segmentCount = null } = {},
+) {
+  const resolvedSegmentCount =
+    segmentCount ?? getCommanderPowerSegmentCount(powerMax);
+  const filledHalfSteps = getCommanderPowerHalfSteps(
+    sideState.charge,
+    powerMax,
+    isActive,
+  );
+  const displayCharge = Math.max(
+    0,
+    Math.min(powerMax, Math.floor(Number(sideState.charge) || 0)),
+  );
+  const segments = Array.from({ length: resolvedSegmentCount }, (_, index) => {
     const segmentHalfSteps = Math.max(
       0,
-      Math.min(COMMANDER_POWER_SEGMENT_HALF_STEPS, filledHalfSteps - index * COMMANDER_POWER_SEGMENT_HALF_STEPS)
+      Math.min(
+        COMMANDER_POWER_SEGMENT_HALF_STEPS,
+        filledHalfSteps - index * COMMANDER_POWER_SEGMENT_HALF_STEPS,
+      ),
     );
     const segmentState =
       segmentHalfSteps >= COMMANDER_POWER_SEGMENT_HALF_STEPS
@@ -154,8 +185,8 @@ function renderCommanderPowerSegments(sideState, powerMax, { isActive = false } 
   return `
     <div
       class="meter__bar commander-meter__segments ${isActive ? "commander-meter__segments--active" : ""}"
-      style="--meter-segment-count:${segmentCount}"
-      data-segment-count="${segmentCount}"
+      style="--meter-segment-count:${resolvedSegmentCount}"
+      data-segment-count="${resolvedSegmentCount}"
       data-segment-value="${COMMANDER_POWER_SEGMENT_VALUE}"
       data-filled-half-steps="${filledHalfSteps}"
       role="img"
@@ -171,18 +202,21 @@ function renderCommanderPowerControl(
   commander,
   sideState,
   side,
-  { canActivatePower = false, isCharged = false, isActive = false } = {}
+  { canActivatePower = false, isCharged = false, isActive = false } = {},
 ) {
   const powerMax = getCommanderPowerMax(sideState.commanderId);
+  const segmentCount = getCommanderPowerSegmentCount(powerMax);
+  const meterShellAttributes = `data-segment-count="${segmentCount}" style="--meter-segment-count:${segmentCount}"`;
 
   if (side !== TURN_SIDES.PLAYER) {
     return `
       <div
         class="commander-power-button commander-power-button--readonly ${isCharged ? "commander-power-button--charged" : ""} ${isActive ? "commander-power-button--active" : ""}"
+        ${meterShellAttributes}
         aria-disabled="true"
       >
-        <div class="meter commander-meter commander-meter--interactive">
-          ${renderCommanderPowerSegments(sideState, powerMax, { isActive })}
+        <div class="meter commander-meter commander-meter--interactive" ${meterShellAttributes}>
+          ${renderCommanderPowerSegments(sideState, powerMax, { isActive, segmentCount })}
         </div>
       </div>
     `;
@@ -191,11 +225,12 @@ function renderCommanderPowerControl(
   return `
     <button
       class="commander-power-button ${isCharged ? "commander-power-button--charged" : ""} ${canActivatePower ? "commander-power-button--ready" : ""} ${isActive ? "commander-power-button--active" : ""}"
+      ${meterShellAttributes}
       data-action="activate-power"
       ${canActivatePower ? "" : "disabled"}
     >
-      <div class="meter commander-meter commander-meter--interactive">
-        ${renderCommanderPowerSegments(sideState, powerMax, { isActive })}
+      <div class="meter commander-meter commander-meter--interactive" ${meterShellAttributes}>
+        ${renderCommanderPowerSegments(sideState, powerMax, { isActive, segmentCount })}
       </div>
     </button>
   `;
@@ -213,35 +248,36 @@ export function renderCommanderPanel(
     isCharged = false,
     isActive = false,
     showFunds = true,
-    animationClockMs = 0
-  } = {}
+    animationClockMs = 0,
+  } = {},
 ) {
-  const sideLabel = side === TURN_SIDES.PLAYER ? "Player Commander" : "Enemy Commander";
+  const sideLabel =
+    side === TURN_SIDES.PLAYER ? "Player Commander" : "Enemy Commander";
   const portraitImageUrl = getCommanderPortraitImageUrl(sideState.commanderId);
-  const shellClassName = `commander-panel-shell commander-panel-shell--${side} ${
-    turnState ? `commander-panel-shell--turn-${turnState}` : ""
-  } ${
-    isActive ? "commander-panel-shell--power-active" : ""
-  }`.trim();
+  const powerSegmentCount = getCommanderPowerSegmentCount(
+    getCommanderPowerMax(sideState.commanderId),
+  );
+  const shellClassName =
+    `commander-panel-shell commander-panel-shell--${side} ${
+      turnState ? `commander-panel-shell--turn-${turnState}` : ""
+    } ${isActive ? "commander-panel-shell--power-active" : ""}`.trim();
   const panelClassName = `commander-panel commander-panel--${side} ${
     turnState ? `commander-panel--turn-${turnState}` : ""
-  } ${
-    isActive ? "commander-panel--power-active" : ""
-  }`.trim();
+  } ${isActive ? "commander-panel--power-active" : ""}`.trim();
   const resolvedAnimationClockMs = Number.isFinite(animationClockMs)
     ? animationClockMs
     : getCommanderAnimationClockMs();
   const panelStyle = getCommanderPanelStyle(commander.accent, {
     isActive,
-    animationClockMs: resolvedAnimationClockMs
+    animationClockMs: resolvedAnimationClockMs,
   });
   const turnAnimationFromAttribute = turnAnimationFromState
     ? ` data-turn-animation-from="${turnAnimationFromState}"`
     : "";
 
   return `
-    <div class="${shellClassName}" data-turn-state="${turnState}"${turnAnimationFromAttribute} style="${panelStyle}">
-      <div class="${panelClassName}" data-turn-state="${turnState}"${turnAnimationFromAttribute}>
+    <div class="${shellClassName}" data-turn-state="${turnState}" data-power-segment-count="${powerSegmentCount}"${turnAnimationFromAttribute} style="${panelStyle}">
+      <div class="${panelClassName}" data-turn-state="${turnState}" data-power-segment-count="${powerSegmentCount}"${turnAnimationFromAttribute}>
         <div class="commander-panel__identity">
           ${
             portraitImageUrl

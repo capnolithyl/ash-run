@@ -12,6 +12,7 @@
   --battle-desktop-gap: clamp(1rem, 1.15vw, 1.35rem);
   --battle-desktop-left-width: clamp(17rem, 18vw, 18.75rem);
   --battle-desktop-right-width: clamp(15rem, 16vw, 16.5rem);
+  --battle-commander-panel-width: clamp(34.5rem, 40.75vw, 36.85rem);
   --battle-commanders-top: 0.8rem;
   --battle-desktop-panels-top: calc(11.65rem + clamp(1.35rem, 1.45vw, 1.7rem));
   --battle-desktop-bottom: 6.7rem;
@@ -31,8 +32,10 @@
 }
 
 .battle-commanders .commander-panel-shell {
-  flex: 1 1 0;
+  flex: 0 1 var(--battle-commander-panel-width);
   min-width: 0;
+  width: min(100%, var(--battle-commander-panel-width));
+  max-width: var(--battle-commander-panel-width);
   pointer-events: auto;
 }
 

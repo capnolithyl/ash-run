@@ -35,7 +35,7 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:player:grunt:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -75,7 +75,7 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:grunt:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -117,7 +117,7 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:player:breaker:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -157,7 +157,133 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:breaker:attack",
           "ranges": {
-            "left": {
+            "right": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "longshot": {
+    "player": {
+      "frameWidth": 128,
+      "frameHeight": 160,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:longshot:idle",
+          "url": "./assets/sprites/units/player/longshot/longshot-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 256,
+          "sheetHeight": 160,
+          "sheetColumns": 2,
+          "sheetRows": 1,
+          "animationKeyBase": "animation:units:player:longshot:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:player:longshot:attack",
+          "url": "./assets/sprites/units/player/longshot/longshot-attack.png",
+          "frameRate": 5,
+          "frameCount": 9,
+          "sheetWidth": 384,
+          "sheetHeight": 480,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:player:longshot:attack",
+          "ranges": {
+            "right": {
+              "start": 0,
+              "end": 8
+            }
+          },
+          "cutsceneLoopCount": 1
+        }
+      }
+    },
+    "enemy": {
+      "frameWidth": 128,
+      "frameHeight": 160,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:enemy:longshot:idle",
+          "url": "./assets/sprites/units/enemy/longshot/longshot-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 256,
+          "sheetHeight": 160,
+          "sheetColumns": 2,
+          "sheetRows": 1,
+          "animationKeyBase": "animation:units:enemy:longshot:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:enemy:longshot:attack",
+          "url": "./assets/sprites/units/enemy/longshot/longshot-attack.png",
+          "frameRate": 5,
+          "frameCount": 9,
+          "sheetWidth": 384,
+          "sheetHeight": 480,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:enemy:longshot:attack",
+          "ranges": {
+            "right": {
+              "start": 0,
+              "end": 8
+            }
+          },
+          "cutsceneLoopCount": 1
+        }
+      }
+    }
+  },
+  "medic": {
+    "player": {
+      "frameWidth": 102,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:medic:idle",
+          "url": "./assets/sprites/units/player/medic/medic-idle.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 204,
+          "sheetHeight": 128,
+          "sheetColumns": 2,
+          "sheetRows": 1,
+          "animationKeyBase": "animation:units:player:medic:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:player:medic:attack",
+          "url": "./assets/sprites/units/player/medic/medic-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 204,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:medic:attack",
+          "ranges": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -199,7 +325,7 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:player:runner:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -239,7 +365,7 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:runner:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -296,6 +422,88 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
       }
     }
   },
+  "juggernaut": {
+    "player": {
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:player:juggernaut:idle",
+          "url": "./assets/sprites/units/player/juggernaut/juggernaut-idle.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:juggernaut:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:player:juggernaut:attack",
+          "url": "./assets/sprites/units/player/juggernaut/juggernaut-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:player:juggernaut:attack",
+          "ranges": {
+            "right": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    },
+    "enemy": {
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:enemy:juggernaut:idle",
+          "url": "./assets/sprites/units/enemy/juggernaut/juggernaut-idle.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:enemy:juggernaut:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:enemy:juggernaut:attack",
+          "url": "./assets/sprites/units/enemy/juggernaut/juggernaut-attack.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
+          "sheetRows": 2,
+          "animationKeyBase": "animation:units:enemy:juggernaut:attack",
+          "ranges": {
+            "right": {
+              "start": 0,
+              "end": 2
+            }
+          }
+        }
+      }
+    }
+  },
   "skyguard": {
     "player": {
       "frameWidth": 128,
@@ -329,7 +537,7 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:player:skyguard:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -369,7 +577,7 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:skyguard:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
               "end": 2
             }
@@ -380,16 +588,16 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
   },
   "gunship": {
     "player": {
-      "frameWidth": 64,
-      "frameHeight": 64,
+      "frameWidth": 128,
+      "frameHeight": 128,
       "animations": {
         "idle": {
           "key": "spritesheet:units:player:gunship:idle",
           "url": "./assets/sprites/units/player/gunship/gunship-idle.png",
           "frameRate": 5,
           "frameCount": 2,
-          "sheetWidth": 64,
-          "sheetHeight": 128,
+          "sheetWidth": 128,
+          "sheetHeight": 256,
           "sheetColumns": 1,
           "sheetRows": 2,
           "animationKeyBase": "animation:units:player:gunship:idle",
@@ -404,32 +612,32 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "key": "spritesheet:units:player:gunship:attack",
           "url": "./assets/sprites/units/player/gunship/gunship-attack.png",
           "frameRate": 5,
-          "frameCount": 2,
-          "sheetWidth": 64,
-          "sheetHeight": 128,
-          "sheetColumns": 1,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
           "sheetRows": 2,
           "animationKeyBase": "animation:units:player:gunship:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
-              "end": 1
+              "end": 2
             }
           }
         }
       }
     },
     "enemy": {
-      "frameWidth": 64,
-      "frameHeight": 64,
+      "frameWidth": 128,
+      "frameHeight": 128,
       "animations": {
         "idle": {
           "key": "spritesheet:units:enemy:gunship:idle",
           "url": "./assets/sprites/units/enemy/gunship/gunship-idle.png",
           "frameRate": 5,
           "frameCount": 2,
-          "sheetWidth": 64,
-          "sheetHeight": 128,
+          "sheetWidth": 128,
+          "sheetHeight": 256,
           "sheetColumns": 1,
           "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:gunship:idle",
@@ -444,16 +652,16 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "key": "spritesheet:units:enemy:gunship:attack",
           "url": "./assets/sprites/units/enemy/gunship/gunship-attack.png",
           "frameRate": 5,
-          "frameCount": 2,
-          "sheetWidth": 64,
-          "sheetHeight": 128,
-          "sheetColumns": 1,
+          "frameCount": 3,
+          "sheetWidth": 256,
+          "sheetHeight": 256,
+          "sheetColumns": 2,
           "sheetRows": 2,
           "animationKeyBase": "animation:units:enemy:gunship:attack",
           "ranges": {
-            "left": {
+            "right": {
               "start": 0,
-              "end": 1
+              "end": 2
             }
           }
         }

@@ -1,6 +1,6 @@
 {
-  "frameWidth": 64,
-  "frameHeight": 64,
+  "frameWidth": 128,
+  "frameHeight": 128,
   "animations": {
     "idle": {
       "file": "gunship-idle.png",
@@ -16,9 +16,9 @@
       "file": "gunship-attack.png",
       "frameRate": 5,
       "ranges": {
-        "left": {
+        "right": {
           "start": 0,
-          "end": 1
+          "end": 2
         }
       }
     }

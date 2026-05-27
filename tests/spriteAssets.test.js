@@ -240,13 +240,13 @@ test("unit animation manifest supports owner-specific omissions and mirrored att
   assert.equal(playerGruntDefinition.idle.key, "spritesheet:units:player:grunt:idle");
   assert.deepEqual(playerGruntDefinition.idle.ranges.default, { start: 0, end: 1 });
   assert.ok(playerGruntDefinition.attack);
-  assert.deepEqual(playerGruntDefinition.attack.ranges.left, { start: 0, end: 2 });
+  assert.deepEqual(playerGruntDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyGruntDefinition.idle.key, "spritesheet:units:enemy:grunt:idle");
   assert.equal(enemyGruntDefinition.idle.frameCount, 2);
   assert.equal(playerBreakerDefinition.idle.key, "spritesheet:units:player:breaker:idle");
-  assert.deepEqual(playerBreakerDefinition.attack.ranges.left, { start: 0, end: 2 });
+  assert.deepEqual(playerBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyBreakerDefinition.idle.key, "spritesheet:units:enemy:breaker:idle");
-  assert.deepEqual(enemyBreakerDefinition.attack.ranges.left, { start: 0, end: 2 });
+  assert.deepEqual(enemyBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyBruiserDefinition.idle.key, "spritesheet:units:enemy:bruiser:idle");
   assert.equal(enemyBruiserDefinition.attack, null);
 });
@@ -255,10 +255,10 @@ test("gunship, runner, and skyguard sheets use the expected frame geometry", () 
   const animatedUnits = [
     {
       unitTypeId: "gunship",
-      frameWidth: 64,
-      frameHeight: 64,
+      frameWidth: 128,
+      frameHeight: 128,
       idleRange: { start: 0, end: 1 },
-      attackRange: { start: 0, end: 1 },
+      attackRange: { start: 0, end: 2 },
     },
     {
       unitTypeId: "runner",
@@ -286,11 +286,43 @@ test("gunship, runner, and skyguard sheets use the expected frame geometry", () 
       assert.equal(spriteDefinition.idle.key, `spritesheet:units:${owner}:${unitTypeId}:idle`);
       assert.deepEqual(spriteDefinition.idle.ranges.default, idleRange);
       assert.equal(spriteDefinition.attack.key, `spritesheet:units:${owner}:${unitTypeId}:attack`);
-      assert.deepEqual(spriteDefinition.attack.ranges.left, attackRange);
+      assert.deepEqual(spriteDefinition.attack.ranges.right, attackRange);
       assert.equal(generatedDefinition.frameWidth, frameWidth);
       assert.equal(generatedDefinition.frameHeight, frameHeight);
     }
   }
+});
+
+test("juggernaut, longshot, and medic sheets use the expected owner coverage and metadata", () => {
+  for (const owner of UNIT_OWNER_VARIANTS) {
+    const juggernautDefinition = getUnitSpriteDefinition("juggernaut", owner);
+    const longshotDefinition = getUnitSpriteDefinition("longshot", owner);
+
+    assert.equal(juggernautDefinition.type, "spritesheet");
+    assert.deepEqual(juggernautDefinition.idle.ranges.default, { start: 0, end: 2 });
+    assert.deepEqual(juggernautDefinition.attack.ranges.right, { start: 0, end: 2 });
+    assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.juggernaut[owner].frameWidth, 128);
+    assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.juggernaut[owner].frameHeight, 128);
+
+    assert.equal(longshotDefinition.type, "spritesheet");
+    assert.deepEqual(longshotDefinition.idle.ranges.default, { start: 0, end: 1 });
+    assert.deepEqual(longshotDefinition.attack.ranges.right, { start: 0, end: 8 });
+    assert.equal(longshotDefinition.attack.cutsceneLoopCount, 1);
+    assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.longshot[owner].frameWidth, 128);
+    assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.longshot[owner].frameHeight, 160);
+  }
+
+  const playerMedicDefinition = getUnitSpriteDefinition("medic", "player");
+  const enemyMedicDefinition = getUnitSpriteDefinition("medic", "enemy");
+
+  assert.equal(playerMedicDefinition.type, "spritesheet");
+  assert.deepEqual(playerMedicDefinition.idle.ranges.default, { start: 0, end: 1 });
+  assert.deepEqual(playerMedicDefinition.attack.ranges.right, { start: 0, end: 2 });
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.medic.player.frameWidth, 102);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.medic.player.frameHeight, 128);
+  assert.equal(enemyMedicDefinition.type, "image");
+  assert.equal(enemyMedicDefinition.idle, null);
+  assert.equal(enemyMedicDefinition.attack, null);
 });
 
 test("sprite folders only contain manifest assets or documented source masters", () => {
