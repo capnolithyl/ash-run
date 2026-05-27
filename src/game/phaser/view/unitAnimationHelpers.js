@@ -1,9 +1,30 @@
+import { getBattleMoveDuration } from "../../core/constants.js";
+
 export function getAnimationRangeFrameCount(range = null) {
   if (!range) {
     return 0;
   }
 
   return Math.max(0, range.end - range.start + 1);
+}
+
+export function getAnimationRangeFrameIndices(range = null, { reverse = false } = {}) {
+  const frameCount = getAnimationRangeFrameCount(range);
+
+  if (frameCount <= 0) {
+    return [];
+  }
+
+  const frames = Array.from({ length: frameCount }, (_, index) => range.start + index);
+  return reverse ? frames.reverse() : frames;
+}
+
+export function getAnimationPlaybackDurationMs(frameCount = 0, frameRate = 1) {
+  if (frameCount <= 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.round((frameCount / Math.max(1, frameRate)) * 1000));
 }
 
 export function getAnimationRange(animationSpec, rangeName = "default") {
@@ -77,9 +98,45 @@ export function getAttackAnimationPlayback(owner, attackAnimation, directionX = 
     range,
     startFrame: range.start,
     flipX,
-    durationMs: Math.max(
-      1,
-      Math.round((getAnimationRangeFrameCount(range) / Math.max(1, attackAnimation.frameRate)) * 1000),
+    durationMs: getAnimationPlaybackDurationMs(
+      getAnimationRangeFrameCount(range),
+      attackAnimation.frameRate,
+    ),
+  };
+}
+
+export function getUnitMovementPlayback(visualSpec, moveSegments = 0) {
+  const walkAnimation = visualSpec?.walk ?? null;
+  const forwardFrameIndices = getAnimationRangeFrameIndices(
+    getAnimationRange(walkAnimation, "default"),
+  );
+  const canTeleport =
+    walkAnimation?.movementStyle === "teleport" &&
+    Boolean(walkAnimation?.key) &&
+    forwardFrameIndices.length > 1;
+
+  if (!canTeleport) {
+    return {
+      style: "path",
+      animation: walkAnimation,
+      forwardFrameIndices,
+      reverseFrameIndices: [],
+      splitProgress: 1,
+      totalDurationMs: getBattleMoveDuration(moveSegments),
+    };
+  }
+
+  const reverseFrameIndices = [...forwardFrameIndices].reverse();
+
+  return {
+    style: "teleport",
+    animation: walkAnimation,
+    forwardFrameIndices,
+    reverseFrameIndices,
+    splitProgress: forwardFrameIndices.length / (forwardFrameIndices.length + reverseFrameIndices.length),
+    totalDurationMs: getAnimationPlaybackDurationMs(
+      forwardFrameIndices.length + reverseFrameIndices.length,
+      walkAnimation.frameRate,
     ),
   };
 }

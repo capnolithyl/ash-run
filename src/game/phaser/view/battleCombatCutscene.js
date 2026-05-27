@@ -18,7 +18,8 @@ import { getMovementModifier } from "../../simulation/commanderEffects.js";
 import { getMovementPath } from "../../simulation/selectors.js";
 import {
   getAnimationRangeFrameCount,
-  getAttackAnimationPlayback
+  getAttackAnimationPlayback,
+  getUnitMovementPlayback
 } from "./unitAnimationHelpers.js";
 
 function clamp(value, min, max) {
@@ -135,7 +136,8 @@ function getCutsceneRevealStartMsFromPendingMove(snapshot, attackerId) {
     return 0;
   }
 
-  return getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS;
+  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, unit.owner);
+  return getUnitMovementPlayback(spriteDefinition, moveSegments).totalDurationMs + BATTLE_MOVE_SETTLE_MS;
 }
 
 function getCutsceneRevealStartMs(snapshot, animationEvents, attackerId) {
@@ -153,8 +155,7 @@ function getCutsceneRevealStartMs(snapshot, animationEvents, attackerId) {
     return 0;
   }
 
-  const moveSegments = Math.max(0, (movementEvent.path?.length ?? 1) - 1);
-  return getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS;
+  return (movementEvent.durationMs ?? 0) + BATTLE_MOVE_SETTLE_MS;
 }
 
 function getBattleCombatCutsceneElapsedMs(cutscene, now = Date.now()) {

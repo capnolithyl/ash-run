@@ -5,10 +5,12 @@ import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
 import {
   getAnimationRange,
+  getAnimationRangeFrameIndices,
   getAnimationRangeFrameCount,
   getAttackAnimationPlayback,
   getOwnerIdleFlipX,
   getUnitDefaultTexture,
+  getUnitMovementPlayback,
 } from "./unitAnimationHelpers.js";
 
 function getPointDistance(left, right) {
@@ -37,22 +39,29 @@ function getUnitVisualSpec(scene, unit) {
   return null;
 }
 
-function ensureUnitAnimation(scene, animationSpec, rangeName = "default", repeat = -1) {
-  const range = getAnimationRange(animationSpec, rangeName);
+function ensureUnitAnimation(
+  scene,
+  animationSpec,
+  rangeName = "default",
+  repeat = -1,
+  frameIndices = null,
+) {
+  const resolvedFrameIndices =
+    frameIndices ?? getAnimationRangeFrameIndices(getAnimationRange(animationSpec, rangeName));
 
-  if (!animationSpec?.key || !range || getAnimationRangeFrameCount(range) <= 1) {
+  if (!animationSpec?.key || resolvedFrameIndices.length <= 1) {
     return null;
   }
 
-  const animationKey = `${animationSpec.animationKeyBase}:${rangeName}:${repeat}`;
+  const animationKey = `${animationSpec.animationKeyBase}:${rangeName}:${resolvedFrameIndices.join(",")}:${repeat}`;
 
   if (!scene.anims.exists(animationKey)) {
     scene.anims.create({
       key: animationKey,
-      frames: scene.anims.generateFrameNumbers(animationSpec.key, {
-        start: range.start,
-        end: range.end
-      }),
+      frames: resolvedFrameIndices.map((frame) => ({
+        key: animationSpec.key,
+        frame
+      })),
       frameRate: animationSpec.frameRate,
       repeat
     });
@@ -352,7 +361,50 @@ export class UnitLayer {
     );
   }
 
-  playPathMovement(entity, layout, path) {
+  completeMovement(entity) {
+    entity.moveTween = null;
+    entity.container.setPosition(entity.targetX, entity.targetY);
+    this.playIdleAnimation(entity);
+    this.runAfterMoveCallbacks(entity);
+    this.playQueuedAttack(entity);
+  }
+
+  getTeleportAccessoryVisibility(entity) {
+    return {
+      glow: entity.glow.visible,
+      aura: entity.aura.visible,
+      shadow: entity.shadow?.visible ?? false,
+      healthMeter: entity.healthMeter.visible,
+      transportIcon: entity.transportIcon?.visible ?? false,
+      gearIcon: entity.gearIcon?.visible ?? false,
+      hostageIcon: entity.hostageIcon?.visible ?? false,
+      fallbackLabel: entity.fallbackLabel?.visible ?? false,
+    };
+  }
+
+  restoreTeleportAccessoryVisibility(entity, visibilityState) {
+    entity.glow.setVisible(visibilityState.glow);
+    entity.aura.setVisible(visibilityState.aura);
+    entity.shadow?.setVisible(visibilityState.shadow);
+    entity.healthMeter.setVisible(visibilityState.healthMeter);
+    entity.transportIcon?.setVisible(visibilityState.transportIcon);
+    entity.gearIcon?.setVisible(visibilityState.gearIcon);
+    entity.hostageIcon?.setVisible(visibilityState.hostageIcon);
+    entity.fallbackLabel?.setVisible(visibilityState.fallbackLabel);
+  }
+
+  hideTeleportAccessories(entity) {
+    entity.glow.setVisible(false);
+    entity.aura.setVisible(false);
+    entity.shadow?.setVisible(false);
+    entity.healthMeter.setVisible(false);
+    entity.transportIcon?.setVisible(false);
+    entity.gearIcon?.setVisible(false);
+    entity.hostageIcon?.setVisible(false);
+    entity.fallbackLabel?.setVisible(false);
+  }
+
+  playLinearPathMovement(entity, layout, path) {
     const worldPoints = path.map((tile) =>
       this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
     );
@@ -362,10 +414,7 @@ export class UnitLayer {
 
     if (totalSegments === 0) {
       entity.container.setPosition(entity.targetX, entity.targetY);
-      entity.moveTween = null;
-      this.playIdleAnimation(entity);
-      this.runAfterMoveCallbacks(entity);
-      this.playQueuedAttack(entity);
+      this.completeMovement(entity);
       return;
     }
 
@@ -387,13 +436,95 @@ export class UnitLayer {
         );
       },
       onComplete: () => {
-        entity.moveTween = null;
-        entity.container.setPosition(entity.targetX, entity.targetY);
-        this.playIdleAnimation(entity);
-        this.runAfterMoveCallbacks(entity);
-        this.playQueuedAttack(entity);
+        this.completeMovement(entity);
       }
     });
+  }
+
+  playTeleportMovement(entity, layout, path, movementPlayback) {
+    const worldPoints = path.map((tile) =>
+      this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
+    );
+    const totalSegments = Math.max(0, worldPoints.length - 1);
+    const walkAnimation = movementPlayback.animation;
+    const forwardAnimationKey = ensureUnitAnimation(
+      this.scene,
+      walkAnimation,
+      "default",
+      0,
+      movementPlayback.forwardFrameIndices,
+    );
+    const reverseAnimationKey = ensureUnitAnimation(
+      this.scene,
+      walkAnimation,
+      "default",
+      0,
+      movementPlayback.reverseFrameIndices,
+    );
+
+    entity.container.setPosition(worldPoints[0].x, worldPoints[0].y);
+
+    if (totalSegments === 0 || !forwardAnimationKey || !reverseAnimationKey) {
+      entity.container.setPosition(entity.targetX, entity.targetY);
+      this.completeMovement(entity);
+      return;
+    }
+
+    this.stopAnimationTimer(entity);
+    this.setVisualTexture(
+      entity,
+      walkAnimation.key,
+      movementPlayback.forwardFrameIndices[0],
+      getOwnerIdleFlipX(entity.owner),
+    );
+    entity.visual.play?.(forwardAnimationKey);
+
+    let hasTeleported = false;
+    entity.moveTween = this.scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: movementPlayback.totalDurationMs,
+      ease: "Linear",
+      onUpdate: (tween) => {
+        const progress = typeof tween.getOverallProgress === "function"
+          ? tween.getOverallProgress()
+          : tween.progress ?? 0;
+
+        if (hasTeleported || progress < movementPlayback.splitProgress) {
+          return;
+        }
+
+        hasTeleported = true;
+        const accessoryVisibility = this.getTeleportAccessoryVisibility(entity);
+        this.hideTeleportAccessories(entity);
+        entity.container.setPosition(entity.targetX, entity.targetY);
+        this.restoreTeleportAccessoryVisibility(entity, accessoryVisibility);
+        this.setVisualTexture(
+          entity,
+          walkAnimation.key,
+          movementPlayback.reverseFrameIndices[0],
+          getOwnerIdleFlipX(entity.owner),
+        );
+        entity.visual.play?.(reverseAnimationKey);
+      },
+      onComplete: () => {
+        this.completeMovement(entity);
+      }
+    });
+  }
+
+  playPathMovement(entity, layout, path) {
+    const movementPlayback = getUnitMovementPlayback(
+      entity.visualSpec,
+      Math.max(0, (path?.length ?? 1) - 1),
+    );
+
+    if (movementPlayback.style === "teleport") {
+      this.playTeleportMovement(entity, layout, path, movementPlayback);
+      return;
+    }
+
+    this.playLinearPathMovement(entity, layout, path);
   }
 
   setVisualScale(entity, multiplier = 1) {
@@ -1054,11 +1185,7 @@ export class UnitLayer {
             duration: 180 + Math.max(90, renderedDistance * 0.75),
             ease: "Sine.Out",
             onComplete: () => {
-              entity.moveTween = null;
-              entity.container.setPosition(entity.targetX, entity.targetY);
-              this.playIdleAnimation(entity);
-              this.runAfterMoveCallbacks(entity);
-              this.playQueuedAttack(entity);
+              this.completeMovement(entity);
             }
           });
         }

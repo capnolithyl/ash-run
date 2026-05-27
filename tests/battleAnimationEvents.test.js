@@ -293,6 +293,109 @@ test("battle render exposes enemy movement paths for transient move arrows", () 
   ]);
 });
 
+test("player grunt move events use teleport timing while preserving the path", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const battleState = createTestBattleState({
+    width: 6,
+    height: 4,
+    playerUnits: [grunt],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 3)]
+  });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.selection = { type: "unit", id: grunt.id, x: grunt.x, y: grunt.y };
+
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.handleTileSelection(3, 1), true);
+
+  const after = system.getSnapshot();
+  const moveEvent = deriveBattleAnimationEvents(before, after).find(
+    (event) => event.type === "move" && event.unitId === grunt.id
+  );
+
+  assert.ok(moveEvent);
+  assert.equal(moveEvent.teleport, undefined);
+  assert.deepEqual(moveEvent.path, [
+    { x: 1, y: 1 },
+    { x: 2, y: 1 },
+    { x: 3, y: 1 }
+  ]);
+  assert.equal(moveEvent.durationMs, 1667);
+  assert.equal(moveEvent.endDelayMs, 1667 + BATTLE_MOVE_SETTLE_MS);
+  assert.equal(getBattleSnapshotTransitionDurationMs(before, after), 1667);
+});
+
+test("player longshot move events use teleport timing while preserving the path", () => {
+  const longshot = createPlacedUnit("longshot", TURN_SIDES.PLAYER, 1, 1);
+  const battleState = createTestBattleState({
+    width: 6,
+    height: 4,
+    playerUnits: [longshot],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 3)]
+  });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.selection = { type: "unit", id: longshot.id, x: longshot.x, y: longshot.y };
+
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.handleTileSelection(3, 1), true);
+
+  const after = system.getSnapshot();
+  const moveEvent = deriveBattleAnimationEvents(before, after).find(
+    (event) => event.type === "move" && event.unitId === longshot.id
+  );
+
+  assert.ok(moveEvent);
+  assert.equal(moveEvent.teleport, undefined);
+  assert.deepEqual(moveEvent.path, [
+    { x: 1, y: 1 },
+    { x: 2, y: 1 },
+    { x: 3, y: 1 }
+  ]);
+  assert.equal(moveEvent.durationMs, 2000);
+  assert.equal(moveEvent.endDelayMs, 2000 + BATTLE_MOVE_SETTLE_MS);
+  assert.equal(getBattleSnapshotTransitionDurationMs(before, after), 2000);
+});
+
+test("enemy grunt movement keeps segment-based timing without teleport sheets", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 3);
+  const battleState = createTestBattleState({
+    id: "enemy-grunt-path",
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.processEnemyTurnStep().type, "move");
+
+  const afterMove = system.getSnapshot();
+  const moveEvent = deriveBattleAnimationEvents(before, afterMove).find(
+    (event) => event.type === "move" && event.unitId === enemy.id
+  );
+
+  assert.ok(moveEvent);
+  assert.equal(moveEvent.teleport, undefined);
+  assert.deepEqual(moveEvent.path[0], { x: 6, y: 3 });
+  assert.ok(moveEvent.path.length > 1);
+  const moveSegments = moveEvent.path.length - 1;
+  assert.equal(moveEvent.durationMs, getBattleMoveDuration(moveSegments));
+  assert.equal(moveEvent.endDelayMs, getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS);
+});
+
 test("battle combat cutscene payload keeps player-left mapping, split terrain ids, and HP beats", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);
@@ -400,7 +503,7 @@ test("battle combat cutscene waits for move-and-settle before revealing the duel
   const after = system.getSnapshot();
 
   const cutscene = deriveBattleCombatCutscene(before, after);
-  const expectedRevealStartMs = getBattleMoveDuration(2) + BATTLE_MOVE_SETTLE_MS;
+  const expectedRevealStartMs = 1667 + BATTLE_MOVE_SETTLE_MS;
 
   assert.ok(cutscene);
   assert.equal(cutscene.revealStartMs, expectedRevealStartMs);

@@ -145,6 +145,15 @@ async function readOwnerAnimationSpec(root, owner, unitTypeId, animationMetadata
       );
     }
 
+    if (
+      animationSpec.movementStyle !== undefined &&
+      typeof animationSpec.movementStyle !== "string"
+    ) {
+      throw new Error(
+        `${unitTypeId} ${animationId} movementStyle must be a string when provided.`,
+      );
+    }
+
     const relativePath = `assets/sprites/units/${owner}/${unitTypeId}/${animationSpec.file}`;
     const filePath = path.resolve(root, relativePath);
 
@@ -183,6 +192,10 @@ async function readOwnerAnimationSpec(root, owner, unitTypeId, animationMetadata
 
       if (Number.isInteger(animationSpec.cutsceneLoopCount) && animationSpec.cutsceneLoopCount > 0) {
         ownerSpec.animations[animationId].cutsceneLoopCount = animationSpec.cutsceneLoopCount;
+      }
+
+      if (typeof animationSpec.movementStyle === "string" && animationSpec.movementStyle.length > 0) {
+        ownerSpec.animations[animationId].movementStyle = animationSpec.movementStyle;
       }
     } catch (error) {
       if (error?.code !== "ENOENT") {

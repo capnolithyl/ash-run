@@ -12,6 +12,17 @@
         }
       }
     },
+    "walk": {
+      "file": "grunt-move.png",
+      "frameRate": 12,
+      "movementStyle": "teleport",
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 9
+        }
+      }
+    },
     "attack": {
       "file": "grunt-attack.png",
       "frameRate": 5,

@@ -24,6 +24,24 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
             }
           }
         },
+        "walk": {
+          "key": "spritesheet:units:player:grunt:walk",
+          "url": "./assets/sprites/units/player/grunt/grunt-move.png",
+          "frameRate": 12,
+          "frameCount": 10,
+          "sheetWidth": 408,
+          "sheetHeight": 384,
+          "sheetColumns": 4,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:player:grunt:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 9
+            }
+          },
+          "movementStyle": "teleport"
+        },
         "attack": {
           "key": "spritesheet:units:player:grunt:attack",
           "url": "./assets/sprites/units/player/grunt/grunt-attack.png",
@@ -187,6 +205,24 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
               "end": 1
             }
           }
+        },
+        "walk": {
+          "key": "spritesheet:units:player:longshot:walk",
+          "url": "./assets/sprites/units/player/longshot/longshot-move.png",
+          "frameRate": 12,
+          "frameCount": 12,
+          "sheetWidth": 512,
+          "sheetHeight": 480,
+          "sheetColumns": 4,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:player:longshot:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 11
+            }
+          },
+          "movementStyle": "teleport"
         },
         "attack": {
           "key": "spritesheet:units:player:longshot:attack",

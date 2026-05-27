@@ -11,6 +11,8 @@ import {
   getMovementModifier,
   shouldDefenderPreemptCombat
 } from "../../simulation/commanderEffects.js";
+import { getUnitSpriteDefinition } from "../assets.js";
+import { getUnitMovementPlayback } from "./unitAnimationHelpers.js";
 
 function getUnits(snapshot) {
   return [...snapshot.player.units, ...snapshot.enemy.units];
@@ -96,7 +98,8 @@ function getMovementEventDurationMs(event) {
   }
 
   const moveSegments = Math.max(0, (event.path?.length ?? 1) - 1);
-  return getBattleMoveDuration(moveSegments);
+  const spriteDefinition = getUnitSpriteDefinition(event.unitTypeId, event.owner);
+  return getUnitMovementPlayback(spriteDefinition, moveSegments).totalDurationMs;
 }
 
 function buildExperienceSegments(previousUnit, nextUnit) {
@@ -438,6 +441,7 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
           type: "move",
           unitId,
           owner: nextUnit.owner,
+          unitTypeId: nextUnit.unitTypeId,
           teleport: true
         });
         continue;
@@ -458,6 +462,7 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
           type: "move",
           unitId,
           owner: nextUnit.owner,
+          unitTypeId: nextUnit.unitTypeId,
           path
         });
       }
