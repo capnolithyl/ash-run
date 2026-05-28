@@ -1,6 +1,7 @@
 import { BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
+import { normalizeMetaOptions } from "../state/defaults.js";
 import { getMapById } from "../content/maps.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
@@ -434,10 +435,10 @@ export const controllerFlowMethods = {
   },
 
   async updateOptions(patch) {
-    this.state.metaState.options = {
+    this.state.metaState.options = normalizeMetaOptions({
       ...this.state.metaState.options,
       ...patch
-    };
+    });
     await this.storage.saveMeta(this.state.metaState);
     this.emit();
   },

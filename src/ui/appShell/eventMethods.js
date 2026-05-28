@@ -157,6 +157,18 @@ export const appShellEventMethods = {
       case "open-run-loadout":
         this.controller.openRunLoadout();
         break;
+      case "apply-display-settings":
+        await this.applyDisplaySettings();
+        break;
+      case "keep-display-settings":
+        await this.keepDisplaySettings();
+        break;
+      case "revert-display-settings":
+        await this.revertDisplaySettings();
+        break;
+      case "return-windowed-display":
+        await this.returnToWindowedDisplay();
+        break;
       case "purchase-unit-unlock":
         this.controller.purchaseUnitUnlock(unitTypeId);
         break;
@@ -473,6 +485,10 @@ export const appShellEventMethods = {
   },
 
   async handleChange(event) {
+    if (this.handleDisplayOptionChange?.(event)) {
+      return;
+    }
+
     const skirmishField = event.target.dataset.skirmishField;
 
     if (skirmishField) {

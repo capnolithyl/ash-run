@@ -281,7 +281,8 @@ export const appShellBattleScreenMethods = {
       turnBanner,
       experiencePresentation,
       levelUpPresentation,
-      commanderTurnAnimationFromSide
+      commanderTurnAnimationFromSide,
+      displayContext: this.getDisplayRenderContext?.(state)
     });
     if (commanderTurnAnimationFromSide) {
       this.queueCommanderTurnTransition();

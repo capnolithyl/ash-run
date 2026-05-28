@@ -1448,6 +1448,8 @@ test("debug pause menu groups tools into accordion sections", () => {
   });
 
   assert.match(html, /class="pause-section" open/);
+  assert.match(html, /data-display-option="displayMode"/);
+  assert.match(html, /data-display-option="windowResolution"/);
   assert.match(html, /<strong>Debug Toolkit<\/strong>/);
   assert.match(html, /<strong>Battlefield<\/strong>/);
   assert.match(html, /data-battle-debug-accordion="battlefield" name="battle-debug-accordion"/);

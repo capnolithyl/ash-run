@@ -5,9 +5,10 @@ import { AppShell } from "./ui/AppShell.js";
 
 const gameRoot = document.getElementById("game-root");
 const uiRoot = document.getElementById("ui-root");
+const windowChromeRoot = document.getElementById("window-chrome-root");
 
 const controller = new GameController();
-new AppShell(uiRoot, controller);
+new AppShell(uiRoot, controller, { windowChromeRoot });
 const game = createGame(gameRoot, controller);
 
 if (import.meta.env.DEV && typeof window !== "undefined") {

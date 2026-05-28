@@ -327,7 +327,7 @@ export const appShellInputMethods = {
   getControllerFocusableElements() {
     return Array.from(
       this.root.querySelectorAll(
-        'button[data-action], label[for], input[type="range"], input[type="checkbox"]:not(.battle-drawer-toggle):not(.tutorial-step-toggle)'
+        'button[data-action], label[for], select, input[type="range"], input[type="checkbox"]:not(.battle-drawer-toggle):not(.tutorial-step-toggle)'
       )
     ).filter((element) => this.isElementControllerFocusable(element));
   },

@@ -236,7 +236,7 @@ export function renderPowerOverlay(powerOverlay) {
   `;
 }
 
-export function renderPauseOverlay(state, battleSnapshot) {
+export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
   if (!state.battleUi.pauseMenuOpen) {
     return "";
   }
@@ -267,7 +267,10 @@ export function renderPauseOverlay(state, battleSnapshot) {
             `
             : `
               <div class="options-list options-list--compact">
-                ${renderOptionFields(state.metaState.options)}
+                ${renderOptionFields(state.metaState.options, {
+                  ...displayContext,
+                  showDisplayOptions: true
+                })}
               </div>
               ${state.debugMode ? `
                 <details class="pause-section" open>

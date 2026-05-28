@@ -1,14 +1,24 @@
 import { DEFAULT_SAVE_VERSION, PROTOTYPE_RUN_GOAL, SLOT_IDS } from "../core/constants.js";
+import { normalizeDisplayOptions } from "../core/displayOptions.js";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 
-function createDefaultOptions() {
+export function createDefaultOptions() {
   return {
     showGrid: true,
     screenShake: true,
     combatCutsceneAnimations: true,
     masterVolume: 0.4,
-    muted: false
+    muted: false,
+    ...normalizeDisplayOptions()
+  };
+}
+
+export function normalizeMetaOptions(options = {}) {
+  return {
+    ...createDefaultOptions(),
+    ...options,
+    ...normalizeDisplayOptions(options)
   };
 }
 

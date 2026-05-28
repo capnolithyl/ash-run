@@ -131,11 +131,18 @@
     url("../../../assets/cursor/retrowave_arrow.cur"),
     nesw-resize;
   --screen-edge-gutter: clamp(0.65rem, 1.15vw, 1.25rem);
+  --app-window-width: 1920px;
+  --app-window-height: 1080px;
+  --app-window-chrome-height: 0px;
   --compact-panel-padding: 0.9rem;
   --compact-footer-height: 4.25rem;
   --compact-commanders-height: 6.85rem;
   --font-body: "Oxanium", "Bahnschrift SemiCondensed", "Aptos", sans-serif;
   --font-display: "Orbitron", "Oxanium", "Bahnschrift SemiCondensed", "Aptos", sans-serif;
+}
+
+:root[data-display-mode="windowed"] {
+  --app-window-chrome-height: 34px;
 }
 
 * {
@@ -146,10 +153,16 @@ html,
 body,
 #app,
 #game-root,
-#ui-root {
+#ui-root,
+#window-chrome-root {
   width: 100%;
-  height: 100%;
   margin: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
 }
 
 html {
@@ -283,7 +296,14 @@ body:has(#ui-root .map-editor-shell) #game-root canvas {
 #game-root,
 #ui-root {
   position: absolute;
-  inset: 0;
+  inset: var(--app-window-chrome-height) 0 0;
+}
+
+#window-chrome-root {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: var(--app-window-chrome-height);
 }
 
 #ui-root {

@@ -1,6 +1,6 @@
 import { renderOptionFields } from "./optionFieldsView.js";
 
-export function renderOptionsView(state) {
+export function renderOptionsView(state, displayContext = {}) {
   const { options } = state.metaState;
 
   return `
@@ -14,7 +14,7 @@ export function renderOptionsView(state) {
           <button class="ghost-button" data-action="back-to-title">Back</button>
         </div>
         <div class="options-list">
-          ${renderOptionFields(options)}
+          ${renderOptionFields(options, { ...displayContext, showDisplayOptions: true })}
         </div>
       </section>
     </div>

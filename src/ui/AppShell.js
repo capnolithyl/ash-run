@@ -1,5 +1,6 @@
 import { SCREEN_IDS } from "../game/core/constants.js";
 import { appShellCommanderSliderMethods } from "./appShell/commanderSliderMethods.js";
+import { appShellDisplayMethods } from "./appShell/displayMethods.js";
 import { appShellEventMethods } from "./appShell/eventMethods.js";
 import { appShellInputMethods } from "./appShell/inputMethods.js";
 import { appShellRenderMethods } from "./appShell/renderMethods.js";
@@ -11,10 +12,17 @@ export { shouldTriggerCommanderSwipe } from "./appShell/shared.js";
  * Phaser remains focused on the animated background and battlefield itself.
  */
 export class AppShell {
-  constructor(root, controller) {
+  constructor(root, controller, options = {}) {
     this.root = root;
     this.controller = controller;
+    this.windowChromeRoot = options.windowChromeRoot ?? null;
     this.latestState = null;
+    this.desktopDisplayState = null;
+    this.displayDraft = null;
+    this.displayConfirmation = null;
+    this.displayConfirmationTimer = null;
+    this.displayStateRenderTimer = null;
+    this.displayUnsubscribe = null;
     this.commanderSliderStates = new Map();
     this.commanderSliderTrackIndex = null;
     this.commanderSliderTransitioning = false;
@@ -84,6 +92,9 @@ export class AppShell {
     this.root.addEventListener("pointerdown", (event) => this.handlePointerDown(event));
     this.root.addEventListener("dragstart", (event) => this.handleDragStart(event));
     this.root.addEventListener("transitionend", (event) => this.handleTransitionEnd(event));
+    this.windowChromeRoot?.addEventListener("click", (event) =>
+      this.handleWindowChromeClick(event)
+    );
     window.addEventListener("pointermove", (event) => this.handlePointerMove(event));
     window.addEventListener("pointerup", (event) => this.handlePointerUp(event));
     window.addEventListener("pointercancel", (event) => this.handlePointerCancel(event));
@@ -94,6 +105,7 @@ export class AppShell {
       this.render(state);
     });
 
+    this.initializeDisplayState();
     this.gamepadPollFrame = window.requestAnimationFrame((time) => this.pollGamepadInput(time));
   }
 }
@@ -102,3 +114,4 @@ Object.assign(AppShell.prototype, appShellEventMethods);
 Object.assign(AppShell.prototype, appShellRenderMethods);
 Object.assign(AppShell.prototype, appShellCommanderSliderMethods);
 Object.assign(AppShell.prototype, appShellInputMethods);
+Object.assign(AppShell.prototype, appShellDisplayMethods);

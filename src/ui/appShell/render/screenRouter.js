@@ -12,6 +12,9 @@ import { renderTutorialView } from "../../views/tutorialView.js";
 
 export const appShellScreenRouterMethods = {
   render(state) {
+    this.applyDisplayRootAttributes?.();
+    this.renderWindowChrome?.();
+
     if (state.screen !== SCREEN_IDS.MAP_EDITOR) {
       this.resetMapEditorUiState();
     }
@@ -50,7 +53,7 @@ export const appShellScreenRouterMethods = {
       case SCREEN_IDS.OPTIONS:
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
-        this.root.innerHTML = renderOptionsView(state);
+        this.root.innerHTML = renderOptionsView(state, this.getDisplayRenderContext?.(state));
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.MAP_EDITOR:

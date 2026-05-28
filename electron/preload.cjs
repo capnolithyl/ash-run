@@ -18,5 +18,18 @@ contextBridge.exposeInMainWorld("ashRun84Api", {
   importMapFile: () => ipcRenderer.invoke("map-files:import"),
   exportMapFile: (suggestedFileName, text) =>
     ipcRenderer.invoke("map-files:export", suggestedFileName, text),
+  getDisplayState: () => ipcRenderer.invoke("display:get-state"),
+  applyDisplaySettings: (displayOptions) =>
+    ipcRenderer.invoke("display:apply", displayOptions),
+  confirmDisplaySettings: () => ipcRenderer.invoke("display:confirm"),
+  revertDisplaySettings: () => ipcRenderer.invoke("display:revert"),
+  returnToWindowed: () => ipcRenderer.invoke("display:return-windowed"),
+  onDisplayChanged: (callback) => {
+    const listener = (_event, displayState) => callback(displayState);
+    ipcRenderer.on("display:changed", listener);
+    return () => ipcRenderer.removeListener("display:changed", listener);
+  },
+  minimizeWindow: () => ipcRenderer.invoke("window:minimize"),
+  closeWindow: () => ipcRenderer.invoke("window:close"),
   quit: () => ipcRenderer.invoke("app:quit")
 });

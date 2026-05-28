@@ -7,10 +7,32 @@ function getViewportReserve(viewportWidth, viewportHeight) {
   const isNarrowCompact = viewportWidth <= 760;
   const isPhoneCompact = viewportWidth <= 560;
   const isShort = viewportHeight <= 520;
-  const reservedTop = isCompact ? (isShort ? 74 : isNarrowCompact ? 120 : 108) : 198;
+  const isShortDesktop = !isCompact && viewportHeight <= 760;
+  const isLaptopDesktop = !isCompact && viewportHeight <= 820;
+  const reservedTop = isCompact
+    ? isShort
+      ? 74
+      : isNarrowCompact
+        ? 120
+        : 108
+    : isShortDesktop
+      ? 168
+      : isLaptopDesktop
+        ? 184
+        : 198;
   const reservedBottom = isCompact
-    ? (isShort ? 82 : isPhoneCompact ? 122 : isNarrowCompact ? 112 : 96)
-    : 112;
+    ? isShort
+      ? 82
+      : isPhoneCompact
+        ? 122
+        : isNarrowCompact
+          ? 112
+          : 96
+    : isShortDesktop
+      ? 96
+      : isLaptopDesktop
+        ? 104
+        : 112;
 
   return {
     isCompact,
@@ -44,7 +66,7 @@ export function getBattlefieldLayout({
   const { laneLeft, laneRight } = getDesktopLaneBounds(viewportWidth);
   const desktopLaneWidth = Math.max(240, laneRight - laneLeft);
   const maxBoardWidth = isCompact ? viewportWidth * 0.94 : desktopLaneWidth;
-  const maxBoardHeight = isCompact ? availableHeight : viewportHeight * 0.72;
+  const maxBoardHeight = availableHeight;
   const cellSize = Math.max(1, Math.floor(Math.min(maxBoardWidth / mapWidth, maxBoardHeight / mapHeight)));
   const boardWidth = mapWidth * cellSize;
   const boardHeight = mapHeight * cellSize;

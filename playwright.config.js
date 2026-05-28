@@ -28,37 +28,45 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "desktop-chromium",
+      name: "preset-1280x720-chromium",
       use: {
         ...devices["Desktop Chrome"],
-        viewport: { width: 1600, height: 1000 }
+        viewport: { width: 1280, height: 720 }
       }
     },
     {
-      name: "compact-laptop-chromium",
+      name: "preset-1366x768-chromium",
       use: {
         ...devices["Desktop Chrome"],
-        viewport: { width: 1024, height: 768 }
+        viewport: { width: 1366, height: 768 }
       }
     },
     {
-      name: "macbook-air-chromium",
+      name: "preset-1440x900-chromium",
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 }
       }
     },
     {
-      name: "electron-short-desktop-chromium",
+      name: "preset-1600x900-chromium",
       use: {
         ...devices["Desktop Chrome"],
-        viewport: { width: 1440, height: 780 }
+        viewport: { width: 1600, height: 900 }
       }
     },
     {
-      name: "mobile-chromium",
+      name: "preset-1920x1080-chromium",
       use: {
-        ...devices["Pixel 7"]
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1920, height: 1080 }
+      }
+    },
+    {
+      name: "preset-2560x1440-chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 2560, height: 1440 }
       }
     }
   ]

@@ -243,6 +243,7 @@ export function renderBattleHudView(state, options = {}) {
   const experiencePresentation = options.experiencePresentation ?? null;
   const levelUpPresentation = options.levelUpPresentation ?? null;
   const commanderTurnAnimationFromSide = options.commanderTurnAnimationFromSide ?? null;
+  const displayContext = options.displayContext ?? {};
 
   if (!battleSnapshot) {
     return "";
@@ -364,7 +365,7 @@ export function renderBattleHudView(state, options = {}) {
           ? ""
           : renderLevelUpOverlay(battleSnapshot, levelUpPresentation)
       }
-      ${combatCutsceneActive ? "" : renderPauseOverlay(state, battleSnapshot)}
+      ${combatCutsceneActive ? "" : renderPauseOverlay(state, battleSnapshot, displayContext)}
       ${suppressOutcomeOverlay || combatCutsceneActive ? "" : renderOutcomeOverlay(state, battleSnapshot)}
     </div>
   `;

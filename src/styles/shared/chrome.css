@@ -382,6 +382,149 @@
   gap: 0.85rem;
 }
 
+.window-chrome {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  height: 34px;
+  padding: 0 0 0 0.8rem;
+  color: rgba(255, 244, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 138, 61, 0.2);
+  background:
+    linear-gradient(90deg, rgba(255, 79, 216, 0.12), rgba(110, 228, 255, 0.05)),
+    rgba(8, 3, 18, 0.96);
+  box-shadow: 0 0.7rem 1.5rem rgba(5, 1, 14, 0.2);
+  -webkit-app-region: drag;
+}
+
+.window-chrome__drag {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.window-chrome__drag strong {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.window-chrome__drag span {
+  color: rgba(207, 181, 235, 0.82);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.window-chrome__actions {
+  display: inline-flex;
+  align-self: stretch;
+  -webkit-app-region: no-drag;
+}
+
+.window-chrome__actions button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: rgba(255, 244, 255, 0.9);
+  background: transparent;
+  font: 700 0.86rem/1 var(--font-body);
+  cursor: var(--cursor-action);
+}
+
+.window-chrome__actions button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.window-chrome__actions button:last-child:hover {
+  color: #fff8fb;
+  background: rgba(255, 91, 143, 0.54);
+}
+
+.options-section {
+  display: grid;
+  gap: 0.2rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(255, 79, 216, 0.18);
+}
+
+.options-section__header,
+.display-actions,
+.display-confirmation,
+.display-confirmation__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.options-section__header {
+  justify-content: space-between;
+  padding-bottom: 0.35rem;
+}
+
+.options-section__header span {
+  color: #ffa95e;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.options-section__header strong {
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.option-row--select select {
+  min-width: min(18rem, 48vw);
+  padding: 0.62rem 0.7rem;
+  border: 1px solid rgba(255, 138, 61, 0.26);
+  border-radius: 0.6rem;
+  color: var(--text);
+  background: rgba(8, 3, 18, 0.88);
+}
+
+.option-row > span {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.option-row > span small {
+  max-width: 24rem;
+  color: rgba(207, 181, 235, 0.78);
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.display-actions {
+  justify-content: flex-end;
+  padding-top: 0.35rem;
+}
+
+.display-confirmation {
+  justify-content: space-between;
+  margin-top: 0.45rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(110, 228, 255, 0.28);
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(90deg, rgba(110, 228, 255, 0.08), rgba(255, 138, 61, 0.08)),
+    rgba(8, 3, 18, 0.74);
+}
+
+.display-confirmation span {
+  color: var(--text);
+}
+
+.display-confirmation strong {
+  color: #79f0ff;
+  font-family: var(--font-display);
+}
+
 .title-tank {
   position: absolute;
   inset: 0;
@@ -738,12 +881,24 @@
     var(--panel);
 }
 
+.screen--options {
+  height: 100%;
+  align-items: start;
+  overflow-y: auto;
+}
+
+.screen--options .panel--medium {
+  max-height: calc(100vh - var(--app-window-chrome-height) - 2rem);
+  max-height: calc(100dvh - var(--app-window-chrome-height) - 2rem);
+  overflow-y: auto;
+}
+
 .commander-select-panel {
   position: relative;
   z-index: 10;
   width: min(84rem, 100%);
-  max-height: calc(100vh - 2rem);
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(100vh - var(--app-window-chrome-height) - 4rem);
+  max-height: calc(100dvh - var(--app-window-chrome-height) - 4rem);
   overflow: auto;
   padding: 1.85rem;
   border-color: rgba(255, 138, 61, 0.32);

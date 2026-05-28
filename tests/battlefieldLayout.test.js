@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getBattlefieldLayout } from "../src/game/core/battlefieldLayout.js";
+import { DISPLAY_RESOLUTION_PRESETS } from "../src/game/core/displayOptions.js";
+
+const WINDOW_CHROME_HEIGHT = 34;
 
 function clampViewportValue(minValue, preferredValue, maxValue) {
   return Math.max(minValue, Math.min(preferredValue, maxValue));
@@ -52,4 +55,29 @@ test("compact battlefield layout still centers the board against the viewport", 
   });
 
   assert.equal(layout.originX, Math.round((viewportWidth - mapWidth * layout.cellSize) / 2));
+});
+
+test("official desktop window presets keep the board readable inside the play lane", () => {
+  const mapWidth = 12;
+  const mapHeight = 10;
+
+  for (const preset of DISPLAY_RESOLUTION_PRESETS) {
+    const viewportWidth = preset.width;
+    const viewportHeight = preset.height - WINDOW_CHROME_HEIGHT;
+    const layout = getBattlefieldLayout({
+      viewportWidth,
+      viewportHeight,
+      mapWidth,
+      mapHeight
+    });
+    const boardLeft = layout.originX;
+    const boardRight = layout.originX + mapWidth * layout.cellSize;
+    const boardBottom = layout.originY + mapHeight * layout.cellSize;
+    const { laneLeft, laneRight } = getDesktopLaneBounds(viewportWidth);
+
+    assert.ok(layout.cellSize >= 40, `${preset.id} cell size should remain readable`);
+    assert.ok(boardLeft >= Math.round(laneLeft), `${preset.id} should stay right of left HUD`);
+    assert.ok(boardRight <= Math.round(laneRight), `${preset.id} should stay left of right HUD`);
+    assert.ok(boardBottom <= viewportHeight - 92, `${preset.id} should clear footer controls`);
+  }
 });
