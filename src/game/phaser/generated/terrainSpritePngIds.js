@@ -2,9 +2,11 @@
 // Do not edit by hand.
 
 export const GENERATED_TERRAIN_SPRITE_PNG_IDS = [
+  "forest",
   "mountain",
   "plain",
-  "road"
+  "road",
+  "water"
 ];
 export const GENERATED_TERRAIN_ANIMATED_IDS = [
   "road"
