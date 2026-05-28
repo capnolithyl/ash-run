@@ -8,7 +8,6 @@ import {
   UNIT_TAGS
 } from "../core/constants.js";
 import { MAP_GOAL_TYPES } from "../content/mapGoals.js";
-import { getRunEnemyStartingSquad } from "../core/runBalance.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
 import { createId } from "../core/id.js";
 import { pickOne, pickWeighted, shuffle, stringToSeed } from "../core/random.js";
@@ -23,22 +22,20 @@ import {
   isGearUpgrade,
   getRunRewardTypeForMap
 } from "../content/runUpgrades.js";
-import { MAP_POOL, RUN_MAP_POOL, getMapById } from "../content/maps.js";
-import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
+import { MAP_POOL, getMapById, getRunMapPoolForStage } from "../content/maps.js";
+import {
+  createPersistentUnitSnapshot,
+  createUnitFromTypeAtLevel
+} from "../simulation/unitFactory.js";
 import {
   deployPersistentRoster,
-  findOpenDeploymentPoint,
-  getOccupiedTiles,
-  placeFreshUnits
+  getOccupiedTiles
 } from "./deployment.js";
 import {
   applyEnemyMapControlScaling,
-  buildScaledEnemyRoster,
   getEnemyStartingFunds
 } from "./enemyScaling.js";
 import { normalizeMissionState } from "../simulation/missionRules.js";
-
-const ANTI_AIR_UNIT_IDS = new Set(["skyguard", "interceptor"]);
 
 function toSafeNumber(value) {
   return Number.isFinite(value) ? value : 0;
@@ -145,8 +142,13 @@ export function normalizeBattleState(battleState) {
   return nextBattleState;
 }
 
-function createBattleUnitFromMapPlacement(unitDefinition) {
-  const unit = createUnitFromType(unitDefinition.unitTypeId, unitDefinition.owner, 1);
+function createBattleUnitFromMapPlacement(unitDefinition, seed = 0) {
+  const unit = createUnitFromTypeAtLevel(
+    unitDefinition.unitTypeId,
+    unitDefinition.owner,
+    unitDefinition.level ?? 1,
+    seed
+  );
 
   return {
     ...unit,
@@ -159,38 +161,60 @@ function createBattleUnitFromMapPlacement(unitDefinition) {
   };
 }
 
-function getPlacedBattleUnitsForSide(mapDefinition, owner) {
-  return (mapDefinition.units ?? [])
-    .filter((unit) => unit.owner === owner)
-    .map(createBattleUnitFromMapPlacement);
+function getMapPlacementSeed(seed, mapDefinition, unitDefinition) {
+  return stringToSeed(`${seed}-${mapDefinition.id}-${unitDefinition.id}-${unitDefinition.level ?? 1}`);
 }
 
-function buildEnemyRoster(difficultyTier) {
-  return buildScaledEnemyRoster(
-    getRunEnemyStartingSquad(difficultyTier),
-    difficultyTier
-  );
+function getPlacedBattleUnitsForSide(mapDefinition, owner, seed = 0) {
+  return (mapDefinition.units ?? [])
+    .filter((unit) => unit.owner === owner)
+    .map((unit) => createBattleUnitFromMapPlacement(
+      unit,
+      getMapPlacementSeed(seed, mapDefinition, unit)
+    ));
 }
 
 function buildMapSequence(seed, targetMapCount) {
-  const shuffled = shuffle(seed, RUN_MAP_POOL.map((mapDefinition) => mapDefinition.id));
-  return shuffled.value.slice(0, Math.max(targetMapCount, 10));
+  const sequence = [];
+  const usedMapIds = new Set();
+  const mapCount = Math.max(targetMapCount, 10);
+
+  for (let stage = 1; stage <= mapCount; stage += 1) {
+    const candidates = getRunMapPoolForStage(stage);
+
+    if (candidates.length === 0) {
+      continue;
+    }
+
+    const shuffled = shuffle(
+      stringToSeed(`${seed}-${stage}-run-map`),
+      candidates.map((mapDefinition) => mapDefinition.id)
+    ).value;
+    const selectedMapId = shuffled.find((mapId) => !usedMapIds.has(mapId)) ?? shuffled[0];
+
+    if (selectedMapId) {
+      sequence.push(selectedMapId);
+      usedMapIds.add(selectedMapId);
+    }
+  }
+
+  return sequence;
 }
 
-function createPlayerBattleRoster(runState, mapDefinition) {
+function createPlayerBattleRoster(runState, mapDefinition, occupiedTiles = new Set()) {
   const roster = runState.roster ?? [];
 
-  return deployPersistentRoster(roster, TURN_SIDES.PLAYER, mapDefinition, mapDefinition.playerSpawns);
+  return deployPersistentRoster(
+    roster,
+    TURN_SIDES.PLAYER,
+    mapDefinition,
+    mapDefinition.playerSpawns,
+    { occupiedTiles }
+  );
 }
 
-function createEnemyBattleRoster(runState, mapDefinition) {
-  const difficultyTier = runState.mapIndex + 1;
-
-  return placeFreshUnits(
-    buildEnemyRoster(difficultyTier),
-    mapDefinition,
-    mapDefinition.enemySpawns
-  );
+function createEnemyBattleRoster(mapDefinition, seed) {
+  return getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.ENEMY, seed);
 }
 
 function applyRunRewardsToUnits(runState, units) {
@@ -222,70 +246,6 @@ function applyRunRewardsToUnits(runState, units) {
   });
 }
 
-function hasAirThreat(units) {
-  return units.some((unit) => unit.family === UNIT_TAGS.AIR);
-}
-
-function hasAntiAirCounter(units) {
-  return units.some((unit) => ANTI_AIR_UNIT_IDS.has(unit.unitTypeId));
-}
-
-function getAntiAirReplacementPriority(unit) {
-  const priorityByUnitTypeId = {
-    grunt: 90,
-    breaker: 82,
-    runner: 80,
-    longshot: 68,
-    gunship: 54,
-    bruiser: 36,
-    juggernaut: 30,
-    "siege-gun": 28,
-    medic: 10,
-    mechanic: 10,
-    skyguard: 0,
-    interceptor: 0
-  };
-
-  return priorityByUnitTypeId[unit.unitTypeId] ?? 24;
-}
-
-function addEmergencyAntiAirIfNeeded(playerUnits, enemyUnits, mapDefinition) {
-  if (
-    !hasAirThreat(enemyUnits) ||
-    hasAntiAirCounter(playerUnits)
-  ) {
-    return {
-      units: playerUnits,
-      addedUnit: null
-    };
-  }
-
-  const replacementIndex = playerUnits
-    .map((unit, index) => ({
-      index,
-      priority: getAntiAirReplacementPriority(unit)
-    }))
-    .sort((left, right) => right.priority - left.priority)[0]?.index ?? 0;
-  const spawnPoint =
-    playerUnits[replacementIndex] ??
-    findOpenDeploymentPoint(
-      mapDefinition,
-      createUnitFromType("skyguard", TURN_SIDES.PLAYER),
-      mapDefinition.playerSpawns[replacementIndex % mapDefinition.playerSpawns.length],
-      getOccupiedTiles(playerUnits)
-    );
-  const skyguard = createUnitFromType("skyguard", TURN_SIDES.PLAYER);
-  skyguard.x = spawnPoint.x;
-  skyguard.y = spawnPoint.y;
-  const units = [...playerUnits];
-  units[replacementIndex] = skyguard;
-
-  return {
-    units,
-    addedUnit: skyguard
-  };
-}
-
 function pickEnemyCommander(seed, commanderId) {
   const candidates = COMMANDERS.filter((commander) => commander.id !== commanderId);
   return pickOne(seed, candidates).value.id;
@@ -311,6 +271,14 @@ function createIncomeTable(fundsPerBuilding) {
     hospital: fundsPerBuilding,
     "repair-station": fundsPerBuilding
   };
+}
+
+function resolveRunMapId(mapId) {
+  if (!mapId || mapId.endsWith("-run")) {
+    return mapId;
+  }
+
+  return getMapById(`${mapId}-run`) ? `${mapId}-run` : mapId;
 }
 
 export function createNewRunState({ slotId, commanderId }) {
@@ -340,7 +308,9 @@ export function createNewRunState({ slotId, commanderId }) {
 
 export function createBattleStateForRun(runState) {
   const normalizedRunState = normalizeRunState(runState);
-  const mapId = normalizedRunState.mapSequence[normalizedRunState.mapIndex % normalizedRunState.mapSequence.length];
+  const mapId = resolveRunMapId(
+    normalizedRunState.mapSequence[normalizedRunState.mapIndex % normalizedRunState.mapSequence.length]
+  );
   const mapDefinition = structuredClone(getMapById(mapId));
   const difficultyTier = normalizedRunState.mapIndex + 1;
   const battleSeed = normalizedRunState.seed + normalizedRunState.mapIndex;
@@ -350,11 +320,14 @@ export function createBattleStateForRun(runState) {
   );
   const enemyAiArchetype = pickEnemyAiArchetype(battleSeed, enemyCommanderId);
   const capturedBuildings = applyEnemyMapControlScaling(mapDefinition, difficultyTier);
-  const playerUnits = createPlayerBattleRoster(normalizedRunState, mapDefinition);
-  const enemyUnits = createEnemyBattleRoster(normalizedRunState, mapDefinition);
-  const antiAirSafety = addEmergencyAntiAirIfNeeded(playerUnits, enemyUnits, mapDefinition);
+  const enemyUnits = createEnemyBattleRoster(mapDefinition, battleSeed);
+  const playerUnits = createPlayerBattleRoster(
+    normalizedRunState,
+    mapDefinition,
+    getOccupiedTiles(enemyUnits)
+  );
   const openingLog = [`${normalizedRunState.mapIndex + 1}/${normalizedRunState.targetMapCount}: ${mapDefinition.name}`];
-  const rewardedPlayerUnits = applyRunRewardsToUnits(normalizedRunState, antiAirSafety.units);
+  const rewardedPlayerUnits = applyRunRewardsToUnits(normalizedRunState, playerUnits);
 
   if (difficultyTier > 1) {
     openingLog.push(`Enemy pressure increased to tier ${difficultyTier}.`);
@@ -366,10 +339,6 @@ export function createBattleStateForRun(runState) {
         capturedBuildings.length === 1 ? "" : "s"
       }.`
     );
-  }
-
-  if (antiAirSafety.addedUnit) {
-    openingLog.push("Anti-air escort assigned to answer enemy air power.");
   }
 
   if ((normalizedRunState.selectedRewards ?? []).length > 0) {
@@ -429,8 +398,8 @@ export function createSkirmishBattleState({
   const mapDefinition = structuredClone(getMapById(mapId) ?? MAP_POOL[0]);
   const incomeByType = createIncomeTable(fundsPerBuilding);
   const battleSeed = stringToSeed(`skirmish-${mapDefinition.id}-${playerCommanderId}-${enemyCommanderId}`);
-  const playerUnits = getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.PLAYER);
-  const enemyUnits = getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.ENEMY);
+  const playerUnits = getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.PLAYER, battleSeed);
+  const enemyUnits = getPlacedBattleUnitsForSide(mapDefinition, TURN_SIDES.ENEMY, battleSeed);
   const enemyAiArchetype = pickEnemyAiArchetype(battleSeed, enemyCommanderId);
 
   const battleState = {

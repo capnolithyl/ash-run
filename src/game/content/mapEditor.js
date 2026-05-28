@@ -1,4 +1,4 @@
-import { BUILDING_KEYS, TERRAIN_KEYS, TURN_SIDES } from "../core/constants.js";
+import { BUILDING_KEYS, PROTOTYPE_RUN_GOAL, TERRAIN_KEYS, TURN_SIDES } from "../core/constants.js";
 import { createUnitFromType } from "../simulation/unitFactory.js";
 import { getBuildingTypeMetadata } from "./buildings.js";
 import {
@@ -35,6 +35,8 @@ const MIN_DIMENSION = 6;
 const MAX_DIMENSION = 32;
 const DEFAULT_THEME = "ash";
 const DEFAULT_UNIT_TYPE_ID = "grunt";
+export const MAP_EDITOR_DEFAULT_UNIT_LEVEL = 1;
+export const MAP_EDITOR_MAX_UNIT_LEVEL = 99;
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
@@ -43,6 +45,44 @@ function clamp(value, minimum, maximum) {
 function clampDimension(value, fallback) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? clamp(parsed, MIN_DIMENSION, MAX_DIMENSION) : fallback;
+}
+
+export function normalizeMapEditorUnitLevel(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed)
+    ? clamp(parsed, MAP_EDITOR_DEFAULT_UNIT_LEVEL, MAP_EDITOR_MAX_UNIT_LEVEL)
+    : MAP_EDITOR_DEFAULT_UNIT_LEVEL;
+}
+
+function normalizeRunStage(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? clamp(parsed, 1, PROTOTYPE_RUN_GOAL) : null;
+}
+
+export function normalizeMapRunStages(runStages) {
+  const unique = new Set();
+
+  for (const stage of runStages ?? []) {
+    const normalizedStage = normalizeRunStage(stage);
+
+    if (normalizedStage) {
+      unique.add(normalizedStage);
+    }
+  }
+
+  return [...unique].sort((left, right) => left - right);
+}
+
+export function normalizeMapVariantStage(value) {
+  return normalizeRunStage(value);
+}
+
+export function getMapEditorRunStageOptions() {
+  return Array.from({ length: PROTOTYPE_RUN_GOAL }, (_, index) => index + 1);
 }
 
 function sanitizeMapText(value, fallback) {
@@ -189,6 +229,7 @@ function sanitizeUnit(unit, mapData, takenPositions) {
     ),
     unitTypeId: unit.unitTypeId,
     owner: unit.owner,
+    level: normalizeMapEditorUnitLevel(unit.level),
     x: unit.x,
     y: unit.y
   };
@@ -277,9 +318,19 @@ export function createBlankMapDefinition(overrides = {}) {
     enemySpawns: [],
     goal: getDefaultMapGoal()
   };
+  const runStages = normalizeMapRunStages(overrides.runStages);
+  const variantStage = normalizeMapVariantStage(overrides.variantStage);
 
   if (typeof overrides.layout === "string" && overrides.layout.trim()) {
     mapData.layout = overrides.layout.trim();
+  }
+
+  if (runStages.length > 0) {
+    mapData.runStages = runStages;
+  }
+
+  if (variantStage) {
+    mapData.variantStage = variantStage;
   }
 
   mapData.buildings = normalizeBuildings(overrides.buildings, mapData);
@@ -311,9 +362,19 @@ export function normalizeMapDefinition(mapInput = {}) {
     enemySpawns: [],
     goal: getDefaultMapGoal()
   };
+  const runStages = normalizeMapRunStages(mapInput.runStages);
+  const variantStage = normalizeMapVariantStage(mapInput.variantStage);
 
   if (typeof mapInput.layout === "string" && mapInput.layout.trim()) {
     mapData.layout = mapInput.layout.trim();
+  }
+
+  if (runStages.length > 0) {
+    mapData.runStages = runStages;
+  }
+
+  if (variantStage) {
+    mapData.variantStage = variantStage;
   }
 
   mapData.buildings = normalizeBuildings(mapInput.buildings, mapData);
@@ -377,6 +438,7 @@ export function createDefaultMapEditorState(mapData = createBlankMapDefinition()
     selectedBuildingOwner: "neutral",
     selectedUnitTypeId: getDefaultUnitTypeId(),
     selectedUnitOwner: TURN_SIDES.PLAYER,
+    selectedUnitLevel: MAP_EDITOR_DEFAULT_UNIT_LEVEL,
     mirrorMode: MAP_EDITOR_MIRROR_MODES.OFF,
     selectedTile: null,
     hoveredTile: null,
@@ -467,7 +529,7 @@ function setBuildingAt(mapData, buildingType, owner, x, y) {
   return true;
 }
 
-function setUnitAt(mapData, unitTypeId, owner, x, y) {
+function setUnitAt(mapData, unitTypeId, owner, x, y, level = MAP_EDITOR_DEFAULT_UNIT_LEVEL) {
   if (!isLandTerrain(mapData.tiles[y][x]) || !isUnitTypeId(unitTypeId) || !UNIT_OWNERS.has(owner)) {
     return false;
   }
@@ -477,6 +539,7 @@ function setUnitAt(mapData, unitTypeId, owner, x, y) {
     id: buildMapEditorUnitId(mapData.id, unitTypeId, owner, x, y),
     unitTypeId,
     owner,
+    level: normalizeMapEditorUnitLevel(level),
     x,
     y
   });
@@ -534,7 +597,8 @@ function applyToolToSingleTile(nextMap, editorState, x, y, overrideToolId = null
       editorState?.selectedUnitTypeId ?? getDefaultUnitTypeId(),
       editorState?.selectedUnitOwner ?? TURN_SIDES.PLAYER,
       x,
-      y
+      y,
+      editorState?.selectedUnitLevel ?? MAP_EDITOR_DEFAULT_UNIT_LEVEL
     );
   }
 
@@ -645,6 +709,14 @@ export function exportMapDefinition(mapInput) {
     goal: normalizeMapGoal(normalized.goal, normalized)
   };
 
+  if (normalized.runStages?.length > 0) {
+    exported.runStages = [...normalized.runStages];
+  }
+
+  if (normalized.variantStage) {
+    exported.variantStage = normalized.variantStage;
+  }
+
   if (normalized.playerSpawns.length > 0) {
     exported.playerSpawns = [...normalized.playerSpawns].sort((left, right) =>
       `${left.y}:${left.x}`.localeCompare(`${right.y}:${right.x}`)
@@ -665,7 +737,11 @@ export function exportMapDefinition(mapInput) {
 }
 
 function createEditorUnit(unitDefinition) {
-  const unit = createUnitFromType(unitDefinition.unitTypeId, unitDefinition.owner, 1);
+  const unit = createUnitFromType(
+    unitDefinition.unitTypeId,
+    unitDefinition.owner,
+    normalizeMapEditorUnitLevel(unitDefinition.level)
+  );
 
   return {
     ...unit,

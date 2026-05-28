@@ -190,8 +190,8 @@ export function getOccupiedTiles(units) {
   return new Set(units.map((unit) => tileKey(unit.x, unit.y)));
 }
 
-export function deployPersistentRoster(roster, owner, mapDefinition, spawnPoints) {
-  const occupiedTiles = new Set();
+export function deployPersistentRoster(roster, owner, mapDefinition, spawnPoints, options = {}) {
+  const occupiedTiles = new Set(options.occupiedTiles ?? []);
   const deploymentPoints = resolveDeploymentPoints(mapDefinition, owner, spawnPoints);
 
   return roster.map((persistentUnit, index) => {

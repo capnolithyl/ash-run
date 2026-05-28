@@ -74,10 +74,34 @@ test("unit painting places player and enemy units directly on the map", () => {
       id: "unit-place-enemy-bruiser-3-3",
       unitTypeId: "bruiser",
       owner: TURN_SIDES.ENEMY,
+      level: 1,
       x: 3,
       y: 3
     }
   ]);
+});
+
+test("map editor exports run stages, variant stage, and authored unit levels", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.updateMapEditorField("name", "Factory Lane");
+  controller.updateMapEditorField("variantStage", "2");
+  controller.toggleMapEditorRunStage(3);
+  controller.selectMapEditorUnitType("bruiser");
+  controller.selectMapEditorUnitOwner(TURN_SIDES.ENEMY);
+  controller.updateMapEditorField("selectedUnitLevel", "4");
+  controller.applyMapEditorToolAt(3, 3);
+  controller.setMapEditorSelectedTile({ x: 3, y: 3 });
+  controller.updateMapEditorField("selectedTileUnitLevel", "5");
+
+  const exported = controller.exportMapEditorMap();
+  const parsed = JSON.parse(exported.text);
+
+  assert.equal(parsed.id, "factory-lane-stage-2");
+  assert.equal(parsed.variantStage, 2);
+  assert.deepEqual(parsed.runStages, [2, 3]);
+  assert.equal(parsed.units[0].level, 5);
 });
 
 test("temporary eraser override clears a tile without changing the selected tool", () => {
@@ -639,6 +663,9 @@ test("map editor view exposes every building, every unit, size fields, and mirro
   assert.match(html, /data-map-editor-field="width"/);
   assert.match(html, /data-map-editor-field="height"/);
   assert.match(html, /data-map-editor-field="goalType"/);
+  assert.match(html, /data-map-editor-field="variantStage"/);
+  assert.match(html, /data-map-editor-field="selectedUnitLevel"/);
+  assert.match(html, /data-action="map-editor-toggle-run-stage"/);
   assert.match(html, /data-mirror-mode="vertical"/);
   assert.doesNotMatch(html, /Player Spawn|Enemy Spawn/);
 });

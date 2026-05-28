@@ -313,6 +313,12 @@ export const appShellEventMethods = {
       case "map-editor-set-mirror-mode":
         this.controller.setMapEditorMirrorMode(trigger.dataset.mirrorMode);
         break;
+      case "map-editor-toggle-run-stage":
+        this.controller.toggleMapEditorRunStage(Number(trigger.dataset.runStage));
+        break;
+      case "map-editor-clear-run-stages":
+        this.controller.clearMapEditorRunStages();
+        break;
       case "map-editor-goal-use-selected-building":
         this.controller.setMapEditorGoalTargetFromSelectedBuilding();
         break;

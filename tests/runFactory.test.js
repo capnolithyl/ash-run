@@ -2,17 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ENEMY_AI_ARCHETYPES,
-  TURN_SIDES,
-  UNIT_TAGS
+  TURN_SIDES
 } from "../src/game/core/constants.js";
 import { BUILDING_KEYS } from "../src/game/core/constants.js";
 import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import { RUN_CARD_TYPES } from "../src/game/content/runUpgrades.js";
 import { MAP_POOL, replaceCustomMaps, RUN_MAP_POOL } from "../src/game/content/maps.js";
+import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { ARMOR_CLASSES, WEAPON_CLASSES } from "../src/game/content/weaponClasses.js";
 import {
   applyBattleVictoryToRun,
   createBattleStateForRun,
+  createNewRunState,
   createSkirmishBattleState,
   normalizeBattleState
 } from "../src/game/state/runFactory.js";
@@ -43,6 +44,28 @@ function uniquePositionCount(units) {
 
 test.afterEach(() => {
   replaceCustomMaps([]);
+});
+
+test("createNewRunState builds map sequences from each run stage pool", () => {
+  const originalRunMapPool = [...RUN_MAP_POOL];
+
+  RUN_MAP_POOL.splice(
+    0,
+    RUN_MAP_POOL.length,
+    { id: "stage-one-run", name: "Stage One", runStages: [1] },
+    { id: "stage-two-three-run", name: "Stage Two Three", runStages: [2, 3] }
+  );
+
+  try {
+    const runState = createNewRunState({ slotId: "slot-1", commanderId: "viper" });
+
+    assert.equal(runState.mapSequence[0], "stage-one-run");
+    assert.equal(runState.mapSequence[1], "stage-two-three-run");
+    assert.equal(runState.mapSequence[2], "stage-two-three-run");
+    assert.equal(runState.mapSequence.length, 10);
+  } finally {
+    RUN_MAP_POOL.splice(0, RUN_MAP_POOL.length, ...originalRunMapPool);
+  }
 });
 
 test("createUnitFromType preserves armor and weapon classes in the new stat model", () => {
@@ -90,62 +113,75 @@ test("createBattleStateForRun deploys carried roster across unique spawn tiles",
   assert.equal(uniquePositionCount(battleState.player.units), battleState.player.units.length);
 });
 
-test("createBattleStateForRun scales enemy opening pressure on later maps", () => {
+test("createBattleStateForRun uses authored enemy placements and the bought player roster", () => {
+  replaceCustomMaps([
+    {
+      id: "authored-opener",
+      name: "Authored Opener",
+      theme: "ash",
+      width: 8,
+      height: 8,
+      units: [
+        { id: "authored-player-grunt", unitTypeId: "grunt", owner: TURN_SIDES.PLAYER, level: 4, x: 1, y: 1 },
+        { id: "authored-enemy-breaker", unitTypeId: "breaker", owner: TURN_SIDES.ENEMY, level: 3, x: 5, y: 5 }
+      ],
+      playerSpawns: [{ x: 1, y: 1 }]
+    }
+  ]);
+  const battleState = createBattleStateForRun(createRunState({
+    mapSequence: ["authored-opener-run"]
+  }));
+
+  assert.equal(battleState.enemy.units.length, 1);
+  assert.equal(battleState.enemy.units[0].id, "authored-enemy-breaker");
+  assert.equal(battleState.enemy.units[0].level, 3);
+  assert.equal(battleState.enemy.units[0].x, 5);
+  assert.equal(battleState.enemy.units[0].y, 5);
+  assert.equal(battleState.player.units.some((unit) => unit.id === "authored-player-grunt"), false);
+  assert.equal(battleState.player.units.length, 3);
+  assert.equal(uniquePositionCount([...battleState.player.units, ...battleState.enemy.units]), 4);
+});
+
+test("authored run unit levels roll stats from the run seed", () => {
+  replaceCustomMaps([
+    {
+      id: "leveled-opener",
+      name: "Leveled Opener",
+      theme: "ash",
+      width: 8,
+      height: 8,
+      units: [
+        { id: "leveled-enemy-grunt", unitTypeId: "grunt", owner: TURN_SIDES.ENEMY, level: 8, x: 5, y: 5 }
+      ]
+    }
+  ]);
+  const statSignatures = new Set();
+
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const battleState = createBattleStateForRun(createRunState({
+      seed,
+      mapSequence: ["leveled-opener-run"]
+    }));
+    const enemy = battleState.enemy.units[0];
+
+    assert.equal(enemy.level, 8);
+    assert.equal(enemy.experience, 0);
+    assert.ok(enemy.stats.attack >= UNIT_CATALOG.grunt.attack);
+    statSignatures.add(JSON.stringify(enemy.stats));
+  }
+
+  assert.ok(statSignatures.size > 1);
+});
+
+test("run battle scaling keeps funds and neutral map-control pressure without generated openers", () => {
   const firstMap = createBattleStateForRun(createRunState({ mapIndex: 0 }));
   const fourthMap = createBattleStateForRun(createRunState({ mapIndex: 3 }));
   const firstEnemyBuildings = firstMap.map.buildings.filter((building) => building.owner === TURN_SIDES.ENEMY);
   const fourthEnemyBuildings = fourthMap.map.buildings.filter((building) => building.owner === TURN_SIDES.ENEMY);
 
   assert.ok(fourthMap.enemy.funds > firstMap.enemy.funds);
-  assert.ok(fourthMap.enemy.units.length > firstMap.enemy.units.length);
-  assert.ok(fourthMap.enemy.units.every((unit) => unit.level >= 2));
-  assert.equal(uniquePositionCount(fourthMap.enemy.units), fourthMap.enemy.units.length);
   assert.ok(fourthEnemyBuildings.length > firstEnemyBuildings.length);
   assert.ok(fourthMap.log.includes("Enemy pressure increased to tier 4."));
-});
-
-test("createBattleStateForRun respects explicit enemy opener levels from run balance", () => {
-  const fourthMap = createBattleStateForRun(createRunState({ mapIndex: 3 }));
-
-  assert.ok(
-    fourthMap.enemy.units.some((unit) => unit.unitTypeId === "gunship" && unit.level === 3)
-  );
-});
-
-test("createBattleStateForRun assigns anti-air support when enemy opens with air power", () => {
-  let battleState = null;
-
-  for (let seed = 0; seed < 500 && !battleState; seed += 1) {
-    const candidate = createBattleStateForRun(createRunState({
-      seed,
-      mapIndex: 3,
-      commanderId: "atlas",
-      id: `run-air-check-${seed}`
-    }));
-
-    if (candidate.enemy.units.some((unit) => unit.family === UNIT_TAGS.AIR)) {
-      battleState = candidate;
-    }
-  }
-
-  assert.ok(battleState, "test should find a deterministic enemy air opener");
-  assert.ok(
-    battleState.player.units.some((unit) => ["skyguard", "interceptor"].includes(unit.unitTypeId))
-  );
-  assert.ok(battleState.log.includes("Anti-air escort assigned to answer enemy air power."));
-});
-
-test("enemy air units are gated until map four", () => {
-  const earlyAirOpener = Array.from({ length: 200 }, (_, seed) =>
-    createBattleStateForRun(createRunState({
-      seed,
-      mapIndex: 0,
-      commanderId: "atlas",
-      id: `run-early-air-${seed}`
-    }))
-  ).find((candidate) => candidate.enemy.units.some((unit) => unit.family === UNIT_TAGS.AIR));
-
-  assert.equal(earlyAirOpener, undefined);
 });
 
 test("skirmish battle creation assigns deterministic enemy AI archetypes for the same commander and map", () => {
@@ -180,15 +216,48 @@ test("skirmish battle creation no longer injects commander starter squads on spa
   assert.equal(battleState.enemy.units.length, 0);
 });
 
+test("skirmish battle creation preserves authored units and owned production buildings", () => {
+  replaceCustomMaps([
+    {
+      id: "skirmish-authored",
+      name: "Skirmish Authored",
+      theme: "ash",
+      width: 8,
+      height: 8,
+      buildings: [
+        { id: "player-barracks", type: BUILDING_KEYS.BARRACKS, owner: TURN_SIDES.PLAYER, x: 1, y: 1 },
+        { id: "enemy-motor", type: BUILDING_KEYS.MOTOR_POOL, owner: TURN_SIDES.ENEMY, x: 6, y: 1 }
+      ],
+      units: [
+        { id: "skirmish-player-grunt", unitTypeId: "grunt", owner: TURN_SIDES.PLAYER, level: 2, x: 2, y: 2 },
+        { id: "skirmish-enemy-breaker", unitTypeId: "breaker", owner: TURN_SIDES.ENEMY, level: 3, x: 5, y: 5 }
+      ]
+    }
+  ]);
+  const battleState = createSkirmishBattleState({
+    mapId: "skirmish-authored",
+    playerCommanderId: "rook",
+    enemyCommanderId: "atlas",
+    startingFunds: 1200,
+    fundsPerBuilding: 100
+  });
+
+  assert.equal(battleState.player.units[0].id, "skirmish-player-grunt");
+  assert.equal(battleState.player.units[0].level, 2);
+  assert.equal(battleState.enemy.units[0].id, "skirmish-enemy-breaker");
+  assert.equal(battleState.enemy.units[0].level, 3);
+  assert.equal(battleState.map.buildings.some((building) => building.id === "player-barracks"), true);
+  assert.equal(battleState.map.buildings.some((building) => building.id === "enemy-motor"), true);
+});
+
 test("run battle creation can deploy bought squads on maps without authored spawn points", () => {
   const battleState = createBattleStateForRun(createRunState({
     mapSequence: ["spann-island-run"]
   }));
 
   assert.ok(battleState.player.units.length > 0);
-  assert.ok(battleState.enemy.units.length > 0);
+  assert.equal(battleState.enemy.units.length, 0);
   assert.equal(uniquePositionCount(battleState.player.units), battleState.player.units.length);
-  assert.equal(uniquePositionCount(battleState.enemy.units), battleState.enemy.units.length);
 });
 
 test("custom maps participate in live skirmish and run map creation", () => {

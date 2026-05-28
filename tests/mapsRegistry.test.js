@@ -6,6 +6,7 @@ import { BUILDING_KEYS } from "../src/game/core/constants.js";
 import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
 import {
   getMapById,
+  getRunMapPoolForStage,
   MAP_POOL,
   replaceCustomMaps,
   RUN_MAP_POOL,
@@ -46,48 +47,38 @@ test("tutorial map stays outside skirmish and run map pools", () => {
   assert.equal(getMapById(TUTORIAL_IDS.MAP), undefined);
 });
 
-test("run map pool strips player production buildings while preserving enemy production sites", () => {
-  const runMap = RUN_MAP_POOL.find((mapDefinition) => {
-    const baseMap = MAP_POOL.find((candidate) => candidate.id === mapDefinition.id.replace(/-run$/, ""));
+test("run map pool strips owned production buildings while preserving neutral inert sites", () => {
+  replaceCustomMaps([
+    {
+      id: "production-check",
+      name: "Production Check",
+      theme: "ash",
+      width: 8,
+      height: 8,
+      buildings: [
+        { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: "player", x: 1, y: 1 },
+        { id: "player-barracks", type: BUILDING_KEYS.BARRACKS, owner: "player", x: 2, y: 1 },
+        { id: "enemy-motor", type: BUILDING_KEYS.MOTOR_POOL, owner: "enemy", x: 5, y: 1 },
+        { id: "neutral-airfield", type: BUILDING_KEYS.AIRFIELD, owner: "neutral", x: 4, y: 4 }
+      ]
+    }
+  ]);
 
-    return (
-      baseMap?.buildings.some(
-        (building) =>
-          building.owner === "player" &&
-          [BUILDING_KEYS.BARRACKS, BUILDING_KEYS.MOTOR_POOL, BUILDING_KEYS.AIRFIELD].includes(
-            building.type
-          )
-      ) &&
-      mapDefinition.buildings.some(
-        (building) =>
-          building.owner === "enemy" &&
-          [BUILDING_KEYS.BARRACKS, BUILDING_KEYS.MOTOR_POOL, BUILDING_KEYS.AIRFIELD].includes(
-            building.type
-          )
-      )
-    );
-  });
+  const runMap = RUN_MAP_POOL.find((mapDefinition) => mapDefinition.id === "production-check-run");
 
   assert.ok(runMap);
-  assert.equal(
-    runMap.buildings.some(
-      (building) =>
-        building.owner === "player" &&
-        [BUILDING_KEYS.BARRACKS, BUILDING_KEYS.MOTOR_POOL, BUILDING_KEYS.AIRFIELD].includes(
-          building.type
-        )
-    ),
-    false
-  );
-  assert.equal(
-    runMap.buildings.some(
-      (building) =>
-        building.owner === "enemy" &&
-        [BUILDING_KEYS.BARRACKS, BUILDING_KEYS.MOTOR_POOL, BUILDING_KEYS.AIRFIELD].includes(
-          building.type
-        )
-    ),
-    true
+  assert.equal(runMap.buildings.some((building) => building.id === "player-barracks"), false);
+  assert.equal(runMap.buildings.some((building) => building.id === "enemy-motor"), false);
+  assert.deepEqual(
+    runMap.buildings.find((building) => building.id === "neutral-airfield"),
+    {
+      id: "neutral-airfield",
+      type: BUILDING_KEYS.AIRFIELD,
+      owner: "neutral",
+      x: 4,
+      y: 4,
+      canCapture: false
+    }
   );
 });
 
@@ -106,6 +97,34 @@ test("custom maps merge into the live registry and create run variants immediate
   assert.ok(RUN_MAP_POOL.some((mapDefinition) => mapDefinition.id === "custom-district-run"));
   assert.equal(getMapById("custom-district")?.name, "Custom District");
   assert.equal(getMapById("custom-district-run")?.name, "Custom District (Run)");
+});
+
+test("custom map run variants preserve stage metadata for staged pools", () => {
+  replaceCustomMaps([
+    {
+      id: "custom-district-stage-2",
+      name: "Custom District",
+      theme: "ash",
+      width: 8,
+      height: 8,
+      runStages: [2, 3],
+      variantStage: 2
+    }
+  ]);
+
+  const runMap = getMapById("custom-district-stage-2-run");
+
+  assert.ok(runMap);
+  assert.deepEqual(runMap.runStages, [2, 3]);
+  assert.equal(runMap.variantStage, 2);
+  assert.equal(
+    getRunMapPoolForStage(1).some((mapDefinition) => mapDefinition.id === "custom-district-stage-2-run"),
+    false
+  );
+  assert.equal(
+    getRunMapPoolForStage(2).some((mapDefinition) => mapDefinition.id === "custom-district-stage-2-run"),
+    true
+  );
 });
 
 test("upserting the same custom map id replaces the previous registry entry", () => {

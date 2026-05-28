@@ -1,40 +1,14 @@
-import { ENEMY_STARTING_FUNDS, TURN_SIDES } from "../core/constants.js";
-import { createUnitFromType } from "../simulation/unitFactory.js";
-import { awardExperience, getXpThreshold } from "../simulation/progression.js";
+import { BUILDING_KEYS, ENEMY_STARTING_FUNDS, TURN_SIDES } from "../core/constants.js";
 
 const ENEMY_STARTING_FUNDS_PER_TIER = 100;
 const ENEMY_STARTING_FUNDS_MAX = 500;
 const ENEMY_PRECAPTURE_STEP_INTERVAL = 3;
 const ENEMY_PRECAPTURE_MAX = 2;
-
-function scaleEnemyUnitLevel(unit, targetLevel, seed) {
-  let scaledUnit = unit;
-  let nextSeed = seed;
-
-  while (scaledUnit.level < targetLevel) {
-    const levelUp = awardExperience(
-      {
-        ...scaledUnit,
-        experience: 0
-      },
-      getXpThreshold(scaledUnit.level),
-      nextSeed
-    );
-
-    scaledUnit = levelUp.unit;
-    nextSeed = levelUp.seed;
-  }
-
-  return {
-    ...scaledUnit,
-    experience: 0,
-    current: {
-      hp: scaledUnit.stats.maxHealth,
-      stamina: scaledUnit.stats.staminaMax,
-      ammo: scaledUnit.stats.ammoMax
-    }
-  };
-}
+const PRODUCTION_BUILDINGS = new Set([
+  BUILDING_KEYS.BARRACKS,
+  BUILDING_KEYS.MOTOR_POOL,
+  BUILDING_KEYS.AIRFIELD
+]);
 
 export function getEnemyStartingFunds(difficultyTier) {
   return ENEMY_STARTING_FUNDS + Math.min(
@@ -58,7 +32,7 @@ export function applyEnemyMapControlScaling(mapDefinition, difficultyTier) {
   }
 
   const neutralBuildings = mapDefinition.buildings
-    .filter((building) => building.owner === "neutral")
+    .filter((building) => building.owner === "neutral" && !PRODUCTION_BUILDINGS.has(building.type))
     .sort(
       (left, right) =>
         right.x - left.x ||
@@ -71,14 +45,4 @@ export function applyEnemyMapControlScaling(mapDefinition, difficultyTier) {
   }
 
   return neutralBuildings;
-}
-
-export function buildScaledEnemyRoster(baseUnitConfigs, difficultyTier) {
-  return baseUnitConfigs.map((unitConfig, index) =>
-    scaleEnemyUnitLevel(
-      createUnitFromType(unitConfig.unitTypeId, TURN_SIDES.ENEMY),
-      Math.max(1, Number(unitConfig.level) || 1),
-      difficultyTier * 1000 + index
-    )
-  );
 }

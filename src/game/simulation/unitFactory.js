@@ -1,6 +1,7 @@
 import { createId } from "../core/id.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { createInitialGearState } from "../content/runUpgrades.js";
+import { awardExperience, getXpThreshold } from "./progression.js";
 
 function cloneStats(unitType) {
   return {
@@ -58,6 +59,40 @@ export function createUnitFromType(unitTypeId, owner, level = 1) {
     statuses: [],
     temporary: null
   };
+}
+
+export function scaleUnitToLevel(unit, targetLevel, seed = 0) {
+  const normalizedTargetLevel = Math.max(1, Math.floor(Number(targetLevel) || 1));
+  let scaledUnit = structuredClone(unit);
+  let nextSeed = seed;
+
+  while (scaledUnit.level < normalizedTargetLevel) {
+    const levelUp = awardExperience(
+      {
+        ...scaledUnit,
+        experience: 0
+      },
+      getXpThreshold(scaledUnit.level),
+      nextSeed
+    );
+
+    scaledUnit = levelUp.unit;
+    nextSeed = levelUp.seed;
+  }
+
+  return {
+    ...scaledUnit,
+    experience: 0,
+    current: {
+      hp: scaledUnit.stats.maxHealth,
+      stamina: scaledUnit.stats.staminaMax,
+      ammo: scaledUnit.stats.ammoMax
+    }
+  };
+}
+
+export function createUnitFromTypeAtLevel(unitTypeId, owner, level = 1, seed = 0) {
+  return scaleUnitToLevel(createUnitFromType(unitTypeId, owner), level, seed);
 }
 
 export function createPersistentUnitSnapshot(unit) {

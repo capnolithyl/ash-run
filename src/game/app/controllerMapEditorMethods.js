@@ -10,6 +10,9 @@ import {
   getMapEditorValidation,
   MAP_EDITOR_MIRROR_MODES,
   MAP_EDITOR_TOOL_IDS,
+  normalizeMapEditorUnitLevel,
+  normalizeMapRunStages,
+  normalizeMapVariantStage,
   normalizeMapDefinition,
   resizeMapDefinition
 } from "../content/mapEditor.js";
@@ -32,8 +35,11 @@ function normalizeMapEditorId(value) {
     .replace(/-{2,}/g, "-");
 }
 
-function deriveMapEditorIdFromName(name) {
-  return normalizeMapEditorId(name) || "custom-map";
+function deriveMapEditorIdFromName(name, variantStage = null) {
+  const baseId = (normalizeMapEditorId(name) || "custom-map").replace(/-stage-\d+$/i, "");
+  const normalizedVariantStage = normalizeMapVariantStage(variantStage);
+
+  return normalizedVariantStage ? `${baseId}-stage-${normalizedVariantStage}` : baseId;
 }
 
 function synchronizeMapEditorIdentity(mapData) {
@@ -41,7 +47,7 @@ function synchronizeMapEditorIdentity(mapData) {
     return mapData;
   }
 
-  const nextMapId = deriveMapEditorIdFromName(mapData.name);
+  const nextMapId = deriveMapEditorIdFromName(mapData.name, mapData.variantStage);
 
   return {
     ...mapData,
@@ -146,6 +152,37 @@ export const controllerMapEditorMethods = {
     this.emit();
   },
 
+  toggleMapEditorRunStage(stage) {
+    const mapData = this.state.mapEditor?.mapData;
+    const normalizedStage = normalizeMapVariantStage(stage);
+
+    if (!mapData || !normalizedStage) {
+      return;
+    }
+
+    const runStages = new Set(normalizeMapRunStages(mapData.runStages));
+
+    if (runStages.has(normalizedStage)) {
+      runStages.delete(normalizedStage);
+    } else {
+      runStages.add(normalizedStage);
+    }
+
+    mapData.runStages = [...runStages].sort((left, right) => left - right);
+    this.emit();
+  },
+
+  clearMapEditorRunStages() {
+    const mapData = this.state.mapEditor?.mapData;
+
+    if (!mapData) {
+      return;
+    }
+
+    delete mapData.runStages;
+    this.emit();
+  },
+
   updateMapEditorField(field, value, options = {}) {
     const { emit = true } = options;
     const mapData = this.state.mapEditor?.mapData;
@@ -157,12 +194,40 @@ export const controllerMapEditorMethods = {
     if (field === "name") {
       mapData.name = String(value ?? "").trimStart();
       this.state.mapEditor.mapData = synchronizeMapEditorIdentity(mapData);
+    } else if (field === "variantStage") {
+      const variantStage = normalizeMapVariantStage(value);
+      if (variantStage) {
+        mapData.variantStage = variantStage;
+        mapData.runStages = [variantStage];
+      } else {
+        delete mapData.variantStage;
+        delete mapData.runStages;
+      }
+      this.state.mapEditor.mapData = synchronizeMapEditorIdentity(mapData);
     } else if (field === "theme") {
       if (!Object.hasOwn(MAP_THEME_PALETTES, value)) {
         return;
       }
 
       mapData.theme = value;
+    } else if (field === "selectedUnitLevel") {
+      this.state.mapEditor.selectedUnitLevel = normalizeMapEditorUnitLevel(Number(value));
+    } else if (field === "selectedTileUnitLevel") {
+      const selectedTile = this.state.mapEditor.selectedTile;
+
+      if (!selectedTile) {
+        return;
+      }
+
+      const unit = mapData.units.find(
+        (candidate) => candidate.x === selectedTile.x && candidate.y === selectedTile.y
+      );
+
+      if (!unit) {
+        return;
+      }
+
+      unit.level = normalizeMapEditorUnitLevel(Number(value));
     } else if (field === "width" || field === "height") {
       const nextWidth = field === "width" ? Number(value) : mapData.width;
       const nextHeight = field === "height" ? Number(value) : mapData.height;

@@ -1,9 +1,11 @@
 import { BUILDING_KEYS, TURN_SIDES } from "../../game/core/constants.js";
 import { getBuildingTypeMetadata } from "../../game/content/buildings.js";
 import {
+  getMapEditorRunStageOptions,
   getMapEditorThemeOptions,
   getMapEditorTileDetails,
   getMapEditorValidation,
+  MAP_EDITOR_MAX_UNIT_LEVEL,
   MAP_EDITOR_MIRROR_MODES,
   MAP_EDITOR_TOOL_IDS
 } from "../../game/content/mapEditor.js";
@@ -193,7 +195,7 @@ function renderActiveTool(state) {
 
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT) {
     const unit = UNIT_CATALOG[state.mapEditor.selectedUnitTypeId];
-    return `${unit?.name ?? "Unit"} (${state.mapEditor.selectedUnitOwner})`;
+    return `${unit?.name ?? "Unit"} L${state.mapEditor.selectedUnitLevel ?? 1} (${state.mapEditor.selectedUnitOwner})`;
   }
 
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN) {
@@ -209,7 +211,8 @@ function renderCompactTool(state) {
   }
 
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT) {
-    return UNIT_CATALOG[state.mapEditor.selectedUnitTypeId]?.name ?? "Unit";
+    const unitName = UNIT_CATALOG[state.mapEditor.selectedUnitTypeId]?.name ?? "Unit";
+    return `${unitName} L${state.mapEditor.selectedUnitLevel ?? 1}`;
   }
 
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN) {
@@ -225,6 +228,10 @@ function renderMirrorLabel(mirrorMode) {
   }
 
   return mirrorMode.charAt(0).toUpperCase() + mirrorMode.slice(1);
+}
+
+function formatRunStages(map) {
+  return map.runStages?.length ? map.runStages.join(", ") : "All";
 }
 
 function renderTopCardStat(label, value) {
@@ -285,7 +292,8 @@ function renderTopPanels(state, map, goalLabel, validation) {
         stats: [
           { label: "Theme", value: map.theme },
           { label: "Size", value: `${map.width} x ${map.height}` },
-          { label: "Goal", value: goalLabel }
+          { label: "Goal", value: goalLabel },
+          { label: "Run", value: formatRunStages(map) }
         ]
       })}
       ${renderTopCard({
@@ -334,7 +342,66 @@ function renderTileSummary(tileDetails) {
       <h3>Tile ${tileDetails.x}, ${tileDetails.y}</h3>
       <p>${tileDetails.terrain?.label ?? "Unknown Terrain"}</p>
       <p>${tileDetails.buildingMetadata ? `${tileDetails.buildingMetadata.name} (${tileDetails.building.owner})` : "No building"}</p>
-      <p>${tileDetails.unitMetadata ? `${tileDetails.unitMetadata.name} (${tileDetails.unit.owner})` : "No unit"}</p>
+      <p>${tileDetails.unitMetadata ? `${tileDetails.unitMetadata.name} (${tileDetails.unit.owner}) L${tileDetails.unit.level ?? 1}` : "No unit"}</p>
+      ${
+        tileDetails.unit
+          ? `
+            <div class="debug-grid">
+              <label>
+                <span>Unit Level</span>
+                <input
+                  type="number"
+                  data-map-editor-field="selectedTileUnitLevel"
+                  value="${tileDetails.unit.level ?? 1}"
+                  min="1"
+                  max="${MAP_EDITOR_MAX_UNIT_LEVEL}"
+                />
+              </label>
+            </div>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
+function renderRunSetupSection(map) {
+  const selectedStages = new Set(map.runStages ?? []);
+  const variantStage = map.variantStage ?? "";
+
+  return `
+    <div class="card-block">
+      <p class="eyebrow">Run Setup</p>
+      <div class="debug-grid">
+        <label>
+          <span>Variant</span>
+          <select data-map-editor-field="variantStage">
+            <option value="" ${variantStage === "" ? "selected" : ""}>Default</option>
+            ${getMapEditorRunStageOptions().map((stage) => `
+              <option value="${stage}" ${variantStage === stage ? "selected" : ""}>Stage ${stage}</option>
+            `).join("")}
+          </select>
+        </label>
+      </div>
+      <div class="map-editor-owner-row" aria-label="Run stage availability">
+        <button
+          class="ghost-button ghost-button--small map-editor-chip ${selectedStages.size === 0 ? "map-editor-chip--active" : ""}"
+          data-action="map-editor-clear-run-stages"
+          type="button"
+        >
+          All
+        </button>
+        ${getMapEditorRunStageOptions().map((stage) => `
+          <button
+            class="ghost-button ghost-button--small map-editor-chip ${selectedStages.has(stage) ? "map-editor-chip--active" : ""}"
+            data-action="map-editor-toggle-run-stage"
+            data-run-stage="${stage}"
+            type="button"
+          >
+            ${stage}
+          </button>
+        `).join("")}
+      </div>
     </div>
   `;
 }
@@ -506,6 +573,18 @@ export function renderMapEditorView(state, uiState = {}) {
                 [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]
               )}
             </div>
+            <div class="debug-grid">
+              <label>
+                <span>Level</span>
+                <input
+                  type="number"
+                  data-map-editor-field="selectedUnitLevel"
+                  value="${state.mapEditor.selectedUnitLevel ?? 1}"
+                  min="1"
+                  max="${MAP_EDITOR_MAX_UNIT_LEVEL}"
+                />
+              </label>
+            </div>
             <div class="map-editor-tool-grid map-editor-tool-grid--units" data-map-editor-scroll="units">
               ${renderUnitTools(state)}
             </div>
@@ -584,6 +663,7 @@ export function renderMapEditorView(state, uiState = {}) {
           </div>
         </div>
 
+        ${renderRunSetupSection(map)}
         ${renderGoalSection(map, tileDetails)}
         ${renderTileSummary(tileDetails)}
       </aside>
