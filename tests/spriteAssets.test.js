@@ -180,6 +180,19 @@ test("terrain animation folders take priority over the static fallback", () => {
   assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/road/road.png");
 });
 
+test("water terrain animation uses the authored spritesheet frame size", () => {
+  const terrainSprite = getTerrainSpriteDefinition("water");
+
+  assert.ok(terrainSprite);
+  assert.equal(terrainSprite.type, "spritesheet");
+  assert.equal(getTerrainSpriteKey("water"), "spritesheet:terrain:water");
+  assert.equal(terrainSprite.fallbackKey, "sprite:terrain:water");
+  assert.equal(terrainSprite.animated?.frameWidth, 627);
+  assert.equal(terrainSprite.animated?.frameHeight, 627);
+  assert.equal(terrainSprite.animated?.frameRate, 4);
+  assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/water/water.png");
+});
+
 test("building sprites prefer png when both png and svg exist", () => {
   for (const buildingTypeId of Object.values(BUILDING_KEYS)) {
     for (const owner of BUILDING_OWNER_VARIANTS) {

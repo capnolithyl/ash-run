@@ -23,6 +23,13 @@ const IMAGE_ASSET_ROOT = "./assets/img";
 const SPRITE_SOURCE_SIZE = 64;
 const TERRAIN_SOURCE_SIZE = 128;
 const TERRAIN_ANIMATION_FRAME_RATE = 10;
+const TERRAIN_ANIMATION_CONFIG = {
+  water: {
+    frameWidth: 627,
+    frameHeight: 627,
+    frameRate: 4,
+  },
+};
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
 export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
 export const SPLASH_ASSET_IDS = {
@@ -70,6 +77,8 @@ const TERRAIN_PNG_OVERRIDES = new Set(GENERATED_TERRAIN_SPRITE_PNG_IDS);
 const TERRAIN_ANIMATED_OVERRIDES = new Set(GENERATED_TERRAIN_ANIMATED_IDS);
 
 function createTerrainAnimationAsset(terrainId) {
+  const config = TERRAIN_ANIMATION_CONFIG[terrainId] ?? {};
+
   return {
     group: "terrain",
     id: terrainId,
@@ -77,9 +86,9 @@ function createTerrainAnimationAsset(terrainId) {
     type: "spritesheet",
     key: `spritesheet:terrain:${terrainId}`,
     url: `${SPRITE_ASSET_ROOT}/terrain/${terrainId}/${terrainId}.png`,
-    frameWidth: TERRAIN_SOURCE_SIZE,
-    frameHeight: TERRAIN_SOURCE_SIZE,
-    frameRate: TERRAIN_ANIMATION_FRAME_RATE,
+    frameWidth: config.frameWidth ?? TERRAIN_SOURCE_SIZE,
+    frameHeight: config.frameHeight ?? TERRAIN_SOURCE_SIZE,
+    frameRate: config.frameRate ?? TERRAIN_ANIMATION_FRAME_RATE,
     animationKey: `animation:terrain:${terrainId}:default`
   };
 }
