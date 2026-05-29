@@ -9,8 +9,26 @@ import { renderSaveSlotView } from "../../views/saveSlotView.js";
 import { renderSkirmishSetupView } from "../../views/skirmishSetupView.js";
 import { renderTitleView } from "../../views/titleView.js";
 import { renderTutorialView } from "../../views/tutorialView.js";
+import { renderAppToast } from "../../views/appToastView.js";
 
 export const appShellScreenRouterMethods = {
+  syncAppToast(state) {
+    const existingToast = this.root.querySelector(".app-toast");
+    const nextToastMarkup = renderAppToast(state.toast);
+
+    if (!nextToastMarkup) {
+      existingToast?.remove();
+      return;
+    }
+
+    if (existingToast) {
+      existingToast.outerHTML = nextToastMarkup;
+      return;
+    }
+
+    this.root.insertAdjacentHTML("beforeend", nextToastMarkup);
+  },
+
   render(state) {
     this.applyDisplayRootAttributes?.();
     this.renderWindowChrome?.();
@@ -25,18 +43,21 @@ export const appShellScreenRouterMethods = {
 
     if (state.screen === SCREEN_IDS.COMMANDER_SELECT) {
       this.renderCommanderSelect(state);
+      this.syncAppToast(state);
       this.syncControllerFocusAfterRender();
       return;
     }
 
     if (state.screen === SCREEN_IDS.RUN_LOADOUT) {
       this.renderRunLoadout(state);
+      this.syncAppToast(state);
       this.syncControllerFocusAfterRender();
       return;
     }
 
     if (state.screen === SCREEN_IDS.SKIRMISH_SETUP) {
       this.renderSkirmishSetup(state);
+      this.syncAppToast(state);
       this.syncControllerFocusAfterRender();
       return;
     }
@@ -48,32 +69,38 @@ export const appShellScreenRouterMethods = {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderSaveSlotView(state);
+        this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.OPTIONS:
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderOptionsView(state, this.getDisplayRenderContext?.(state));
+        this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.MAP_EDITOR:
         this.renderMapEditor(state);
+        this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.PROGRESSION:
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderProgressionView(state);
+        this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.TUTORIAL:
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderTutorialView(state);
+        this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.BATTLE:
         this.renderBattleScreen(state);
+        this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.TITLE:
@@ -81,6 +108,7 @@ export const appShellScreenRouterMethods = {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderTitleView(state);
+        this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
     }
   },

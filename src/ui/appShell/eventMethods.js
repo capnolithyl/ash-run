@@ -313,11 +313,20 @@ export const appShellEventMethods = {
       case "map-editor-set-mirror-mode":
         this.controller.setMapEditorMirrorMode(trigger.dataset.mirrorMode);
         break;
-      case "map-editor-toggle-run-stage":
-        this.controller.toggleMapEditorRunStage(Number(trigger.dataset.runStage));
+      case "map-editor-set-variant-stage":
+        this.controller.setMapEditorVariantStage(Number(trigger.dataset.variantStage));
         break;
-      case "map-editor-clear-run-stages":
-        this.controller.clearMapEditorRunStages();
+      case "map-editor-undo":
+        this.controller.undoMapEditorHistory?.();
+        break;
+      case "map-editor-request-history-revert":
+        this.controller.requestMapEditorHistoryRevert?.(Number(trigger.dataset.historyIndex));
+        break;
+      case "map-editor-confirm-history-revert":
+        this.controller.confirmMapEditorHistoryRevert?.();
+        break;
+      case "map-editor-cancel-history-revert":
+        this.controller.cancelMapEditorHistoryRevert?.();
         break;
       case "map-editor-goal-use-selected-building":
         this.controller.setMapEditorGoalTargetFromSelectedBuilding();
@@ -345,7 +354,19 @@ export const appShellEventMethods = {
         break;
       }
       case "map-editor-export": {
-        await this.controller.saveMapEditorMap?.();
+        const saveResult = await this.controller.saveMapEditorMap?.();
+
+        if (saveResult?.mode === "download" && saveResult.exportedMap) {
+          if (saveResult.warning) {
+            this.logDesktopDialogFallback("export", saveResult.warning);
+          }
+          this.downloadMapEditorJson(saveResult.exportedMap);
+          this.controller.showToast?.({
+            title: "Map downloaded",
+            message: `${saveResult.exportedMap.filename} was downloaded through the browser fallback.`,
+            tone: "success"
+          });
+        }
         break;
       }
       case "load-slot":

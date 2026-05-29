@@ -357,41 +357,100 @@ function renderTileSummary(tileDetails) {
 }
 
 function renderRunSetupSection(map) {
-  const selectedStages = new Set(map.runStages ?? []);
-  const variantStage = map.variantStage ?? "";
+  const variantStage = Number(map.variantStage) || 1;
 
   return `
     <div class="card-block">
-      <p class="eyebrow">Run Setup</p>
-      <div class="debug-grid">
-        <label>
-          <span>Variant</span>
-          <select data-map-editor-field="variantStage">
-            <option value="" ${variantStage === "" ? "selected" : ""}>Default</option>
-            ${getMapEditorRunStageOptions().map((stage) => `
-              <option value="${stage}" ${variantStage === stage ? "selected" : ""}>Stage ${stage}</option>
-            `).join("")}
-          </select>
-        </label>
-      </div>
-      <div class="map-editor-owner-row" aria-label="Run stage availability">
-        <button
-          class="ghost-button ghost-button--small map-editor-chip ${selectedStages.size === 0 ? "map-editor-chip--active" : ""}"
-          data-action="map-editor-clear-run-stages"
-          type="button"
-        >
-          All
-        </button>
+      <p class="eyebrow">Run Variant</p>
+      <p>Each map save now belongs to exactly one run stage.</p>
+      <div class="map-editor-owner-row" aria-label="Run stage">
         ${getMapEditorRunStageOptions().map((stage) => `
           <button
-            class="ghost-button ghost-button--small map-editor-chip ${selectedStages.has(stage) ? "map-editor-chip--active" : ""}"
-            data-action="map-editor-toggle-run-stage"
-            data-run-stage="${stage}"
+            class="ghost-button ghost-button--small map-editor-chip ${variantStage === stage ? "map-editor-chip--active" : ""}"
+            data-action="map-editor-set-variant-stage"
+            data-variant-stage="${stage}"
             type="button"
           >
-            ${stage}
+            Stage ${stage}
           </button>
         `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderHistorySection(state) {
+  const historyEntries = state.mapEditor.historyEntries ?? [];
+  const currentHistoryIndex = Number(state.mapEditor.currentHistoryIndex ?? -1);
+  const pendingHistoryIndex = Number.isInteger(state.mapEditor.pendingHistoryIndex)
+    ? state.mapEditor.pendingHistoryIndex
+    : null;
+  const canUndo = currentHistoryIndex > 0;
+
+  return `
+    <div class="card-block">
+      <div class="map-editor-history__header">
+        <div>
+          <p class="eyebrow">History</p>
+          <p class="map-editor-history__copy">Undo the latest edit or jump back to an earlier state.</p>
+        </div>
+        <button
+          class="ghost-button ghost-button--small"
+          data-action="map-editor-undo"
+          type="button"
+          ${canUndo ? "" : "disabled"}
+        >
+          Undo
+        </button>
+      </div>
+      <div class="map-editor-history__list" aria-label="Map edit history">
+        ${historyEntries
+          .map((entry, index) => {
+            const isCurrent = index === currentHistoryIndex;
+            const isPending = index === pendingHistoryIndex;
+
+            return `
+              <div class="map-editor-history__item${isCurrent ? " map-editor-history__item--current" : ""}${isPending ? " map-editor-history__item--pending" : ""}">
+                <button
+                  class="ghost-button ghost-button--small map-editor-history__button"
+                  data-action="map-editor-request-history-revert"
+                  data-history-index="${index}"
+                  type="button"
+                  ${isCurrent ? "disabled" : ""}
+                >
+                  <strong>${entry.label}</strong>
+                  <small>${isCurrent ? "Current state" : `Step ${index + 1}`}</small>
+                </button>
+                ${
+                  isPending && !isCurrent
+                    ? `
+                      <div class="map-editor-history__confirm">
+                        <p>Go back to this state?</p>
+                        <div class="map-editor-inline-actions">
+                          <button
+                            class="menu-button menu-button--small"
+                            data-action="map-editor-confirm-history-revert"
+                            type="button"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            class="ghost-button ghost-button--small"
+                            data-action="map-editor-cancel-history-revert"
+                            type="button"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    `
+                    : ""
+                }
+              </div>
+            `;
+          })
+          .reverse()
+          .join("")}
       </div>
     </div>
   `;
@@ -655,6 +714,7 @@ export function renderMapEditorView(state, uiState = {}) {
         </div>
 
         ${renderRunSetupSection(map)}
+        ${renderHistorySection(state)}
         ${renderGoalSection(map, tileDetails)}
         ${renderTileSummary(tileDetails)}
       </aside>

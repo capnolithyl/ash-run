@@ -30,8 +30,10 @@ export class GameController {
     this.battleNoticeSequence = 0;
     this.battlePowerOverlaySequence = 0;
     this.battleCombatCutsceneSequence = 0;
+    this.toastSequence = 0;
     this.battleNoticeTimer = null;
     this.battleCombatCutsceneTimer = null;
+    this.toastTimer = null;
     this.lastBattleContextActionAt = 0;
     this.state = {
       ready: false,
@@ -44,6 +46,7 @@ export class GameController {
       selectedCommanderId: null,
       selectedSlotId: SLOT_IDS[0],
       banner: "",
+      toast: null,
       runStatus: null,
       battleUi: createBattleUiState(),
       tutorial: createTutorialIntroState(),

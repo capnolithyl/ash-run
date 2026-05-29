@@ -4,7 +4,7 @@ import { GENERATED_MAP_MODULES } from "./maps.generated.js";
 
 const VITE_MAP_MODULES =
   typeof import.meta.glob === "function"
-    ? import.meta.glob("./maps/*.json", {
+    ? import.meta.glob(["./maps/*.json", "./maps/**/*.json"], {
         eager: true,
         import: "default"
       })

@@ -275,6 +275,32 @@ function normalizeMapFileName(fileName) {
   return baseName.toLowerCase().endsWith(".json") ? baseName : `${baseName}.json`;
 }
 
+function normalizeMapRelativePath(filePath) {
+  const rawPath = String(filePath ?? "").trim().replace(/\\/g, "/");
+  const rawSegments = rawPath.split("/").filter(Boolean);
+  const safeSegments = rawSegments
+    .slice(0, -1)
+    .map((segment) => path.basename(segment).trim())
+    .filter((segment) => segment && segment !== "." && segment !== "..");
+  const fileName = normalizeMapFileName(rawSegments.at(-1) ?? "custom-map.json");
+
+  return path.join(...safeSegments, fileName);
+}
+
+function getBundledMapsRoot() {
+  return path.resolve(__dirname, "../src/game/content/maps");
+}
+
+async function resolvePreferredMapPath(filePath = "custom-map.json") {
+  const normalizedRelativePath = normalizeMapRelativePath(filePath);
+  const baseRoot = app.isPackaged
+    ? getStoragePaths().customMapsRoot
+    : getBundledMapsRoot();
+  const targetPath = path.join(baseRoot, normalizedRelativePath);
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  return targetPath;
+}
+
 async function readCustomMapFile(filePath) {
   try {
     return await readJson(filePath, null);
@@ -284,16 +310,32 @@ async function readCustomMapFile(filePath) {
   }
 }
 
+async function collectJsonFiles(rootDirectory) {
+  const directoryEntries = await fs.readdir(rootDirectory, { withFileTypes: true });
+  const filePaths = [];
+
+  for (const entry of directoryEntries) {
+    const entryPath = path.join(rootDirectory, entry.name);
+
+    if (entry.isDirectory()) {
+      filePaths.push(...(await collectJsonFiles(entryPath)));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name.toLowerCase().endsWith(".json")) {
+      filePaths.push(entryPath);
+    }
+  }
+
+  return filePaths;
+}
+
 async function listCustomMaps() {
   const { customMapsRoot } = getStoragePaths();
   await fs.mkdir(customMapsRoot, { recursive: true });
-  const directoryEntries = await fs.readdir(customMapsRoot, { withFileTypes: true });
   const customMaps = await Promise.all(
-    directoryEntries
-      .filter(
-        (entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json")
-      )
-      .map((entry) => readCustomMapFile(path.join(customMapsRoot, entry.name)))
+    (await collectJsonFiles(customMapsRoot))
+      .map((filePath) => readCustomMapFile(filePath))
   );
 
   return customMaps
@@ -455,12 +497,12 @@ ipcMain.handle("map-files:import", async (event) => {
   };
 });
 
-ipcMain.handle("map-files:export", async (event, suggestedFileName, text) => {
+async function handleMapFileSave(event, suggestedFileName, text) {
   const browserWindow = BrowserWindow.fromWebContents(event.sender) ?? undefined;
-  const defaultDirectory = await resolvePreferredMapDirectory();
+  const defaultPath = await resolvePreferredMapPath(suggestedFileName);
   const result = await dialog.showSaveDialog(browserWindow, {
     title: "Save Map JSON",
-    defaultPath: path.join(defaultDirectory, normalizeMapFileName(suggestedFileName)),
+    defaultPath,
     filters: [
       {
         name: "JSON Maps",
@@ -479,7 +521,10 @@ ipcMain.handle("map-files:export", async (event, suggestedFileName, text) => {
   return {
     filePath: result.filePath
   };
-});
+}
+
+ipcMain.handle("map-files:save", handleMapFileSave);
+ipcMain.handle("map-files:export", handleMapFileSave);
 
 ipcMain.handle("display:get-state", () => getCurrentDisplayState());
 

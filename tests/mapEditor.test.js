@@ -87,7 +87,6 @@ test("map editor exports run stages, variant stage, and authored unit levels", (
   controller.openMapEditor();
   controller.updateMapEditorField("name", "Factory Lane");
   controller.updateMapEditorField("variantStage", "2");
-  controller.toggleMapEditorRunStage(3);
   controller.selectMapEditorUnitType("bruiser");
   controller.selectMapEditorUnitOwner(TURN_SIDES.ENEMY);
   controller.updateMapEditorField("selectedUnitLevel", "4");
@@ -100,8 +99,62 @@ test("map editor exports run stages, variant stage, and authored unit levels", (
 
   assert.equal(parsed.id, "factory-lane-stage-2");
   assert.equal(parsed.variantStage, 2);
-  assert.deepEqual(parsed.runStages, [2, 3]);
+  assert.deepEqual(parsed.runStages, [2]);
   assert.equal(parsed.units[0].level, 5);
+});
+
+test("map editor tracks edit history, supports undo, and restores confirmed history states", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.updateMapEditorField("name", "History Map");
+  controller.selectMapEditorTerrain(TERRAIN_KEYS.FOREST);
+  controller.applyMapEditorToolAt(2, 2);
+  controller.updateMapEditorField("width", "20");
+
+  let state = controller.getState();
+  assert.equal(state.mapEditor.historyEntries.length, 4);
+  assert.equal(state.mapEditor.currentHistoryIndex, 3);
+  assert.equal(state.mapEditor.mapData.width, 20);
+  assert.equal(state.mapEditor.mapData.tiles[2][2], TERRAIN_KEYS.FOREST);
+
+  controller.undoMapEditorHistory();
+
+  state = controller.getState();
+  assert.equal(state.mapEditor.currentHistoryIndex, 2);
+  assert.equal(state.mapEditor.mapData.width, 18);
+  assert.equal(state.mapEditor.mapData.tiles[2][2], TERRAIN_KEYS.FOREST);
+
+  controller.requestMapEditorHistoryRevert(1);
+  state = controller.getState();
+  assert.equal(state.mapEditor.pendingHistoryIndex, 1);
+
+  controller.confirmMapEditorHistoryRevert();
+  state = controller.getState();
+  assert.equal(state.mapEditor.currentHistoryIndex, 1);
+  assert.equal(state.mapEditor.pendingHistoryIndex, null);
+  assert.equal(state.mapEditor.mapData.tiles[2][2], TERRAIN_KEYS.PLAIN);
+  assert.equal(state.mapEditor.mapData.name, "History Map");
+});
+
+test("new edits after stepping back truncate future history states", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.selectMapEditorTerrain(TERRAIN_KEYS.FOREST);
+  controller.applyMapEditorToolAt(1, 1);
+  controller.updateMapEditorField("width", "20");
+  controller.undoMapEditorHistory();
+  controller.selectMapEditorTerrain(TERRAIN_KEYS.MOUNTAIN);
+  controller.applyMapEditorToolAt(3, 3);
+
+  const state = controller.getState();
+
+  assert.equal(state.mapEditor.historyEntries.length, 3);
+  assert.equal(state.mapEditor.currentHistoryIndex, 2);
+  assert.equal(state.mapEditor.mapData.width, 18);
+  assert.equal(state.mapEditor.mapData.tiles[3][3], TERRAIN_KEYS.MOUNTAIN);
+  assert.equal(state.mapEditor.historyEntries.some((entry) => /Resize map to 20x12/.test(entry.label)), false);
 });
 
 test("temporary eraser override clears a tile without changing the selected tool", () => {
@@ -166,45 +219,50 @@ test("map editor controller can paint a map, resize it, place units, and export 
 
   assert.equal(state.screen, SCREEN_IDS.MAP_EDITOR);
   assert.ok(exported);
-  assert.equal(state.mapEditor.mapData.id, "factory-lane");
-  assert.equal(exported.filename, "factory-lane.json");
-  assert.equal(parsed.id, "factory-lane");
+  assert.equal(state.mapEditor.mapData.id, "factory-lane-stage-1");
+  assert.equal(exported.filename, "factory-lane-stage-1.json");
+  assert.equal(parsed.id, "factory-lane-stage-1");
   assert.equal(parsed.name, "Factory Lane");
+  assert.equal(parsed.variantStage, 1);
+  assert.deepEqual(parsed.runStages, [1]);
   assert.equal(parsed.width, 20);
   assert.equal(parsed.height, 14);
   assert.equal(parsed.tiles[2][2], TERRAIN_KEYS.FOREST);
   assert.deepEqual(parsed.buildings, [
     {
-      id: "factory-lane-player-command-1-1",
+      id: "factory-lane-stage-1-player-command-1-1",
       type: BUILDING_KEYS.COMMAND,
       owner: TURN_SIDES.PLAYER,
       x: 1,
       y: 1
     }
   ]);
-  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-player-grunt-0-0"), true);
-  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-enemy-breaker-5-5"), true);
+  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-stage-1-player-grunt-0-0"), true);
+  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-stage-1-enemy-breaker-5-5"), true);
 });
 
-test("saving a map editor map writes to storage and registers it immediately", async () => {
+test("saving a map editor map opens a file save flow, shows a toast, and registers it immediately", async () => {
   const saveCalls = [];
   const controller = new GameController({
-    async saveCustomMap(filename, text) {
-      saveCalls.push({ filename, text });
-      return JSON.parse(text);
+    async saveMapFile(filePath, text) {
+      saveCalls.push({ filePath, text });
+      return { filePath: `D:/ash-run/ash-run/src/game/content/maps/${filePath}` };
     }
   });
 
   controller.openMapEditor();
   controller.updateMapEditorField("name", "Runtime Save");
+  controller.setMapEditorVariantStage(2);
 
   const saved = await controller.saveMapEditorMap();
 
   assert.equal(saveCalls.length, 1);
-  assert.equal(saveCalls[0].filename, "runtime-save.json");
-  assert.equal(saved?.mapData?.id, "runtime-save");
-  assert.equal(getMapById("runtime-save")?.name, "Runtime Save");
-  assert.match(controller.getState().banner, /custom map library/i);
+  assert.equal(saveCalls[0].filePath, "runtime-save/runtime-save-stage-2.json");
+  assert.equal(saved?.mode, "saved");
+  assert.equal(saved?.mapData?.id, "runtime-save-stage-2");
+  assert.equal(getMapById("runtime-save-stage-2")?.name, "Runtime Save");
+  assert.equal(controller.getState().toast?.title, "Map saved");
+  assert.match(controller.getState().toast?.message ?? "", /Runtime Save \(Stage 2\)/);
 });
 
 test("imported maps also re-derive their map id from the map name", () => {
@@ -241,10 +299,55 @@ test("imported maps also re-derive their map id from the map name", () => {
   const exported = controller.exportMapEditorMap();
   const parsed = JSON.parse(exported.text);
 
-  assert.equal(controller.getState().mapEditor.mapData.id, "spiral-ridge");
-  assert.equal(parsed.id, "spiral-ridge");
-  assert.equal(parsed.buildings[0].id, "spiral-ridge-neutral-sector-2-2");
-  assert.equal(parsed.units[0].id, "spiral-ridge-player-grunt-1-1");
+  assert.equal(controller.getState().mapEditor.mapData.id, "spiral-ridge-stage-1");
+  assert.equal(parsed.id, "spiral-ridge-stage-1");
+  assert.equal(parsed.variantStage, 1);
+  assert.deepEqual(parsed.runStages, [1]);
+  assert.equal(parsed.buildings[0].id, "spiral-ridge-stage-1-neutral-sector-2-2");
+  assert.equal(parsed.units[0].id, "spiral-ridge-stage-1-player-grunt-1-1");
+});
+
+test("loading a map resets history to the imported state", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.updateMapEditorField("name", "Before Import");
+  controller.importMapEditorMap({
+    id: "import-reset",
+    name: "Import Reset",
+    theme: "ash",
+    width: 12,
+    height: 12,
+    tiles: Array.from({ length: 12 }, () => Array.from({ length: 12 }, () => TERRAIN_KEYS.PLAIN))
+  });
+
+  const state = controller.getState();
+
+  assert.equal(state.mapEditor.historyEntries.length, 1);
+  assert.equal(state.mapEditor.historyEntries[0].label, "Map loaded");
+  assert.equal(state.mapEditor.currentHistoryIndex, 0);
+});
+
+test("imported legacy multi-stage maps collapse to the first available stage when re-saved", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.importMapEditorMap({
+    id: "legacy-variant",
+    name: "Legacy Variant",
+    theme: "ash",
+    width: 12,
+    height: 12,
+    runStages: [3, 2, 5],
+    tiles: Array.from({ length: 12 }, () => Array.from({ length: 12 }, () => TERRAIN_KEYS.PLAIN))
+  });
+
+  const exported = controller.exportMapEditorMap();
+  const parsed = JSON.parse(exported.text);
+
+  assert.equal(parsed.variantStage, 2);
+  assert.deepEqual(parsed.runStages, [2]);
+  assert.equal(parsed.id, "legacy-variant-stage-2");
 });
 
 test("map editor typing exits controller mode before applying the field update", () => {
@@ -385,7 +488,7 @@ test("map editor import button falls back to the browser file input", async () =
   assert.equal(clicked, true);
 });
 
-test("map editor save action uses the controller-managed library save flow", async () => {
+test("map editor save action routes through the controller save flow", async () => {
   const saveCalls = [];
   const shell = {
     latestState: {},
@@ -444,7 +547,7 @@ test("map editor import falls back to the browser file input when the desktop ha
   assert.equal(clicked, true);
 });
 
-test("map editor save action uses the same controller flow without desktop export handlers", async () => {
+test("map editor save action still uses the controller flow without desktop export handlers", async () => {
   const saveCalls = [];
   const shell = {
     latestState: {},
@@ -468,6 +571,44 @@ test("map editor save action uses the same controller flow without desktop expor
   });
 
   assert.deepEqual(saveCalls, ["saved"]);
+});
+
+test("map editor history actions route through the controller", async () => {
+  const calls = [];
+  const shell = {
+    latestState: {},
+    controller: {
+      undoMapEditorHistory() {
+        calls.push("undo");
+      },
+      requestMapEditorHistoryRevert(index) {
+        calls.push(`request:${index}`);
+      },
+      confirmMapEditorHistoryRevert() {
+        calls.push("confirm");
+      },
+      cancelMapEditorHistoryRevert() {
+        calls.push("cancel");
+      }
+    }
+  };
+
+  for (const dataset of [
+    { action: "map-editor-undo" },
+    { action: "map-editor-request-history-revert", historyIndex: "2" },
+    { action: "map-editor-confirm-history-revert" },
+    { action: "map-editor-cancel-history-revert" }
+  ]) {
+    await appShellEventMethods.handleClick.call(shell, {
+      target: {
+        closest() {
+          return { dataset };
+        }
+      }
+    });
+  }
+
+  assert.deepEqual(calls, ["undo", "request:2", "confirm", "cancel"]);
 });
 
 test("new maps no longer require spawn points to export", () => {
@@ -663,9 +804,10 @@ test("map editor view exposes every building, every unit, size fields, and mirro
   assert.match(html, /data-map-editor-field="width"/);
   assert.match(html, /data-map-editor-field="height"/);
   assert.match(html, /data-map-editor-field="goalType"/);
-  assert.match(html, /data-map-editor-field="variantStage"/);
   assert.match(html, /data-map-editor-field="selectedUnitLevel"/);
-  assert.match(html, /data-action="map-editor-toggle-run-stage"/);
+  assert.match(html, /data-action="map-editor-set-variant-stage"/);
+  assert.doesNotMatch(html, /data-map-editor-field="variantStage"/);
+  assert.doesNotMatch(html, /data-action="map-editor-toggle-run-stage"/);
   assert.match(html, /data-mirror-mode="vertical"/);
   assert.doesNotMatch(html, /Player Spawn|Enemy Spawn/);
 });

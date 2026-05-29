@@ -37,6 +37,7 @@ const DEFAULT_THEME = "ash";
 const DEFAULT_UNIT_TYPE_ID = "grunt";
 export const MAP_EDITOR_DEFAULT_UNIT_LEVEL = 1;
 export const MAP_EDITOR_MAX_UNIT_LEVEL = 99;
+export const MAP_EDITOR_HISTORY_LIMIT = 60;
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
@@ -442,7 +443,11 @@ export function createDefaultMapEditorState(mapData = createBlankMapDefinition()
     mirrorMode: MAP_EDITOR_MIRROR_MODES.OFF,
     selectedTile: null,
     hoveredTile: null,
-    isPainting: false
+    isPainting: false,
+    historyEntries: [],
+    currentHistoryIndex: -1,
+    pendingHistoryIndex: null,
+    historySequence: 0
   };
 }
 

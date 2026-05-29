@@ -1,4 +1,4 @@
-import { BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
+import { APP_TOAST_DISPLAY_MS, BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { normalizeMetaOptions } from "../state/defaults.js";
@@ -35,6 +35,33 @@ function resolveDebugRunMapId(mapId) {
 }
 
 export const controllerFlowMethods = {
+  showToast({ title, message = "", tone = "info", durationMs = APP_TOAST_DISPLAY_MS }) {
+    const toast = {
+      id: `toast-${++this.toastSequence}`,
+      title,
+      message,
+      tone,
+      createdAt: Date.now(),
+      durationMs
+    };
+
+    this.state.toast = toast;
+    this.emit();
+
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+
+    this.toastTimer = setTimeout(() => {
+      this.toastTimer = null;
+
+      if (this.state.toast?.id === toast.id) {
+        this.state.toast = null;
+        this.emit();
+      }
+    }, durationMs);
+  },
+
   resetBattleUi() {
     if (this.battleNoticeTimer) {
       clearTimeout(this.battleNoticeTimer);

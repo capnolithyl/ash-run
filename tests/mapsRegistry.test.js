@@ -13,19 +13,40 @@ import {
   upsertCustomMap
 } from "../src/game/content/maps.js";
 
+async function collectBundledMapFiles(rootDirectory) {
+  const directoryEntries = await fs.readdir(rootDirectory, { withFileTypes: true });
+  const fileNames = [];
+
+  for (const entry of directoryEntries) {
+    const entryPath = path.join(rootDirectory, entry.name);
+
+    if (entry.isDirectory()) {
+      fileNames.push(...(await collectBundledMapFiles(entryPath)));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name.endsWith(".json")) {
+      fileNames.push(path.relative(rootDirectory, entryPath).replace(/\\/g, "/"));
+    }
+  }
+
+  return fileNames.sort((left, right) => left.localeCompare(right));
+}
+
 test.afterEach(() => {
   replaceCustomMaps([]);
 });
 
 test("maps registry loads every JSON map file from the maps folder", async () => {
   const mapsDir = path.resolve("src/game/content/maps");
-  const fileNames = (await fs.readdir(mapsDir))
-    .filter((fileName) => fileName.endsWith(".json"))
-    .sort((left, right) => left.localeCompare(right));
+  const fileNames = await collectBundledMapFiles(mapsDir);
 
   assert.equal(MAP_POOL.length, fileNames.length);
   assert.deepEqual(
-    MAP_POOL.map((mapDefinition) => fileNames.find((fileName) => fileName === `${mapDefinition.id}.json`)),
+    MAP_POOL.map((mapDefinition) =>
+      fileNames.find((fileName) => fileName.endsWith(`/${mapDefinition.id}.json`))
+      ?? fileNames.find((fileName) => fileName === `${mapDefinition.id}.json`)
+    ),
     fileNames
   );
 });

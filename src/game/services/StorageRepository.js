@@ -155,6 +155,20 @@ export class StorageRepository {
     return mapData;
   }
 
+  async saveMapFile(fileName, text) {
+    if (this.desktopApi?.saveMapFile) {
+      return this.desktopApi.saveMapFile(fileName, text);
+    }
+
+    if (this.desktopApi?.exportMapFile) {
+      return this.desktopApi.exportMapFile(fileName, text);
+    }
+
+    return {
+      unsupported: true
+    };
+  }
+
   async quit() {
     if (this.desktopApi) {
       return this.desktopApi.quit();

@@ -46,6 +46,12 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-action="map-editor-select-tool"/);
   assert.match(html, /data-map-editor-field="name"/);
   assert.match(html, /data-map-editor-field="theme"/);
+  assert.match(html, /Run Variant/);
+  assert.match(html, /data-action="map-editor-set-variant-stage"/);
+  assert.match(html, /History/);
+  assert.match(html, /data-action="map-editor-undo"/);
+  assert.doesNotMatch(html, /data-map-editor-field="variantStage"/);
+  assert.doesNotMatch(html, /data-action="map-editor-toggle-run-stage"/);
   assert.match(html, /Map Details/);
   assert.match(html, /battle-footer-meta map-editor-footer-meta/);
   assert.equal((html.match(/battle-footer-meta__item/g) ?? []).length, 4);
@@ -70,7 +76,39 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.doesNotMatch(html, /Save JSON/);
   assert.doesNotMatch(html, /The map has a valid name, theme, size, terrain, buildings, and placed-unit data/);
   assert.doesNotMatch(html, /map-editor-header/);
-  assert.doesNotMatch(html, /disabled/);
+  assert.match(html, /data-action="map-editor-undo"/);
+});
+
+test("map editor view renders history confirmation controls for a pending restore", () => {
+  const state = {
+    mapEditor: {
+      ...createDefaultMapEditorState(createBlankMapDefinition({ id: "history-view", name: "History View" })),
+      historyEntries: [
+        {
+          id: "history-1",
+          label: "Map created",
+          mapData: createBlankMapDefinition({ id: "history-view", name: "History View" }),
+          selectedTile: null
+        },
+        {
+          id: "history-2",
+          label: "Paint forest at 2, 2",
+          mapData: createBlankMapDefinition({ id: "history-view", name: "History View" }),
+          selectedTile: { x: 2, y: 2 }
+        }
+      ],
+      currentHistoryIndex: 1,
+      pendingHistoryIndex: 0
+    }
+  };
+
+  const html = renderMapEditorView(state);
+
+  assert.match(html, /data-action="map-editor-request-history-revert"/);
+  assert.match(html, /data-action="map-editor-confirm-history-revert"/);
+  assert.match(html, /data-action="map-editor-cancel-history-revert"/);
+  assert.match(html, /Go back to this state\?/);
+  assert.match(html, /Current state/);
 });
 
 test("map editor accordions render closed by default and only open the requested section", () => {

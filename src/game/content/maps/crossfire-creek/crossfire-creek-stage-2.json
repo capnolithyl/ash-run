@@ -1,5 +1,5 @@
 {
-  "id": "crossfire-creek",
+  "id": "crossfire-creek-stage-2",
   "name": "Crossfire Creek",
   "theme": "ash",
   "width": 10,
@@ -38,7 +38,31 @@
       "water",
       "plain",
       "plain",
+      "plain",
+      "plain"
+    ],
+    [
+      "plain",
+      "plain",
+      "ridge",
       "forest",
+      "water",
+      "water",
+      "forest",
+      "ridge",
+      "plain",
+      "plain"
+    ],
+    [
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
+      "road",
       "plain"
     ],
     [
@@ -46,30 +70,6 @@
       "plain",
       "ridge",
       "forest",
-      "water",
-      "water",
-      "forest",
-      "ridge",
-      "plain",
-      "plain"
-    ],
-    [
-      "road",
-      "road",
-      "road",
-      "road",
-      "road",
-      "road",
-      "road",
-      "road",
-      "road",
-      "road"
-    ],
-    [
-      "plain",
-      "plain",
-      "ridge",
-      "forest",
       "road",
       "road",
       "forest",
@@ -86,7 +86,7 @@
       "water",
       "plain",
       "plain",
-      "forest",
+      "plain",
       "plain"
     ],
     [
@@ -128,42 +128,42 @@
   ],
   "buildings": [
     {
-      "id": "crossfire-creek-neutral-repair-station-6-1",
+      "id": "crossfire-creek-stage-2-neutral-repair-station-6-1",
       "type": "repair-station",
       "owner": "neutral",
       "x": 6,
       "y": 1
     },
     {
-      "id": "crossfire-creek-player-command-0-3",
+      "id": "crossfire-creek-stage-2-player-command-0-3",
       "type": "command",
       "owner": "player",
       "x": 0,
       "y": 3
     },
     {
-      "id": "crossfire-creek-enemy-sector-8-3",
+      "id": "crossfire-creek-stage-2-enemy-sector-8-3",
       "type": "sector",
       "owner": "enemy",
       "x": 8,
       "y": 3
     },
     {
-      "id": "crossfire-creek-player-sector-1-5",
+      "id": "crossfire-creek-stage-2-player-sector-1-5",
       "type": "sector",
       "owner": "player",
       "x": 1,
       "y": 5
     },
     {
-      "id": "crossfire-creek-enemy-command-9-5",
+      "id": "crossfire-creek-stage-2-enemy-command-9-5",
       "type": "command",
       "owner": "enemy",
       "x": 9,
       "y": 5
     },
     {
-      "id": "crossfire-creek-neutral-hospital-3-7",
+      "id": "crossfire-creek-stage-2-neutral-hospital-3-7",
       "type": "hospital",
       "owner": "neutral",
       "x": 3,
@@ -172,42 +172,42 @@
   ],
   "units": [
     {
-      "id": "crossfire-creek-enemy-breaker-9-1",
+      "id": "crossfire-creek-stage-2-enemy-breaker-9-1",
       "unitTypeId": "breaker",
       "owner": "enemy",
-      "level": 1,
+      "level": 2,
       "x": 9,
       "y": 1
     },
     {
-      "id": "crossfire-creek-enemy-grunt-8-2",
+      "id": "crossfire-creek-stage-2-enemy-grunt-8-2",
       "unitTypeId": "grunt",
       "owner": "enemy",
-      "level": 2,
+      "level": 3,
       "x": 8,
       "y": 2
     },
     {
-      "id": "crossfire-creek-enemy-runner-9-4",
+      "id": "crossfire-creek-stage-2-enemy-runner-9-4",
       "unitTypeId": "runner",
       "owner": "enemy",
-      "level": 1,
+      "level": 2,
       "x": 9,
       "y": 4
     },
     {
-      "id": "crossfire-creek-enemy-grunt-8-6",
+      "id": "crossfire-creek-stage-2-enemy-grunt-8-6",
       "unitTypeId": "grunt",
       "owner": "enemy",
-      "level": 2,
+      "level": 3,
       "x": 8,
       "y": 6
     },
     {
-      "id": "crossfire-creek-enemy-breaker-9-7",
+      "id": "crossfire-creek-stage-2-enemy-breaker-9-7",
       "unitTypeId": "breaker",
       "owner": "enemy",
-      "level": 1,
+      "level": 2,
       "x": 9,
       "y": 7
     }
@@ -216,6 +216,7 @@
     "type": "rout"
   },
   "runStages": [
-    1
-  ]
+    2
+  ],
+  "variantStage": 2
 }
