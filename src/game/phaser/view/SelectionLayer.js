@@ -110,59 +110,6 @@ function drawMovementPath(graphics, layout, path) {
   graphics.strokePath();
 }
 
-function getSelectedPresentationUnit(snapshot, presentation) {
-  if (!presentation.selectedUnitId) {
-    return null;
-  }
-
-  return [...(snapshot.player?.units ?? []), ...(snapshot.enemy?.units ?? [])].find(
-    (unit) => unit.id === presentation.selectedUnitId
-  ) ?? null;
-}
-
-function getMovementRangeTone(selectedUnit, hasActionableMoves) {
-  if (selectedUnit?.owner === "enemy") {
-    return {
-      fill: 0xff8a3d,
-      fillAlpha: 0.18,
-      border: 0xffc45a,
-      borderAlpha: 0.84,
-      accent: 0xff5f7a
-    };
-  }
-
-  return {
-    fill: 0x66ffbf,
-    fillAlpha: hasActionableMoves ? 0.2 : 0.14,
-    border: 0x6ee4ff,
-    borderAlpha: hasActionableMoves ? 0.88 : 0.66,
-    accent: 0xfff2d4
-  };
-}
-
-function drawMovementRangeTile(graphics, layout, tile, tone, hasActionableMoves) {
-  const x = layout.originX + tile.x * layout.cellSize;
-  const y = layout.originY + tile.y * layout.cellSize;
-  const inset = Math.max(3, Math.floor(layout.cellSize * 0.06));
-
-  graphics.fillStyle(0x05010e, hasActionableMoves ? 0.2 : 0.14);
-  graphics.fillRoundedRect(x + 1, y + 1, layout.cellSize - 4, layout.cellSize - 4, 6);
-  graphics.fillStyle(tone.fill, tone.fillAlpha);
-  graphics.fillRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 6);
-  graphics.lineStyle(Math.max(2, Math.floor(layout.cellSize * 0.04)), tone.border, tone.borderAlpha);
-  graphics.strokeRoundedRect(
-    x + inset,
-    y + inset,
-    layout.cellSize - inset * 2 - 2,
-    layout.cellSize - inset * 2 - 2,
-    4
-  );
-
-  if (hasActionableMoves) {
-    drawCornerMarkers(graphics, x + 5, y + 5, layout.cellSize - 12, tone.accent, 0.74);
-  }
-}
-
 function drawSpawnMarker(graphics, layout, spawn, color, label) {
   const center = getTileCenter(layout, spawn);
   const radius = Math.max(8, layout.cellSize * 0.16);
@@ -370,115 +317,117 @@ export class SelectionLayer {
       drawCornerMarkers(this.graphics, x + 4, y + 4, layout.cellSize - 10, 0x66ffbf, 0.95);
     }
 
-    const hasActionableMoves = presentation.reachableTiles?.length > 0;
-    const moveTiles = hasActionableMoves
-      ? presentation.reachableTiles
-      : (presentation.movePreviewTiles ?? []);
-
-    if (moveTiles.length > 0) {
-      const selectedUnit = getSelectedPresentationUnit(snapshot, presentation);
-      const movementTone = getMovementRangeTone(selectedUnit, hasActionableMoves);
+    if (showGridHighlights) {
+      const moveTiles =
+        presentation.reachableTiles?.length > 0
+          ? presentation.reachableTiles
+          : (presentation.movePreviewTiles ?? []);
+      const moveFillAlpha = presentation.reachableTiles?.length > 0 ? 0.22 : 0.12;
+      const moveStrokeAlpha = presentation.reachableTiles?.length > 0 ? 0.42 : 0.24;
 
       for (const tile of moveTiles) {
-        drawMovementRangeTile(this.graphics, layout, tile, movementTone, hasActionableMoves);
+        const x = layout.originX + tile.x * layout.cellSize;
+        const y = layout.originY + tile.y * layout.cellSize;
+        this.graphics.fillStyle(0x985dff, moveFillAlpha);
+        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.graphics.lineStyle(2, 0xff4fd8, moveStrokeAlpha);
+        this.graphics.strokeRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 4);
       }
-    }
 
-    if (showGridHighlights) {
       for (const tile of presentation.attackPreviewTiles ?? []) {
         const x = layout.originX + tile.x * layout.cellSize;
         const y = layout.originY + tile.y * layout.cellSize;
         this.graphics.lineStyle(1.8, 0xff8a3d, 0.36);
         this.graphics.strokeRoundedRect(x + 6, y + 6, layout.cellSize - 14, layout.cellSize - 14, 6);
       }
-    }
 
-    for (const unitId of presentation.attackableUnitIds ?? []) {
-      const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
-        (unit) => unit.id === unitId
-      );
+      for (const unitId of presentation.attackableUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
 
-      if (!target) {
-        continue;
+        if (!target) {
+          continue;
+        }
+
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.lineStyle(3, 0xff8a3d, 0.92);
+        this.graphics.strokeRoundedRect(x + 4, y + 4, layout.cellSize - 10, layout.cellSize - 10, 6);
       }
 
-      const x = layout.originX + target.x * layout.cellSize;
-      const y = layout.originY + target.y * layout.cellSize;
-      this.graphics.lineStyle(3, 0xff8a3d, 0.92);
-      this.graphics.strokeRoundedRect(x + 4, y + 4, layout.cellSize - 10, layout.cellSize - 10, 6);
-    }
+      for (const unitId of presentation.transportTargetUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
 
-    for (const unitId of presentation.transportTargetUnitIds ?? []) {
-      const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
-        (unit) => unit.id === unitId
-      );
+        if (!target) {
+          continue;
+        }
 
-      if (!target) {
-        continue;
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
       }
 
-      const x = layout.originX + target.x * layout.cellSize;
-      const y = layout.originY + target.y * layout.cellSize;
-      this.graphics.lineStyle(3, 0x66ffbf, 0.96);
-      this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-      drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
-    }
+      for (const unitId of presentation.supportTargetUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
 
-    for (const unitId of presentation.supportTargetUnitIds ?? []) {
-      const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
-        (unit) => unit.id === unitId
-      );
+        if (!target) {
+          continue;
+        }
 
-      if (!target) {
-        continue;
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.fillStyle(0x66ffbf, 0.2);
+        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
       }
 
-      const x = layout.originX + target.x * layout.cellSize;
-      const y = layout.originY + target.y * layout.cellSize;
-      this.graphics.fillStyle(0x66ffbf, 0.2);
-      this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-      this.graphics.lineStyle(3, 0x66ffbf, 0.96);
-      this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-      drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
-    }
+      for (const unitId of presentation.medpackTargetUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
 
-    for (const unitId of presentation.medpackTargetUnitIds ?? []) {
-      const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
-        (unit) => unit.id === unitId
-      );
+        if (!target) {
+          continue;
+        }
 
-      if (!target) {
-        continue;
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.fillStyle(0x9fffa8, 0.18);
+        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.graphics.lineStyle(3, 0x9fffa8, 0.96);
+        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xfefae0, 0.9);
       }
 
-      const x = layout.originX + target.x * layout.cellSize;
-      const y = layout.originY + target.y * layout.cellSize;
-      this.graphics.fillStyle(0x9fffa8, 0.18);
-      this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-      this.graphics.lineStyle(3, 0x9fffa8, 0.96);
-      this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-      drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xfefae0, 0.9);
-    }
+      for (const unitId of presentation.extinguishTargetUnitIds ?? []) {
+        const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
+          (unit) => unit.id === unitId
+        );
 
-    for (const unitId of presentation.extinguishTargetUnitIds ?? []) {
-      const target = [...snapshot.player.units, ...snapshot.enemy.units].find(
-        (unit) => unit.id === unitId
-      );
+        if (!target) {
+          continue;
+        }
 
-      if (!target) {
-        continue;
+        const x = layout.originX + target.x * layout.cellSize;
+        const y = layout.originY + target.y * layout.cellSize;
+        this.graphics.fillStyle(0x7be3ff, 0.18);
+        this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
+        this.graphics.lineStyle(3, 0x7be3ff, 0.96);
+        this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
+        drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xe8fbff, 0.9);
       }
 
-      const x = layout.originX + target.x * layout.cellSize;
-      const y = layout.originY + target.y * layout.cellSize;
-      this.graphics.fillStyle(0x7be3ff, 0.18);
-      this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-      this.graphics.lineStyle(3, 0x7be3ff, 0.96);
-      this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
-      drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xe8fbff, 0.9);
+      drawMovementPath(this.graphics, layout, hoveredMovementPath);
     }
-
-    drawMovementPath(this.graphics, layout, hoveredMovementPath);
 
     for (const movementPath of options.enemyMovementPaths ?? []) {
       drawMovementPath(this.graphics, layout, movementPath);

@@ -409,6 +409,38 @@
   ],
   "units": [
     {
+      "id": "stone-citadel-stage-1-enemy-bruiser-3-0",
+      "unitTypeId": "bruiser",
+      "owner": "enemy",
+      "level": 1,
+      "x": 3,
+      "y": 0
+    },
+    {
+      "id": "stone-citadel-stage-1-enemy-mechanic-4-1",
+      "unitTypeId": "mechanic",
+      "owner": "enemy",
+      "level": 1,
+      "x": 4,
+      "y": 1
+    },
+    {
+      "id": "stone-citadel-stage-1-enemy-runner-2-11",
+      "unitTypeId": "runner",
+      "owner": "enemy",
+      "level": 1,
+      "x": 2,
+      "y": 11
+    },
+    {
+      "id": "stone-citadel-stage-1-enemy-runner-0-4",
+      "unitTypeId": "runner",
+      "owner": "enemy",
+      "level": 1,
+      "x": 0,
+      "y": 4
+    },
+    {
       "id": "stone-citadel-stage-1-enemy-grunt-16-5",
       "unitTypeId": "grunt",
       "owner": "enemy",
@@ -422,6 +454,14 @@
       "owner": "enemy",
       "level": 1,
       "x": 18,
+      "y": 5
+    },
+    {
+      "id": "stone-citadel-stage-1-enemy-breaker-2-5",
+      "unitTypeId": "breaker",
+      "owner": "enemy",
+      "level": 1,
+      "x": 2,
       "y": 5
     },
     {
@@ -441,11 +481,19 @@
       "y": 7
     },
     {
-      "id": "stone-citadel-stage-1-enemy-runner-13-8",
-      "unitTypeId": "runner",
+      "id": "stone-citadel-stage-1-enemy-grunt-2-7",
+      "unitTypeId": "grunt",
       "owner": "enemy",
       "level": 1,
-      "x": 13,
+      "x": 2,
+      "y": 7
+    },
+    {
+      "id": "stone-citadel-stage-1-enemy-mechanic-0-8",
+      "unitTypeId": "mechanic",
+      "owner": "enemy",
+      "level": 1,
+      "x": 0,
       "y": 8
     }
   ],

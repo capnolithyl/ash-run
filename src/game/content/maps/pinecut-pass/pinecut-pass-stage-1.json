@@ -206,49 +206,49 @@
   ],
   "units": [
     {
-      "id": "pinecut-pass-stage-1-player-runner-9-1",
+      "id": "pinecut-pass-stage-1-enemy-runner-9-1",
       "unitTypeId": "runner",
-      "owner": "player",
+      "owner": "enemy",
       "level": 1,
       "x": 9,
       "y": 1
     },
     {
-      "id": "pinecut-pass-stage-1-player-breaker-6-2",
+      "id": "pinecut-pass-stage-1-enemy-breaker-6-2",
       "unitTypeId": "breaker",
-      "owner": "player",
+      "owner": "enemy",
       "level": 1,
       "x": 6,
       "y": 2
     },
     {
-      "id": "pinecut-pass-stage-1-player-longshot-17-3",
+      "id": "pinecut-pass-stage-1-enemy-longshot-17-3",
       "unitTypeId": "longshot",
-      "owner": "player",
+      "owner": "enemy",
       "level": 1,
       "x": 17,
       "y": 3
     },
     {
-      "id": "pinecut-pass-stage-1-player-grunt-16-4",
+      "id": "pinecut-pass-stage-1-enemy-grunt-16-4",
       "unitTypeId": "grunt",
-      "owner": "player",
+      "owner": "enemy",
       "level": 1,
       "x": 16,
       "y": 4
     },
     {
-      "id": "pinecut-pass-stage-1-player-breaker-5-4",
+      "id": "pinecut-pass-stage-1-enemy-breaker-5-4",
       "unitTypeId": "breaker",
-      "owner": "player",
+      "owner": "enemy",
       "level": 1,
       "x": 5,
       "y": 4
     },
     {
-      "id": "pinecut-pass-stage-1-player-mechanic-8-4",
+      "id": "pinecut-pass-stage-1-enemy-mechanic-8-4",
       "unitTypeId": "mechanic",
-      "owner": "player",
+      "owner": "enemy",
       "level": 1,
       "x": 8,
       "y": 4
