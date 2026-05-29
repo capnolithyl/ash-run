@@ -16,7 +16,9 @@ export const MAP_EDITOR_TOOL_IDS = {
   TERRAIN: "terrain",
   BUILDING: "building",
   UNIT: "unit",
-  ERASER: "eraser"
+  TERRAIN_ERASER: "terrain-eraser",
+  BUILDING_ERASER: "building-eraser",
+  UNIT_ERASER: "unit-eraser"
 };
 
 export const MAP_EDITOR_MIRROR_MODES = {
@@ -38,6 +40,15 @@ const DEFAULT_UNIT_TYPE_ID = "grunt";
 export const MAP_EDITOR_DEFAULT_UNIT_LEVEL = 1;
 export const MAP_EDITOR_MAX_UNIT_LEVEL = 99;
 export const MAP_EDITOR_HISTORY_LIMIT = 60;
+
+const MAP_EDITOR_CONTEXT_ERASER_IDS = {
+  [MAP_EDITOR_TOOL_IDS.TERRAIN]: MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER,
+  [MAP_EDITOR_TOOL_IDS.BUILDING]: MAP_EDITOR_TOOL_IDS.BUILDING_ERASER,
+  [MAP_EDITOR_TOOL_IDS.UNIT]: MAP_EDITOR_TOOL_IDS.UNIT_ERASER,
+  [MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER]: MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER,
+  [MAP_EDITOR_TOOL_IDS.BUILDING_ERASER]: MAP_EDITOR_TOOL_IDS.BUILDING_ERASER,
+  [MAP_EDITOR_TOOL_IDS.UNIT_ERASER]: MAP_EDITOR_TOOL_IDS.UNIT_ERASER,
+};
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
@@ -440,6 +451,15 @@ export function createDefaultMapEditorState(mapData = createBlankMapDefinition()
     selectedUnitTypeId: getDefaultUnitTypeId(),
     selectedUnitOwner: TURN_SIDES.PLAYER,
     selectedUnitLevel: MAP_EDITOR_DEFAULT_UNIT_LEVEL,
+    lastSelectedTerrainId: null,
+    lastSelectedBuilding: null,
+    lastSelectedUnit: null,
+    loadDialogOpen: false,
+    loadDialogEntries: [],
+    loadDialogSelectedPath: null,
+    loadDialogOpenGroupKey: null,
+    loadDialogBusy: false,
+    loadDialogError: "",
     mirrorMode: MAP_EDITOR_MIRROR_MODES.OFF,
     selectedTile: null,
     hoveredTile: null,
@@ -449,6 +469,10 @@ export function createDefaultMapEditorState(mapData = createBlankMapDefinition()
     pendingHistoryIndex: null,
     historySequence: 0
   };
+}
+
+export function getMapEditorContextEraserToolId(toolId) {
+  return MAP_EDITOR_CONTEXT_ERASER_IDS[toolId] ?? MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER;
 }
 
 export function getMapEditorThemeOptions() {
@@ -607,18 +631,22 @@ function applyToolToSingleTile(nextMap, editorState, x, y, overrideToolId = null
     );
   }
 
-  if (toolId === MAP_EDITOR_TOOL_IDS.ERASER) {
+  if (toolId === MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER) {
     const hadTerrain = nextMap.tiles[y][x] !== TERRAIN_KEYS.PLAIN;
-    const hadBuilding = nextMap.buildings.some((building) => building.x === x && building.y === y);
-    const hadUnit = nextMap.units.some((unit) => unit.x === x && unit.y === y);
-    const hadSpawn =
-      hasSpawnAt(nextMap.playerSpawns, x, y) || hasSpawnAt(nextMap.enemySpawns, x, y);
-
     nextMap.tiles[y][x] = TERRAIN_KEYS.PLAIN;
+    return hadTerrain;
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.BUILDING_ERASER) {
+    const hadBuilding = nextMap.buildings.some((building) => building.x === x && building.y === y);
     removeBuildingAt(nextMap, x, y);
+    return hadBuilding;
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.UNIT_ERASER) {
+    const hadUnit = nextMap.units.some((unit) => unit.x === x && unit.y === y);
     removeUnitAt(nextMap, x, y);
-    removeSpawnsAt(nextMap, x, y);
-    return hadTerrain || hadBuilding || hadUnit || hadSpawn;
+    return hadUnit;
   }
 
   return false;

@@ -69,11 +69,65 @@ function getMapEditorVariantSummary(mapData) {
   return variantStage ? `Stage ${variantStage}` : "Stage 1";
 }
 
+function createLastSelectedBuildingSnapshot(editorState, overrides = {}) {
+  const buildingType = overrides.type ?? editorState?.selectedBuildingType ?? BUILDING_KEYS.COMMAND;
+  const owner = overrides.owner ?? editorState?.selectedBuildingOwner ?? "neutral";
+
+  if (!Object.values(BUILDING_KEYS).includes(buildingType)) {
+    return null;
+  }
+
+  if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY, "neutral"].includes(owner)) {
+    return null;
+  }
+
+  return { type: buildingType, owner };
+}
+
+function createLastSelectedUnitSnapshot(editorState, overrides = {}) {
+  const unitTypeId = overrides.unitTypeId ?? editorState?.selectedUnitTypeId ?? "grunt";
+  const owner = overrides.owner ?? editorState?.selectedUnitOwner ?? TURN_SIDES.PLAYER;
+  const level = normalizeMapEditorUnitLevel(
+    overrides.level ?? editorState?.selectedUnitLevel ?? 1
+  );
+
+  if (!Object.hasOwn(UNIT_CATALOG, unitTypeId)) {
+    return null;
+  }
+
+  if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(owner)) {
+    return null;
+  }
+
+  return { unitTypeId, owner, level };
+}
+
 function buildMapEditorSuggestedRelativePath(mapData) {
   const normalizedMap = ensureEditableMapVariant(mapData);
   const baseMapId = getMapEditorBaseId(normalizedMap.id || normalizedMap.name || "custom-map");
 
   return `${baseMapId}/${normalizedMap.id}.json`;
+}
+
+function resetMapEditorLoadDialogState(editorState, overrides = {}) {
+  editorState.loadDialogOpen = overrides.open ?? false;
+  editorState.loadDialogEntries = overrides.entries ?? [];
+  editorState.loadDialogSelectedPath = overrides.selectedPath ?? null;
+  editorState.loadDialogOpenGroupKey = overrides.openGroupKey ?? null;
+  editorState.loadDialogBusy = overrides.busy ?? false;
+  editorState.loadDialogError = overrides.error ?? "";
+}
+
+function applyLoadedMapToEditorState(editorState, mapInput) {
+  editorState.mapData = synchronizeMapEditorIdentity(ensureEditableMapVariant(mapInput));
+  editorState.selectedTile = null;
+  editorState.hoveredTile = null;
+  editorState.isPainting = false;
+  initializeMapEditorHistory(editorState, "Map loaded");
+}
+
+function getMapLoadGroupKey(entry) {
+  return String(entry?.name ?? entry?.id ?? entry?.fileName ?? "Untitled Map");
 }
 
 function cloneMapData(mapData) {
@@ -167,7 +221,19 @@ function buildMapEditorToolHistoryLabel(editorState, x, y, overrideToolId = null
     return `Place ${unitName} L${level} at ${x}, ${y}`;
   }
 
-  return `Erase ${x}, ${y}`;
+  if (toolId === MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER) {
+    return `Clear terrain at ${x}, ${y}`;
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.BUILDING_ERASER) {
+    return `Remove building at ${x}, ${y}`;
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.UNIT_ERASER) {
+    return `Remove unit at ${x}, ${y}`;
+  }
+
+  return `Edit ${x}, ${y}`;
 }
 
 function synchronizeMapEditorIdentity(mapData) {
@@ -233,6 +299,7 @@ export const controllerMapEditorMethods = {
     }
 
     this.state.mapEditor.selectedTerrainId = terrainId;
+    this.state.mapEditor.lastSelectedTerrainId = terrainId;
     this.state.mapEditor.selectedTool = MAP_EDITOR_TOOL_IDS.TERRAIN;
     this.emit();
   },
@@ -243,6 +310,10 @@ export const controllerMapEditorMethods = {
     }
 
     this.state.mapEditor.selectedBuildingType = buildingType;
+    this.state.mapEditor.lastSelectedBuilding = createLastSelectedBuildingSnapshot(
+      this.state.mapEditor,
+      { type: buildingType }
+    );
     this.state.mapEditor.selectedTool = MAP_EDITOR_TOOL_IDS.BUILDING;
     this.emit();
   },
@@ -253,6 +324,10 @@ export const controllerMapEditorMethods = {
     }
 
     this.state.mapEditor.selectedBuildingOwner = owner;
+    this.state.mapEditor.lastSelectedBuilding = createLastSelectedBuildingSnapshot(
+      this.state.mapEditor,
+      { owner }
+    );
     this.emit();
   },
 
@@ -262,6 +337,10 @@ export const controllerMapEditorMethods = {
     }
 
     this.state.mapEditor.selectedUnitTypeId = unitTypeId;
+    this.state.mapEditor.lastSelectedUnit = createLastSelectedUnitSnapshot(
+      this.state.mapEditor,
+      { unitTypeId }
+    );
     this.state.mapEditor.selectedTool = MAP_EDITOR_TOOL_IDS.UNIT;
     this.emit();
   },
@@ -272,6 +351,47 @@ export const controllerMapEditorMethods = {
     }
 
     this.state.mapEditor.selectedUnitOwner = owner;
+    this.state.mapEditor.lastSelectedUnit = createLastSelectedUnitSnapshot(
+      this.state.mapEditor,
+      { owner }
+    );
+    this.emit();
+  },
+
+  restoreLastMapEditorTerrain() {
+    const terrainId = this.state.mapEditor?.lastSelectedTerrainId;
+
+    if (!terrainId) {
+      return;
+    }
+
+    this.selectMapEditorTerrain(terrainId);
+  },
+
+  restoreLastMapEditorBuilding() {
+    const snapshot = this.state.mapEditor?.lastSelectedBuilding;
+
+    if (!snapshot) {
+      return;
+    }
+
+    this.state.mapEditor.selectedBuildingType = snapshot.type;
+    this.state.mapEditor.selectedBuildingOwner = snapshot.owner;
+    this.state.mapEditor.selectedTool = MAP_EDITOR_TOOL_IDS.BUILDING;
+    this.emit();
+  },
+
+  restoreLastMapEditorUnit() {
+    const snapshot = this.state.mapEditor?.lastSelectedUnit;
+
+    if (!snapshot) {
+      return;
+    }
+
+    this.state.mapEditor.selectedUnitTypeId = snapshot.unitTypeId;
+    this.state.mapEditor.selectedUnitOwner = snapshot.owner;
+    this.state.mapEditor.selectedUnitLevel = normalizeMapEditorUnitLevel(snapshot.level);
+    this.state.mapEditor.selectedTool = MAP_EDITOR_TOOL_IDS.UNIT;
     this.emit();
   },
 
@@ -404,6 +524,7 @@ export const controllerMapEditorMethods = {
       historyLabel = `Theme ${value}`;
     } else if (field === "selectedUnitLevel") {
       this.state.mapEditor.selectedUnitLevel = normalizeMapEditorUnitLevel(Number(value));
+      this.state.mapEditor.lastSelectedUnit = createLastSelectedUnitSnapshot(this.state.mapEditor);
     } else if (field === "selectedTileUnitLevel") {
       const selectedTile = this.state.mapEditor.selectedTile;
 
@@ -513,6 +634,167 @@ export const controllerMapEditorMethods = {
     this.emit();
   },
 
+  async openMapEditorLoadDialog() {
+    const editorState = this.state.mapEditor;
+
+    if (!editorState || editorState.loadDialogBusy) {
+      return null;
+    }
+
+    resetMapEditorLoadDialogState(editorState, {
+      open: true,
+      entries: editorState.loadDialogEntries ?? [],
+      selectedPath: editorState.loadDialogSelectedPath ?? null,
+      busy: true,
+      error: ""
+    });
+    this.emit();
+
+    try {
+      const result = this.storage.listMapFiles
+        ? await this.storage.listMapFiles()
+        : { unsupported: true, entries: [] };
+
+      if (result?.unsupported) {
+        resetMapEditorLoadDialogState(editorState, {
+          open: false,
+          entries: [],
+          selectedPath: null,
+          busy: false,
+          error: ""
+        });
+        this.showToast({
+          title: "Map loader unavailable",
+          message: "The in-game map loader needs the desktop build to access the game map folder.",
+          tone: "error"
+        });
+        return { mode: "unsupported" };
+      }
+
+      const entries = Array.isArray(result?.entries) ? result.entries : [];
+      const preferredEntry =
+        entries.find((entry) => entry.id === editorState.mapData?.id) ??
+        entries[0] ??
+        null;
+
+      resetMapEditorLoadDialogState(editorState, {
+        open: true,
+        entries,
+        selectedPath: preferredEntry?.relativePath ?? null,
+        openGroupKey: preferredEntry ? getMapLoadGroupKey(preferredEntry) : null,
+        busy: false,
+        error: entries.length === 0 ? "No map files were found in the game map folder." : ""
+      });
+      this.emit();
+      return {
+        mode: "opened",
+        entries
+      };
+    } catch (error) {
+      resetMapEditorLoadDialogState(editorState, {
+        open: false,
+        entries: [],
+        selectedPath: null,
+        busy: false,
+        error: ""
+      });
+      this.showToast({
+        title: "Map loader unavailable",
+        message: error?.message ?? "Unable to read the game map folder.",
+        tone: "error"
+      });
+      return {
+        mode: "error",
+        error
+      };
+    }
+  },
+
+  closeMapEditorLoadDialog() {
+    const editorState = this.state.mapEditor;
+
+    if (!editorState?.loadDialogOpen && !editorState?.loadDialogBusy) {
+      return;
+    }
+
+    resetMapEditorLoadDialogState(editorState);
+    this.emit();
+  },
+
+  selectMapEditorLoadDialogEntry(relativePath) {
+    const editorState = this.state.mapEditor;
+
+    if (!editorState?.loadDialogOpen || editorState.loadDialogBusy) {
+      return;
+    }
+
+    const nextEntry = editorState.loadDialogEntries.find(
+      (entry) => entry.relativePath === relativePath
+    );
+
+    if (!nextEntry || editorState.loadDialogSelectedPath === nextEntry.relativePath) {
+      return;
+    }
+
+    editorState.loadDialogSelectedPath = nextEntry.relativePath;
+    editorState.loadDialogOpenGroupKey = getMapLoadGroupKey(nextEntry);
+    this.emit();
+  },
+
+  async confirmMapEditorLoadDialog() {
+    const editorState = this.state.mapEditor;
+    const relativePath = editorState?.loadDialogSelectedPath;
+
+    if (!editorState?.loadDialogOpen || editorState.loadDialogBusy || !relativePath) {
+      return null;
+    }
+
+    editorState.loadDialogBusy = true;
+    editorState.loadDialogError = "";
+    this.emit();
+
+    try {
+      const result = this.storage.loadMapFile
+        ? await this.storage.loadMapFile(relativePath)
+        : { unsupported: true };
+
+      if (result?.unsupported) {
+        resetMapEditorLoadDialogState(editorState);
+        this.showToast({
+          title: "Map loader unavailable",
+          message: "The in-game map loader needs the desktop build to access the game map folder.",
+          tone: "error"
+        });
+        return { mode: "unsupported" };
+      }
+
+      if (!result?.text) {
+        throw new Error("The selected map file could not be loaded.");
+      }
+
+      applyLoadedMapToEditorState(editorState, JSON.parse(result.text));
+      resetMapEditorLoadDialogState(editorState);
+      this.showToast({
+        title: "Map loaded",
+        message: editorState.mapData.name,
+        tone: "success"
+      });
+      this.emit();
+      return {
+        mode: "loaded",
+        relativePath
+      };
+    } catch (error) {
+      editorState.loadDialogBusy = false;
+      editorState.loadDialogError = error?.message ?? "Unable to load the selected map.";
+      this.emit();
+      return {
+        mode: "error",
+        error
+      };
+    }
+  },
+
   applyMapEditorToolAt(x, y, options = {}) {
     const mapData = this.state.mapEditor?.mapData;
 
@@ -544,11 +826,8 @@ export const controllerMapEditorMethods = {
   },
 
   importMapEditorMap(mapInput) {
-    this.state.mapEditor.mapData = synchronizeMapEditorIdentity(ensureEditableMapVariant(mapInput));
-    this.state.mapEditor.selectedTile = null;
-    this.state.mapEditor.hoveredTile = null;
-    this.state.mapEditor.isPainting = false;
-    initializeMapEditorHistory(this.state.mapEditor, "Map loaded");
+    applyLoadedMapToEditorState(this.state.mapEditor, mapInput);
+    resetMapEditorLoadDialogState(this.state.mapEditor);
     this.emit();
   },
 

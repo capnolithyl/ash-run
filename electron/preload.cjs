@@ -15,7 +15,8 @@ contextBridge.exposeInMainWorld("ashRun84Api", {
   listCustomMaps: () => ipcRenderer.invoke("custom-maps:list"),
   saveCustomMap: (suggestedFileName, text) =>
     ipcRenderer.invoke("custom-maps:save", suggestedFileName, text),
-  importMapFile: () => ipcRenderer.invoke("map-files:import"),
+  listMapFiles: () => ipcRenderer.invoke("map-files:list"),
+  loadMapFile: (relativePath) => ipcRenderer.invoke("map-files:load", relativePath),
   saveMapFile: (suggestedFileName, text) =>
     ipcRenderer.invoke("map-files:save", suggestedFileName, text),
   exportMapFile: (suggestedFileName, text) =>

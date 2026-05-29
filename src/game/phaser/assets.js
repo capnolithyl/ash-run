@@ -25,10 +25,18 @@ const TERRAIN_SOURCE_SIZE = 128;
 const TERRAIN_ANIMATION_FRAME_RATE = 10;
 const TERRAIN_TRANSITION_BASE_DIRECTION = "north";
 const TERRAIN_ANIMATION_CONFIG = {
+  road: {
+    frameCount: 16,
+    sheetColumns: 4,
+    sheetRows: 4,
+  },
   water: {
     frameWidth: 627,
     frameHeight: 627,
     frameRate: 4,
+    frameCount: 4,
+    sheetColumns: 4,
+    sheetRows: 1,
   },
 };
 const TERRAIN_CLUSTER_VARIANT_ASSETS = {
@@ -238,6 +246,9 @@ function createTerrainAnimationAsset(terrainId) {
     frameWidth: config.frameWidth ?? TERRAIN_SOURCE_SIZE,
     frameHeight: config.frameHeight ?? TERRAIN_SOURCE_SIZE,
     frameRate: config.frameRate ?? TERRAIN_ANIMATION_FRAME_RATE,
+    frameCount: config.frameCount ?? null,
+    sheetColumns: config.sheetColumns ?? null,
+    sheetRows: config.sheetRows ?? null,
     animationKey: `animation:terrain:${terrainId}:default`
   };
 }
@@ -474,6 +485,23 @@ export function getTerrainSpriteDefinition(terrainId) {
     fallbackKey: spriteBundle.fallback.key,
     fallbackUrl: spriteBundle.fallback.url,
     animated: spriteBundle.animated
+  };
+}
+
+export function getBuildingSpriteDefinition(buildingTypeId, owner = "neutral") {
+  const asset =
+    BUILDING_SPRITES[buildingTypeId]?.[owner] ??
+    BUILDING_SPRITES[buildingTypeId]?.neutral ??
+    null;
+
+  if (!asset) {
+    return null;
+  }
+
+  return {
+    type: asset.type,
+    key: asset.key,
+    url: asset.url,
   };
 }
 

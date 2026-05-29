@@ -6,10 +6,6 @@ export const appShellEventMethods = {
     return globalThis.ashRun84Api ?? null;
   },
 
-  openMapEditorImportFallback() {
-    this.root.querySelector("#map-editor-import")?.click();
-  },
-
   downloadMapEditorJson(exportedMap) {
     const blob = new Blob([exportedMap.text], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -104,7 +100,7 @@ export const appShellEventMethods = {
 
     const accordion = event.target;
 
-    if (!accordion?.matches?.("details[data-map-editor-accordion]")) {
+    if (!accordion?.matches?.("details[data-map-editor-accordion], details[data-map-editor-load-group]")) {
       return;
     }
 
@@ -310,6 +306,15 @@ export const appShellEventMethods = {
       case "map-editor-select-unit-owner":
         this.controller.selectMapEditorUnitOwner(trigger.dataset.unitOwner);
         break;
+      case "map-editor-restore-last-terrain":
+        this.controller.restoreLastMapEditorTerrain?.();
+        break;
+      case "map-editor-restore-last-building":
+        this.controller.restoreLastMapEditorBuilding?.();
+        break;
+      case "map-editor-restore-last-unit":
+        this.controller.restoreLastMapEditorUnit?.();
+        break;
       case "map-editor-set-mirror-mode":
         this.controller.setMapEditorMirrorMode(trigger.dataset.mirrorMode);
         break;
@@ -334,25 +339,18 @@ export const appShellEventMethods = {
       case "map-editor-goal-clear-target":
         this.controller.clearMapEditorGoalTarget();
         break;
-      case "map-editor-import": {
-        const desktopApi = this.getDesktopApi?.();
-
-        if (desktopApi?.importMapFile) {
-          try {
-            const importedMap = await desktopApi.importMapFile();
-
-            if (importedMap?.text) {
-              this.controller.importMapEditorMap(JSON.parse(importedMap.text));
-            }
-            break;
-          } catch (error) {
-            this.logDesktopDialogFallback("import", error);
-          }
-        }
-
-        this.openMapEditorImportFallback();
+      case "map-editor-import":
+        await this.controller.openMapEditorLoadDialog?.();
         break;
-      }
+      case "map-editor-close-load-dialog":
+        this.controller.closeMapEditorLoadDialog?.();
+        break;
+      case "map-editor-select-load-entry":
+        this.controller.selectMapEditorLoadDialogEntry?.(trigger.dataset.mapRelativePath);
+        break;
+      case "map-editor-confirm-load":
+        await this.controller.confirmMapEditorLoadDialog?.();
+        break;
       case "map-editor-export": {
         const saveResult = await this.controller.saveMapEditorMap?.();
 
@@ -522,17 +520,6 @@ export const appShellEventMethods = {
       await this.controller.updateSkirmishSetup({
         [skirmishField]: Number(event.target.value)
       });
-      return;
-    }
-
-
-    if (event.target.dataset.action === "map-editor-import") {
-      const file = event.target.files?.[0];
-      if (file) {
-        const text = await file.text();
-        this.controller.importMapEditorMap(JSON.parse(text));
-        event.target.value = "";
-      }
       return;
     }
 

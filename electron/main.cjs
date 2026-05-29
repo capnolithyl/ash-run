@@ -10,6 +10,12 @@ const {
   normalizeDisplayOptions,
   resolveDisplayResolutionForBounds
 } = require("./displayOptions.cjs");
+const {
+  listLoadableMapFiles,
+  loadMapFileFromRoot,
+  normalizeMapRelativePath: normalizeMapRelativeImportPath,
+  resolvePreferredMapRoot
+} = require("./mapFiles.cjs");
 
 const DIST_PATH = path.resolve(__dirname, "../dist/index.html");
 const DEV_SERVER_PORT = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
@@ -265,8 +271,13 @@ function bindDisplayStateEvents(browserWindow) {
 
 async function resolvePreferredMapDirectory() {
   const { customMapsRoot } = getStoragePaths();
-  await fs.mkdir(customMapsRoot, { recursive: true });
-  return customMapsRoot;
+  const preferredRoot = resolvePreferredMapRoot({
+    isPackaged: app.isPackaged,
+    customMapsRoot,
+    bundledMapsRoot: getBundledMapsRoot()
+  });
+  await fs.mkdir(preferredRoot, { recursive: true });
+  return preferredRoot;
 }
 
 function normalizeMapFileName(fileName) {
@@ -276,15 +287,7 @@ function normalizeMapFileName(fileName) {
 }
 
 function normalizeMapRelativePath(filePath) {
-  const rawPath = String(filePath ?? "").trim().replace(/\\/g, "/");
-  const rawSegments = rawPath.split("/").filter(Boolean);
-  const safeSegments = rawSegments
-    .slice(0, -1)
-    .map((segment) => path.basename(segment).trim())
-    .filter((segment) => segment && segment !== "." && segment !== "..");
-  const fileName = normalizeMapFileName(rawSegments.at(-1) ?? "custom-map.json");
-
-  return path.join(...safeSegments, fileName);
+  return normalizeMapRelativeImportPath(filePath);
 }
 
 function getBundledMapsRoot() {
@@ -472,29 +475,14 @@ ipcMain.handle("custom-maps:save", async (_event, suggestedFileName, text) => {
   return mapData;
 });
 
-ipcMain.handle("map-files:import", async (event) => {
-  const browserWindow = BrowserWindow.fromWebContents(event.sender) ?? undefined;
-  const defaultDirectory = await resolvePreferredMapDirectory();
-  const result = await dialog.showOpenDialog(browserWindow, {
-    title: "Import Map JSON",
-    defaultPath: defaultDirectory,
-    filters: [
-      {
-        name: "JSON Maps",
-        extensions: ["json"]
-      }
-    ],
-    properties: ["openFile"]
-  });
+ipcMain.handle("map-files:list", async () => {
+  const rootDirectory = await resolvePreferredMapDirectory();
+  return listLoadableMapFiles(rootDirectory, fs, console);
+});
 
-  if (result.canceled || !result.filePaths[0]) {
-    return null;
-  }
-
-  return {
-    filePath: result.filePaths[0],
-    text: await fs.readFile(result.filePaths[0], "utf8")
-  };
+ipcMain.handle("map-files:load", async (_event, relativePath) => {
+  const rootDirectory = await resolvePreferredMapDirectory();
+  return loadMapFileFromRoot(rootDirectory, relativePath, fs);
 });
 
 async function handleMapFileSave(event, suggestedFileName, text) {

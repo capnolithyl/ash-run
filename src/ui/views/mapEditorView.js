@@ -10,6 +10,11 @@ import {
   MAP_EDITOR_TOOL_IDS
 } from "../../game/content/mapEditor.js";
 import {
+  getBuildingSpriteDefinition,
+  getTerrainSpriteDefinition,
+  getUnitSpriteDefinition
+} from "../../game/phaser/assets.js";
+import {
   getMapGoalLabel,
   getMapGoalSummary,
   getMapGoalTargetBuilding,
@@ -25,6 +30,225 @@ const MAP_EDITOR_ACCORDION_IDS = {
   UNITS: "units",
   MIRROR: "mirror"
 };
+
+const TERRAIN_PREVIEW_KEYS = {
+  plain: ".",
+  road: "=",
+  forest: "F",
+  mountain: "^",
+  water: "~",
+  ridge: "#"
+};
+
+const MAP_EDITOR_TOOL_TOOLTIPS = {
+  [MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER]: "Reset only the terrain on a tile back to plains.",
+  [MAP_EDITOR_TOOL_IDS.BUILDING_ERASER]: "Remove only the building on a tile.",
+  [MAP_EDITOR_TOOL_IDS.UNIT_ERASER]: "Remove only the unit on a tile."
+};
+
+const MAP_EDITOR_MIRROR_DESCRIPTIONS = {
+  [MAP_EDITOR_MIRROR_MODES.OFF]: "Paint only the tile under the cursor.",
+  [MAP_EDITOR_MIRROR_MODES.VERTICAL]: "Mirror edits left to right across the map center.",
+  [MAP_EDITOR_MIRROR_MODES.HORIZONTAL]: "Mirror edits top to bottom across the map center.",
+  [MAP_EDITOR_MIRROR_MODES.DIAGONAL]: "Mirror edits across the top-left to bottom-right diagonal."
+};
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll('"', "&quot;");
+}
+
+function sanitizeCssIdentifier(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    || "map-editor-preview";
+}
+
+function getAnimationRangeFrameIndices(animationSpec, rangeName = "default") {
+  const range = animationSpec?.ranges?.[rangeName] ?? animationSpec?.ranges?.default ?? null;
+
+  if (!range) {
+    return [];
+  }
+
+  return Array.from(
+    { length: Math.max(0, range.end - range.start + 1) },
+    (_, index) => range.start + index
+  );
+}
+
+function getSpriteSheetAxisPosition(frameIndexOnAxis, totalFramesOnAxis) {
+  if (!Number.isFinite(totalFramesOnAxis) || totalFramesOnAxis <= 1) {
+    return "0%";
+  }
+
+  return `${((frameIndexOnAxis / (totalFramesOnAxis - 1)) * 100).toFixed(4)}%`;
+}
+
+function getSpriteSheetFramePosition(frameIndex, columns, rows) {
+  const resolvedColumns = Math.max(1, columns);
+  const resolvedRows = Math.max(1, rows);
+  const column = Math.max(0, frameIndex % resolvedColumns);
+  const row = Math.max(0, Math.floor(frameIndex / resolvedColumns));
+
+  return {
+    x: getSpriteSheetAxisPosition(column, resolvedColumns),
+    y: getSpriteSheetAxisPosition(Math.min(row, resolvedRows - 1), resolvedRows)
+  };
+}
+
+function buildPreviewKeyframes(previewId, animationId, frameIndices, columns, rows) {
+  if (frameIndices.length <= 1) {
+    return { animationName: "", css: "" };
+  }
+
+  const animationName = [
+    "map-editor-preview",
+    sanitizeCssIdentifier(previewId),
+    sanitizeCssIdentifier(animationId),
+    `${frameIndices[0]}-${frameIndices[frameIndices.length - 1]}`,
+    `${columns}x${rows}`
+  ].join("-");
+
+  const steps = frameIndices.map((frameIndex, index) => {
+    const position = getSpriteSheetFramePosition(frameIndex, columns, rows);
+    const percent = ((index / frameIndices.length) * 100).toFixed(4);
+    return `  ${percent}% { background-position: ${position.x} ${position.y}; }`;
+  });
+  const startPosition = getSpriteSheetFramePosition(frameIndices[0], columns, rows);
+  steps.push(`  100% { background-position: ${startPosition.x} ${startPosition.y}; }`);
+
+  return {
+    animationName,
+    css: `@keyframes ${animationName} {\n${steps.join("\n")}\n}`
+  };
+}
+
+function renderSheetPreview({
+  previewId,
+  animationId,
+  url,
+  frameIndices,
+  columns,
+  rows,
+  frameRate,
+  previewStyles
+}) {
+  if (!url || frameIndices.length === 0) {
+    return "";
+  }
+
+  const { animationName, css } = buildPreviewKeyframes(
+    previewId,
+    animationId,
+    frameIndices,
+    columns,
+    rows
+  );
+  const durationSeconds = Math.max(
+    frameIndices.length / Math.max(frameRate ?? 1, 1),
+    0.45
+  ).toFixed(2);
+  const startPosition = getSpriteSheetFramePosition(frameIndices[0], columns, rows);
+
+  if (css && animationName) {
+    previewStyles.set(animationName, css);
+  }
+
+  return `
+    <span class="map-editor-tool__preview-image map-editor-tool__preview-image--sheet" aria-hidden="true">
+      <span
+        class="map-editor-tool__preview-sheet-surface"
+        style="
+          --preview-columns:${columns};
+          --preview-rows:${rows};
+          --sheet-duration:${durationSeconds}s;
+          --preview-start-x:${startPosition.x};
+          --preview-start-y:${startPosition.y};
+          background-image:url('${escapeAttribute(url)}');
+          ${animationName ? `animation-name:${animationName};` : ""}
+        "
+      ></span>
+    </span>
+  `;
+}
+
+function renderStaticPreview(url, label) {
+  if (!url) {
+    return `<span class="map-editor-tool__preview-fallback" aria-hidden="true">${escapeHtml(label).slice(0, 2).toUpperCase()}</span>`;
+  }
+
+  return `
+    <img
+      class="map-editor-tool__preview-image"
+      src="${escapeAttribute(url)}"
+      alt=""
+      loading="lazy"
+      decoding="async"
+      aria-hidden="true"
+    />
+  `;
+}
+
+function renderTerrainPreview(terrainId, terrain, previewStyles) {
+  const spriteDefinition = getTerrainSpriteDefinition(terrainId);
+  const animated = spriteDefinition?.animated ?? null;
+  const frameCount = Number(animated?.frameCount ?? 0);
+  const frameIndices = frameCount > 0
+    ? Array.from({ length: frameCount }, (_, index) => index)
+    : [];
+
+  if (animated?.url && frameIndices.length > 1) {
+    return renderSheetPreview({
+      previewId: `terrain-${terrainId}`,
+      animationId: "default",
+      url: animated.url,
+      frameIndices,
+      columns: Math.max(1, animated.sheetColumns ?? frameIndices.length),
+      rows: Math.max(1, animated.sheetRows ?? 1),
+      frameRate: animated.frameRate,
+      previewStyles
+    });
+  }
+
+  return renderStaticPreview(spriteDefinition?.fallbackUrl ?? spriteDefinition?.url, terrain?.label ?? terrainId);
+}
+
+function renderBuildingPreview(buildingType, owner) {
+  const spriteDefinition = getBuildingSpriteDefinition(buildingType, owner);
+  const label = getBuildingTypeMetadata(buildingType).shortLabel;
+  return renderStaticPreview(spriteDefinition?.url, label);
+}
+
+function renderUnitPreview(unitTypeId, owner, unitName, previewStyles) {
+  const spriteDefinition = getUnitSpriteDefinition(unitTypeId, owner);
+  const idleAnimation = spriteDefinition?.idle ?? null;
+  const frameIndices = getAnimationRangeFrameIndices(idleAnimation, "default");
+
+  if (idleAnimation?.url && frameIndices.length > 0) {
+    return renderSheetPreview({
+      previewId: `unit-${unitTypeId}-${owner}`,
+      animationId: "idle",
+      url: idleAnimation.url,
+      frameIndices,
+      columns: Math.max(1, idleAnimation.sheetColumns ?? frameIndices.length),
+      rows: Math.max(1, idleAnimation.sheetRows ?? 1),
+      frameRate: idleAnimation.frameRate,
+      previewStyles
+    });
+  }
+
+  return renderStaticPreview(spriteDefinition?.fallbackUrl ?? spriteDefinition?.url, unitName);
+}
 
 function renderAccordion(sectionId, title, subtitle, content, openAccordion) {
   const isOpen = openAccordion === sectionId;
@@ -51,7 +275,11 @@ function renderAccordion(sectionId, title, subtitle, content, openAccordion) {
   `;
 }
 
-function renderTerrainTools(state) {
+function renderTooltipAttributes(tooltip) {
+  return tooltip ? ` data-tooltip="${escapeAttribute(tooltip)}"` : "";
+}
+
+function renderTerrainTools(state, previewStyles) {
   return Object.entries(TERRAIN_LIBRARY)
     .map(([terrainId, terrain]) => {
       const isActive =
@@ -65,7 +293,9 @@ function renderTerrainTools(state) {
           data-terrain-id="${terrainId}"
           type="button"
         >
-          <span class="map-editor-tool__swatch map-editor-tool__swatch--terrain" style="--swatch:${terrain.color};"></span>
+          <span class="map-editor-tool__swatch map-editor-tool__swatch--preview map-editor-tool__swatch--terrain" style="--swatch:${terrain.color};">
+            ${renderTerrainPreview(terrainId, terrain, previewStyles)}
+          </span>
           <span class="map-editor-tool__copy">
             <strong>${terrain.label}</strong>
             <small>${terrainId}</small>
@@ -86,15 +316,17 @@ function renderBuildingTools(state) {
 
       return `
         <button
-          class="ghost-button ghost-button--small map-editor-tool ${isActive ? "map-editor-tool--active" : ""}"
+          class="ghost-button ghost-button--small map-editor-tool map-editor-has-tooltip ${isActive ? "map-editor-tool--active" : ""}"
           data-action="map-editor-select-building"
           data-building-type="${buildingType}"
+          ${renderTooltipAttributes(metadata.summary)}
           type="button"
         >
-          <span class="map-editor-tool__swatch map-editor-tool__swatch--building">${metadata.shortLabel}</span>
+          <span class="map-editor-tool__swatch map-editor-tool__swatch--preview map-editor-tool__swatch--building">
+            ${renderBuildingPreview(buildingType, state.mapEditor.selectedBuildingOwner)}
+          </span>
           <span class="map-editor-tool__copy">
             <strong>${metadata.name}</strong>
-            <small>${metadata.summary}</small>
           </span>
         </button>
       `;
@@ -102,24 +334,27 @@ function renderBuildingTools(state) {
     .join("");
 }
 
-function renderUnitTools(state) {
+function renderUnitTools(state, previewStyles) {
   return Object.values(UNIT_CATALOG)
     .map((unit) => {
       const isActive =
         state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT &&
         state.mapEditor.selectedUnitTypeId === unit.id;
+      const tooltip = `${unit.family} unit. Range ${unit.minRange}-${unit.maxRange}. Move ${unit.movement}.`;
 
       return `
         <button
-          class="ghost-button ghost-button--small map-editor-tool map-editor-tool--unit ${isActive ? "map-editor-tool--active" : ""}"
+          class="ghost-button ghost-button--small map-editor-tool map-editor-tool--unit map-editor-has-tooltip ${isActive ? "map-editor-tool--active" : ""}"
           data-action="map-editor-select-unit"
           data-unit-type-id="${unit.id}"
+          ${renderTooltipAttributes(tooltip)}
           type="button"
         >
-          <span class="map-editor-tool__swatch map-editor-tool__swatch--unit">${unit.name.slice(0, 3).toUpperCase()}</span>
+          <span class="map-editor-tool__swatch map-editor-tool__swatch--preview map-editor-tool__swatch--unit">
+            ${renderUnitPreview(unit.id, state.mapEditor.selectedUnitOwner, unit.name, previewStyles)}
+          </span>
           <span class="map-editor-tool__copy">
             <strong>${unit.name}</strong>
-            <small>${unit.family} - ${unit.minRange}-${unit.maxRange} rng - ${unit.movement} move</small>
           </span>
         </button>
       `;
@@ -127,20 +362,20 @@ function renderUnitTools(state) {
     .join("");
 }
 
-function renderEraserTool(state) {
-  const isActive = state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.ERASER;
+function renderSelectiveEraserTool(state, toolId, label) {
+  const isActive = state.mapEditor.selectedTool === toolId;
 
   return `
     <button
-      class="ghost-button ghost-button--small map-editor-tool ${isActive ? "map-editor-tool--active" : ""}"
+      class="ghost-button ghost-button--small map-editor-tool map-editor-has-tooltip ${isActive ? "map-editor-tool--active" : ""}"
       data-action="map-editor-select-tool"
-      data-map-editor-tool="${MAP_EDITOR_TOOL_IDS.ERASER}"
+      data-map-editor-tool="${toolId}"
+      ${renderTooltipAttributes(MAP_EDITOR_TOOL_TOOLTIPS[toolId])}
       type="button"
     >
-      <span class="map-editor-tool__swatch map-editor-tool__swatch--marker">X</span>
+      <span class="map-editor-tool__swatch map-editor-tool__swatch--marker">${label.charAt(0)}</span>
       <span class="map-editor-tool__copy">
-        <strong>Eraser</strong>
-        <small>Clears terrain, buildings, and units. Right click does this without changing tools.</small>
+        <strong>${label}</strong>
       </span>
     </button>
   `;
@@ -162,29 +397,173 @@ function renderOwnerButtons(selectedOwner, action, dataAttribute, owners) {
 }
 
 function renderMirrorButtons(state) {
-  const descriptions = {
-    [MAP_EDITOR_MIRROR_MODES.OFF]: "Single cursor",
-    [MAP_EDITOR_MIRROR_MODES.VERTICAL]: "Left <-> right",
-    [MAP_EDITOR_MIRROR_MODES.HORIZONTAL]: "Top <-> bottom",
-    [MAP_EDITOR_MIRROR_MODES.DIAGONAL]: "Top-left diagonal"
-  };
-
   return Object.values(MAP_EDITOR_MIRROR_MODES)
     .map((mirrorMode) => {
       const isActive = state.mapEditor.mirrorMode === mirrorMode;
+      const label = mirrorMode === MAP_EDITOR_MIRROR_MODES.OFF
+        ? "Off"
+        : mirrorMode.charAt(0).toUpperCase() + mirrorMode.slice(1);
       return `
         <button
-          class="ghost-button ghost-button--small map-editor-mirror ${isActive ? "map-editor-mirror--active" : ""}"
+          class="ghost-button ghost-button--small map-editor-mirror map-editor-has-tooltip ${isActive ? "map-editor-mirror--active" : ""}"
           data-action="map-editor-set-mirror-mode"
           data-mirror-mode="${mirrorMode}"
+          ${renderTooltipAttributes(MAP_EDITOR_MIRROR_DESCRIPTIONS[mirrorMode])}
           type="button"
         >
-          <strong>${mirrorMode}</strong>
-          <small>${descriptions[mirrorMode]}</small>
+          <strong>${label}</strong>
         </button>
       `;
     })
     .join("");
+}
+
+function renderQuickSelectButton({
+  active = false,
+  disabled = false,
+  action,
+  previewMarkup,
+  title,
+  detail = "",
+  tooltip = "",
+  compact = false,
+  extraAttributes = ""
+}) {
+  const accessibleLabel = detail ? `${title}: ${detail}` : title;
+  return `
+    <button
+      class="ghost-button ghost-button--small map-editor-tool map-editor-has-tooltip ${compact ? "map-editor-tool--compact" : ""} ${active ? "map-editor-tool--active" : ""}"
+      data-action="${action}"
+      ${renderTooltipAttributes(tooltip)}
+      ${extraAttributes}
+      type="button"
+      aria-label="${escapeAttribute(accessibleLabel)}"
+      ${disabled ? "disabled" : ""}
+    >
+      <span class="map-editor-tool__swatch map-editor-tool__swatch--preview">
+        ${previewMarkup}
+      </span>
+      ${
+        compact
+          ? ""
+          : `
+            <span class="map-editor-tool__copy">
+              <strong>${title}</strong>
+              ${detail ? `<small>${detail}</small>` : ""}
+            </span>
+          `
+      }
+    </button>
+  `;
+}
+
+function renderQuickSelectMarker(content) {
+  return `<span class="map-editor-tool__preview-fallback map-editor-tool__preview-fallback--marker" aria-hidden="true">${content}</span>`;
+}
+
+function renderQuickSelectSection(state, previewStyles) {
+  const lastTerrainId = state.mapEditor.lastSelectedTerrainId;
+  const lastTerrain = lastTerrainId ? TERRAIN_LIBRARY[lastTerrainId] : null;
+  const lastBuilding = state.mapEditor.lastSelectedBuilding;
+  const lastBuildingMetadata = lastBuilding ? getBuildingTypeMetadata(lastBuilding.type) : null;
+  const lastUnit = state.mapEditor.lastSelectedUnit;
+  const lastUnitMetadata = lastUnit ? UNIT_CATALOG[lastUnit.unitTypeId] : null;
+
+  return `
+    <div class="card-block map-editor-quick-selects">
+      <p class="eyebrow">Quick Select</p>
+      <div class="map-editor-tool-grid map-editor-tool-grid--quick">
+        ${renderQuickSelectButton({
+          active:
+            state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN &&
+            Boolean(lastTerrainId) &&
+            state.mapEditor.selectedTerrainId === lastTerrainId,
+          disabled: !lastTerrain,
+          action: "map-editor-restore-last-terrain",
+          previewMarkup: lastTerrain
+            ? renderTerrainPreview(lastTerrainId, lastTerrain, previewStyles)
+            : `<span class="map-editor-tool__preview-fallback" aria-hidden="true">--</span>`,
+          title: "Last Terrain",
+          detail: lastTerrain?.label ?? "Not set yet",
+          tooltip: lastTerrain ? `Paint ${lastTerrain.label} again.` : "Choose a terrain to store it here.",
+          compact: true
+        })}
+        ${renderQuickSelectButton({
+          active:
+            state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.BUILDING &&
+            Boolean(lastBuilding) &&
+            state.mapEditor.selectedBuildingType === lastBuilding?.type &&
+            state.mapEditor.selectedBuildingOwner === lastBuilding?.owner,
+          disabled: !lastBuildingMetadata,
+          action: "map-editor-restore-last-building",
+          previewMarkup: lastBuildingMetadata
+            ? renderBuildingPreview(lastBuilding.type, lastBuilding.owner)
+            : `<span class="map-editor-tool__preview-fallback" aria-hidden="true">--</span>`,
+          title: "Last Building",
+          detail: lastBuildingMetadata ? `${lastBuildingMetadata.name} (${lastBuilding.owner})` : "Not set yet",
+          tooltip: lastBuildingMetadata ? lastBuildingMetadata.summary : "Choose a building to store it here.",
+          compact: true
+        })}
+        ${renderQuickSelectButton({
+          active:
+            state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT &&
+            Boolean(lastUnit) &&
+            state.mapEditor.selectedUnitTypeId === lastUnit?.unitTypeId &&
+            state.mapEditor.selectedUnitOwner === lastUnit?.owner &&
+            Number(state.mapEditor.selectedUnitLevel ?? 1) === Number(lastUnit?.level ?? 1),
+          disabled: !lastUnitMetadata,
+          action: "map-editor-restore-last-unit",
+          previewMarkup: lastUnitMetadata
+            ? renderUnitPreview(lastUnit.unitTypeId, lastUnit.owner, lastUnitMetadata.name, previewStyles)
+            : `<span class="map-editor-tool__preview-fallback" aria-hidden="true">--</span>`,
+          title: "Last Unit",
+          detail: lastUnitMetadata ? `${lastUnitMetadata.name} L${lastUnit.level} (${lastUnit.owner})` : "Not set yet",
+          tooltip: lastUnitMetadata
+            ? `${lastUnitMetadata.family} unit. Range ${lastUnitMetadata.minRange}-${lastUnitMetadata.maxRange}. Move ${lastUnitMetadata.movement}.`
+            : "Choose a unit to store it here.",
+          compact: true
+        })}
+        ${renderQuickSelectButton({
+          active: state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER,
+          action: "map-editor-select-tool",
+          previewMarkup: renderQuickSelectMarker("T"),
+          title: "Terrain Eraser",
+          detail: "Terrain only",
+          tooltip: MAP_EDITOR_TOOL_TOOLTIPS[MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER],
+          compact: true,
+          extraAttributes: `data-map-editor-tool="${MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER}"`
+        })}
+        ${renderQuickSelectButton({
+          active: state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.BUILDING_ERASER,
+          action: "map-editor-select-tool",
+          previewMarkup: renderQuickSelectMarker("B"),
+          title: "Building Eraser",
+          detail: "Building only",
+          tooltip: MAP_EDITOR_TOOL_TOOLTIPS[MAP_EDITOR_TOOL_IDS.BUILDING_ERASER],
+          compact: true,
+          extraAttributes: `data-map-editor-tool="${MAP_EDITOR_TOOL_IDS.BUILDING_ERASER}"`
+        })}
+        ${renderQuickSelectButton({
+          active: state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT_ERASER,
+          action: "map-editor-select-tool",
+          previewMarkup: renderQuickSelectMarker("U"),
+          title: "Unit Eraser",
+          detail: "Unit only",
+          tooltip: MAP_EDITOR_TOOL_TOOLTIPS[MAP_EDITOR_TOOL_IDS.UNIT_ERASER],
+          compact: true,
+          extraAttributes: `data-map-editor-tool="${MAP_EDITOR_TOOL_IDS.UNIT_ERASER}"`
+        })}
+      </div>
+    </div>
+  `;
+}
+
+function renderCleanupTools(state) {
+  return [
+    renderSelectiveEraserTool(state, MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER, "Terrain Eraser"),
+    renderSelectiveEraserTool(state, MAP_EDITOR_TOOL_IDS.BUILDING_ERASER, "Building Eraser"),
+    renderSelectiveEraserTool(state, MAP_EDITOR_TOOL_IDS.UNIT_ERASER, "Unit Eraser")
+  ].join("");
 }
 
 function renderActiveTool(state) {
@@ -202,7 +581,19 @@ function renderActiveTool(state) {
     return TERRAIN_LIBRARY[state.mapEditor.selectedTerrainId]?.label ?? "Terrain";
   }
 
-  return "Eraser";
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER) {
+    return "Terrain Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.BUILDING_ERASER) {
+    return "Building Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT_ERASER) {
+    return "Unit Eraser";
+  }
+
+  return "Tool";
 }
 
 function renderCompactTool(state) {
@@ -219,7 +610,19 @@ function renderCompactTool(state) {
     return TERRAIN_LIBRARY[state.mapEditor.selectedTerrainId]?.label ?? "Terrain";
   }
 
-  return "Eraser";
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER) {
+    return "Terrain Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.BUILDING_ERASER) {
+    return "Building Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT_ERASER) {
+    return "Unit Eraser";
+  }
+
+  return "Tool";
 }
 
 function renderMirrorLabel(mirrorMode) {
@@ -228,6 +631,241 @@ function renderMirrorLabel(mirrorMode) {
   }
 
   return mirrorMode.charAt(0).toUpperCase() + mirrorMode.slice(1);
+}
+
+function getMapLoadVariantLabel(entry) {
+  const variantStage = Number(entry?.variantStage);
+
+  if (Number.isInteger(variantStage) && variantStage > 0) {
+    return `Stage ${variantStage}`;
+  }
+
+  return "Stage 1";
+}
+
+function getMapLoadGroupKey(entry) {
+  return String(entry?.name ?? entry?.id ?? entry?.fileName ?? "Untitled Map");
+}
+
+function groupMapLoadEntries(entries) {
+  const groups = new Map();
+
+  for (const entry of entries) {
+    const groupKey = getMapLoadGroupKey(entry);
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, []);
+    }
+
+    groups.get(groupKey).push(entry);
+  }
+
+  return [...groups.entries()].map(([groupKey, groupEntries]) => ({
+    key: groupKey,
+    title: groupKey,
+    entries: groupEntries.sort((left, right) => {
+      const leftStage = Number(left.variantStage ?? 1);
+      const rightStage = Number(right.variantStage ?? 1);
+      const byStage = leftStage - rightStage;
+
+      return byStage !== 0
+        ? byStage
+        : String(left.relativePath ?? "").localeCompare(String(right.relativePath ?? ""));
+    })
+  }));
+}
+
+function getBuildingPreviewOwner(building) {
+  if (building?.owner === "player") {
+    return "player";
+  }
+
+  if (building?.owner === "enemy") {
+    return "enemy";
+  }
+
+  if (building?.owner === "neutral") {
+    return "neutral";
+  }
+
+  return null;
+}
+
+function renderMapLoadPreview(mapDefinition) {
+  if (!mapDefinition?.width || !mapDefinition?.height || !Array.isArray(mapDefinition?.tiles)) {
+    return "";
+  }
+
+  const buildingLookup = new Map(
+    (mapDefinition.buildings ?? []).map((building) => [`${building.x},${building.y}`, building])
+  );
+
+  const tiles = mapDefinition.tiles
+    .map((row, y) =>
+      row
+        .map((tileKey, x) => {
+          const building = buildingLookup.get(`${x},${y}`);
+          const owner = getBuildingPreviewOwner(building);
+          const terrainKey = TERRAIN_PREVIEW_KEYS[tileKey] ? tileKey : "plain";
+          const marker = owner ? owner[0].toUpperCase() : TERRAIN_PREVIEW_KEYS[tileKey] ?? ".";
+
+          return `
+            <span
+              class="map-editor-load-preview__tile map-editor-load-preview__tile--${terrainKey} ${owner ? `map-editor-load-preview__tile--${owner}` : ""}"
+              aria-label="${owner ? `${owner} building` : tileKey}"
+            >${marker}</span>
+          `;
+        })
+        .join("")
+    )
+    .join("");
+
+  return `
+    <div
+      class="map-editor-load-preview__grid"
+      style="--map-columns:${mapDefinition.width}; --map-rows:${mapDefinition.height};"
+      role="img"
+      aria-label="Map layout preview"
+    >
+      ${tiles}
+    </div>
+  `;
+}
+
+function renderMapLoadDialog(state) {
+  if (!state.mapEditor.loadDialogOpen) {
+    return "";
+  }
+
+  const entries = state.mapEditor.loadDialogEntries ?? [];
+  const entryGroups = groupMapLoadEntries(entries);
+  const selectedEntry = entries.find(
+    (entry) => entry.relativePath === state.mapEditor.loadDialogSelectedPath
+  ) ?? entries[0] ?? null;
+  const selectedGroupKey = selectedEntry ? getMapLoadGroupKey(selectedEntry) : null;
+  const isBusy = state.mapEditor.loadDialogBusy === true;
+  const errorText = state.mapEditor.loadDialogError ?? "";
+  const selectedMapPreview = selectedEntry?.previewMap ?? null;
+  const selectedGoal = selectedEntry?.goal ?? selectedMapPreview?.goal ?? { type: MAP_GOAL_TYPES.ROUT };
+  const goalSummary = selectedEntry
+    ? getMapGoalSummary(selectedGoal, {
+        width: selectedEntry.width ?? selectedMapPreview?.width ?? 0,
+        height: selectedEntry.height ?? selectedMapPreview?.height ?? 0,
+        goal: selectedGoal,
+        buildings: selectedMapPreview?.buildings ?? []
+      })
+    : "Choose a map from the game folder to load it into the editor.";
+
+  return `
+    <div class="battle-overlay battle-overlay--pause map-editor-load-overlay">
+      <div class="overlay-card overlay-card--pause map-editor-load-dialog">
+        <div class="map-editor-load-dialog__header">
+          <div>
+            <p class="eyebrow">Game Map Folder</p>
+            <h2>Load Map</h2>
+            <p>Pick a map from the game folder and load it straight into the editor.</p>
+          </div>
+          <button
+            class="ghost-button ghost-button--small"
+            data-action="map-editor-close-load-dialog"
+            type="button"
+            ${isBusy ? "disabled" : ""}
+          >
+            Cancel
+          </button>
+        </div>
+        <div class="map-editor-load-dialog__body">
+          <div
+            class="map-editor-load-dialog__list"
+            data-map-editor-load-list="true"
+            aria-label="Map files"
+          >
+            ${
+              entries.length > 0
+                ? entryGroups.map((group) => {
+                  const shouldOpen =
+                    state.mapEditor.loadDialogOpenGroupKey
+                      ? state.mapEditor.loadDialogOpenGroupKey === group.key
+                      : group.key === selectedGroupKey;
+
+                  return `
+                    <details
+                      class="map-editor-load-group"
+                      data-map-editor-load-group="${escapeAttribute(group.key)}"
+                      name="map-editor-load-group"
+                      ${shouldOpen ? "open" : ""}
+                    >
+                      <summary class="map-editor-load-group__summary">
+                        <span>
+                          <strong>${escapeHtml(group.title)}</strong>
+                          <small>${group.entries.length} variant${group.entries.length === 1 ? "" : "s"}</small>
+                        </span>
+                      </summary>
+                      <div class="map-editor-load-group__content" role="listbox" aria-label="${escapeAttribute(group.title)} variants">
+                        ${group.entries.map((entry) => {
+                          const isSelected = entry.relativePath === selectedEntry?.relativePath;
+                          return `
+                            <button
+                              class="map-editor-load-entry ${isSelected ? "map-editor-load-entry--active" : ""}"
+                              data-action="map-editor-select-load-entry"
+                              data-map-relative-path="${escapeAttribute(entry.relativePath)}"
+                              role="option"
+                              aria-selected="${isSelected ? "true" : "false"}"
+                              type="button"
+                              ${isBusy ? "disabled" : ""}
+                            >
+                              <strong>${getMapLoadVariantLabel(entry)}</strong>
+                              <span>${entry.width}x${entry.height}</span>
+                              <small>${escapeHtml(entry.relativePath)}</small>
+                            </button>
+                          `;
+                        }).join("")}
+                      </div>
+                    </details>
+                  `;
+                }).join("")
+                : `<p class="map-editor-load-dialog__empty">${escapeHtml(errorText || "No map files were found in the game map folder.")}</p>`
+            }
+          </div>
+          <div class="map-editor-load-dialog__preview">
+            ${
+              selectedEntry
+                ? `
+                  <p class="eyebrow">Preview</p>
+                  <h3>${escapeHtml(selectedEntry.name)}</h3>
+                  <p><strong>${getMapLoadVariantLabel(selectedEntry)}</strong> ${escapeHtml(selectedEntry.relativePath)}</p>
+                  <p><strong>${getMapGoalLabel(selectedGoal)}</strong> ${goalSummary}</p>
+                  ${renderMapLoadPreview(selectedMapPreview)}
+                `
+                : `
+                  <p class="eyebrow">Preview</p>
+                  <p class="map-editor-load-dialog__empty">${escapeHtml(errorText || "No map is selected.")}</p>
+                `
+            }
+            ${errorText && entries.length > 0 ? `<p class="map-editor-load-dialog__error">${escapeHtml(errorText)}</p>` : ""}
+          </div>
+        </div>
+        <div class="map-editor-load-dialog__actions">
+          <button
+            class="ghost-button ghost-button--small"
+            data-action="map-editor-close-load-dialog"
+            type="button"
+            ${isBusy ? "disabled" : ""}
+          >
+            Cancel
+          </button>
+          <button
+            class="menu-button menu-button--small"
+            data-action="map-editor-confirm-load"
+            type="button"
+            ${selectedEntry && !isBusy ? "" : "disabled"}
+          >
+            ${isBusy ? "Loading..." : "Load Selected Map"}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderTopCardStat(label, value) {
@@ -564,6 +1202,7 @@ export function renderMapEditorView(state, uiState = {}) {
   const goalLabel = getMapGoalLabel(map.goal);
   const footerTool = renderCompactTool(state);
   const mirrorLabel = renderMirrorLabel(state.mapEditor.mirrorMode);
+  const previewStyles = new Map();
 
   return `
     <div class="battle-shell map-editor-shell" data-screen-id="map-editor">
@@ -581,10 +1220,10 @@ export function renderMapEditorView(state, uiState = {}) {
         ${renderAccordion(
           MAP_EDITOR_ACCORDION_IDS.TERRAIN,
           "Terrain",
-          "Click or drag to paint. Right click erases to plains.",
+          "Click or drag to paint.",
           `
             <div class="map-editor-tool-grid">
-              ${renderTerrainTools(state)}
+              ${renderTerrainTools(state, previewStyles)}
             </div>
           `,
           openAccordion
@@ -636,7 +1275,7 @@ export function renderMapEditorView(state, uiState = {}) {
               </label>
             </div>
             <div class="map-editor-tool-grid map-editor-tool-grid--units" data-map-editor-scroll="units">
-              ${renderUnitTools(state)}
+              ${renderUnitTools(state, previewStyles)}
             </div>
           `,
           openAccordion
@@ -645,17 +1284,19 @@ export function renderMapEditorView(state, uiState = {}) {
         ${renderAccordion(
           MAP_EDITOR_ACCORDION_IDS.MIRROR,
           "Mirror + Cleanup",
-          "The cyan cursor shows where mirrored edits will land.",
+          "Mirror your brush or switch cleanup tools.",
           `
             <div class="map-editor-mirror-grid">
               ${renderMirrorButtons(state)}
             </div>
             <div class="map-editor-tool-grid">
-              ${renderEraserTool(state)}
+              ${renderCleanupTools(state)}
             </div>
           `,
           openAccordion
         )}
+
+        ${renderQuickSelectSection(state, previewStyles)}
       </aside>
 
       <aside class="battle-rail battle-rail--right map-editor-rail" data-map-editor-rail="right">
@@ -750,7 +1391,12 @@ export function renderMapEditorView(state, uiState = {}) {
         </label>
       </div>
 
-      <input id="map-editor-import" type="file" data-action="map-editor-import" accept="application/json" />
+      ${renderMapLoadDialog(state)}
+      ${
+        previewStyles.size > 0
+          ? `<style data-map-editor-preview-styles="true">\n${Array.from(previewStyles.values()).join("\n")}\n</style>`
+          : ""
+      }
     </div>
   `;
 }

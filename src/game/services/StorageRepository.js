@@ -169,6 +169,28 @@ export class StorageRepository {
     };
   }
 
+  async listMapFiles() {
+    if (this.desktopApi?.listMapFiles) {
+      return this.desktopApi.listMapFiles();
+    }
+
+    return {
+      unsupported: true,
+      rootPath: null,
+      entries: []
+    };
+  }
+
+  async loadMapFile(relativePath) {
+    if (this.desktopApi?.loadMapFile) {
+      return this.desktopApi.loadMapFile(relativePath);
+    }
+
+    return {
+      unsupported: true
+    };
+  }
+
   async quit() {
     if (this.desktopApi) {
       return this.desktopApi.quit();

@@ -127,6 +127,8 @@ export const appShellScreenRouterMethods = {
       leftRailScrollTop: 0,
       rightRailScrollTop: 0,
       unitsScrollTop: 0,
+      loadDialogListScrollTop: 0,
+      loadDialogOpenGroupKey: null,
       focusedField: null
     };
   },

@@ -1,6 +1,6 @@
 export const GENERATED_MAP_MODULES = {
-  "./maps/crossfire-creek.json": {
-    "id": "crossfire-creek",
+  "./maps/crossfire-creek/crossfire-creek-stage-1.json": {
+    "id": "crossfire-creek-stage-1",
     "name": "Crossfire Creek",
     "theme": "ash",
     "width": 10,
@@ -39,7 +39,31 @@ export const GENERATED_MAP_MODULES = {
         "water",
         "plain",
         "plain",
+        "plain",
+        "plain"
+      ],
+      [
+        "plain",
+        "plain",
+        "ridge",
         "forest",
+        "water",
+        "water",
+        "forest",
+        "ridge",
+        "plain",
+        "plain"
+      ],
+      [
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
         "plain"
       ],
       [
@@ -47,30 +71,6 @@ export const GENERATED_MAP_MODULES = {
         "plain",
         "ridge",
         "forest",
-        "water",
-        "water",
-        "forest",
-        "ridge",
-        "plain",
-        "plain"
-      ],
-      [
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road"
-      ],
-      [
-        "plain",
-        "plain",
-        "ridge",
-        "forest",
         "road",
         "road",
         "forest",
@@ -87,7 +87,7 @@ export const GENERATED_MAP_MODULES = {
         "water",
         "plain",
         "plain",
-        "forest",
+        "plain",
         "plain"
       ],
       [
@@ -129,42 +129,42 @@ export const GENERATED_MAP_MODULES = {
     ],
     "buildings": [
       {
-        "id": "crossfire-creek-neutral-repair-station-6-1",
+        "id": "crossfire-creek-stage-1-neutral-repair-station-6-1",
         "type": "repair-station",
         "owner": "neutral",
         "x": 6,
         "y": 1
       },
       {
-        "id": "crossfire-creek-player-command-0-3",
+        "id": "crossfire-creek-stage-1-player-command-0-3",
         "type": "command",
         "owner": "player",
         "x": 0,
         "y": 3
       },
       {
-        "id": "crossfire-creek-enemy-sector-8-3",
+        "id": "crossfire-creek-stage-1-enemy-sector-8-3",
         "type": "sector",
         "owner": "enemy",
         "x": 8,
         "y": 3
       },
       {
-        "id": "crossfire-creek-player-sector-1-5",
+        "id": "crossfire-creek-stage-1-player-sector-1-5",
         "type": "sector",
         "owner": "player",
         "x": 1,
         "y": 5
       },
       {
-        "id": "crossfire-creek-enemy-command-9-5",
+        "id": "crossfire-creek-stage-1-enemy-command-9-5",
         "type": "command",
         "owner": "enemy",
         "x": 9,
         "y": 5
       },
       {
-        "id": "crossfire-creek-neutral-hospital-3-7",
+        "id": "crossfire-creek-stage-1-neutral-hospital-3-7",
         "type": "hospital",
         "owner": "neutral",
         "x": 3,
@@ -173,7 +173,7 @@ export const GENERATED_MAP_MODULES = {
     ],
     "units": [
       {
-        "id": "crossfire-creek-enemy-breaker-9-1",
+        "id": "crossfire-creek-stage-1-enemy-breaker-9-1",
         "unitTypeId": "breaker",
         "owner": "enemy",
         "level": 1,
@@ -181,7 +181,7 @@ export const GENERATED_MAP_MODULES = {
         "y": 1
       },
       {
-        "id": "crossfire-creek-enemy-grunt-8-2",
+        "id": "crossfire-creek-stage-1-enemy-grunt-8-2",
         "unitTypeId": "grunt",
         "owner": "enemy",
         "level": 2,
@@ -189,7 +189,7 @@ export const GENERATED_MAP_MODULES = {
         "y": 2
       },
       {
-        "id": "crossfire-creek-enemy-runner-9-4",
+        "id": "crossfire-creek-stage-1-enemy-runner-9-4",
         "unitTypeId": "runner",
         "owner": "enemy",
         "level": 1,
@@ -197,7 +197,7 @@ export const GENERATED_MAP_MODULES = {
         "y": 4
       },
       {
-        "id": "crossfire-creek-enemy-grunt-8-6",
+        "id": "crossfire-creek-stage-1-enemy-grunt-8-6",
         "unitTypeId": "grunt",
         "owner": "enemy",
         "level": 2,
@@ -205,7 +205,7 @@ export const GENERATED_MAP_MODULES = {
         "y": 6
       },
       {
-        "id": "crossfire-creek-enemy-breaker-9-7",
+        "id": "crossfire-creek-stage-1-enemy-breaker-9-7",
         "unitTypeId": "breaker",
         "owner": "enemy",
         "level": 1,
@@ -218,76 +218,61 @@ export const GENERATED_MAP_MODULES = {
     },
     "runStages": [
       1
-    ]
+    ],
+    "variantStage": 1
   },
-  "./maps/last-train-out.json": {
-    "id": "last-train-out",
-    "name": "Last Train Out",
+  "./maps/crossfire-creek/crossfire-creek-stage-2.json": {
+    "id": "crossfire-creek-stage-2",
+    "name": "Crossfire Creek",
     "theme": "ash",
-    "width": 14,
+    "width": 10,
     "height": 10,
     "tiles": [
       [
+        "plain",
         "mountain",
         "mountain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "road",
         "plain",
         "plain",
         "plain",
         "plain",
         "mountain",
-        "mountain"
+        "mountain",
+        "plain"
       ],
       [
-        "mountain",
-        "mountain",
+        "plain",
         "forest",
         "forest",
         "plain",
         "plain",
-        "road",
-        "road",
         "plain",
         "plain",
         "forest",
         "forest",
-        "mountain",
-        "mountain"
+        "plain"
       ],
       [
-        "mountain",
-        "mountain",
-        "forest",
+        "plain",
         "forest",
         "plain",
         "plain",
-        "road",
-        "road",
+        "water",
+        "water",
         "plain",
         "plain",
-        "forest",
-        "forest",
-        "mountain",
-        "mountain"
+        "plain",
+        "plain"
       ],
       [
         "plain",
         "plain",
+        "ridge",
         "forest",
+        "water",
+        "water",
         "forest",
-        "plain",
-        "plain",
-        "road",
-        "road",
-        "plain",
-        "plain",
-        "forest",
-        "forest",
+        "ridge",
         "plain",
         "plain"
       ],
@@ -301,39 +286,27 @@ export const GENERATED_MAP_MODULES = {
         "road",
         "road",
         "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
         "plain"
       ],
       [
         "plain",
         "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
+        "ridge",
+        "forest",
         "road",
         "road",
+        "forest",
+        "ridge",
+        "plain",
+        "plain"
+      ],
+      [
+        "plain",
+        "forest",
         "plain",
         "plain",
+        "water",
+        "water",
         "plain",
         "plain",
         "plain",
@@ -343,1014 +316,353 @@ export const GENERATED_MAP_MODULES = {
         "plain",
         "forest",
         "forest",
-        "forest",
         "plain",
+        "ridge",
+        "ridge",
         "plain",
-        "road",
-        "road",
-        "plain",
-        "plain",
-        "forest",
         "forest",
         "forest",
         "plain"
       ],
       [
         "plain",
-        "forest",
-        "forest",
-        "forest",
+        "mountain",
+        "mountain",
         "plain",
         "plain",
-        "road",
-        "road",
         "plain",
         "plain",
-        "forest",
-        "forest",
-        "forest",
+        "mountain",
+        "mountain",
         "plain"
       ],
       [
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road"
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain"
       ]
     ],
     "buildings": [
       {
-        "id": "last-train-out-player-motor-pool-10-4",
-        "type": "motor-pool",
-        "owner": "player",
-        "x": 10,
-        "y": 4
-      },
-      {
-        "id": "last-train-out-player-barracks-3-4",
-        "type": "barracks",
-        "owner": "player",
-        "x": 3,
-        "y": 4
-      },
-      {
-        "id": "last-train-out-neutral-hospital-5-5",
-        "type": "hospital",
+        "id": "crossfire-creek-stage-2-neutral-repair-station-6-1",
+        "type": "repair-station",
         "owner": "neutral",
-        "x": 5,
-        "y": 5
+        "x": 6,
+        "y": 1
       },
       {
-        "id": "last-train-out-neutral-sector-8-5",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 8,
-        "y": 5
-      },
-      {
-        "id": "last-train-out-player-command-6-8",
+        "id": "crossfire-creek-stage-2-player-command-0-3",
         "type": "command",
         "owner": "player",
-        "x": 6,
-        "y": 8
+        "x": 0,
+        "y": 3
+      },
+      {
+        "id": "crossfire-creek-stage-2-enemy-sector-8-3",
+        "type": "sector",
+        "owner": "enemy",
+        "x": 8,
+        "y": 3
+      },
+      {
+        "id": "crossfire-creek-stage-2-player-sector-1-5",
+        "type": "sector",
+        "owner": "player",
+        "x": 1,
+        "y": 5
+      },
+      {
+        "id": "crossfire-creek-stage-2-enemy-command-9-5",
+        "type": "command",
+        "owner": "enemy",
+        "x": 9,
+        "y": 5
+      },
+      {
+        "id": "crossfire-creek-stage-2-neutral-hospital-3-7",
+        "type": "hospital",
+        "owner": "neutral",
+        "x": 3,
+        "y": 7
       }
     ],
     "units": [
       {
-        "id": "last-train-out-enemy-breaker-6-0",
+        "id": "crossfire-creek-stage-2-enemy-breaker-9-1",
         "unitTypeId": "breaker",
         "owner": "enemy",
-        "x": 6,
-        "y": 0
+        "level": 2,
+        "x": 9,
+        "y": 1
       },
       {
-        "id": "last-train-out-enemy-longshot-7-0",
-        "unitTypeId": "longshot",
+        "id": "crossfire-creek-stage-2-enemy-grunt-8-2",
+        "unitTypeId": "grunt",
         "owner": "enemy",
-        "x": 7,
-        "y": 0
+        "level": 3,
+        "x": 8,
+        "y": 2
       },
       {
-        "id": "last-train-out-enemy-bruiser-0-4",
-        "unitTypeId": "bruiser",
-        "owner": "enemy",
-        "x": 0,
-        "y": 4
-      },
-      {
-        "id": "last-train-out-enemy-runner-13-4",
+        "id": "crossfire-creek-stage-2-enemy-runner-9-4",
         "unitTypeId": "runner",
         "owner": "enemy",
-        "x": 13,
+        "level": 2,
+        "x": 9,
         "y": 4
       },
       {
-        "id": "last-train-out-enemy-grunt-0-9",
+        "id": "crossfire-creek-stage-2-enemy-grunt-8-6",
         "unitTypeId": "grunt",
         "owner": "enemy",
-        "x": 0,
-        "y": 9
+        "level": 3,
+        "x": 8,
+        "y": 6
       },
       {
-        "id": "last-train-out-enemy-grunt-13-9",
-        "unitTypeId": "grunt",
+        "id": "crossfire-creek-stage-2-enemy-breaker-9-7",
+        "unitTypeId": "breaker",
         "owner": "enemy",
-        "x": 13,
-        "y": 9
+        "level": 2,
+        "x": 9,
+        "y": 7
       }
     ],
     "goal": {
-      "type": "survive",
-      "turnLimit": 6
-    }
-  },
-  "./maps/river-city.json": {
-    "id": "river-city",
-    "name": "River City",
-    "theme": "ash",
-    "width": 19,
-    "height": 19,
-    "tiles": [
-      [
-        "forest",
-        "forest",
-        "plain",
-        "forest",
-        "forest",
-        "forest",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "water",
-        "plain",
-        "forest",
-        "forest",
-        "forest",
-        "plain",
-        "forest",
-        "forest"
-      ],
-      [
-        "forest",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "road",
-        "water",
-        "water",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "forest"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "water",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "forest",
-        "forest",
-        "plain",
-        "plain",
-        "water",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "forest",
-        "forest",
-        "plain",
-        "plain",
-        "road",
-        "plain"
-      ],
-      [
-        "plain",
-        "road",
-        "road",
-        "road",
-        "road",
-        "forest",
-        "forest",
-        "water",
-        "water",
-        "road",
-        "road",
-        "road",
-        "forest",
-        "forest",
-        "road",
-        "road",
-        "road",
-        "road",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "forest",
-        "road",
-        "mountain",
-        "forest",
-        "water",
-        "plain",
-        "road",
-        "plain",
-        "road",
-        "forest",
-        "mountain",
-        "road",
-        "forest",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "forest",
-        "road",
-        "mountain",
-        "mountain",
-        "water",
-        "water",
-        "road",
-        "water",
-        "road",
-        "mountain",
-        "mountain",
-        "road",
-        "forest",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "mountain",
-        "plain",
-        "plain",
-        "water",
-        "road",
-        "water",
-        "plain",
-        "plain",
-        "mountain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road"
-      ],
-      [
-        "forest",
-        "forest",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "forest",
-        "forest"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "water",
-        "road",
-        "water",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "mountain",
-        "plain",
-        "plain",
-        "water",
-        "road",
-        "water",
-        "plain",
-        "plain",
-        "mountain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "forest",
-        "road",
-        "mountain",
-        "mountain",
-        "plain",
-        "plain",
-        "road",
-        "water",
-        "water",
-        "mountain",
-        "mountain",
-        "road",
-        "forest",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "forest",
-        "forest",
-        "road",
-        "mountain",
-        "plain",
-        "road",
-        "road",
-        "road",
-        "plain",
-        "water",
-        "plain",
-        "mountain",
-        "road",
-        "forest",
-        "forest",
-        "plain",
-        "plain"
-      ],
-      [
-        "plain",
-        "road",
-        "road",
-        "road",
-        "road",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "road",
-        "water",
-        "water",
-        "plain",
-        "plain",
-        "road",
-        "road",
-        "road",
-        "road",
-        "plain"
-      ],
-      [
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "water",
-        "road",
-        "water",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "plain"
-      ],
-      [
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "water",
-        "water",
-        "road",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain"
-      ],
-      [
-        "forest",
-        "plain",
-        "plain",
-        "plain",
-        "forest",
-        "forest",
-        "forest",
-        "water",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "forest",
-        "forest",
-        "forest",
-        "plain",
-        "plain",
-        "plain",
-        "forest"
-      ]
+      "type": "rout"
+    },
+    "runStages": [
+      2
     ],
-    "buildings": [
-      {
-        "id": "river-city-enemy-sector-14-1",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 14,
-        "y": 1
-      },
-      {
-        "id": "river-city-player-sector-4-1",
-        "type": "sector",
-        "owner": "player",
-        "x": 4,
-        "y": 1
-      },
-      {
-        "id": "river-city-neutral-sector-13-10",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 13,
-        "y": 10
-      },
-      {
-        "id": "river-city-neutral-sector-5-10",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 5,
-        "y": 10
-      },
-      {
-        "id": "river-city-neutral-repair-station-11-11",
-        "type": "repair-station",
-        "owner": "neutral",
-        "x": 11,
-        "y": 11
-      },
-      {
-        "id": "river-city-neutral-repair-station-7-11",
-        "type": "repair-station",
-        "owner": "neutral",
-        "x": 7,
-        "y": 11
-      },
-      {
-        "id": "river-city-neutral-sector-16-12",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 16,
-        "y": 12
-      },
-      {
-        "id": "river-city-neutral-sector-2-12",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 2,
-        "y": 12
-      },
-      {
-        "id": "river-city-neutral-airfield-13-16",
-        "type": "airfield",
-        "owner": "neutral",
-        "x": 13,
-        "y": 16
-      },
-      {
-        "id": "river-city-neutral-airfield-5-16",
-        "type": "airfield",
-        "owner": "neutral",
-        "x": 5,
-        "y": 16
-      },
-      {
-        "id": "river-city-player-motor-pool-1-17",
-        "type": "motor-pool",
-        "owner": "player",
-        "x": 1,
-        "y": 17
-      },
-      {
-        "id": "river-city-enemy-motor-pool-17-17",
-        "type": "motor-pool",
-        "owner": "enemy",
-        "x": 17,
-        "y": 17
-      },
-      {
-        "id": "river-city-player-command-1-2",
-        "type": "command",
-        "owner": "player",
-        "x": 1,
-        "y": 2
-      },
-      {
-        "id": "river-city-enemy-command-17-2",
-        "type": "command",
-        "owner": "enemy",
-        "x": 17,
-        "y": 2
-      },
-      {
-        "id": "river-city-enemy-barracks-16-5",
-        "type": "barracks",
-        "owner": "enemy",
-        "x": 16,
-        "y": 5
-      },
-      {
-        "id": "river-city-player-barracks-2-5",
-        "type": "barracks",
-        "owner": "player",
-        "x": 2,
-        "y": 5
-      },
-      {
-        "id": "river-city-neutral-hospital-16-9",
-        "type": "hospital",
-        "owner": "neutral",
-        "x": 16,
-        "y": 9
-      },
-      {
-        "id": "river-city-neutral-hospital-2-9",
-        "type": "hospital",
-        "owner": "neutral",
-        "x": 2,
-        "y": 9
-      }
-    ],
-    "units": []
+    "variantStage": 2
   },
-  "./maps/spann-island.json": {
-    "id": "spann-island",
-    "name": "Spann Island",
+  "./maps/crossfire-creek/crossfire-creek-stage-3.json": {
+    "id": "crossfire-creek-stage-3",
+    "name": "Crossfire Creek",
     "theme": "ash",
-    "width": 16,
+    "width": 10,
     "height": 10,
     "tiles": [
       [
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "water",
-        "plain",
-        "forest",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "plain",
-        "forest",
-        "plain",
-        "plain",
-        "plain",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "plain",
-        "plain",
-        "forest",
-        "road",
-        "forest",
-        "water",
-        "plain",
-        "road",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "plain",
-        "plain",
-        "road",
-        "road",
-        "water",
-        "water",
-        "water",
-        "road",
         "plain",
         "mountain",
-        "plain",
-        "road",
-        "plain",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "plain",
-        "plain",
-        "road",
-        "plain",
-        "water",
-        "water",
-        "water",
-        "road",
-        "plain",
         "mountain",
         "plain",
-        "road",
-        "plain",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "plain",
-        "road",
-        "road",
-        "plain",
-        "water",
-        "water",
-        "forest",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "plain",
-        "water",
-        "water"
-      ],
-      [
-        "water",
         "plain",
         "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "forest",
-        "forest",
-        "plain",
-        "water",
-        "water",
-        "road",
-        "water",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "water",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "plain",
-        "water",
-        "water",
-        "plain",
-        "plain",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "water",
-        "water",
-        "water",
-        "mountain",
         "plain",
         "mountain",
+        "mountain",
+        "plain"
+      ],
+      [
+        "plain",
+        "forest",
         "forest",
         "plain",
         "plain",
-        "road",
         "plain",
         "plain",
-        "plain",
-        "water",
-        "water"
+        "forest",
+        "forest",
+        "plain"
       ],
       [
+        "plain",
+        "forest",
+        "plain",
+        "plain",
         "water",
         "water",
+        "plain",
+        "plain",
+        "plain",
+        "plain"
+      ],
+      [
+        "plain",
+        "plain",
+        "ridge",
+        "forest",
         "water",
         "water",
+        "forest",
+        "ridge",
+        "plain",
+        "plain"
+      ],
+      [
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "road",
+        "plain"
+      ],
+      [
+        "plain",
+        "plain",
+        "ridge",
+        "forest",
+        "road",
+        "road",
+        "forest",
+        "ridge",
+        "plain",
+        "plain"
+      ],
+      [
+        "plain",
+        "forest",
+        "plain",
+        "plain",
         "water",
         "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water",
-        "water"
+        "plain",
+        "plain",
+        "plain",
+        "plain"
+      ],
+      [
+        "plain",
+        "forest",
+        "forest",
+        "plain",
+        "ridge",
+        "ridge",
+        "plain",
+        "forest",
+        "forest",
+        "plain"
+      ],
+      [
+        "plain",
+        "mountain",
+        "mountain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "mountain",
+        "mountain",
+        "plain"
+      ],
+      [
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain",
+        "plain"
       ]
     ],
     "buildings": [
       {
-        "id": "spann-island-enemy-motor-pool-11-1",
-        "type": "motor-pool",
-        "owner": "enemy",
-        "x": 11,
-        "y": 1
-      },
-      {
-        "id": "spann-island-enemy-motor-pool-13-1",
-        "type": "motor-pool",
-        "owner": "enemy",
-        "x": 13,
-        "y": 1
-      },
-      {
-        "id": "spann-island-enemy-command-12-2",
-        "type": "command",
-        "owner": "enemy",
-        "x": 12,
-        "y": 2
-      },
-      {
-        "id": "spann-island-enemy-barracks-13-2",
-        "type": "barracks",
-        "owner": "enemy",
-        "x": 13,
-        "y": 2
-      },
-      {
-        "id": "spann-island-neutral-sector-9-2",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 9,
-        "y": 2
-      },
-      {
-        "id": "spann-island-neutral-sector-1-3",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 1,
-        "y": 3
-      },
-      {
-        "id": "spann-island-enemy-barracks-13-3",
-        "type": "barracks",
-        "owner": "enemy",
-        "x": 13,
-        "y": 3
-      },
-      {
-        "id": "spann-island-neutral-sector-2-3",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 2,
-        "y": 3
-      },
-      {
-        "id": "spann-island-neutral-sector-11-4",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 11,
-        "y": 4
-      },
-      {
-        "id": "spann-island-neutral-hospital-9-4",
-        "type": "hospital",
-        "owner": "neutral",
-        "x": 9,
-        "y": 4
-      },
-      {
-        "id": "spann-island-player-barracks-1-5",
-        "type": "barracks",
-        "owner": "player",
-        "x": 1,
-        "y": 5
-      },
-      {
-        "id": "spann-island-neutral-sector-13-5",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 13,
-        "y": 5
-      },
-      {
-        "id": "spann-island-neutral-sector-4-5",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 4,
-        "y": 5
-      },
-      {
-        "id": "spann-island-player-barracks-1-6",
-        "type": "barracks",
-        "owner": "player",
-        "x": 1,
-        "y": 6
-      },
-      {
-        "id": "spann-island-player-command-2-6",
-        "type": "command",
-        "owner": "player",
-        "x": 2,
-        "y": 6
-      },
-      {
-        "id": "spann-island-player-motor-pool-2-7",
-        "type": "motor-pool",
-        "owner": "player",
-        "x": 2,
-        "y": 7
-      },
-      {
-        "id": "spann-island-player-motor-pool-3-7",
-        "type": "motor-pool",
-        "owner": "player",
-        "x": 3,
-        "y": 7
-      },
-      {
-        "id": "spann-island-neutral-repair-station-12-8",
+        "id": "crossfire-creek-stage-3-neutral-repair-station-6-1",
         "type": "repair-station",
         "owner": "neutral",
-        "x": 12,
-        "y": 8
+        "x": 6,
+        "y": 1
       },
       {
-        "id": "spann-island-neutral-sector-13-8",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 13,
-        "y": 8
+        "id": "crossfire-creek-stage-3-player-command-0-3",
+        "type": "command",
+        "owner": "player",
+        "x": 0,
+        "y": 3
       },
       {
-        "id": "spann-island-neutral-sector-5-8",
+        "id": "crossfire-creek-stage-3-enemy-sector-8-3",
         "type": "sector",
-        "owner": "neutral",
-        "x": 5,
-        "y": 8
-      },
-      {
-        "id": "spann-island-neutral-sector-8-8",
-        "type": "sector",
-        "owner": "neutral",
+        "owner": "enemy",
         "x": 8,
-        "y": 8
+        "y": 3
+      },
+      {
+        "id": "crossfire-creek-stage-3-player-sector-1-5",
+        "type": "sector",
+        "owner": "player",
+        "x": 1,
+        "y": 5
+      },
+      {
+        "id": "crossfire-creek-stage-3-enemy-command-9-5",
+        "type": "command",
+        "owner": "enemy",
+        "x": 9,
+        "y": 5
+      },
+      {
+        "id": "crossfire-creek-stage-3-neutral-hospital-3-7",
+        "type": "hospital",
+        "owner": "neutral",
+        "x": 3,
+        "y": 7
       }
     ],
-    "units": [],
+    "units": [
+      {
+        "id": "crossfire-creek-stage-3-enemy-breaker-9-1",
+        "unitTypeId": "breaker",
+        "owner": "enemy",
+        "level": 2,
+        "x": 9,
+        "y": 1
+      },
+      {
+        "id": "crossfire-creek-stage-3-enemy-longshot-8-2",
+        "unitTypeId": "longshot",
+        "owner": "enemy",
+        "level": 2,
+        "x": 8,
+        "y": 2
+      },
+      {
+        "id": "crossfire-creek-stage-3-enemy-bruiser-9-4",
+        "unitTypeId": "bruiser",
+        "owner": "enemy",
+        "level": 1,
+        "x": 9,
+        "y": 4
+      },
+      {
+        "id": "crossfire-creek-stage-3-enemy-mechanic-8-6",
+        "unitTypeId": "mechanic",
+        "owner": "enemy",
+        "level": 3,
+        "x": 8,
+        "y": 6
+      },
+      {
+        "id": "crossfire-creek-stage-3-enemy-breaker-9-7",
+        "unitTypeId": "breaker",
+        "owner": "enemy",
+        "level": 2,
+        "x": 9,
+        "y": 7
+      }
+    ],
     "goal": {
-      "type": "hq-capture"
-    }
+      "type": "rout"
+    },
+    "runStages": [
+      3
+    ],
+    "variantStage": 3
   }
 };

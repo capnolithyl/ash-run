@@ -56,3 +56,33 @@ test("storage repository saves and lists custom maps through localStorage fallba
     globalThis.localStorage = originalStorage;
   }
 });
+
+test("storage repository proxies map file listing and loading through the desktop api", async () => {
+  const originalApi = globalThis.ashRun84Api;
+
+  globalThis.ashRun84Api = {
+    async listMapFiles() {
+      return {
+        rootPath: "D:/ash-run/ash-run/src/game/content/maps",
+        entries: [{ relativePath: "crossfire-creek.json", name: "Crossfire Creek" }]
+      };
+    },
+    async loadMapFile(relativePath) {
+      return {
+        filePath: `D:/ash-run/ash-run/src/game/content/maps/${relativePath}`,
+        text: JSON.stringify({ id: "crossfire-creek", name: "Crossfire Creek" })
+      };
+    }
+  };
+
+  try {
+    const repository = new StorageRepository();
+    const listResult = await repository.listMapFiles();
+    const loadResult = await repository.loadMapFile("crossfire-creek.json");
+
+    assert.equal(listResult.entries[0].relativePath, "crossfire-creek.json");
+    assert.match(loadResult.filePath, /crossfire-creek\.json$/);
+  } finally {
+    globalThis.ashRun84Api = originalApi;
+  }
+});

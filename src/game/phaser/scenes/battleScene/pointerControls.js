@@ -1,4 +1,4 @@
-import { MAP_EDITOR_TOOL_IDS } from "../../../content/mapEditor.js";
+import { getMapEditorContextEraserToolId, MAP_EDITOR_TOOL_IDS } from "../../../content/mapEditor.js";
 import { getBoardSnapshot, isBattleScreen, isBoardScreen, isMapEditorScreen } from "./screenState.js";
 
 function isRightClick(pointer) {
@@ -96,7 +96,9 @@ export function bindBattleScenePointerControls(scene) {
       }
 
       scene.mapEditorPaintPointerId = getPointerId(pointer);
-      scene.mapEditorPaintToolId = isRightClick(pointer) ? MAP_EDITOR_TOOL_IDS.ERASER : null;
+      scene.mapEditorPaintToolId = isRightClick(pointer)
+        ? getMapEditorContextEraserToolId(scene.latestState?.mapEditor?.selectedTool)
+        : null;
       scene.lastPaintedTileKey = null;
       scene.controller.startMapEditorPaint?.();
       scene.paintEditorTile(tile);

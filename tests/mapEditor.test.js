@@ -157,7 +157,7 @@ test("new edits after stepping back truncate future history states", () => {
   assert.equal(state.mapEditor.historyEntries.some((entry) => /Resize map to 20x12/.test(entry.label)), false);
 });
 
-test("temporary eraser override clears a tile without changing the selected tool", () => {
+test("temporary selective eraser override clears only the requested tile content without changing the selected tool", () => {
   const mapData = createBlankMapDefinition({
     id: "override-eraser",
     buildings: [
@@ -184,14 +184,68 @@ test("temporary eraser override clears a tile without changing the selected tool
   const editorState = createDefaultMapEditorState(mapData);
   editorState.selectedTool = MAP_EDITOR_TOOL_IDS.BUILDING;
 
-  const result = applyMapEditorTool(mapData, editorState, 2, 2, {
-    toolId: MAP_EDITOR_TOOL_IDS.ERASER
+  const buildingResult = applyMapEditorTool(mapData, editorState, 2, 2, {
+    toolId: MAP_EDITOR_TOOL_IDS.BUILDING_ERASER
+  });
+  const terrainResult = applyMapEditorTool(mapData, editorState, 2, 2, {
+    toolId: MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER
+  });
+  const unitResult = applyMapEditorTool(mapData, editorState, 2, 2, {
+    toolId: MAP_EDITOR_TOOL_IDS.UNIT_ERASER
   });
 
   assert.equal(editorState.selectedTool, MAP_EDITOR_TOOL_IDS.BUILDING);
-  assert.equal(result.mapData.tiles[2][2], TERRAIN_KEYS.PLAIN);
-  assert.equal(result.mapData.buildings.some((building) => building.x === 2 && building.y === 2), false);
-  assert.equal(result.mapData.units.some((unit) => unit.x === 2 && unit.y === 2), false);
+  assert.equal(buildingResult.mapData.tiles[2][2], TERRAIN_KEYS.FOREST);
+  assert.equal(buildingResult.mapData.buildings.some((building) => building.x === 2 && building.y === 2), false);
+  assert.equal(buildingResult.mapData.units.some((unit) => unit.x === 2 && unit.y === 2), true);
+  assert.equal(terrainResult.mapData.tiles[2][2], TERRAIN_KEYS.PLAIN);
+  assert.equal(terrainResult.mapData.buildings.some((building) => building.x === 2 && building.y === 2), true);
+  assert.equal(terrainResult.mapData.units.some((unit) => unit.x === 2 && unit.y === 2), true);
+  assert.equal(unitResult.mapData.tiles[2][2], TERRAIN_KEYS.FOREST);
+  assert.equal(unitResult.mapData.buildings.some((building) => building.x === 2 && building.y === 2), true);
+  assert.equal(unitResult.mapData.units.some((unit) => unit.x === 2 && unit.y === 2), false);
+});
+
+test("quick select memory tracks the last selected terrain, building, and unit choices", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.selectMapEditorTerrain(TERRAIN_KEYS.FOREST);
+  controller.selectMapEditorBuildingType(BUILDING_KEYS.AIRFIELD);
+  controller.selectMapEditorBuildingOwner(TURN_SIDES.ENEMY);
+  controller.selectMapEditorUnitType("breaker");
+  controller.selectMapEditorUnitOwner(TURN_SIDES.ENEMY);
+  controller.updateMapEditorField("selectedUnitLevel", "4");
+
+  controller.selectMapEditorTerrain(TERRAIN_KEYS.MOUNTAIN);
+  controller.selectMapEditorBuildingType(BUILDING_KEYS.HOSPITAL);
+  controller.selectMapEditorBuildingOwner("neutral");
+  controller.selectMapEditorUnitType("grunt");
+  controller.selectMapEditorUnitOwner(TURN_SIDES.PLAYER);
+  controller.updateMapEditorField("selectedUnitLevel", "2");
+
+  controller.restoreLastMapEditorTerrain();
+  controller.restoreLastMapEditorBuilding();
+  controller.restoreLastMapEditorUnit();
+
+  const editorState = controller.getState().mapEditor;
+
+  assert.equal(editorState.lastSelectedTerrainId, TERRAIN_KEYS.MOUNTAIN);
+  assert.deepEqual(editorState.lastSelectedBuilding, {
+    type: BUILDING_KEYS.HOSPITAL,
+    owner: "neutral"
+  });
+  assert.deepEqual(editorState.lastSelectedUnit, {
+    unitTypeId: "grunt",
+    owner: TURN_SIDES.PLAYER,
+    level: 2
+  });
+  assert.equal(editorState.selectedTerrainId, TERRAIN_KEYS.MOUNTAIN);
+  assert.equal(editorState.selectedBuildingType, BUILDING_KEYS.HOSPITAL);
+  assert.equal(editorState.selectedBuildingOwner, "neutral");
+  assert.equal(editorState.selectedUnitTypeId, "grunt");
+  assert.equal(editorState.selectedUnitOwner, TURN_SIDES.PLAYER);
+  assert.equal(editorState.selectedUnitLevel, 2);
 });
 
 test("map editor controller can paint a map, resize it, place units, and export repo-ready JSON", () => {
@@ -410,26 +464,13 @@ test("map editor change events still commit inspector fields through the control
   ]);
 });
 
-test("map editor import button uses the desktop file dialog when available", async () => {
-  let importedMap = null;
+test("map editor import button opens the in-game load dialog through the controller", async () => {
+  let openCalls = 0;
   const shell = {
     latestState: {},
-    getDesktopApi() {
-      return {
-        async importMapFile() {
-          return {
-            text: JSON.stringify({
-              name: "Desktop Import",
-              width: 12,
-              height: 12
-            })
-          };
-        }
-      };
-    },
     controller: {
-      importMapEditorMap(mapInput) {
-        importedMap = mapInput;
+      async openMapEditorLoadDialog() {
+        openCalls += 1;
       }
     }
   };
@@ -446,46 +487,7 @@ test("map editor import button uses the desktop file dialog when available", asy
     }
   });
 
-  assert.equal(importedMap?.name, "Desktop Import");
-  assert.equal(importedMap?.width, 12);
-});
-
-test("map editor import button falls back to the browser file input", async () => {
-  let clicked = false;
-  const shell = {
-    latestState: {},
-    getDesktopApi() {
-      return null;
-    },
-    openMapEditorImportFallback() {
-      this.root.querySelector("#map-editor-import")?.click();
-    },
-    root: {
-      querySelector(selector) {
-        assert.equal(selector, "#map-editor-import");
-        return {
-          click() {
-            clicked = true;
-          }
-        };
-      }
-    },
-    controller: {}
-  };
-
-  await appShellEventMethods.handleClick.call(shell, {
-    target: {
-      closest() {
-        return {
-          dataset: {
-            action: "map-editor-import"
-          }
-        };
-      }
-    }
-  });
-
-  assert.equal(clicked, true);
+  assert.equal(openCalls, 1);
 });
 
 test("map editor save action routes through the controller save flow", async () => {
@@ -512,39 +514,6 @@ test("map editor save action routes through the controller save flow", async () 
   });
 
   assert.deepEqual(saveCalls, ["saved"]);
-});
-
-test("map editor import falls back to the browser file input when the desktop handler is missing", async () => {
-  let clicked = false;
-  const shell = {
-    latestState: {},
-    getDesktopApi() {
-      return {
-        async importMapFile() {
-          throw new Error("No handler registered for 'map-files:import'");
-        }
-      };
-    },
-    openMapEditorImportFallback() {
-      clicked = true;
-    },
-    logDesktopDialogFallback() {},
-    controller: {}
-  };
-
-  await appShellEventMethods.handleClick.call(shell, {
-    target: {
-      closest() {
-        return {
-          dataset: {
-            action: "map-editor-import"
-          }
-        };
-      }
-    }
-  });
-
-  assert.equal(clicked, true);
 });
 
 test("map editor save action still uses the controller flow without desktop export handlers", async () => {
@@ -609,6 +578,262 @@ test("map editor history actions route through the controller", async () => {
   }
 
   assert.deepEqual(calls, ["undo", "request:2", "confirm", "cancel"]);
+});
+
+test("map editor load dialog actions route through the controller", async () => {
+  const calls = [];
+  const shell = {
+    latestState: {},
+    controller: {
+      closeMapEditorLoadDialog() {
+        calls.push("close");
+      },
+      selectMapEditorLoadDialogEntry(relativePath) {
+        calls.push(`select:${relativePath}`);
+      },
+      async confirmMapEditorLoadDialog() {
+        calls.push("confirm");
+      }
+    }
+  };
+
+  for (const dataset of [
+    { action: "map-editor-select-load-entry", mapRelativePath: "crossfire-creek/crossfire-creek-stage-1.json" },
+    { action: "map-editor-confirm-load" },
+    { action: "map-editor-close-load-dialog" }
+  ]) {
+    await appShellEventMethods.handleClick.call(shell, {
+      target: {
+        closest() {
+          return { dataset };
+        }
+      }
+    });
+  }
+
+  assert.deepEqual(calls, [
+    "select:crossfire-creek/crossfire-creek-stage-1.json",
+    "confirm",
+    "close"
+  ]);
+});
+
+test("map editor quick select actions route through the controller", async () => {
+  const calls = [];
+  const shell = {
+    latestState: {},
+    controller: {
+      restoreLastMapEditorTerrain() {
+        calls.push("terrain");
+      },
+      restoreLastMapEditorBuilding() {
+        calls.push("building");
+      },
+      restoreLastMapEditorUnit() {
+        calls.push("unit");
+      }
+    }
+  };
+
+  for (const action of [
+    "map-editor-restore-last-terrain",
+    "map-editor-restore-last-building",
+    "map-editor-restore-last-unit"
+  ]) {
+    await appShellEventMethods.handleClick.call(shell, {
+      target: {
+        closest() {
+          return { dataset: { action } };
+        }
+      }
+    });
+  }
+
+  assert.deepEqual(calls, ["terrain", "building", "unit"]);
+});
+
+test("opening the map editor load dialog populates entries and preselects the current map id", async () => {
+  const controller = new GameController({
+    async listMapFiles() {
+      return {
+        rootPath: "D:/ash-run/ash-run/src/game/content/maps",
+        entries: [
+          {
+            relativePath: "factory-lane/factory-lane-stage-2.json",
+            id: "factory-lane-stage-2",
+            name: "Factory Lane",
+            variantStage: 2,
+            width: 12,
+            height: 12,
+            goal: { type: MAP_GOAL_TYPES.ROUT },
+            previewMap: {
+              width: 12,
+              height: 12,
+              tiles: Array.from({ length: 12 }, () => Array.from({ length: 12 }, () => TERRAIN_KEYS.PLAIN)),
+              buildings: [],
+              goal: { type: MAP_GOAL_TYPES.ROUT }
+            }
+          },
+          {
+            relativePath: "crossfire-creek/crossfire-creek-stage-1.json",
+            id: "crossfire-creek-stage-1",
+            name: "Crossfire Creek",
+            variantStage: 1,
+            width: 10,
+            height: 10,
+            goal: { type: MAP_GOAL_TYPES.ROUT },
+            previewMap: {
+              width: 10,
+              height: 10,
+              tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => TERRAIN_KEYS.PLAIN)),
+              buildings: [],
+              goal: { type: MAP_GOAL_TYPES.ROUT }
+            }
+          }
+        ]
+      };
+    }
+  });
+
+  controller.openMapEditor();
+  controller.importMapEditorMap({
+    id: "crossfire-creek-stage-1",
+    name: "Crossfire Creek",
+    theme: "ash",
+    width: 10,
+    height: 10,
+    tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => TERRAIN_KEYS.PLAIN))
+  });
+
+  await controller.openMapEditorLoadDialog();
+
+  const state = controller.getState().mapEditor;
+
+  assert.equal(state.loadDialogOpen, true);
+  assert.equal(state.loadDialogEntries.length, 2);
+  assert.equal(state.loadDialogSelectedPath, "crossfire-creek/crossfire-creek-stage-1.json");
+  assert.equal(state.loadDialogOpenGroupKey, "Crossfire Creek");
+  assert.equal(state.loadDialogBusy, false);
+});
+
+test("selecting a map editor load dialog entry keeps its map group expanded", async () => {
+  const controller = new GameController({
+    async listMapFiles() {
+      return {
+        rootPath: "D:/ash-run/ash-run/src/game/content/maps",
+        entries: [
+          {
+            relativePath: "crossfire-creek/crossfire-creek-stage-1.json",
+            id: "crossfire-creek-stage-1",
+            name: "Crossfire Creek",
+            variantStage: 1,
+            width: 10,
+            height: 10,
+            goal: { type: MAP_GOAL_TYPES.ROUT },
+            previewMap: {
+              width: 10,
+              height: 10,
+              tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => TERRAIN_KEYS.PLAIN)),
+              buildings: [],
+              goal: { type: MAP_GOAL_TYPES.ROUT }
+            }
+          },
+          {
+            relativePath: "factory-lane/factory-lane-stage-2.json",
+            id: "factory-lane-stage-2",
+            name: "Factory Lane",
+            variantStage: 2,
+            width: 12,
+            height: 12,
+            goal: { type: MAP_GOAL_TYPES.ROUT },
+            previewMap: {
+              width: 12,
+              height: 12,
+              tiles: Array.from({ length: 12 }, () => Array.from({ length: 12 }, () => TERRAIN_KEYS.PLAIN)),
+              buildings: [],
+              goal: { type: MAP_GOAL_TYPES.ROUT }
+            }
+          }
+        ]
+      };
+    }
+  });
+
+  controller.openMapEditor();
+  await controller.openMapEditorLoadDialog();
+  controller.selectMapEditorLoadDialogEntry("factory-lane/factory-lane-stage-2.json");
+
+  const state = controller.getState().mapEditor;
+
+  assert.equal(state.loadDialogSelectedPath, "factory-lane/factory-lane-stage-2.json");
+  assert.equal(state.loadDialogOpenGroupKey, "Factory Lane");
+});
+
+test("confirming a map editor load dialog selection imports the selected map and closes the dialog", async () => {
+  const controller = new GameController({
+    async listMapFiles() {
+      return {
+        rootPath: "D:/ash-run/ash-run/src/game/content/maps",
+        entries: [
+          {
+            relativePath: "crossfire-creek/crossfire-creek-stage-1.json",
+            id: "crossfire-creek-stage-1",
+            name: "Crossfire Creek",
+            variantStage: 1,
+            width: 10,
+            height: 10,
+            goal: { type: MAP_GOAL_TYPES.ROUT },
+            previewMap: {
+              width: 10,
+              height: 10,
+              tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => TERRAIN_KEYS.PLAIN)),
+              buildings: [],
+              goal: { type: MAP_GOAL_TYPES.ROUT }
+            }
+          }
+        ]
+      };
+    },
+    async loadMapFile() {
+      return {
+        text: JSON.stringify({
+          id: "crossfire-creek-stage-1",
+          name: "Crossfire Creek",
+          theme: "ash",
+          width: 10,
+          height: 10,
+          tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => TERRAIN_KEYS.PLAIN))
+        })
+      };
+    }
+  });
+
+  controller.openMapEditor();
+  await controller.openMapEditorLoadDialog();
+  const result = await controller.confirmMapEditorLoadDialog();
+  const state = controller.getState();
+
+  assert.equal(result?.mode, "loaded");
+  assert.equal(state.mapEditor.loadDialogOpen, false);
+  assert.equal(state.mapEditor.mapData.name, "Crossfire Creek");
+  assert.equal(state.mapEditor.historyEntries[0].label, "Map loaded");
+  assert.equal(state.toast?.title, "Map loaded");
+});
+
+test("opening the map editor load dialog without desktop file access shows a toast instead of falling back", async () => {
+  const controller = new GameController({
+    async listMapFiles() {
+      return { unsupported: true, entries: [] };
+    }
+  });
+
+  controller.openMapEditor();
+  const result = await controller.openMapEditorLoadDialog();
+  const state = controller.getState();
+
+  assert.equal(result?.mode, "unsupported");
+  assert.equal(state.mapEditor.loadDialogOpen, false);
+  assert.equal(state.toast?.title, "Map loader unavailable");
 });
 
 test("new maps no longer require spawn points to export", () => {
@@ -709,7 +934,7 @@ test("goal targets clear automatically when the marked building is removed", () 
     }
   });
   const editorState = createDefaultMapEditorState(mapData);
-  editorState.selectedTool = MAP_EDITOR_TOOL_IDS.ERASER;
+  editorState.selectedTool = MAP_EDITOR_TOOL_IDS.BUILDING_ERASER;
 
   const result = applyMapEditorTool(mapData, editorState, 3, 3);
 
@@ -806,6 +1031,12 @@ test("map editor view exposes every building, every unit, size fields, and mirro
   assert.match(html, /data-map-editor-field="goalType"/);
   assert.match(html, /data-map-editor-field="selectedUnitLevel"/);
   assert.match(html, /data-action="map-editor-set-variant-stage"/);
+  assert.match(html, /data-action="map-editor-restore-last-terrain"/);
+  assert.match(html, /data-action="map-editor-restore-last-building"/);
+  assert.match(html, /data-action="map-editor-restore-last-unit"/);
+  assert.match(html, /Terrain Eraser/);
+  assert.match(html, /Building Eraser/);
+  assert.match(html, /Unit Eraser/);
   assert.doesNotMatch(html, /data-map-editor-field="variantStage"/);
   assert.doesNotMatch(html, /data-action="map-editor-toggle-run-stage"/);
   assert.match(html, /data-mirror-mode="vertical"/);

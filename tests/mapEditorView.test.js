@@ -47,6 +47,10 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-map-editor-field="name"/);
   assert.match(html, /data-map-editor-field="theme"/);
   assert.match(html, /Run Variant/);
+  assert.match(html, /Quick Select/);
+  assert.match(html, /data-action="map-editor-restore-last-terrain"/);
+  assert.match(html, /data-action="map-editor-restore-last-building"/);
+  assert.match(html, /data-action="map-editor-restore-last-unit"/);
   assert.match(html, /data-action="map-editor-set-variant-stage"/);
   assert.match(html, /History/);
   assert.match(html, /data-action="map-editor-undo"/);
@@ -67,6 +71,11 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-action="map-editor-import"/);
   assert.match(html, /Tile 1, 1/);
   assert.match(html, /Command Post/);
+  assert.match(html, /data-tooltip="/);
+  assert.match(html, /assets\/sprites\/terrain\/plain\.png/);
+  assert.match(html, /assets\/sprites\/buildings\/neutral\/command\.(png|svg)/);
+  assert.match(html, /assets\/sprites\/units\/player\/grunt/);
+  assert.match(html, /data-map-editor-preview-styles="true"/);
   assert.equal((html.match(/Ready To Save/g) ?? []).length, 1);
   assert.doesNotMatch(html, /<dt>Tool<\/dt>/);
   assert.doesNotMatch(html, /<dt>Mirror<\/dt>/);
@@ -75,6 +84,7 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.doesNotMatch(html, /Import JSON/);
   assert.doesNotMatch(html, /Save JSON/);
   assert.doesNotMatch(html, /The map has a valid name, theme, size, terrain, buildings, and placed-unit data/);
+  assert.doesNotMatch(html, /Clears terrain, buildings, and units/);
   assert.doesNotMatch(html, /map-editor-header/);
   assert.match(html, /data-action="map-editor-undo"/);
 });
@@ -142,4 +152,63 @@ test("map editor view shows the id as derived read-only metadata instead of an e
   assert.doesNotMatch(html, /Derived ID/);
   assert.doesNotMatch(html, /data-map-editor-derived-id/);
   assert.doesNotMatch(html, /data-map-editor-field="id"/);
+});
+
+test("map editor view renders the in-game load dialog with list and preview details", () => {
+  const state = {
+    mapEditor: {
+      ...createDefaultMapEditorState(createBlankMapDefinition({ id: "factory-lane-stage-2", name: "Factory Lane" })),
+      loadDialogOpen: true,
+      loadDialogEntries: [
+        {
+          relativePath: "crossfire-creek/crossfire-creek-stage-1.json",
+          id: "crossfire-creek-stage-1",
+          name: "Crossfire Creek",
+          variantStage: 1,
+          width: 10,
+          height: 10,
+          goal: { type: "rout" },
+          previewMap: {
+            width: 10,
+            height: 10,
+            tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => "plain")),
+            buildings: []
+          }
+        },
+        {
+          relativePath: "crossfire-creek/crossfire-creek-stage-3.json",
+          id: "crossfire-creek-stage-3",
+          name: "Crossfire Creek",
+          variantStage: 3,
+          width: 10,
+          height: 10,
+          goal: { type: "rout" },
+          previewMap: {
+            width: 10,
+            height: 10,
+            tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => "plain")),
+            buildings: []
+          }
+        }
+      ],
+      loadDialogSelectedPath: "crossfire-creek/crossfire-creek-stage-1.json"
+    }
+  };
+
+  const html = renderMapEditorView(state);
+
+  assert.match(html, /map-editor-load-dialog/);
+  assert.match(html, /data-map-editor-load-list="true"/);
+  assert.match(html, /data-map-editor-load-group="Crossfire Creek"/);
+  assert.match(html, /map-editor-load-group__summary/);
+  assert.match(html, /2 variants/);
+  assert.match(html, /data-action="map-editor-select-load-entry"/);
+  assert.match(html, /data-action="map-editor-confirm-load"/);
+  assert.match(html, /data-action="map-editor-close-load-dialog"/);
+  assert.match(html, /Crossfire Creek/);
+  assert.match(html, /crossfire-creek\/crossfire-creek-stage-1\.json/);
+  assert.match(html, /crossfire-creek\/crossfire-creek-stage-3\.json/);
+  assert.match(html, /Stage 1/);
+  assert.match(html, /Stage 3/);
+  assert.match(html, /Map layout preview/);
 });

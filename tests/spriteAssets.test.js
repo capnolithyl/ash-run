@@ -9,6 +9,7 @@ import {
   BUILDING_OWNER_VARIANTS,
   SPRITE_ASSETS,
   UNIT_OWNER_VARIANTS,
+  getBuildingSpriteDefinition,
   getBuildingSpriteKey,
   getTerrainClusterVariantDefinition,
   getTerrainSpriteDefinition,
@@ -192,7 +193,18 @@ test("water terrain animation uses the authored spritesheet frame size", () => {
   assert.equal(terrainSprite.animated?.frameWidth, 627);
   assert.equal(terrainSprite.animated?.frameHeight, 627);
   assert.equal(terrainSprite.animated?.frameRate, 4);
+  assert.equal(terrainSprite.animated?.frameCount, 4);
+  assert.equal(terrainSprite.animated?.sheetColumns, 4);
+  assert.equal(terrainSprite.animated?.sheetRows, 1);
   assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/water/water.png");
+});
+
+test("building sprite definitions expose the runtime owner-colored asset url", () => {
+  const spriteDefinition = getBuildingSpriteDefinition(BUILDING_KEYS.COMMAND, "player");
+
+  assert.ok(spriteDefinition);
+  assert.equal(spriteDefinition.key, "sprite:buildings:player:command");
+  assert.match(spriteDefinition.url, /\.\/assets\/sprites\/buildings\/player\/command\.(png|svg)$/);
 });
 
 test("plain terrain falls back to the static tile when no matching animation sheet exists", () => {

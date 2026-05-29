@@ -95,7 +95,9 @@ export const appShellUiStatePersistenceMethods = {
     const leftRail = this.root.querySelector('[data-map-editor-rail="left"]');
     const rightRail = this.root.querySelector('[data-map-editor-rail="right"]');
     const unitsGrid = this.root.querySelector('[data-map-editor-scroll="units"]');
+    const loadDialogList = this.root.querySelector('[data-map-editor-load-list="true"]');
     const openAccordion = this.root.querySelector("details[data-map-editor-accordion][open]");
+    const openLoadGroup = this.root.querySelector("details[data-map-editor-load-group][open]");
     const focusedField = globalThis.document?.activeElement;
     const isFocusedMapEditorField =
       focusedField &&
@@ -105,7 +107,9 @@ export const appShellUiStatePersistenceMethods = {
     this.mapEditorUi.leftRailScrollTop = leftRail?.scrollTop ?? 0;
     this.mapEditorUi.rightRailScrollTop = rightRail?.scrollTop ?? 0;
     this.mapEditorUi.unitsScrollTop = unitsGrid?.scrollTop ?? 0;
+    this.mapEditorUi.loadDialogListScrollTop = loadDialogList?.scrollTop ?? 0;
     this.mapEditorUi.openAccordion = openAccordion?.dataset.mapEditorAccordion ?? null;
+    this.mapEditorUi.loadDialogOpenGroupKey = openLoadGroup?.dataset.mapEditorLoadGroup ?? null;
     this.mapEditorUi.focusedField = isFocusedMapEditorField
       ? {
           field: focusedField.dataset.mapEditorField,
@@ -126,6 +130,7 @@ export const appShellUiStatePersistenceMethods = {
     const leftRail = this.root.querySelector('[data-map-editor-rail="left"]');
     const rightRail = this.root.querySelector('[data-map-editor-rail="right"]');
     const unitsGrid = this.root.querySelector('[data-map-editor-scroll="units"]');
+    const loadDialogList = this.root.querySelector('[data-map-editor-load-list="true"]');
 
     if (leftRail) {
       leftRail.scrollTop = this.mapEditorUi.leftRailScrollTop ?? 0;
@@ -137,6 +142,20 @@ export const appShellUiStatePersistenceMethods = {
 
     if (unitsGrid) {
       unitsGrid.scrollTop = this.mapEditorUi.unitsScrollTop ?? 0;
+    }
+
+    if (loadDialogList) {
+      loadDialogList.scrollTop = this.mapEditorUi.loadDialogListScrollTop ?? 0;
+    }
+
+    if (this.mapEditorUi.loadDialogOpenGroupKey) {
+      const openLoadGroup = this.root.querySelector(
+        `details[data-map-editor-load-group="${CSS.escape(this.mapEditorUi.loadDialogOpenGroupKey)}"]`
+      );
+
+      if (openLoadGroup) {
+        openLoadGroup.open = true;
+      }
     }
 
     const focusedField = this.mapEditorUi.focusedField;
