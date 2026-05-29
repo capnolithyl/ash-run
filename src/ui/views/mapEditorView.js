@@ -230,10 +230,6 @@ function renderMirrorLabel(mirrorMode) {
   return mirrorMode.charAt(0).toUpperCase() + mirrorMode.slice(1);
 }
 
-function formatRunStages(map) {
-  return map.runStages?.length ? map.runStages.join(", ") : "All";
-}
-
 function renderTopCardStat(label, value) {
   return `
     <div class="map-editor-topcard__stat">
@@ -276,7 +272,7 @@ function renderTopCard({
   `;
 }
 
-function renderTopPanels(state, map, goalLabel, validation) {
+function renderTopPanels(map, validation) {
   const validationHeadline = validation.isValid ? "Ready To Save" : "Needs Attention";
   const validationSummary = validation.isValid
     ? "The map passes validation and can be saved right now."
@@ -289,12 +285,7 @@ function renderTopPanels(state, map, goalLabel, validation) {
         eyebrow: "Map Editor",
         title: map.name || "Untitled Map",
         summary: getMapGoalSummary(map.goal, map),
-        stats: [
-          { label: "Theme", value: map.theme },
-          { label: "Size", value: `${map.width} x ${map.height}` },
-          { label: "Goal", value: goalLabel },
-          { label: "Run", value: formatRunStages(map) }
-        ]
+        stats: []
       })}
       ${renderTopCard({
         side: "enemy",
@@ -520,7 +511,7 @@ export function renderMapEditorView(state, uiState = {}) {
       <input class="battle-drawer-toggle" id="battle-intel-drawer" type="checkbox" aria-hidden="true" />
       <input class="battle-drawer-toggle" id="battle-command-drawer" type="checkbox" aria-hidden="true" />
 
-      ${renderTopPanels(state, map, goalLabel, validation)}
+      ${renderTopPanels(map, validation)}
 
       <aside class="battle-rail battle-rail--left map-editor-rail" data-map-editor-rail="left">
         <div class="battle-drawer-header">

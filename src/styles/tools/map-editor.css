@@ -1,8 +1,21 @@
 /* Map editor layout and controls */
 
+.map-editor-shell {
+  --map-editor-rail-width: clamp(13.75rem, 14.75vw, 14.5rem);
+  --battle-desktop-left-width: var(--map-editor-rail-width);
+  --battle-desktop-right-width: clamp(13rem, 13.85vw, 13.75rem);
+  --battle-commander-panel-width: clamp(28rem, 33.5vw, 30rem);
+  --battle-desktop-panels-top: calc(8.95rem + clamp(0.65rem, 0.85vw, 0.9rem));
+}
+
 .map-editor-shell .battle-rail {
+  width: var(--map-editor-rail-width);
   top: var(--battle-desktop-panels-top);
   bottom: calc(var(--battle-desktop-bottom) + 1.15rem);
+}
+
+.map-editor-commanders {
+  gap: 0.82rem;
 }
 
 .map-editor-commanders .commander-panel-shell {
@@ -10,15 +23,15 @@
 }
 
 .map-editor-topcard {
-  min-height: 9.1rem;
-  padding: 1rem 1.15rem 1.05rem;
+  min-height: 7.4rem;
+  padding: 0.78rem 0.92rem 0.84rem;
 }
 
 .map-editor-topcard__body {
   display: grid;
   flex: 1 1 auto;
   min-width: 0;
-  gap: 0.78rem;
+  gap: 0.62rem;
   align-content: start;
 }
 
@@ -28,14 +41,14 @@
 
 .map-editor-topcard__headline {
   display: grid;
-  gap: 0.26rem;
+  gap: 0.22rem;
   min-width: 0;
 }
 
 .map-editor-topcard__eyebrow {
   margin: 0;
   color: #ffb066;
-  font-size: 0.66rem;
+  font-size: 0.6rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -43,7 +56,7 @@
 .map-editor-topcard__title {
   margin: 0;
   color: #fff4de;
-  font-size: clamp(1.34rem, 1.8vw, 2.15rem);
+  font-size: clamp(1.16rem, 1.45vw, 1.76rem);
   line-height: 0.96;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -52,9 +65,9 @@
 .map-editor-topcard__summary {
   margin: 0;
   color: #d8c6e8;
-  font-size: 0.9rem;
-  line-height: 1.32;
-  max-width: 38ch;
+  font-size: 0.82rem;
+  line-height: 1.24;
+  max-width: 32ch;
 }
 
 .map-editor-topcard--enemy .map-editor-topcard__summary {
@@ -103,19 +116,19 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.42rem;
 }
 
 .map-editor-topcard__actions > * {
-  min-width: 6.8rem;
+  min-width: 6.25rem;
 }
 
 .map-editor-rail {
-  padding: 0.82rem 0.82rem 0.9rem;
+  padding: 0.68rem 0.68rem 0.74rem;
 }
 
 .map-editor-rail .debug-section {
-  margin-bottom: 0.82rem;
+  margin-bottom: 0.68rem;
   border: 1px solid rgba(255, 79, 216, 0.12);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015) 26%),
@@ -130,11 +143,11 @@
 }
 
 .map-editor-rail .debug-section summary {
-  padding: 0.9rem 1rem;
+  padding: 0.72rem 0.82rem;
 }
 
 .map-editor-rail .card-block {
-  padding: 0.88rem;
+  padding: 0.74rem;
   border-radius: 1rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015) 28%),
@@ -143,7 +156,7 @@
   box-shadow:
     inset 0 0 22px rgba(255, 79, 216, 0.05),
     0 0 0 1px rgba(255, 255, 255, 0.02);
-  margin-bottom: 0.82rem;
+  margin-bottom: 0.68rem;
 }
 
 .map-editor-rail[data-map-editor-rail="right"] .card-block {
@@ -191,14 +204,14 @@
 
 .map-editor-tool-grid {
   display: grid;
-  gap: 0.55rem;
-  padding: 0 0.8rem 0.85rem;
+  gap: 0.48rem;
+  padding: 0 0.68rem 0.74rem;
 }
 
 .map-editor-tool-grid--units {
-  max-height: 22rem;
+  max-height: 20rem;
   overflow: auto;
-  padding-right: 0.45rem;
+  padding-right: 0.38rem;
 }
 
 .map-editor-tool {
@@ -288,8 +301,8 @@
 .map-editor-owner-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  padding: 0 0.8rem 0.7rem;
+  gap: 0.38rem;
+  padding: 0 0.68rem 0.62rem;
 }
 
 .map-editor-chip {
@@ -321,8 +334,8 @@
 .map-editor-mirror-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-  padding: 0 0.8rem 0.85rem;
+  gap: 0.44rem;
+  padding: 0 0.68rem 0.74rem;
 }
 
 .map-editor-mirror {
