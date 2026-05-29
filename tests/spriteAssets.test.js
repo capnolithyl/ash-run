@@ -10,6 +10,7 @@ import {
   SPRITE_ASSETS,
   UNIT_OWNER_VARIANTS,
   getBuildingSpriteKey,
+  getTerrainClusterVariantDefinition,
   getTerrainSpriteDefinition,
   getTerrainTransitionOverlayDefinition,
   getTerrainSpriteKey,
@@ -194,17 +195,69 @@ test("water terrain animation uses the authored spritesheet frame size", () => {
   assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/water/water.png");
 });
 
-test("plain terrain animation uses the authored spritesheet frame size", () => {
+test("plain terrain falls back to the static tile when no matching animation sheet exists", () => {
   const terrainSprite = getTerrainSpriteDefinition("plain");
 
   assert.ok(terrainSprite);
-  assert.equal(terrainSprite.type, "spritesheet");
-  assert.equal(getTerrainSpriteKey("plain"), "spritesheet:terrain:plain");
+  assert.equal(terrainSprite.type, "image");
+  assert.equal(getTerrainSpriteKey("plain"), "sprite:terrain:plain");
   assert.equal(terrainSprite.fallbackKey, "sprite:terrain:plain");
-  assert.equal(terrainSprite.animated?.frameWidth, 627);
-  assert.equal(terrainSprite.animated?.frameHeight, 627);
-  assert.equal(terrainSprite.animated?.frameRate, 4);
-  assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/plain/plain.png");
+  assert.equal(terrainSprite.animated, null);
+  assert.equal(terrainSprite.url, "./assets/sprites/terrain/plain.png");
+});
+
+test("mountain cluster variants are registered as runtime terrain assets", () => {
+  const mountain2x2 = getTerrainClusterVariantDefinition("mountain", "2x2");
+  const mountain2x1 = getTerrainClusterVariantDefinition("mountain", "2x1");
+  const mountain1x2 = getTerrainClusterVariantDefinition("mountain", "1x2");
+
+  assert.ok(mountain2x2);
+  assert.equal(mountain2x2.assetId, "mountain_2x2");
+  assert.equal(mountain2x2.key, "sprite:terrain-cluster:mountain:2x2");
+  assert.equal(mountain2x2.url, "./assets/sprites/terrain/mountain_2x2.png");
+  assert.equal(mountain2x2.widthTiles, 2);
+  assert.equal(mountain2x2.heightTiles, 2);
+
+  assert.ok(mountain2x1);
+  assert.equal(mountain2x1.assetId, "mountain_2x1");
+  assert.equal(mountain2x1.key, "sprite:terrain-cluster:mountain:2x1");
+  assert.equal(mountain2x1.url, "./assets/sprites/terrain/mountain_2x1.png");
+  assert.equal(mountain2x1.widthTiles, 2);
+  assert.equal(mountain2x1.heightTiles, 1);
+
+  assert.ok(mountain1x2);
+  assert.equal(mountain1x2.assetId, "mountain_1x2");
+  assert.equal(mountain1x2.key, "sprite:terrain-cluster:mountain:1x2");
+  assert.equal(mountain1x2.url, "./assets/sprites/terrain/mountain_1x2.png");
+  assert.equal(mountain1x2.widthTiles, 1);
+  assert.equal(mountain1x2.heightTiles, 2);
+});
+
+test("forest cluster variants are registered with the intended rendered footprints", () => {
+  const forest2x2 = getTerrainClusterVariantDefinition("forest", "2x2");
+  const forest2x1 = getTerrainClusterVariantDefinition("forest", "2x1");
+  const forest1x2 = getTerrainClusterVariantDefinition("forest", "1x2");
+
+  assert.ok(forest2x2);
+  assert.equal(forest2x2.assetId, "forest_2x2");
+  assert.equal(forest2x2.key, "sprite:terrain-cluster:forest:2x2");
+  assert.equal(forest2x2.url, "./assets/sprites/terrain/forest_2x2.png");
+  assert.equal(forest2x2.widthTiles, 2);
+  assert.equal(forest2x2.heightTiles, 2);
+
+  assert.ok(forest2x1);
+  assert.equal(forest2x1.assetId, "forest_1x2");
+  assert.equal(forest2x1.key, "sprite:terrain-cluster:forest:1x2");
+  assert.equal(forest2x1.url, "./assets/sprites/terrain/forest_1x2.png");
+  assert.equal(forest2x1.widthTiles, 2);
+  assert.equal(forest2x1.heightTiles, 1);
+
+  assert.ok(forest1x2);
+  assert.equal(forest1x2.assetId, "forest_2x1");
+  assert.equal(forest1x2.key, "sprite:terrain-cluster:forest:2x1");
+  assert.equal(forest1x2.url, "./assets/sprites/terrain/forest_2x1.png");
+  assert.equal(forest1x2.widthTiles, 1);
+  assert.equal(forest1x2.heightTiles, 2);
 });
 
 test("terrain transition registry resolves the shoal overlay for configured water borders", () => {
@@ -213,6 +266,8 @@ test("terrain transition registry resolves the shoal overlay for configured wate
   const waterMountainOverlay = getTerrainTransitionOverlayDefinition("water", "mountain");
   const waterRoadOverlay = getTerrainTransitionOverlayDefinition("water", "road");
   const roadPlainOverlay = getTerrainTransitionOverlayDefinition("road", "plain");
+  const roadForestOverlay = getTerrainTransitionOverlayDefinition("road", "forest");
+  const roadMountainOverlay = getTerrainTransitionOverlayDefinition("road", "mountain");
   const plainRoadOverlay = getTerrainTransitionOverlayDefinition("plain", "road");
   const plainWaterOverlay = getTerrainTransitionOverlayDefinition("plain", "water");
 
@@ -242,6 +297,8 @@ test("terrain transition registry resolves the shoal overlay for configured wate
   assert.equal(roadPlainOverlay.key, "sprite:terrain-transition:roadside");
   assert.equal(roadPlainOverlay.url, "./assets/sprites/terrain/roadside.png");
   assert.equal(roadPlainOverlay.baseDirection, "north");
+  assert.deepEqual(roadForestOverlay, roadPlainOverlay);
+  assert.deepEqual(roadMountainOverlay, roadPlainOverlay);
   assert.equal(plainRoadOverlay, null);
   assert.equal(plainWaterOverlay, null);
 });

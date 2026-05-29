@@ -5,9 +5,11 @@ import {
   getBattlefieldAssetKey,
   getTerrainSpriteDefinition
 } from "../assets.js";
+import { getTerrainClusterPlacements } from "./terrainClusters.js";
 import { getTerrainTransitionPlacements } from "./terrainTransitions.js";
 
 const BATTLEFIELD_FRAME_ANIMATION_BUCKET_MS = 60;
+const TERRAIN_BASE_DEPTH = 3;
 const TERRAIN_TILE_DEPTH = 4;
 const TERRAIN_TRANSITION_DEPTH = 5;
 
@@ -168,9 +170,51 @@ export class GridLayer {
     }
 
     this.clearTerrainSprites();
+    const plainBaseTextureKey = getTerrainSpriteDefinition("plain")?.fallbackKey ?? null;
+
+    if (plainBaseTextureKey && this.scene.textures.exists(plainBaseTextureKey)) {
+      for (let row = 0; row < snapshot.map.height; row += 1) {
+        for (let column = 0; column < snapshot.map.width; column += 1) {
+          const x = layout.originX + column * layout.cellSize;
+          const y = layout.originY + row * layout.cellSize;
+          const baseSprite = this.scene.add
+            .image(x + layout.cellSize / 2, y + layout.cellSize / 2, plainBaseTextureKey)
+            .setDepth(TERRAIN_BASE_DEPTH)
+            .setDisplaySize(layout.cellSize, layout.cellSize);
+
+          this.terrainSprites.push(baseSprite);
+        }
+      }
+    }
+
+    const {
+      placements: terrainClusterPlacements,
+      coveredTiles: terrainClusterCoveredTiles
+    } = getTerrainClusterPlacements(snapshot.map.tiles);
+
+    for (const placement of terrainClusterPlacements) {
+      if (!placement.key || !this.scene.textures.exists(placement.key)) {
+        continue;
+      }
+
+      const clusterWidth = placement.widthTiles * layout.cellSize;
+      const clusterHeight = placement.heightTiles * layout.cellSize;
+      const clusterX = layout.originX + placement.x * layout.cellSize + clusterWidth / 2;
+      const clusterY = layout.originY + placement.y * layout.cellSize + clusterHeight / 2;
+      const clusterSprite = this.scene.add
+        .image(clusterX, clusterY, placement.key)
+        .setDepth(TERRAIN_TILE_DEPTH)
+        .setDisplaySize(clusterWidth, clusterHeight);
+
+      this.terrainSprites.push(clusterSprite);
+    }
 
     for (let row = 0; row < snapshot.map.height; row += 1) {
       for (let column = 0; column < snapshot.map.width; column += 1) {
+        if (terrainClusterCoveredTiles.has(`${column},${row}`)) {
+          continue;
+        }
+
         const terrainId = snapshot.map.tiles[row][column];
         const terrainSprite = getTerrainSpriteDefinition(terrainId);
         const animatedTextureKey = terrainSprite?.animated?.key ?? null;

@@ -113,6 +113,29 @@ test("road tile uses the roadside overlay for plain neighbors", () => {
   );
 });
 
+test("road tile uses the roadside overlay for forest and mountain neighbors too", () => {
+  const tiles = [
+    ["ridge", "forest", "ridge"],
+    ["mountain", "road", "forest"],
+    ["ridge", "ridge", "ridge"],
+  ];
+
+  const placements = getTerrainTransitionPlacements(tiles, 1, 1);
+
+  assert.deepEqual(
+    placements.map(({ assetId, direction, rotationDegrees }) => ({
+      assetId,
+      direction,
+      rotationDegrees
+    })),
+    [
+      { assetId: "roadside", direction: "north", rotationDegrees: 0 },
+      { assetId: "roadside", direction: "east", rotationDegrees: 90 },
+      { assetId: "roadside", direction: "west", rotationDegrees: -90 }
+    ]
+  );
+});
+
 test("diagonal-only plain contact does not create a shoal overlay", () => {
   const tiles = [
     ["plain", "ridge", "ridge"],

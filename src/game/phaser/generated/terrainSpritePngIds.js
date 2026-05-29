@@ -9,7 +9,6 @@ export const GENERATED_TERRAIN_SPRITE_PNG_IDS = [
   "water"
 ];
 export const GENERATED_TERRAIN_ANIMATED_IDS = [
-  "plain",
   "road",
   "water"
 ];

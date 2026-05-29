@@ -25,15 +25,98 @@ const TERRAIN_SOURCE_SIZE = 128;
 const TERRAIN_ANIMATION_FRAME_RATE = 10;
 const TERRAIN_TRANSITION_BASE_DIRECTION = "north";
 const TERRAIN_ANIMATION_CONFIG = {
-  plain: {
-    frameWidth: 627,
-    frameHeight: 627,
-    frameRate: 4,
-  },
   water: {
     frameWidth: 627,
     frameHeight: 627,
     frameRate: 4,
+  },
+};
+const TERRAIN_CLUSTER_VARIANT_ASSETS = {
+  forest_1x2: {
+    group: "terrain-cluster",
+    id: "forest_1x2",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-cluster:forest:1x2",
+    url: `${SPRITE_ASSET_ROOT}/terrain/forest_1x2.png`,
+  },
+  forest_2x1: {
+    group: "terrain-cluster",
+    id: "forest_2x1",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-cluster:forest:2x1",
+    url: `${SPRITE_ASSET_ROOT}/terrain/forest_2x1.png`,
+  },
+  forest_2x2: {
+    group: "terrain-cluster",
+    id: "forest_2x2",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-cluster:forest:2x2",
+    url: `${SPRITE_ASSET_ROOT}/terrain/forest_2x2.png`,
+  },
+  mountain_1x2: {
+    group: "terrain-cluster",
+    id: "mountain_1x2",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-cluster:mountain:1x2",
+    url: `${SPRITE_ASSET_ROOT}/terrain/mountain_1x2.png`,
+  },
+  mountain_2x1: {
+    group: "terrain-cluster",
+    id: "mountain_2x1",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-cluster:mountain:2x1",
+    url: `${SPRITE_ASSET_ROOT}/terrain/mountain_2x1.png`,
+  },
+  mountain_2x2: {
+    group: "terrain-cluster",
+    id: "mountain_2x2",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-cluster:mountain:2x2",
+    url: `${SPRITE_ASSET_ROOT}/terrain/mountain_2x2.png`,
+  },
+};
+const TERRAIN_CLUSTER_VARIANT_REGISTRY = {
+  forest: {
+    // The forest pair filenames are author-named opposite their actual footprint,
+    // so map the registry by the visual shape we need to render.
+    "1x2": {
+      assetId: "forest_2x1",
+      widthTiles: 1,
+      heightTiles: 2,
+    },
+    "2x1": {
+      assetId: "forest_1x2",
+      widthTiles: 2,
+      heightTiles: 1,
+    },
+    "2x2": {
+      assetId: "forest_2x2",
+      widthTiles: 2,
+      heightTiles: 2,
+    },
+  },
+  mountain: {
+    "1x2": {
+      assetId: "mountain_1x2",
+      widthTiles: 1,
+      heightTiles: 2,
+    },
+    "2x1": {
+      assetId: "mountain_2x1",
+      widthTiles: 2,
+      heightTiles: 1,
+    },
+    "2x2": {
+      assetId: "mountain_2x2",
+      widthTiles: 2,
+      heightTiles: 2,
+    },
   },
 };
 const TERRAIN_TRANSITION_OVERLAY_ASSETS = {
@@ -64,6 +147,14 @@ const TERRAIN_TRANSITION_OVERLAY_ASSETS = {
 };
 const TERRAIN_TRANSITION_REGISTRY = {
   road: {
+    forest: {
+      assetId: "roadside",
+      baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
+    },
+    mountain: {
+      assetId: "roadside",
+      baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
+    },
     plain: {
       assetId: "roadside",
       baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
@@ -259,6 +350,7 @@ export const SPRITE_ASSETS = [
   ...Object.values(TERRAIN_SPRITES).flatMap(({ fallback, animated }) =>
     animated ? [fallback, animated] : [fallback]
   ),
+  ...Object.values(TERRAIN_CLUSTER_VARIANT_ASSETS),
   ...Object.values(TERRAIN_TRANSITION_OVERLAY_ASSETS),
   ...Object.values(BUILDING_SPRITES).flatMap((variants) =>
     Object.values(variants),
@@ -400,6 +492,33 @@ export function getTerrainTransitionOverlayDefinition(sourceTerrainId, adjacentT
 
   return {
     ...transitionSpec,
+    key: asset.key,
+    url: asset.url,
+    type: asset.type,
+  };
+}
+
+export function getTerrainClusterVariantTerrainIds() {
+  return Object.keys(TERRAIN_CLUSTER_VARIANT_REGISTRY);
+}
+
+export function getTerrainClusterVariantDefinition(terrainId, shape) {
+  const variantSpec = TERRAIN_CLUSTER_VARIANT_REGISTRY[terrainId]?.[shape] ?? null;
+
+  if (!variantSpec) {
+    return null;
+  }
+
+  const asset = TERRAIN_CLUSTER_VARIANT_ASSETS[variantSpec.assetId] ?? null;
+
+  if (!asset) {
+    return null;
+  }
+
+  return {
+    ...variantSpec,
+    terrainId,
+    shape,
     key: asset.key,
     url: asset.url,
     type: asset.type,
