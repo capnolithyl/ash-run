@@ -34,10 +34,13 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-map-editor-live-name="true">Editor Preview<\/h2>/);
   assert.match(html, /Map Editor/);
   assert.match(html, /Editor Status/);
-  assert.match(html, /<dt>Theme<\/dt>[\s\S]*?<dd>ash<\/dd>/);
-  assert.match(html, /<dt>Size<\/dt>[\s\S]*?<dd>18 x 12<\/dd>/);
-  assert.match(html, /<dt>Goal<\/dt>[\s\S]*?<dd>Rout<\/dd>/);
   assert.equal((html.match(/map-editor-topcard map-editor-topcard--/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /map-editor-topcard__stats/);
+  assert.doesNotMatch(html, /map-editor-topcard__stat/);
+  assert.doesNotMatch(html, /<dt>Theme<\/dt>/);
+  assert.doesNotMatch(html, /<dt>Size<\/dt>/);
+  assert.doesNotMatch(html, /<dt>Goal<\/dt>/);
+  assert.doesNotMatch(html, /<dt>Run<\/dt>/);
   assert.match(html, /data-action="map-editor-select-terrain"/);
   assert.match(html, /data-action="map-editor-select-building"/);
   assert.match(html, /data-action="map-editor-select-tool"/);

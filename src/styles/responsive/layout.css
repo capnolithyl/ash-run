@@ -38,6 +38,58 @@
   .battle-side-panel {
     padding: 0.68rem;
   }
+
+  .map-editor-shell {
+    --map-editor-rail-width: 13.4rem;
+    --battle-desktop-left-width: var(--map-editor-rail-width);
+    --battle-desktop-right-width: 12.8rem;
+    --battle-commander-panel-width: clamp(25rem, 31vw, 27rem);
+    --battle-desktop-panels-top: 8.45rem;
+  }
+
+  .map-editor-topcard {
+    padding: 0.58rem 0.72rem 0.66rem;
+  }
+
+  .map-editor-topcard__body {
+    gap: 0.5rem;
+  }
+
+  .map-editor-topcard__title {
+    font-size: 1rem;
+  }
+
+  .map-editor-topcard__summary {
+    font-size: 0.74rem;
+  }
+
+  .map-editor-rail {
+    padding: 0.58rem 0.58rem 0.62rem;
+  }
+
+  .map-editor-rail .debug-section {
+    margin-bottom: 0.58rem;
+  }
+
+  .map-editor-rail .debug-section summary {
+    padding: 0.66rem 0.72rem;
+  }
+
+  .map-editor-rail .card-block {
+    padding: 0.66rem;
+    margin-bottom: 0.58rem;
+  }
+
+  .map-editor-tool-grid,
+  .map-editor-mirror-grid {
+    padding-inline: 0.58rem;
+    padding-bottom: 0.64rem;
+  }
+
+  .map-editor-owner-row {
+    padding-inline: 0.58rem;
+    padding-bottom: 0.56rem;
+  }
 }
 
 @media (max-width: 1280px) {
@@ -46,7 +98,7 @@
   }
 
   .map-editor-shell {
-    --map-editor-rail-width: 15.5rem;
+    --map-editor-rail-width: 13.9rem;
   }
 }
 
