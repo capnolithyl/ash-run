@@ -1,8 +1,15 @@
 import Phaser from "phaser";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "../../content/terrain.js";
-import { BATTLEFIELD_ASSET_IDS, getBattlefieldAssetKey, getTerrainSpriteDefinition } from "../assets.js";
+import {
+  BATTLEFIELD_ASSET_IDS,
+  getBattlefieldAssetKey,
+  getTerrainSpriteDefinition
+} from "../assets.js";
+import { getTerrainTransitionPlacements } from "./terrainTransitions.js";
 
 const BATTLEFIELD_FRAME_ANIMATION_BUCKET_MS = 60;
+const TERRAIN_TILE_DEPTH = 4;
+const TERRAIN_TRANSITION_DEPTH = 5;
 
 function getTerrainFrameIndices(scene, animationSpec) {
   const texture = scene.textures.get(animationSpec?.key);
@@ -184,7 +191,7 @@ export class GridLayer {
 
         const sprite = this.scene.add
           .sprite(x + layout.cellSize / 2, y + layout.cellSize / 2, textureKey)
-          .setDepth(4)
+          .setDepth(TERRAIN_TILE_DEPTH)
           .setDisplaySize(layout.cellSize, layout.cellSize);
 
         if (terrainSprite?.animated?.key === textureKey) {
@@ -198,6 +205,22 @@ export class GridLayer {
         }
 
         this.terrainSprites.push(sprite);
+
+        const transitions = getTerrainTransitionPlacements(snapshot.map.tiles, column, row);
+
+        for (const transition of transitions) {
+          if (!transition.key || !this.scene.textures.exists(transition.key)) {
+            continue;
+          }
+
+          const overlay = this.scene.add
+            .image(x + layout.cellSize / 2, y + layout.cellSize / 2, transition.key)
+            .setDepth(TERRAIN_TRANSITION_DEPTH)
+            .setDisplaySize(layout.cellSize, layout.cellSize)
+            .setAngle(transition.rotationDegrees);
+
+          this.terrainSprites.push(overlay);
+        }
       }
     }
 

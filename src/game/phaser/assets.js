@@ -23,11 +23,69 @@ const IMAGE_ASSET_ROOT = "./assets/img";
 const SPRITE_SOURCE_SIZE = 64;
 const TERRAIN_SOURCE_SIZE = 128;
 const TERRAIN_ANIMATION_FRAME_RATE = 10;
+const TERRAIN_TRANSITION_BASE_DIRECTION = "north";
 const TERRAIN_ANIMATION_CONFIG = {
+  plain: {
+    frameWidth: 627,
+    frameHeight: 627,
+    frameRate: 4,
+  },
   water: {
     frameWidth: 627,
     frameHeight: 627,
     frameRate: 4,
+  },
+};
+const TERRAIN_TRANSITION_OVERLAY_ASSETS = {
+  edge: {
+    group: "terrain-transition",
+    id: "edge",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-transition:edge",
+    url: `${SPRITE_ASSET_ROOT}/terrain/edge.png`,
+  },
+  roadside: {
+    group: "terrain-transition",
+    id: "roadside",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-transition:roadside",
+    url: `${SPRITE_ASSET_ROOT}/terrain/roadside.png`,
+  },
+  shoal: {
+    group: "terrain-transition",
+    id: "shoal",
+    owner: null,
+    type: "image",
+    key: "sprite:terrain-transition:shoal",
+    url: `${SPRITE_ASSET_ROOT}/terrain/shoal.png`,
+  },
+};
+const TERRAIN_TRANSITION_REGISTRY = {
+  road: {
+    plain: {
+      assetId: "roadside",
+      baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
+    },
+  },
+  water: {
+    plain: {
+      assetId: "shoal",
+      baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
+    },
+    forest: {
+      assetId: "shoal",
+      baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
+    },
+    mountain: {
+      assetId: "shoal",
+      baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
+    },
+    road: {
+      assetId: "edge",
+      baseDirection: TERRAIN_TRANSITION_BASE_DIRECTION,
+    },
   },
 };
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
@@ -201,6 +259,7 @@ export const SPRITE_ASSETS = [
   ...Object.values(TERRAIN_SPRITES).flatMap(({ fallback, animated }) =>
     animated ? [fallback, animated] : [fallback]
   ),
+  ...Object.values(TERRAIN_TRANSITION_OVERLAY_ASSETS),
   ...Object.values(BUILDING_SPRITES).flatMap((variants) =>
     Object.values(variants),
   ),
@@ -323,6 +382,27 @@ export function getTerrainSpriteDefinition(terrainId) {
     fallbackKey: spriteBundle.fallback.key,
     fallbackUrl: spriteBundle.fallback.url,
     animated: spriteBundle.animated
+  };
+}
+
+export function getTerrainTransitionOverlayDefinition(sourceTerrainId, adjacentTerrainId) {
+  const transitionSpec = TERRAIN_TRANSITION_REGISTRY[sourceTerrainId]?.[adjacentTerrainId] ?? null;
+
+  if (!transitionSpec) {
+    return null;
+  }
+
+  const asset = TERRAIN_TRANSITION_OVERLAY_ASSETS[transitionSpec.assetId] ?? null;
+
+  if (!asset) {
+    return null;
+  }
+
+  return {
+    ...transitionSpec,
+    key: asset.key,
+    url: asset.url,
+    type: asset.type,
   };
 }
 

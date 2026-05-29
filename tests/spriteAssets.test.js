@@ -11,6 +11,7 @@ import {
   UNIT_OWNER_VARIANTS,
   getBuildingSpriteKey,
   getTerrainSpriteDefinition,
+  getTerrainTransitionOverlayDefinition,
   getTerrainSpriteKey,
   getUnitSpriteDefinition,
   getUnitSpriteKey
@@ -191,6 +192,58 @@ test("water terrain animation uses the authored spritesheet frame size", () => {
   assert.equal(terrainSprite.animated?.frameHeight, 627);
   assert.equal(terrainSprite.animated?.frameRate, 4);
   assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/water/water.png");
+});
+
+test("plain terrain animation uses the authored spritesheet frame size", () => {
+  const terrainSprite = getTerrainSpriteDefinition("plain");
+
+  assert.ok(terrainSprite);
+  assert.equal(terrainSprite.type, "spritesheet");
+  assert.equal(getTerrainSpriteKey("plain"), "spritesheet:terrain:plain");
+  assert.equal(terrainSprite.fallbackKey, "sprite:terrain:plain");
+  assert.equal(terrainSprite.animated?.frameWidth, 627);
+  assert.equal(terrainSprite.animated?.frameHeight, 627);
+  assert.equal(terrainSprite.animated?.frameRate, 4);
+  assert.equal(terrainSprite.animated?.url, "./assets/sprites/terrain/plain/plain.png");
+});
+
+test("terrain transition registry resolves the shoal overlay for configured water borders", () => {
+  const waterPlainOverlay = getTerrainTransitionOverlayDefinition("water", "plain");
+  const waterForestOverlay = getTerrainTransitionOverlayDefinition("water", "forest");
+  const waterMountainOverlay = getTerrainTransitionOverlayDefinition("water", "mountain");
+  const waterRoadOverlay = getTerrainTransitionOverlayDefinition("water", "road");
+  const roadPlainOverlay = getTerrainTransitionOverlayDefinition("road", "plain");
+  const plainRoadOverlay = getTerrainTransitionOverlayDefinition("plain", "road");
+  const plainWaterOverlay = getTerrainTransitionOverlayDefinition("plain", "water");
+
+  assert.ok(waterPlainOverlay);
+  assert.equal(waterPlainOverlay.assetId, "shoal");
+  assert.equal(waterPlainOverlay.type, "image");
+  assert.equal(waterPlainOverlay.key, "sprite:terrain-transition:shoal");
+  assert.equal(waterPlainOverlay.url, "./assets/sprites/terrain/shoal.png");
+  assert.equal(waterPlainOverlay.baseDirection, "north");
+  assert.deepEqual(
+    waterForestOverlay,
+    waterPlainOverlay
+  );
+  assert.deepEqual(
+    waterMountainOverlay,
+    waterPlainOverlay
+  );
+  assert.ok(waterRoadOverlay);
+  assert.equal(waterRoadOverlay.assetId, "edge");
+  assert.equal(waterRoadOverlay.type, "image");
+  assert.equal(waterRoadOverlay.key, "sprite:terrain-transition:edge");
+  assert.equal(waterRoadOverlay.url, "./assets/sprites/terrain/edge.png");
+  assert.equal(waterRoadOverlay.baseDirection, "north");
+  assert.ok(roadPlainOverlay);
+  assert.equal(roadPlainOverlay.assetId, "roadside");
+  assert.equal(roadPlainOverlay.type, "image");
+  assert.equal(roadPlainOverlay.key, "sprite:terrain-transition:roadside");
+  assert.equal(roadPlainOverlay.url, "./assets/sprites/terrain/roadside.png");
+  assert.equal(roadPlainOverlay.baseDirection, "north");
+  assert.equal(plainRoadOverlay, null);
+  assert.equal(plainWaterOverlay, null);
 });
 
 test("building sprites prefer png when both png and svg exist", () => {
