@@ -49,11 +49,11 @@ function isPendingMoveRollback(previousSnapshot, unitId, previousUnit, nextUnit)
 }
 
 function didUnitSpendAmmo(previousUnit, nextUnit) {
-  return previousUnit.current.ammo > nextUnit.current.ammo;
+  return Boolean(previousUnit && nextUnit && previousUnit.current.ammo > nextUnit.current.ammo);
 }
 
 function didUnitStartAttack(previousUnit, nextUnit) {
-  return !previousUnit.hasAttacked && nextUnit.hasAttacked;
+  return Boolean(previousUnit && nextUnit && !previousUnit.hasAttacked && nextUnit.hasAttacked);
 }
 
 function didUnitAttack(previousUnit, nextUnit) {

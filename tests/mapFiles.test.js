@@ -70,12 +70,13 @@ test("map file loading resolves inside the preferred root and returns metadata",
   }
 });
 
-test("preferred map root uses bundled maps in dev and user maps when packaged", () => {
+test("preferred map root uses bundled maps in dev and packaged resources in packaged builds", () => {
   assert.equal(
     resolvePreferredMapRoot({
       isPackaged: false,
       customMapsRoot: "D:/docs/maps",
-      bundledMapsRoot: "D:/repo/src/game/content/maps"
+      bundledMapsRoot: "D:/repo/src/game/content/maps",
+      packagedMapsRoot: "D:/game/resources/maps"
     }),
     "D:/repo/src/game/content/maps"
   );
@@ -83,8 +84,9 @@ test("preferred map root uses bundled maps in dev and user maps when packaged", 
     resolvePreferredMapRoot({
       isPackaged: true,
       customMapsRoot: "D:/docs/maps",
-      bundledMapsRoot: "D:/repo/src/game/content/maps"
+      bundledMapsRoot: "D:/repo/src/game/content/maps",
+      packagedMapsRoot: "D:/game/resources/maps"
     }),
-    "D:/docs/maps"
+    "D:/game/resources/maps"
   );
 });

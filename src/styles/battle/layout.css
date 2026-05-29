@@ -394,7 +394,8 @@
   --battle-footer-button-next-width: min(11rem, max(7rem, 14.15vw));
   --battle-footer-button-overlap: 0.72rem;
   position: absolute;
-  left: 50%;
+  left: auto;
+  right: var(--battle-desktop-inset);
   bottom: max(0.85rem, env(safe-area-inset-bottom));
   z-index: 8;
   display: grid;
@@ -403,7 +404,7 @@
   align-items: end;
   justify-content: center;
   gap: 0;
-  transform: translateX(-50%);
+  transform: none;
   padding: 0;
   border: 0;
   border-radius: 0;

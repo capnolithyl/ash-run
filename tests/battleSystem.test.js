@@ -3273,3 +3273,42 @@ test("survive missions ignore enemy wipes and resolve after the last enemy turn"
 
   assert.equal(system.getStateForSave().victory?.winner, TURN_SIDES.PLAYER);
 });
+
+test("forced enemy pass clears pending enemy work and lets the player turn resume", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 1);
+  const system = new BattleSystem(
+    createTestBattleState({
+      playerUnits: [player],
+      enemyUnits: [enemy]
+    })
+  );
+
+  assert.equal(system.endTurn(), true);
+  assert.equal(system.startEnemyTurnActions().changed, true);
+  system.state.enemyTurn.pendingAttack = {
+    attackerId: enemy.id,
+    targetId: player.id
+  };
+  system.state.enemyTurn.pendingSlipstream = {
+    unitId: enemy.id,
+    x: 3,
+    y: 1,
+    moveSegments: 1
+  };
+  system.state.enemyTurn.pendingUnitIds = [enemy.id];
+  system.state.selection = { type: "unit", id: enemy.id, x: enemy.x, y: enemy.y };
+
+  const passResult = system.forcePassEnemyTurn("timeout");
+
+  assert.equal(passResult.changed, true);
+  assert.equal(system.hasPendingEnemyTurn(), false);
+  assert.deepEqual(system.state.selection, { type: null, id: null, x: null, y: null });
+  assert.equal(system.getStateForSave().log[0], "Enemy command stalled. Enemy passed the turn.");
+
+  const finalizeResult = system.finalizeEnemyTurn();
+
+  assert.equal(finalizeResult.changed, true);
+  assert.equal(system.getStateForSave().turn.activeSide, TURN_SIDES.PLAYER);
+  assert.equal(system.getStateForSave().enemyTurn, null);
+});

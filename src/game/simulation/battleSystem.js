@@ -34,6 +34,9 @@ export class BattleSystem {
     if (this.state.enemyTurn && !("started" in this.state.enemyTurn)) {
       this.state.enemyTurn.started = true;
     }
+    if (this.state.enemyTurn && !("forcePassed" in this.state.enemyTurn)) {
+      this.state.enemyTurn.forcePassed = false;
+    }
     if (this.state.pendingAction && !this.state.pendingAction.mode) {
       this.state.pendingAction.mode = "menu";
     }
@@ -290,6 +293,10 @@ export class BattleSystem {
 
   processEnemyTurnStep() {
     return turnFlow.processEnemyTurnStep(this);
+  }
+
+  forcePassEnemyTurn(reason) {
+    return turnFlow.forcePassEnemyTurn(this, reason);
   }
 
   performEnemyEndTurnRecruitment() {

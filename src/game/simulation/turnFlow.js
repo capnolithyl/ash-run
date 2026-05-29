@@ -84,7 +84,8 @@ export function endTurn(system) {
       started: false,
       pendingAttack: null,
       pendingSlipstream: null,
-      pendingUnitIds: []
+      pendingUnitIds: [],
+      forcePassed: false
     };
     applyMissionTurnEnd(system.state, TURN_SIDES.PLAYER);
     system.updateVictoryState();
@@ -125,6 +126,27 @@ export function hasPendingEnemyTurn(system) {
       system.state.enemyTurn?.pendingSlipstream ||
       system.state.enemyTurn?.pendingUnitIds?.length
   );
+}
+
+export function forcePassEnemyTurn(system, reason = "safety") {
+  if (!system.state.enemyTurn || system.state.turn.activeSide !== TURN_SIDES.ENEMY || system.state.victory) {
+    return {
+      changed: false,
+      reason
+    };
+  }
+
+  system.state.enemyTurn.pendingAttack = null;
+  system.state.enemyTurn.pendingSlipstream = null;
+  system.state.enemyTurn.pendingUnitIds = [];
+  system.state.enemyTurn.forcePassed = true;
+  system.clearSelection();
+  appendLog(system.state, "Enemy command stalled. Enemy passed the turn.");
+
+  return {
+    changed: true,
+    reason
+  };
 }
 
 function moveEnemyUnit(system, unit, tile, movementBudget) {

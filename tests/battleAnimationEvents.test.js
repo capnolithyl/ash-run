@@ -125,6 +125,30 @@ test("lethal attacks delay destroy events until the attack window finishes", () 
   assert.equal(destroyEvent.delay, (attackEvent.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS);
 });
 
+test("battle animation events tolerate counter pairs when a unit is missing after combat", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 2, {
+    hasAttacked: true
+  });
+  const defender = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 3, 2);
+  const before = createTestBattleState({
+    playerUnits: [defender],
+    enemyUnits: [attacker]
+  });
+  const after = structuredClone(before);
+
+  after.enemy.units[0].current.hp -= 33;
+  after.enemy.units[0].current.ammo -= 1;
+  after.player.units = [];
+
+  const events = deriveBattleAnimationEvents(before, after);
+  const attackEvents = events.filter((event) => event.type === "attack");
+  const destroyEvent = events.find((event) => event.type === "destroy" && event.unitId === defender.id);
+
+  assert.ok(attackEvents.some((event) => event.attackerId === attacker.id && event.targetId === defender.id));
+  assert.ok(attackEvents.some((event) => event.attackerId === defender.id && event.targetId === attacker.id));
+  assert.ok(destroyEvent);
+});
+
 test("battle animation events show graves preemptive defender strike before the enemy attack", () => {
   const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);

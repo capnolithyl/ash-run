@@ -11,6 +11,7 @@ const {
   resolveDisplayResolutionForBounds
 } = require("./displayOptions.cjs");
 const {
+  getPackagedMapsRoot,
   listLoadableMapFiles,
   loadMapFileFromRoot,
   normalizeMapRelativePath: normalizeMapRelativeImportPath,
@@ -274,7 +275,8 @@ async function resolvePreferredMapDirectory() {
   const preferredRoot = resolvePreferredMapRoot({
     isPackaged: app.isPackaged,
     customMapsRoot,
-    bundledMapsRoot: getBundledMapsRoot()
+    bundledMapsRoot: getBundledMapsRoot(),
+    packagedMapsRoot: getPackagedBundledMapsRoot()
   });
   await fs.mkdir(preferredRoot, { recursive: true });
   return preferredRoot;
@@ -294,13 +296,21 @@ function getBundledMapsRoot() {
   return path.resolve(__dirname, "../src/game/content/maps");
 }
 
+function getPackagedBundledMapsRoot() {
+  return getPackagedMapsRoot(process.resourcesPath);
+}
+
 async function resolvePreferredMapPath(filePath = "custom-map.json") {
   const normalizedRelativePath = normalizeMapRelativePath(filePath);
   const baseRoot = app.isPackaged
-    ? getStoragePaths().customMapsRoot
+    ? getPackagedBundledMapsRoot()
     : getBundledMapsRoot();
   const targetPath = path.join(baseRoot, normalizedRelativePath);
-  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+
+  if (!app.isPackaged) {
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  }
+
   return targetPath;
 }
 

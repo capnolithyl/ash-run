@@ -32,8 +32,25 @@ import {
   unlockNextCommander
 } from "./controllerShared.js";
 
+const ENEMY_TURN_MAX_STEPS = 100;
+const ENEMY_TURN_MAX_WALL_TIME_MS = 30000;
+
 function getEligibleGearRosterUnits(runState, reward) {
   return (runState?.roster ?? []).filter((unit) => canUnitEquipRunUpgrade(unit, reward));
+}
+
+function clearCombatCutscene(controller) {
+  if (controller.battleCombatCutsceneTimer) {
+    clearTimeout(controller.battleCombatCutsceneTimer);
+    controller.battleCombatCutsceneTimer = null;
+  }
+
+  controller.state.battleUi.combatCutscene = null;
+}
+
+function forcePassEnemyTurn(controller, reason) {
+  clearCombatCutscene(controller);
+  return controller.battleSystem?.forcePassEnemyTurn?.(reason) ?? { changed: false, reason };
 }
 
 function maybeSyncCombatCutscene(controller, previousSnapshot, nextSnapshot) {
@@ -374,40 +391,73 @@ export const controllerRunMethods = {
       this.syncBattleState();
     }
 
+    let enemyTurnForcePassed = false;
+    let enemyStepCount = 0;
+    const enemyTurnStartedAt = Date.now();
+
     while (this.battleSystem?.hasPendingEnemyTurn()) {
+      if (
+        enemyStepCount >= ENEMY_TURN_MAX_STEPS ||
+        Date.now() - enemyTurnStartedAt >= ENEMY_TURN_MAX_WALL_TIME_MS
+      ) {
+        forcePassEnemyTurn(this, "timeout");
+        enemyTurnForcePassed = true;
+        this.syncBattleState();
+        break;
+      }
+
       while (this.state.battleUi.pauseMenuOpen) {
         await delay(100);
       }
 
       const previousSnapshot = this.state.battleSnapshot;
-      const step = this.battleSystem.processEnemyTurnStep();
-      this.syncBattleState();
+      let step;
+
+      try {
+        step = this.battleSystem.processEnemyTurnStep();
+        enemyStepCount += 1;
+        this.syncBattleState();
+      } catch {
+        forcePassEnemyTurn(this, "error");
+        enemyTurnForcePassed = true;
+        this.syncBattleState();
+        break;
+      }
 
       if (!step.changed || this.state.battleSnapshot?.victory) {
         break;
       }
 
-      while (this.state.battleSnapshot?.levelUpQueue?.length) {
-        await delay(100);
-      }
-
-      const combatCutsceneDuration = this.state.battleUi.combatCutscene?.durationMs ?? 0;
-      const stepDelay = getBattleSnapshotTransitionDurationMs(
-        previousSnapshot,
-        this.state.battleSnapshot,
-        {
-          combatCutsceneDurationMs: combatCutsceneDuration,
-          postCombatDelayMs: combatCutsceneDuration > 0 ? BATTLE_POST_COMBAT_PAUSE_MS : 0
+      try {
+        while (this.state.battleSnapshot?.levelUpQueue?.length) {
+          await delay(100);
         }
-      );
-      await delay(Math.max(stepDelay, combatCutsceneDuration));
+
+        const combatCutsceneDuration = this.state.battleUi.combatCutscene?.durationMs ?? 0;
+        const stepDelay = getBattleSnapshotTransitionDurationMs(
+          previousSnapshot,
+          this.state.battleSnapshot,
+          {
+            combatCutsceneDurationMs: combatCutsceneDuration,
+            postCombatDelayMs: combatCutsceneDuration > 0 ? BATTLE_POST_COMBAT_PAUSE_MS : 0
+          }
+        );
+        await delay(Math.max(stepDelay, combatCutsceneDuration));
+      } catch {
+        forcePassEnemyTurn(this, "error");
+        enemyTurnForcePassed = true;
+        this.syncBattleState();
+        break;
+      }
     }
 
     while (this.state.battleUi.pauseMenuOpen) {
       await delay(100);
     }
 
-    const recruitment = this.battleSystem?.performEnemyEndTurnRecruitment();
+    const recruitment = enemyTurnForcePassed
+      ? null
+      : this.battleSystem?.performEnemyEndTurnRecruitment();
 
     if (recruitment?.changed) {
       this.syncBattleState();

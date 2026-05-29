@@ -27,12 +27,21 @@ function getBundledMapsRoot(baseDirectory = __dirname) {
   return path.resolve(baseDirectory, "../src/game/content/maps");
 }
 
+function getPackagedMapsRoot(resourcesPath) {
+  return path.resolve(String(resourcesPath ?? ""), "maps");
+}
+
 function resolvePreferredMapRoot({
   isPackaged = false,
   customMapsRoot,
-  bundledMapsRoot = getBundledMapsRoot()
+  bundledMapsRoot = getBundledMapsRoot(),
+  packagedMapsRoot = null
 }) {
-  return isPackaged ? customMapsRoot : bundledMapsRoot;
+  if (isPackaged) {
+    return packagedMapsRoot || customMapsRoot;
+  }
+
+  return bundledMapsRoot;
 }
 
 async function collectJsonFiles(rootDirectory, fsImpl = fs) {
@@ -153,6 +162,7 @@ async function loadMapFileFromRoot(rootDirectory, relativePath, fsImpl = fs) {
 module.exports = {
   buildMapFileMetadata,
   getBundledMapsRoot,
+  getPackagedMapsRoot,
   listLoadableMapFiles,
   loadMapFileFromRoot,
   normalizeMapRelativePath,

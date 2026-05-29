@@ -730,6 +730,42 @@ test("skirmish battle tile clicks sync selection without a run save", async () =
   assert.equal(state.battleSnapshot.selection.id, playerUnit.id);
 });
 
+test("enemy turn sequence force-passes when enemy processing throws", async () => {
+  const controller = new GameController();
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
+  const enemyUnit = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 1);
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN,
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit]
+  });
+  const system = new BattleSystem(battleState);
+  let recruitmentCalls = 0;
+
+  assert.equal(system.endTurn(), true);
+  system.processEnemyTurnStep = () => {
+    throw new Error("AI step failed");
+  };
+  system.performEnemyEndTurnRecruitment = () => {
+    recruitmentCalls += 1;
+    return { changed: false, deployments: [] };
+  };
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.runState = { id: "test-run" };
+  controller.battleSystem = system;
+  controller.persistCurrentRun = async () => {
+    controller.syncBattleState();
+  };
+
+  await controller.runEnemyTurnSequence();
+
+  const state = controller.getState();
+  assert.equal(state.battleSnapshot.turn.activeSide, TURN_SIDES.PLAYER);
+  assert.equal(state.battleSnapshot.enemyTurn, null);
+  assert.equal(state.battleSnapshot.log[0], "Enemy command stalled. Enemy passed the turn.");
+  assert.equal(recruitmentCalls, 0);
+});
+
 test("sandbox commander overrides update both battle sides without saving a run", async () => {
   const controller = new GameController();
   const system = new BattleSystem(createTestBattleState());
