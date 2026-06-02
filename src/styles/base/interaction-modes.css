@@ -14,6 +14,7 @@
   .title-tank::before,
   .title-tank__shadow,
   .title-tank__track,
+  #game-root canvas,
   .battle-notice,
   .battle-overlay--power,
   .battle-overlay--combat-cutscene,

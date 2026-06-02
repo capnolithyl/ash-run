@@ -79,6 +79,13 @@ export const appShellCombatCutsceneMethods = {
     this.primeCombatCutsceneSpriteSheets(overlay);
     this.applyCombatCutsceneDomState(overlay, cutscene, timeline);
 
+    schedule(cutscene.focusStartMs ?? 0, () => {
+      this.applyCombatCutsceneDomState(
+        overlay,
+        cutscene,
+        getBattleCombatCutsceneState(cutscene)
+      );
+    });
     schedule(cutscene.revealStartMs ?? 0, () => {
       this.applyCombatCutsceneDomState(
         overlay,
@@ -107,8 +114,12 @@ export const appShellCombatCutsceneMethods = {
       schedule(lastStep.endMs, () => this.clearCombatCutsceneActiveStep(overlay));
     }
 
-    schedule(cutscene.durationMs - (cutscene.closeMs ?? 0), () => {
-      overlay.classList.add("battle-overlay--combat-cutscene-outro");
+    schedule(timeline.closeStartMs, () => {
+      this.applyCombatCutsceneDomState(
+        overlay,
+        cutscene,
+        getBattleCombatCutsceneState(cutscene)
+      );
     });
   },
 
@@ -183,6 +194,8 @@ export const appShellCombatCutsceneMethods = {
     const weaponLabel = overlay.querySelector("[data-cutscene-weapon-label]");
 
     overlay.classList.toggle("battle-overlay--combat-cutscene-opening", timeline.isOpening);
+    overlay.classList.toggle("battle-overlay--combat-cutscene-focusing", timeline.isFocusing);
+    overlay.classList.toggle("battle-overlay--combat-cutscene-focused", timeline.isFocused);
     overlay.classList.toggle(
       "battle-overlay--combat-cutscene-hidden",
       Boolean(timeline.isWaitingForReveal)

@@ -1,5 +1,7 @@
 import {
   BATTLE_COMBAT_CUTSCENE_CLOSE_MS,
+  BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS,
+  BATTLE_COMBAT_CUTSCENE_FOCUS_OUT_MS,
   BATTLE_COMBAT_CUTSCENE_IMPACT_DELAY_MS,
   BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
   BATTLE_COMBAT_CUTSCENE_LOOP_MAX,
@@ -173,16 +175,20 @@ export function getBattleCombatCutsceneState(cutscene, now = Date.now()) {
       },
       activeStepIndex: -1,
       impactStepIndex: -1,
+      focusStartMs: 0,
       closeStartMs: 0,
       activeStep: null,
       impactStep: null,
       isWaitingForReveal: false,
+      isFocusing: false,
+      isFocused: false,
       isOpening: false,
       isClosing: false
     };
   }
 
   const elapsedMs = getBattleCombatCutsceneElapsedMs(cutscene, now);
+  const focusStartMs = Math.max(0, cutscene.focusStartMs ?? 0);
   const revealStartMs = Math.max(0, cutscene.revealStartMs ?? 0);
   const revealElapsedMs = Math.max(0, elapsedMs - revealStartMs);
   const displayedHpBySide = {
@@ -214,10 +220,13 @@ export function getBattleCombatCutsceneState(cutscene, now = Date.now()) {
     displayedHpBySide,
     activeStepIndex,
     impactStepIndex,
+    focusStartMs,
     closeStartMs,
     activeStep: activeStepIndex >= 0 ? cutscene.steps[activeStepIndex] : null,
     impactStep: impactStepIndex >= 0 ? cutscene.steps[impactStepIndex] : null,
     isWaitingForReveal: elapsedMs < revealStartMs,
+    isFocusing: elapsedMs >= focusStartMs && elapsedMs < revealStartMs,
+    isFocused: elapsedMs >= focusStartMs && elapsedMs < closeStartMs,
     isOpening: elapsedMs >= revealStartMs && revealElapsedMs < (cutscene.openMs ?? 0),
     isClosing: elapsedMs >= closeStartMs
   };
@@ -255,11 +264,12 @@ export function deriveBattleCombatCutscene(previousSnapshot, nextSnapshot) {
     [TURN_SIDES.PLAYER]: playerUnit.currentHp,
     [TURN_SIDES.ENEMY]: enemyUnit.currentHp
   };
-  const revealStartMs = getCutsceneRevealStartMs(
+  const focusStartMs = getCutsceneRevealStartMs(
     previousSnapshot,
     animationEvents,
     firstAttack.attackerId
   );
+  const revealStartMs = focusStartMs + BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS;
   let cursorMs =
     revealStartMs + BATTLE_COMBAT_CUTSCENE_OPEN_MS + BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS;
   const steps = attackEvents.map((event) => {
@@ -318,6 +328,9 @@ export function deriveBattleCombatCutscene(previousSnapshot, nextSnapshot) {
   );
 
   return {
+    focusStartMs,
+    focusInMs: BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS,
+    focusOutMs: BATTLE_COMBAT_CUTSCENE_FOCUS_OUT_MS,
     openMs: BATTLE_COMBAT_CUTSCENE_OPEN_MS,
     closeMs: BATTLE_COMBAT_CUTSCENE_CLOSE_MS,
     introHoldMs: BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
@@ -325,6 +338,20 @@ export function deriveBattleCombatCutscene(previousSnapshot, nextSnapshot) {
     revealStartMs,
     playerUnit,
     enemyUnit,
+    focusTiles: [
+      {
+        role: "attacker",
+        unitId: firstAttack.attackerId,
+        x: firstAttack.fromX,
+        y: firstAttack.fromY
+      },
+      {
+        role: "target",
+        unitId: firstAttack.targetId,
+        x: firstAttack.toX,
+        y: firstAttack.toY
+      }
+    ],
     playerTerrainId,
     enemyTerrainId,
     steps,

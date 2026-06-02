@@ -28,6 +28,9 @@ export class BattleScene extends Phaser.Scene {
     this.touchPointers = new Map();
     this.touchGesture = null;
     this.cameraZoomTween = null;
+    this.combatCutsceneCamera = null;
+    this.combatCutsceneCameraTween = null;
+    this.combatCutsceneCameraTimers = [];
     this.cameraTargetZoom = 1;
     this.suppressTouchClickUntil = 0;
     this.mapEditorPaintPointerId = null;

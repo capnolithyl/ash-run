@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_COMBAT_CUTSCENE_CLOSE_MS,
+  BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS,
   BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
   BATTLE_COMBAT_CUTSCENE_OPEN_MS,
   BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS,
@@ -472,12 +473,19 @@ test("battle combat cutscene payload keeps player-left mapping, split terrain id
   assert.equal(cutscene.enemyUnit.id, defender.id);
   assert.equal(cutscene.playerTerrainId, TERRAIN_KEYS.FOREST);
   assert.equal(cutscene.enemyTerrainId, TERRAIN_KEYS.RIDGE);
+  assert.equal(cutscene.focusStartMs, 0);
+  assert.deepEqual(cutscene.focusTiles, [
+    { role: "attacker", unitId: attacker.id, x: attacker.x, y: attacker.y },
+    { role: "target", unitId: defender.id, x: defender.x, y: defender.y }
+  ]);
   assert.equal(cutscene.steps.length >= 1, true);
   assert.equal(cutscene.steps[0].attackerSide, TURN_SIDES.PLAYER);
   assert.equal(cutscene.steps[0].targetSide, TURN_SIDES.ENEMY);
   assert.equal(
     cutscene.steps[0].startMs,
-    BATTLE_COMBAT_CUTSCENE_OPEN_MS + BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
+    BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS +
+      BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+      BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
   );
   assert.equal(cutscene.steps[0].impactMs, cutscene.steps[0].startMs + cutscene.steps[0].impactDelayMs);
   assert.equal(cutscene.steps[0].endMs, cutscene.steps[0].startMs + cutscene.steps[0].windowMs);
@@ -492,6 +500,7 @@ test("battle combat cutscene payload keeps player-left mapping, split terrain id
   assert.ok(
     cutscene.durationMs >=
       BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+        BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS +
         BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS +
         BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS +
         BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS +
@@ -529,6 +538,7 @@ test("battle combat cutscene payload keeps graves preemptive counter order", () 
   assert.ok(
     cutscene.durationMs >=
       BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+        BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS +
         BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS +
         BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS * 2 +
         BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS +
@@ -558,9 +568,11 @@ test("battle combat cutscene waits for move-and-settle before revealing the duel
   const after = system.getSnapshot();
 
   const cutscene = deriveBattleCombatCutscene(before, after);
-  const expectedRevealStartMs = 1667 + BATTLE_MOVE_SETTLE_MS;
+  const expectedFocusStartMs = 1667 + BATTLE_MOVE_SETTLE_MS;
+  const expectedRevealStartMs = expectedFocusStartMs + BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS;
 
   assert.ok(cutscene);
+  assert.equal(cutscene.focusStartMs, expectedFocusStartMs);
   assert.equal(cutscene.revealStartMs, expectedRevealStartMs);
   assert.equal(
     cutscene.steps[0].startMs,

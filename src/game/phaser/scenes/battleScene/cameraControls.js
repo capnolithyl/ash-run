@@ -1,14 +1,53 @@
 import { getBoardSnapshot, isBattleScreen, isBoardScreen } from "./screenState.js";
+import {
+  BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS,
+  BATTLE_COMBAT_CUTSCENE_FOCUS_OUT_MS
+} from "../../../core/constants.js";
+import { getBattleCombatCutsceneState } from "../../view/battleCombatCutscene.js";
+
+const COMBAT_CUTSCENE_FOCUS_MAX_ZOOM = 2.35;
+const COMBAT_CUTSCENE_FOCUS_PADDING_TILES = 1.45;
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value));
+}
+
+function clampCameraScroll(value, minimum, maximum) {
+  if (minimum > maximum) {
+    return (minimum + maximum) / 2;
+  }
+
+  return clamp(value, minimum, maximum);
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function getCutsceneFocusTiles(cutscene) {
+  return (cutscene?.focusTiles ?? []).filter(
+    (tile) => Number.isFinite(tile?.x) && Number.isFinite(tile?.y)
+  );
+}
+
+function getTileCenter(layout, tile) {
+  return {
+    x: layout.originX + tile.x * layout.cellSize + layout.cellSize / 2,
+    y: layout.originY + tile.y * layout.cellSize + layout.cellSize / 2
+  };
 }
 
 export const battleSceneCameraMethods = {
   canUseBattlefieldCamera() {
     return (
       isBoardScreen(this.latestState) &&
-      (!isBattleScreen(this.latestState) || !this.latestState?.battleUi?.pauseMenuOpen)
+      (!isBattleScreen(this.latestState) ||
+        (!this.latestState?.battleUi?.pauseMenuOpen &&
+          !this.latestState?.battleUi?.combatCutscene))
     );
   },
 
@@ -49,6 +88,35 @@ export const battleSceneCameraMethods = {
     };
   },
 
+  getClampedBattlefieldScroll(snapshot, layout, zoom, scrollX, scrollY) {
+    const camera = this.cameras.main;
+    const bounds = this.getBoardBounds(snapshot, layout);
+    const viewportScreenWidth = camera.width || this.scale.width;
+    const viewportScreenHeight = camera.height || this.scale.height;
+    const originX = viewportScreenWidth * camera.originX;
+    const originY = viewportScreenHeight * camera.originY;
+    const viewportWidth = viewportScreenWidth / zoom;
+    const viewportHeight = viewportScreenHeight / zoom;
+    const panRoom = this.getBattlefieldCameraPanRoom(viewportWidth, viewportHeight);
+    const minX = bounds.left - panRoom.x - originX + originX / zoom;
+    const maxX = bounds.right + panRoom.x - originX - (viewportScreenWidth - originX) / zoom;
+    const minY = bounds.top - panRoom.y - originY + originY / zoom;
+    const maxY =
+      bounds.bottom + panRoom.y - originY - (viewportScreenHeight - originY) / zoom;
+
+    if (zoom <= this.getCameraZoomRange().min + 0.001) {
+      return {
+        scrollX: 0,
+        scrollY: 0
+      };
+    }
+
+    return {
+      scrollX: clampCameraScroll(scrollX, minX, maxX),
+      scrollY: clampCameraScroll(scrollY, minY, maxY)
+    };
+  },
+
   clampBattlefieldCamera() {
     const snapshot = getBoardSnapshot(this.latestState, this.hoveredTile);
 
@@ -58,27 +126,19 @@ export const battleSceneCameraMethods = {
 
     const camera = this.cameras.main;
     const layout = this.getBoardLayout(snapshot);
-    const bounds = this.getBoardBounds(snapshot, layout);
-    const viewportWidth = this.scale.width / camera.zoom;
-    const viewportHeight = this.scale.height / camera.zoom;
-    const panRoom = this.getBattlefieldCameraPanRoom(viewportWidth, viewportHeight);
-    const minX = Math.min(bounds.left - panRoom.x, 0);
-    const maxX = Math.max(bounds.right - viewportWidth + panRoom.x, 0);
-    const minY = Math.min(bounds.top - panRoom.y, 0);
-    const maxY = Math.max(bounds.bottom - viewportHeight + panRoom.y, 0);
+    const { scrollX, scrollY } = this.getClampedBattlefieldScroll(
+      snapshot,
+      layout,
+      camera.zoom,
+      camera.scrollX,
+      camera.scrollY
+    );
 
-    if (camera.zoom <= this.getCameraZoomRange().min + 0.001) {
-      camera.setScroll(0, 0);
-      return;
-    }
-
-    const nextScrollX = clamp(camera.scrollX, minX, maxX);
-    const nextScrollY = clamp(camera.scrollY, minY, maxY);
-
-    camera.setScroll(nextScrollX, nextScrollY);
+    camera.setScroll(scrollX, scrollY);
   },
 
   resetBattlefieldCamera() {
+    this.clearCombatCutsceneCameraFocus?.({ restore: false });
     this.stopBattlefieldZoomTween();
     this.cameras.main.setZoom(1);
     this.cameras.main.setScroll(0, 0);
@@ -188,5 +248,241 @@ export const battleSceneCameraMethods = {
     camera.scrollX -= deltaX / camera.zoom;
     camera.scrollY -= deltaY / camera.zoom;
     this.clampBattlefieldCamera();
+  },
+
+  captureBattlefieldCameraState() {
+    const camera = this.cameras.main;
+
+    return {
+      zoom: camera.zoom,
+      scrollX: camera.scrollX,
+      scrollY: camera.scrollY,
+      targetZoom: Number.isFinite(this.cameraTargetZoom) ? this.cameraTargetZoom : camera.zoom
+    };
+  },
+
+  applyBattlefieldCameraState(cameraState) {
+    if (!cameraState) {
+      return;
+    }
+
+    const camera = this.cameras.main;
+    camera.setZoom(cameraState.zoom);
+    camera.setScroll(cameraState.scrollX, cameraState.scrollY);
+    this.cameraTargetZoom = cameraState.targetZoom ?? cameraState.zoom;
+    this.clampBattlefieldCamera();
+  },
+
+  getCombatCutsceneCameraTarget(snapshot, layout, cutscene) {
+    const focusTiles = getCutsceneFocusTiles(cutscene);
+
+    if (focusTiles.length < 2) {
+      return null;
+    }
+
+    const camera = this.cameras.main;
+    const { min, max } = this.getCameraZoomRange();
+    const maxFocusZoom = Math.max(min, Math.min(max, COMBAT_CUTSCENE_FOCUS_MAX_ZOOM));
+    const points = focusTiles.map((tile) => getTileCenter(layout, tile));
+    const minX = Math.min(...points.map((point) => point.x));
+    const maxX = Math.max(...points.map((point) => point.x));
+    const minY = Math.min(...points.map((point) => point.y));
+    const maxY = Math.max(...points.map((point) => point.y));
+    const padding = layout.cellSize * COMBAT_CUTSCENE_FOCUS_PADDING_TILES;
+    const focusWidth = Math.max(layout.cellSize, maxX - minX + padding * 2);
+    const focusHeight = Math.max(layout.cellSize, maxY - minY + padding * 2);
+    const zoomForWidth = this.scale.width / focusWidth;
+    const zoomForHeight = this.scale.height / focusHeight;
+    const zoom = clamp(Math.min(zoomForWidth, zoomForHeight), min, maxFocusZoom);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const scroll = this.getClampedBattlefieldScroll(
+      snapshot,
+      layout,
+      zoom,
+      centerX - camera.width * camera.originX,
+      centerY - camera.height * camera.originY
+    );
+
+    return {
+      zoom,
+      scrollX: scroll.scrollX,
+      scrollY: scroll.scrollY,
+      targetZoom: zoom
+    };
+  },
+
+  stopCombatCutsceneCameraTween() {
+    if (this.combatCutsceneCameraTween) {
+      this.combatCutsceneCameraTween.stop();
+      this.combatCutsceneCameraTween = null;
+    }
+  },
+
+  tweenBattlefieldCameraTo(cameraState, duration, onComplete = null) {
+    if (!cameraState) {
+      return;
+    }
+
+    this.stopBattlefieldZoomTween();
+    this.stopCombatCutsceneCameraTween();
+
+    const camera = this.cameras.main;
+    const effectiveDuration = prefersReducedMotion() ? 1 : Math.max(1, duration);
+
+    if (effectiveDuration <= 1) {
+      this.applyBattlefieldCameraState(cameraState);
+      onComplete?.();
+      return;
+    }
+
+    const tweenState = {
+      zoom: camera.zoom,
+      scrollX: camera.scrollX,
+      scrollY: camera.scrollY
+    };
+
+    this.cameraTargetZoom = cameraState.targetZoom ?? cameraState.zoom;
+    this.combatCutsceneCameraTween = this.tweens.add({
+      targets: tweenState,
+      zoom: cameraState.zoom,
+      scrollX: cameraState.scrollX,
+      scrollY: cameraState.scrollY,
+      duration: effectiveDuration,
+      ease: "Sine.easeInOut",
+      onUpdate: () => {
+        camera.setZoom(tweenState.zoom);
+        camera.setScroll(tweenState.scrollX, tweenState.scrollY);
+        this.clampBattlefieldCamera();
+      },
+      onComplete: () => {
+        this.applyBattlefieldCameraState(cameraState);
+        this.combatCutsceneCameraTween = null;
+        onComplete?.();
+      }
+    });
+  },
+
+  clearCombatCutsceneCameraTimers() {
+    for (const timer of this.combatCutsceneCameraTimers ?? []) {
+      timer.remove(false);
+    }
+
+    this.combatCutsceneCameraTimers = [];
+  },
+
+  clearCombatCutsceneCameraFocus({ restore = true } = {}) {
+    const focusState = this.combatCutsceneCamera;
+
+    if (!focusState) {
+      return;
+    }
+
+    this.clearCombatCutsceneCameraTimers();
+
+    if (restore && focusState.restoring) {
+      return;
+    }
+
+    this.stopCombatCutsceneCameraTween();
+
+    if (restore && focusState.restore) {
+      this.applyBattlefieldCameraState(focusState.restore);
+    }
+
+    this.combatCutsceneCamera = null;
+  },
+
+  scheduleCombatCutsceneCameraFocus(snapshot, layout, cutscene) {
+    if (!cutscene?.id || !cutscene?.startedAt) {
+      return;
+    }
+
+    const key = `${cutscene.id}:${cutscene.startedAt}`;
+
+    if (this.combatCutsceneCamera?.key === key) {
+      return;
+    }
+
+    this.clearCombatCutsceneCameraFocus({ restore: true });
+
+    const timeline = getBattleCombatCutsceneState(cutscene);
+    const focusState = {
+      key,
+      restore: this.captureBattlefieldCameraState(),
+      restoring: false
+    };
+    this.combatCutsceneCamera = focusState;
+
+    const scheduleAt = (targetMs, callback) => {
+      const delay = Math.max(0, targetMs - timeline.elapsedMs);
+
+      if (delay <= 0) {
+        callback();
+        return;
+      }
+
+      const timer = this.time.delayedCall(delay, () => {
+        this.combatCutsceneCameraTimers = (this.combatCutsceneCameraTimers ?? []).filter(
+          (activeTimer) => activeTimer !== timer
+        );
+
+        if (this.combatCutsceneCamera?.key !== key) {
+          return;
+        }
+
+        callback();
+      });
+
+      this.combatCutsceneCameraTimers ??= [];
+      this.combatCutsceneCameraTimers.push(timer);
+    };
+
+    if (timeline.elapsedMs >= timeline.closeStartMs) {
+      this.restoreCombatCutsceneCameraFocus(key, cutscene);
+      return;
+    }
+
+    scheduleAt(cutscene.focusStartMs ?? 0, () =>
+      this.startCombatCutsceneCameraFocus(snapshot, layout, cutscene, key)
+    );
+    scheduleAt(timeline.closeStartMs, () => this.restoreCombatCutsceneCameraFocus(key, cutscene));
+  },
+
+  startCombatCutsceneCameraFocus(snapshot, layout, cutscene, key) {
+    if (this.combatCutsceneCamera?.key !== key) {
+      return;
+    }
+
+    const target = this.getCombatCutsceneCameraTarget(snapshot, layout, cutscene);
+
+    if (!target) {
+      return;
+    }
+
+    this.tweenBattlefieldCameraTo(
+      target,
+      cutscene.focusInMs ?? BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS
+    );
+  },
+
+  restoreCombatCutsceneCameraFocus(key, cutscene) {
+    const focusState = this.combatCutsceneCamera;
+
+    if (!focusState || focusState.key !== key) {
+      return;
+    }
+
+    focusState.restoring = true;
+    this.clearCombatCutsceneCameraTimers();
+    this.tweenBattlefieldCameraTo(
+      focusState.restore,
+      cutscene?.focusOutMs ?? BATTLE_COMBAT_CUTSCENE_FOCUS_OUT_MS,
+      () => {
+        if (this.combatCutsceneCamera?.key === key) {
+          this.combatCutsceneCamera = null;
+        }
+      }
+    );
   }
 };

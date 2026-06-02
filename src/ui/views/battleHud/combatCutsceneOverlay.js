@@ -276,6 +276,8 @@ export function renderCombatCutsceneOverlay(cutscene, options = {}) {
   const overlayClasses = [
     "battle-overlay",
     "battle-overlay--combat-cutscene",
+    timeline.isFocusing ? "battle-overlay--combat-cutscene-focusing" : "",
+    timeline.isFocused ? "battle-overlay--combat-cutscene-focused" : "",
     timeline.isWaitingForReveal ? "battle-overlay--combat-cutscene-hidden" : "",
     timeline.isOpening ? "battle-overlay--combat-cutscene-opening" : "",
     timeline.isClosing ? "battle-overlay--combat-cutscene-outro" : "",

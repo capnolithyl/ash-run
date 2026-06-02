@@ -207,6 +207,12 @@ export const battleSceneRenderMethods = {
     const combatCutsceneDuration = combatCutscene?.durationMs ?? 0;
     const combatFollowThroughStartMs = combatCutsceneDuration + postCombatPauseMs;
 
+    if (combatCutsceneActive) {
+      this.scheduleCombatCutsceneCameraFocus(snapshot, layout, combatCutscene);
+    } else {
+      this.clearCombatCutsceneCameraFocus({ restore: true });
+    }
+
     for (const unitId of attackDrivenDestroyUnitIds) {
       this.unitLayer.holdForDestroy(unitId);
     }

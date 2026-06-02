@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   BATTLE_COMBAT_CUTSCENE_CLOSE_MS,
+  BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS,
   BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
   BATTLE_COMBAT_CUTSCENE_OPEN_MS,
   BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS,
@@ -377,12 +378,15 @@ test("syncBattleState creates and clears combat cutscene state for attack transi
     );
     assert.equal(
       state.battleUi.combatCutscene.steps[0].startMs,
-      BATTLE_COMBAT_CUTSCENE_OPEN_MS + BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
+      BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS +
+        BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+        BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
     );
     assert.ok(state.battleUi.combatCutscene.steps[0].windowMs >= BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS);
     assert.ok(
       state.battleUi.combatCutscene.durationMs >=
         BATTLE_COMBAT_CUTSCENE_OPEN_MS +
+          BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS +
           BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS +
           BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS +
           BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS +

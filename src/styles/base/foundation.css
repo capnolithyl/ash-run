@@ -283,10 +283,19 @@ textarea:disabled {
 #game-root canvas {
   touch-action: none;
   cursor: var(--cursor-default);
+  filter: none;
+  transition:
+    filter 220ms ease,
+    opacity 220ms ease;
 }
 
 body:has(#ui-root .battle-shell:not(.map-editor-shell)) #game-root canvas {
   cursor: var(--cursor-crosshair);
+}
+
+body:has(#ui-root .battle-overlay--combat-cutscene-focusing) #game-root canvas,
+body:has(#ui-root .battle-overlay--combat-cutscene-focused:not(.battle-overlay--combat-cutscene-outro)) #game-root canvas {
+  filter: blur(0.34rem) brightness(0.72) saturate(0.92);
 }
 
 body:has(#ui-root .map-editor-shell) #game-root canvas {
