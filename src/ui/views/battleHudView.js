@@ -111,8 +111,9 @@ function renderBattleFooterImageButton({
 }
 
 function renderCompactIntelSheet(
-  playerFocusTile,
   battleSnapshot,
+  sidebarBattleSnapshot,
+  playerFocusTile,
   hoveredTile,
   enemyFocusTile,
   experiencePresentation = null
@@ -164,7 +165,7 @@ function renderCompactIntelSheet(
           ${renderRecruitPanel(battleSnapshot)}
         </section>
         <section class="battle-compact-sheet__panel battle-compact-sheet__panel--target">
-          ${renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)}
+          ${renderTargetIntelPanel(sidebarBattleSnapshot, hoveredTile, enemyFocusTile)}
         </section>
         <section class="battle-compact-sheet__panel battle-compact-sheet__panel--feed">
           ${renderCommandFeed(battleSnapshot.log, hoveredTile)}
@@ -176,6 +177,7 @@ function renderCompactIntelSheet(
 
 function renderDesktopBattlePanels(
   battleSnapshot,
+  sidebarBattleSnapshot,
   hoveredTile,
   playerFocusTile,
   enemyFocusTile,
@@ -197,7 +199,7 @@ function renderDesktopBattlePanels(
       <div class="battle-side-stack battle-side-stack--right" aria-label="Target Intel and Command Feed">
         <div class="battle-side-panel-shell battle-side-panel-shell--target">
           <aside class="battle-side-panel battle-side-panel--target" aria-label="Target Intel">
-            ${renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)}
+            ${renderTargetIntelPanel(sidebarBattleSnapshot, hoveredTile, enemyFocusTile)}
           </aside>
         </div>
         <div class="battle-side-panel-shell battle-side-panel-shell--feed">
@@ -241,6 +243,7 @@ export function renderBattleHudView(state, options = {}) {
   const turnBanner = options.turnBanner ?? null;
   const combatCutscene = state.battleUi?.combatCutscene ?? null;
   const combatCutsceneActive = Boolean(combatCutscene);
+  const sidebarBattleSnapshot = combatCutscene?.hudSnapshot ?? battleSnapshot;
   const experiencePresentation = options.experiencePresentation ?? null;
   const levelUpPresentation = options.levelUpPresentation ?? null;
   const commanderTurnAnimationFromSide = options.commanderTurnAnimationFromSide ?? null;
@@ -274,8 +277,8 @@ export function renderBattleHudView(state, options = {}) {
       ? performance.now()
       : Date.now();
   const battleChromeStyle = getBattleChromeStyle(commanderAnimationClockMs);
-  const playerFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.PLAYER);
-  const enemyFocusTile = getFocusTileForSide(battleSnapshot, state.battleUi, TURN_SIDES.ENEMY);
+  const playerFocusTile = getFocusTileForSide(sidebarBattleSnapshot, state.battleUi, TURN_SIDES.PLAYER);
+  const enemyFocusTile = getFocusTileForSide(sidebarBattleSnapshot, state.battleUi, TURN_SIDES.ENEMY);
 
   return `
     <div class="battle-shell battle-shell--animated-chrome" style="${battleChromeStyle}">
@@ -343,14 +346,16 @@ export function renderBattleHudView(state, options = {}) {
       ${renderBattleMeta(battleSnapshot)}
       ${renderDesktopBattlePanels(
         battleSnapshot,
+        sidebarBattleSnapshot,
         hoveredTile,
         playerFocusTile,
         enemyFocusTile,
         experiencePresentation
       )}
       ${renderCompactIntelSheet(
-        playerFocusTile,
         battleSnapshot,
+        sidebarBattleSnapshot,
+        playerFocusTile,
         hoveredTile,
         enemyFocusTile,
         experiencePresentation

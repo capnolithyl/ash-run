@@ -670,6 +670,53 @@ test("battle HUD renders the combat cutscene overlay with stable sprite layers a
   assert.match(html, /combat-cutscene__footer[\s\S]*Rifle/i);
 });
 
+test("battle HUD keeps sidebar health at pre-combat values while combat cutscene is active", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);
+  const system = new BattleSystem(
+    createTestBattleState({
+      playerUnits: [attacker],
+      enemyUnits: [defender]
+    })
+  );
+  const before = system.getSnapshot();
+
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+
+  const after = system.getSnapshot();
+  const afterAttacker = after.player.units.find((unit) => unit.id === attacker.id);
+  const afterDefender = after.enemy.units.find((unit) => unit.id === defender.id);
+  const cutscene = deriveBattleCombatCutscene(before, after);
+  const html = renderBattleHudView({
+    battleSnapshot: after,
+    battleUi: {
+      combatCutscene: {
+        id: "cutscene-hud-snapshot",
+        startedAt: Date.now(),
+        hudSnapshot: before,
+        ...cutscene
+      },
+      hoveredTile: null,
+      playerFocus: { type: "unit", id: attacker.id },
+      enemyFocus: { type: "unit", id: defender.id }
+    },
+    metaState: {
+      options: {
+        combatCutsceneAnimations: true
+      }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.ok(afterAttacker.current.hp < attacker.current.hp);
+  assert.ok(afterDefender.current.hp < defender.current.hp);
+  assert.match(html, /selection-health__value">100\/100<\/span>/);
+  assert.doesNotMatch(html, new RegExp(`selection-health__value">${afterAttacker.current.hp}/100</span>`));
+  assert.doesNotMatch(html, new RegExp(`selection-health__value">${afterDefender.current.hp}/100</span>`));
+});
+
 test("battle HUD combat cutscene uses idle sheets and mirrors the enemy lane", () => {
   const attacker = createPlacedUnit("longshot", TURN_SIDES.PLAYER, 1, 1);
   const defender = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 1);

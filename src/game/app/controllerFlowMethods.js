@@ -1,7 +1,7 @@
 import { APP_TOAST_DISPLAY_MS, BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
-import { normalizeMetaOptions } from "../state/defaults.js";
+import { normalizeMetaOptions, normalizeUnlockedRunCardIds } from "../state/defaults.js";
 import { getMapById } from "../content/maps.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
@@ -32,6 +32,13 @@ function resolveDebugRunMapId(mapId) {
   }
 
   return null;
+}
+
+function getAvailableRunCardIdsForRun(metaState, currentIds = []) {
+  return normalizeUnlockedRunCardIds([
+    ...(metaState?.unlockedRunCardIds ?? []),
+    ...(Array.isArray(currentIds) ? currentIds : [])
+  ]);
 }
 
 export const controllerFlowMethods = {
@@ -132,11 +139,10 @@ export const controllerFlowMethods = {
       commanderId
     });
     const previousRunState = normalizeRunState(this.state.runState);
-    runState.availableRunCardIds = [
-      ...(previousRunState?.availableRunCardIds?.length
-        ? previousRunState.availableRunCardIds
-        : this.state.metaState.unlockedRunCardIds)
-    ];
+    runState.availableRunCardIds = getAvailableRunCardIdsForRun(
+      this.state.metaState,
+      previousRunState?.availableRunCardIds
+    );
     runState.availableDraftUnitIds = [
       ...(previousRunState?.availableDraftUnitIds?.length
         ? previousRunState.availableDraftUnitIds
@@ -407,7 +413,7 @@ export const controllerFlowMethods = {
       slotId: this.state.selectedSlotId,
       commanderId: this.state.selectedCommanderId
     });
-    runState.availableRunCardIds = [...this.state.metaState.unlockedRunCardIds];
+    runState.availableRunCardIds = getAvailableRunCardIdsForRun(this.state.metaState);
     runState.availableDraftUnitIds = [...this.state.metaState.unlockedUnitIds];
     const purchasedRoster = this.state.runLoadout.units
       .map((unitTypeId) => createUnitFromType(unitTypeId, TURN_SIDES.PLAYER))
@@ -441,9 +447,10 @@ export const controllerFlowMethods = {
     const normalizedRunState = normalizeRunState(slotRecord.runState);
     const normalizedBattleState = normalizeBattleState(slotRecord.battleState);
 
-    if ((normalizedRunState?.availableRunCardIds?.length ?? 0) === 0) {
-      normalizedRunState.availableRunCardIds = [...this.state.metaState.unlockedRunCardIds];
-    }
+    normalizedRunState.availableRunCardIds = getAvailableRunCardIdsForRun(
+      this.state.metaState,
+      normalizedRunState.availableRunCardIds
+    );
 
     if ((normalizedRunState?.availableDraftUnitIds?.length ?? 0) === 0) {
       normalizedRunState.availableDraftUnitIds = [...this.state.metaState.unlockedUnitIds];

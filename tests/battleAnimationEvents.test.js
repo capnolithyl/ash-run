@@ -149,6 +149,37 @@ test("battle animation events tolerate counter pairs when a unit is missing afte
   assert.ok(destroyEvent);
 });
 
+test("battle animation events show a dead enemy initiator before the lethal player counter", () => {
+  const attacker = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 2, {
+    current: {
+      hp: 20
+    }
+  });
+  const defender = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 3, 2);
+  const system = new BattleSystem(
+    createTestBattleState({
+      playerUnits: [defender],
+      enemyUnits: [attacker],
+      activeSide: TURN_SIDES.ENEMY
+    })
+  );
+
+  const before = system.getSnapshot();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  const after = system.getSnapshot();
+  const attackEvents = deriveBattleAnimationEvents(before, after).filter((event) => event.type === "attack");
+
+  assert.equal(after.enemy.units.length, 0);
+  assert.equal(attackEvents.length, 2);
+  assert.equal(attackEvents[0].attackerId, attacker.id);
+  assert.equal(attackEvents[0].targetId, defender.id);
+  assert.equal(attackEvents[0].isInitiator, true);
+  assert.equal(attackEvents[1].attackerId, defender.id);
+  assert.equal(attackEvents[1].targetId, attacker.id);
+  assert.equal(attackEvents[1].isInitiator, false);
+  assert.equal(attackEvents[1].delay, BATTLE_ATTACK_WINDOW_MS);
+});
+
 test("battle animation events show graves preemptive defender strike before the enemy attack", () => {
   const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);

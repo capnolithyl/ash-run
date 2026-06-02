@@ -569,6 +569,8 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
       continue;
     }
 
+    const missingDefenderInitiatedCombat = !event.isInitiator && !nextDefender;
+
     attacks.push({
       type: "attack",
       attackerId: event.targetId,
@@ -579,7 +581,7 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
       toY: nextAttacker.y,
       targetId: event.attackerId,
       damage: counterDamage,
-      isInitiator: false
+      isInitiator: missingDefenderInitiatedCombat
     });
     existingAttackPairs.add(counterKey);
   }

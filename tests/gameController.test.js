@@ -13,6 +13,7 @@ import {
 } from "../src/game/core/constants.js";
 import { GameController } from "../src/game/app/GameController.js";
 import { getMapById, MAP_POOL, replaceCustomMaps } from "../src/game/content/maps.js";
+import { getDefaultUnlockedRunCardIds } from "../src/game/content/runUpgrades.js";
 import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { createBattleStateForRun } from "../src/game/state/runFactory.js";
@@ -54,6 +55,121 @@ test("initialize seeds custom maps before the first ready state emit", async () 
   assert.equal(emittedStates.length, 1);
   assert.equal(getMapById("runtime-seeded")?.name, "Runtime Seeded");
   assert.equal(emittedStates[0].ready, true);
+});
+
+test("initialize expands stale run card unlocks to the current default catalog", async () => {
+  const staleCardIds = ["passive-drill", "passive-plating", "gear-aa-kit", "gear-field-meds"];
+  const controller = new GameController({
+    async loadMeta() {
+      return {
+        unlockedRunCardIds: staleCardIds
+      };
+    },
+    async listSlots() {
+      return [];
+    },
+    async listCustomMaps() {
+      return [];
+    }
+  });
+
+  await controller.initialize();
+
+  const unlockedRunCardIds = controller.getState().metaState.unlockedRunCardIds;
+  assert.ok(unlockedRunCardIds.includes("combat-stims-1"));
+  assert.ok(unlockedRunCardIds.includes("field-repairs-1"));
+  assert.ok(staleCardIds.every((cardId) => unlockedRunCardIds.includes(cardId)));
+  assert.equal(unlockedRunCardIds.length, getDefaultUnlockedRunCardIds().length);
+});
+
+test("loading a stale run slot expands available run cards to the current catalog", async () => {
+  const staleCardIds = ["passive-drill", "passive-plating", "gear-aa-kit", "gear-field-meds"];
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN
+  });
+  const controller = new GameController({
+    async loadMeta() {
+      return {
+        unlockedRunCardIds: staleCardIds
+      };
+    },
+    async listSlots() {
+      return [{ slotId: "slot-1", exists: true }];
+    },
+    async listCustomMaps() {
+      return [];
+    },
+    async loadSlot() {
+      return {
+        runState: {
+          id: "run-stale-cards",
+          seed: 99,
+          slotId: "slot-1",
+          commanderId: "viper",
+          mapIndex: 4,
+          targetMapCount: 10,
+          mapSequence: [MAP_POOL[0].id],
+          roster: [],
+          completedMaps: [],
+          selectedRewards: [],
+          pendingRewardChoices: [],
+          availableRunCardIds: staleCardIds
+        },
+        battleState
+      };
+    },
+    async saveMeta() {}
+  });
+
+  await controller.initialize();
+  await controller.loadSlot("slot-1");
+
+  const availableRunCardIds = controller.getState().runState.availableRunCardIds;
+  assert.ok(availableRunCardIds.includes("combat-stims-1"));
+  assert.ok(availableRunCardIds.includes("field-repairs-1"));
+  assert.equal(availableRunCardIds.length, getDefaultUnlockedRunCardIds().length);
+});
+
+test("advancing an already-open stale run expands the card pool before reward draw", async () => {
+  const staleCardIds = ["passive-drill", "passive-plating", "gear-aa-kit", "gear-field-meds"];
+  const controller = new GameController({
+    async saveMeta() {},
+    async saveSlot() {},
+    async deleteSlot() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  const runState = {
+    id: "run-open-stale-cards",
+    seed: 99,
+    slotId: "slot-1",
+    commanderId: "atlas",
+    mapIndex: 0,
+    targetMapCount: 10,
+    mapSequence: [MAP_POOL[0].id],
+    roster: [],
+    completedMaps: [],
+    selectedRewards: [],
+    pendingRewardChoices: [],
+    availableRunCardIds: staleCardIds
+  };
+  const battleState = createBattleStateForRun(runState);
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Battle won."
+  };
+
+  controller.state.metaState.unlockedRunCardIds = staleCardIds;
+  controller.state.runState = runState;
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.persistCurrentRun = async () => {};
+
+  await controller.advanceRun();
+
+  const state = controller.getState();
+  assert.equal(state.runState.availableRunCardIds.length, getDefaultUnlockedRunCardIds().length);
+  assert.ok(state.runState.pendingRewardChoices.some((choice) => !staleCardIds.includes(choice.id)));
 });
 
 test("battle context action ignores duplicate right-click source events", async () => {
@@ -255,6 +371,10 @@ test("syncBattleState creates and clears combat cutscene state for attack transi
     assert.ok(state.battleUi.combatCutscene);
     assert.equal(state.battleUi.combatCutscene.playerUnit.id, attacker.id);
     assert.equal(state.battleUi.combatCutscene.enemyUnit.id, defender.id);
+    assert.equal(
+      state.battleUi.combatCutscene.hudSnapshot.enemy.units[0].current.hp,
+      defender.current.hp
+    );
     assert.equal(
       state.battleUi.combatCutscene.steps[0].startMs,
       BATTLE_COMBAT_CUTSCENE_OPEN_MS + BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS

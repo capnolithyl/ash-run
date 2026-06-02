@@ -207,16 +207,18 @@ export const appShellBattleScreenMethods = {
       return;
     }
 
+    const sidebarBattleSnapshot =
+      state.battleUi?.combatCutscene?.hudSnapshot ?? battleSnapshot;
     const hoveredTile = state.battleUi?.hoveredTile ?? null;
     const enemyFocusTile = getFocusTileForSide(
-      battleSnapshot,
+      sidebarBattleSnapshot,
       state.battleUi,
       "enemy"
     );
     const patches = [
       {
         selector: ".battle-side-panel--target",
-        markup: renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)
+        markup: renderTargetIntelPanel(sidebarBattleSnapshot, hoveredTile, enemyFocusTile)
       },
       {
         selector: ".battle-side-panel--feed",
@@ -224,7 +226,7 @@ export const appShellBattleScreenMethods = {
       },
       {
         selector: ".battle-compact-sheet__panel--target",
-        markup: renderTargetIntelPanel(battleSnapshot, hoveredTile, enemyFocusTile)
+        markup: renderTargetIntelPanel(sidebarBattleSnapshot, hoveredTile, enemyFocusTile)
       },
       {
         selector: ".battle-compact-sheet__panel--feed",

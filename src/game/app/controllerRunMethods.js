@@ -28,6 +28,7 @@ import {
   normalizeBattleState,
   normalizeRunState
 } from "../state/runFactory.js";
+import { normalizeUnlockedRunCardIds } from "../state/defaults.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../simulation/unitFactory.js";
 import {
@@ -136,6 +137,7 @@ function maybeSyncCombatCutscene(controller, previousSnapshot, nextSnapshot) {
   const nextCutscene = {
     id: `combat-cutscene-${++controller.battleCombatCutsceneSequence}`,
     startedAt: Date.now(),
+    hudSnapshot: previousSnapshot ? structuredClone(previousSnapshot) : null,
     ...cutscene
   };
 
@@ -162,7 +164,18 @@ export const controllerRunMethods = {
       return;
     }
 
-    let nextRunState = applyBattleVictoryToRun(this.state.runState, battleState);
+    const availableRunCardIds = normalizeUnlockedRunCardIds([
+      ...(this.state.metaState.unlockedRunCardIds ?? []),
+      ...(this.state.runState.availableRunCardIds ?? [])
+    ]);
+    this.state.metaState.unlockedRunCardIds = availableRunCardIds;
+    let nextRunState = applyBattleVictoryToRun(
+      {
+        ...this.state.runState,
+        availableRunCardIds
+      },
+      battleState
+    );
     nextRunState = addRunIntel(nextRunState, "mapClear", RUN_META_CURRENCY_MAP_REWARD);
     this.state.metaState.metaCurrency += RUN_META_CURRENCY_MAP_REWARD;
     this.state.banner = `Map ${nextRunState.mapIndex}/${nextRunState.targetMapCount} clear. +${RUN_META_CURRENCY_MAP_REWARD} Intel Credits.`;
