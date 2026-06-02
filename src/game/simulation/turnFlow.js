@@ -5,6 +5,7 @@ import {
   TURN_SIDES
 } from "../core/constants.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
+import { randomInt } from "../core/random.js";
 import { describeBuilding } from "../content/buildings.js";
 import { getCommanderById } from "../content/commanders.js";
 import { appendLog } from "./battleLog.js";
@@ -24,6 +25,8 @@ import {
   getMovementModifier,
   tickSideStatuses
 } from "./commanderEffects.js";
+import { getAttackRangeCap, removeDeadUnits } from "./combatResolver.js";
+import { applyRunCardTurnStartEffects, isUnitZombified } from "./runCardEffects.js";
 import {
   getBestCapturePlan,
   getBestMoveAttackOption,
@@ -41,6 +44,8 @@ import {
   pickFallbackMovementTile
 } from "./enemyAi.js";
 import {
+  canUnitAttackTarget,
+  getAttackProfileForTarget,
   getLivingUnits,
   getMovementPathCost,
   getMovementPath,
@@ -50,6 +55,48 @@ import {
 import { createUnitFromType } from "./unitFactory.js";
 
 const PRODUCTION_BUILDING_TYPES = ["barracks", "motor-pool", "airfield"];
+
+function getActionableUnitsForSide(state, side) {
+  return state[side].units.filter((unit) => unit.current.hp > 0);
+}
+
+function getZombifiedTargetsForUnit(state, unit) {
+  const units = [...state.player.units, ...state.enemy.units];
+
+  return units.filter((target) => {
+    if (
+      !target ||
+      target.id === unit.id ||
+      target.current.hp <= 0 ||
+      target.transport?.carriedByUnitId ||
+      isUnitZombified(target)
+    ) {
+      return false;
+    }
+
+    const attackProfile = getAttackProfileForTarget(unit, target);
+
+    if (!attackProfile || !canUnitAttackTarget(unit, target)) {
+      return false;
+    }
+
+    const distance = Math.abs(unit.x - target.x) + Math.abs(unit.y - target.y);
+    const rangeCap = getAttackRangeCap(state, unit, attackProfile);
+    return distance >= attackProfile.minRange && distance <= rangeCap;
+  });
+}
+
+function pickZombifiedTarget(state, unit) {
+  const targets = getZombifiedTargetsForUnit(state, unit);
+
+  if (targets.length === 0) {
+    return null;
+  }
+
+  const roll = randomInt(state.seed, 0, targets.length - 1);
+  state.seed = roll.seed;
+  return targets[roll.value];
+}
 
 export function tickUnitDurations(system, side) {
   for (const unit of getLivingUnits(system.state, side)) {
@@ -110,7 +157,7 @@ export function startEnemyTurnActions(system) {
   const incomeGain = collectIncome(system, TURN_SIDES.ENEMY);
   resetActions(system, TURN_SIDES.ENEMY);
   serviceUnitsOnSectors(system.state, TURN_SIDES.ENEMY);
-  system.state.enemyTurn.pendingUnitIds = getLivingUnits(system.state, TURN_SIDES.ENEMY)
+  system.state.enemyTurn.pendingUnitIds = getActionableUnitsForSide(system.state, TURN_SIDES.ENEMY)
     .filter((unit) => !unit.hasMoved && !unit.hasAttacked && !unit.transport?.carriedByUnitId)
     .map((unit) => unit.id);
   system.updateVictoryState();
@@ -349,6 +396,30 @@ export function processEnemyTurnStep(system) {
     }
 
     system.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+    if (isUnitZombified(unit)) {
+      const target = pickZombifiedTarget(system.state, unit);
+
+      if (target && system.attackTarget(unit.id, target.id)) {
+        appendLog(system.state, `${unit.name} lashed out while zombified.`);
+        return {
+          changed: true,
+          done: system.state.victory || !hasPendingEnemyTurn(system),
+          type: "attack",
+          unitId
+        };
+      }
+
+      unit.hasMoved = true;
+      unit.hasAttacked = true;
+      appendLog(system.state, `${unit.name} staggered in place while zombified.`);
+      return {
+        changed: true,
+        done: system.state.victory || system.state.enemyTurn.pendingUnitIds.length === 0,
+        type: "wait",
+        unitId
+      };
+    }
 
     if (canUnitSabotageDefendTarget(system.state, unit) && performSabotageDefendTarget(system.state, unit)) {
       system.updateVictoryState();
@@ -591,8 +662,12 @@ export function finalizeEnemyTurn(system) {
   tickUnitDurations(system, TURN_SIDES.PLAYER);
   const incomeGain = collectIncome(system, TURN_SIDES.PLAYER);
   resetActions(system, TURN_SIDES.PLAYER);
+  const runCardNotes = applyRunCardTurnStartEffects(system.state, TURN_SIDES.PLAYER);
+  runCardNotes.forEach((note) => appendLog(system.state, note));
+  removeDeadUnits(system.state);
   serviceUnitsOnSectors(system.state, TURN_SIDES.PLAYER);
   system.clearSelection();
+  system.updateVictoryState();
   return {
     changed: true,
     incomeGain
@@ -630,7 +705,8 @@ export function collectIncome(system, side) {
 }
 
 export function resetActions(system, side) {
-  for (const unit of getLivingUnits(system.state, side)) {
+  for (const unit of getActionableUnitsForSide(system.state, side)) {
+    unit.lastTurnMoved = Boolean(unit.movedThisTurn || unit.hasMoved);
     unit.hasMoved = false;
     unit.hasAttacked = false;
     unit.movedThisTurn = false;

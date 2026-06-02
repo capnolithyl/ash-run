@@ -1,5 +1,9 @@
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
-import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../../game/content/runUpgrades.js";
+import {
+  RUN_UPGRADES,
+  RUN_UPGRADE_RARITY_LABELS,
+  UNIT_UNLOCK_TIERS
+} from "../../game/content/runUpgrades.js";
 
 export function renderProgressionView(state) {
   const unlockedUnits = new Set(state.metaState.unlockedUnitIds ?? []);
@@ -45,12 +49,12 @@ export function renderProgressionView(state) {
             })
             .join("")}
           <h4>Run Card Unlocks</h4>
-          ${RUN_UPGRADES.map((card) => {
+          ${RUN_UPGRADES.filter((card) => !card.hidden).map((card) => {
             const unlocked = unlockedCards.has(card.id);
             const cost = card.unlockCost ?? 80;
             return `
               <button class="ghost-button ghost-button--small" data-action="purchase-card-unlock" data-card-id="${card.id}" ${unlocked || currency < cost ? "disabled" : ""}>
-                ${unlocked ? "Unlocked" : `Unlock (${cost})`} ${card.name}
+                ${unlocked ? "Unlocked" : `Unlock (${cost})`} ${card.name} | ${RUN_UPGRADE_RARITY_LABELS[card.rarity] ?? "Card"}
               </button>
             `;
           }).join("")}

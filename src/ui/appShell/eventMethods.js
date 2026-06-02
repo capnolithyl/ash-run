@@ -385,6 +385,12 @@ export const appShellEventMethods = {
       case "select-next-unit":
         await this.controller.selectNextReadyUnit();
         break;
+      case "open-run-cards":
+        this.controller.openRunCardsPanel();
+        break;
+      case "close-run-cards":
+        this.controller.closeRunCardsPanel();
+        break;
       case "wait-unit":
         await this.controller.waitWithSelectedUnit();
         break;
@@ -503,6 +509,12 @@ export const appShellEventMethods = {
         break;
       case "debug-refresh-enemy-actions":
         await this.controller.debugRefreshActions("enemy");
+        break;
+      case "debug-add-run-card":
+        await this.controller.debugAddRunCard(this.getDebugField("run-card-id", ""));
+        break;
+      case "debug-clear-run-cards":
+        await this.controller.debugClearRunCards();
         break;
       default:
         break;

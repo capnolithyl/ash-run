@@ -1083,13 +1083,20 @@ test("graves execution window mirror match cancels back to normal combat order",
 
 test("nova passive checks full ammo and overload spends ammo for a same-turn attack buff", () => {
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 2);
+  const skyguard = createPlacedUnit("skyguard", TURN_SIDES.ENEMY, 2, 1);
+  const secondSkyguard = createPlacedUnit("skyguard", TURN_SIDES.ENEMY, 2, 2);
   const battleState = createTestBattleState({
-    playerUnits: [grunt],
-    enemyUnits: [enemy]
+    playerUnits: [grunt, runner],
+    enemyUnits: [skyguard, secondSkyguard]
   });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.map.buildings = [];
   battleState.player.commanderId = "nova";
   battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+  battleState.enemy.commanderId = null;
 
   assert.equal(getAttackModifier(battleState, grunt), 12);
 
@@ -1097,11 +1104,28 @@ test("nova passive checks full ammo and overload spends ammo for a same-turn att
 
   assert.equal(system.activatePower(), true);
 
-  const updatedGrunt = system.getStateForSave().player.units[0];
+  const updatedState = system.getStateForSave();
+  const updatedGrunt = updatedState.player.units[0];
+  const updatedRunner = updatedState.player.units[1];
+  const gruntAttackProfile = getUnitAttackProfile(updatedGrunt);
+  const runnerAttackProfile = getUnitAttackProfile(updatedRunner);
 
   assert.equal(updatedGrunt.current.ammo, 0);
+  assert.equal(updatedRunner.current.ammo, 0);
   assert.equal(getAttackModifier(system.getStateForSave(), updatedGrunt), 43);
-  assert.equal(getUnitAttackProfile(updatedGrunt).type, "secondary");
+  assert.equal(getAttackModifier(system.getStateForSave(), updatedRunner), 50);
+  assert.equal(gruntAttackProfile.type, "primary");
+  assert.equal(gruntAttackProfile.consumesAmmo, false);
+  assert.equal(runnerAttackProfile.type, "primary");
+  assert.equal(runnerAttackProfile.consumesAmmo, false);
+  assert.deepEqual(getAttackForecast(updatedState, updatedGrunt, updatedState.enemy.units[0]).dealt, {
+    min: 45,
+    max: 48
+  });
+  assert.deepEqual(getAttackForecast(updatedState, updatedRunner, updatedState.enemy.units[1]).dealt, {
+    min: 49,
+    max: 52
+  });
 });
 
 test("sable passive and lucky seven turn luck into crit and glance outcomes", () => {

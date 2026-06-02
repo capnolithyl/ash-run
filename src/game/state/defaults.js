@@ -1,7 +1,7 @@
 import { DEFAULT_SAVE_VERSION, PROTOTYPE_RUN_GOAL, SLOT_IDS } from "../core/constants.js";
 import { normalizeDisplayOptions } from "../core/displayOptions.js";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
-import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
+import { getDefaultUnlockedRunCardIds, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 
 export function createDefaultOptions() {
   return {
@@ -33,7 +33,7 @@ export function createDefaultMetaState() {
     bestClearTurnCount: null,
     metaCurrency: 0,
     unlockedUnitIds: [...UNIT_UNLOCK_TIERS[0].unitIds],
-    unlockedRunCardIds: RUN_UPGRADES.map((entry) => entry.id)
+    unlockedRunCardIds: getDefaultUnlockedRunCardIds()
   };
 }
 

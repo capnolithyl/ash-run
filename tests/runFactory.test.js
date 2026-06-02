@@ -102,6 +102,31 @@ test("createBattleStateForRun restores persistent survivors without run-mode pla
   assert.equal(deployedVeteran.current.ammo, deployedVeteran.stats.ammoMax);
 });
 
+test("run card deployment stat changes do not persist as permanent roster growth", () => {
+  const grunt = createUnitFromType("grunt", TURN_SIDES.PLAYER);
+  const persistentGrunt = createPersistentUnitSnapshot(grunt);
+  const runState = createRunState({
+    roster: [persistentGrunt],
+    ownedRunCardIds: ["supply-mishap-1", "pack-mules-1", "pack-mules-2"]
+  });
+  const battleState = createBattleStateForRun(runState);
+  const deployedGrunt = battleState.player.units[0];
+
+  assert.equal(deployedGrunt.stats.maxHealth, persistentGrunt.stats.maxHealth - 5);
+  assert.equal(deployedGrunt.stats.staminaMax, persistentGrunt.stats.staminaMax + 20);
+  assert.equal(deployedGrunt.stats.ammoMax, persistentGrunt.stats.ammoMax + 2);
+
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Battle won."
+  };
+  const nextRunState = applyBattleVictoryToRun(runState, battleState);
+
+  assert.equal(nextRunState.roster[0].stats.maxHealth, persistentGrunt.stats.maxHealth);
+  assert.equal(nextRunState.roster[0].stats.staminaMax, persistentGrunt.stats.staminaMax);
+  assert.equal(nextRunState.roster[0].stats.ammoMax, persistentGrunt.stats.ammoMax);
+});
+
 test("createBattleStateForRun deploys carried roster across unique spawn tiles", () => {
   const roster = Array.from({ length: 10 }, (_, index) => {
     const unitTypeId = index % 3 === 0 ? "grunt" : index % 3 === 1 ? "runner" : "longshot";

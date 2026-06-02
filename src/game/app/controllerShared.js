@@ -41,6 +41,7 @@ export function createBattleUiState() {
     hoveredTile: null,
     playerFocus: null,
     enemyFocus: null,
+    runCardsOpen: false,
   };
 }
 

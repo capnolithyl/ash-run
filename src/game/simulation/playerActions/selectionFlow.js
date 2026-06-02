@@ -21,6 +21,7 @@ import {
   useSupportAbilityWithPendingUnit
 } from "./pendingActionFlow.js";
 import { getSlipstreamTiles } from "./shared.js";
+import { isUnitZombified } from "../runCardEffects.js";
 
 export function handleTileSelection(system, x, y) {
   if (system.state.victory) {
@@ -151,7 +152,7 @@ export function handleTileSelection(system, x, y) {
     return false;
   }
 
-  if (selectedUnit?.owner === TURN_SIDES.PLAYER && !selectedUnit.hasMoved) {
+  if (selectedUnit?.owner === TURN_SIDES.PLAYER && !selectedUnit.hasMoved && !isUnitZombified(selectedUnit)) {
     const movementBudget =
       selectedUnit.stats.movement + getMovementModifier(system.state, selectedUnit);
     const reachableTiles = getReachableTiles(

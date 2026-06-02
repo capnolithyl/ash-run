@@ -821,6 +821,35 @@ test("sandbox map loading rebuilds the debug battle on the chosen battlefield", 
   controller.resetBattleUi();
 });
 
+test("sandbox upgrade card controls add, inspect, and clear run cards", () => {
+  const controller = new GameController();
+
+  controller.state.metaState.unlockedCommanderIds = ["atlas", "viper"];
+  controller.startDebugRun();
+  controller.state.battleUi.pauseMenuOpen = true;
+
+  controller.debugAddRunCard("combat-stims-1");
+  let state = controller.getState();
+
+  assert.equal(state.debugMode, true);
+  assert.equal(state.battleUi.pauseMenuOpen, true);
+  assert.deepEqual(state.runState.ownedRunCardIds, ["combat-stims-1"]);
+  assert.deepEqual(state.battleSnapshot.runCards.ownedCardIds, ["combat-stims-1"]);
+  assert.equal(state.battleUi.notice?.title, "Upgrade Card Added");
+  assert.ok(state.battleSnapshot.log.some((line) => line.includes("Combat Stims I")));
+
+  controller.openRunCardsPanel();
+  assert.equal(controller.getState().battleUi.runCardsOpen, true);
+  controller.closeRunCardsPanel();
+  assert.equal(controller.getState().battleUi.runCardsOpen, false);
+
+  controller.debugClearRunCards();
+  state = controller.getState();
+  assert.deepEqual(state.runState.ownedRunCardIds, []);
+  assert.deepEqual(state.battleSnapshot.runCards.ownedCardIds, []);
+  assert.equal(state.battleUi.notice?.title, "Upgrade Cards Cleared");
+});
+
 test("sandbox debug spawning can equip infantry gear", async () => {
   const controller = new GameController();
   const system = new BattleSystem(createTestBattleState());

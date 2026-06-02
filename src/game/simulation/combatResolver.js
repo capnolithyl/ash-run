@@ -12,6 +12,7 @@ import {
   getStrikeOutcomeRange,
   rollStrikeOutcome
 } from "./commanderEffects.js";
+import { getRunCardPositionArmorBonus } from "./runCardEffects.js";
 import {
   getAttackProfileForTarget,
   canUnitAttackTarget,
@@ -51,7 +52,7 @@ export function getPositionArmorBonus(state, unit) {
     ? buildingArmorBonus
     : getTerrainArmorBonus(state, unit);
 
-  return Math.round(rawBonus * getPositionArmorMultiplier(state, unit));
+  return Math.round((rawBonus + getRunCardPositionArmorBonus(state, unit, rawBonus)) * getPositionArmorMultiplier(state, unit));
 }
 
 function getProfiledBaseArmor(state, defender, attacker, attackProfile) {
@@ -123,7 +124,7 @@ export function getDamageResult(state, attacker, defender, attackProfile = getAt
     };
   }
 
-  const modifiedAttack = getAttackPowerForProfile(state, attacker, attackProfile);
+  const modifiedAttack = getAttackPowerForProfile(state, attacker, attackProfile, defender);
   const profiledAttack = Math.round(modifiedAttack * targetProfile.powerMultiplier);
   const defenderArmor = getDefenderArmor(state, defender, attacker, attackProfile);
   const healthRatio = Math.max(0, attacker.current.hp / attacker.stats.maxHealth);
@@ -186,7 +187,7 @@ function getDamageRange(
     };
   }
 
-  const modifiedAttack = getAttackPowerForProfile(state, attacker, attackProfile);
+  const modifiedAttack = getAttackPowerForProfile(state, attacker, attackProfile, defender);
   const profiledAttack = Math.round(modifiedAttack * targetProfile.powerMultiplier);
   const defenderArmor = getDefenderArmor(state, defender, attacker, attackProfile);
   const luckMin = 0;

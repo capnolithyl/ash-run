@@ -7,10 +7,19 @@ import {
 } from "../../../game/content/commanders.js";
 import { MAP_POOL } from "../../../game/content/maps.js";
 import { ENEMY_AI_ARCHETYPE_ORDER } from "../../../game/core/constants.js";
-import { RUN_CARD_TYPES, RUN_UPGRADES } from "../../../game/content/runUpgrades.js";
+import {
+  getBattleEffectiveRunUpgrades,
+  getGearFamilyLabel,
+  RUN_CARD_TYPES,
+  RUN_UPGRADES,
+  RUN_UPGRADE_RARITY_LABELS
+} from "../../../game/content/runUpgrades.js";
 import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
 
 const DEBUG_GEAR_UPGRADES = RUN_UPGRADES.filter((upgrade) => upgrade.type === RUN_CARD_TYPES.GEAR);
+const DEBUG_RUN_CARD_UPGRADES = RUN_UPGRADES.filter(
+  (upgrade) => !upgrade.hidden && upgrade.type !== RUN_CARD_TYPES.UNIT
+);
 
 function renderDebugGearOptions(selectedSlot = null, eligibleFamily = null) {
   const normalizedSelectedSlot =
@@ -33,6 +42,14 @@ function renderDebugGearOptions(selectedSlot = null, eligibleFamily = null) {
       >${upgrade.name}${labelSuffix}</option>`;
     })
   ].join("");
+}
+
+function renderDebugRunCardOptions() {
+  return DEBUG_RUN_CARD_UPGRADES.map((upgrade) => {
+    const rarityLabel = RUN_UPGRADE_RARITY_LABELS[upgrade.rarity] ?? "Card";
+    const gearLabel = upgrade.type === RUN_CARD_TYPES.GEAR ? ` | ${getGearFamilyLabel(upgrade)} Gear` : "";
+    return `<option value="${upgrade.id}">${upgrade.name} | ${rarityLabel}${gearLabel}</option>`;
+  }).join("");
 }
 
 function getSandboxBaseMapId(mapId) {
@@ -374,6 +391,12 @@ export function renderDebugControls(state, battleSnapshot) {
         ${mapDefinition.name} | ${mapDefinition.width}x${mapDefinition.height}
       </option>
     `).join("");
+  const ownedRunCardIds = battleSnapshot.runCards?.ownedCardIds ?? state.runState?.ownedRunCardIds ?? [];
+  const activeRunCards = getBattleEffectiveRunUpgrades({ runCards: { ownedCardIds: ownedRunCardIds } })
+    .filter((upgrade) => !upgrade.hidden);
+  const runCardSummary = activeRunCards.length > 0
+    ? `${activeRunCards.length} active`
+    : "No active upgrade cards";
 
   return `
     <div class="debug-panel">
@@ -480,6 +503,39 @@ export function renderDebugControls(state, battleSnapshot) {
           <button class="menu-button menu-button--small" data-action="debug-apply-commanders">
             Apply Commanders
           </button>
+        </div>
+      </details>
+      <details class="debug-section" data-battle-debug-accordion="upgrade-cards" name="battle-debug-accordion">
+        <summary>
+          <span>
+            <strong>Upgrade Cards</strong>
+            <small>${runCardSummary}</small>
+          </span>
+        </summary>
+        <div class="debug-card-list">
+          ${
+            activeRunCards.length > 0
+              ? activeRunCards
+                .map((upgrade) => `
+                  <span class="debug-card-chip">
+                    <strong>${upgrade.name}</strong>
+                    <small>${RUN_UPGRADE_RARITY_LABELS[upgrade.rarity] ?? "Card"}</small>
+                  </span>
+                `)
+                .join("")
+              : '<p>No upgrade cards are active in this sandbox battle.</p>'
+          }
+        </div>
+        <div class="debug-grid">
+          <label>Card
+            <select data-debug-field="run-card-id">
+              ${renderDebugRunCardOptions()}
+            </select>
+          </label>
+        </div>
+        <div class="debug-actions">
+          <button class="menu-button menu-button--small" data-action="debug-add-run-card">Add Card And Reload</button>
+          <button class="ghost-button ghost-button--small" data-action="debug-clear-run-cards">Clear Cards</button>
         </div>
       </details>
       <details class="debug-section" data-battle-debug-accordion="shortcuts" name="battle-debug-accordion">

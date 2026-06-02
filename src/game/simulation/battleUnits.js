@@ -1,5 +1,6 @@
 import { TURN_SIDES } from "../core/constants.js";
 import { getLivingUnits } from "./selectors.js";
+import { isUnitZombified } from "./runCardEffects.js";
 
 export function findUnitById(state, unitId) {
   return [...state.player.units, ...state.enemy.units].find((unit) => unit.id === unitId);
@@ -19,6 +20,6 @@ function compareUnitsForSelectionOrder(left, right) {
 
 export function getReadyPlayerUnits(state) {
   return getLivingUnits(state, TURN_SIDES.PLAYER)
-    .filter((unit) => !unit.hasMoved && !unit.transport?.carriedByUnitId)
+    .filter((unit) => !unit.hasMoved && !unit.transport?.carriedByUnitId && !isUnitZombified(unit))
     .sort(compareUnitsForSelectionOrder);
 }

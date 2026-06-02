@@ -1,4 +1,5 @@
 import { canSlipstreamAfterAttack } from "../commanderEffects.js";
+import { canRunCardRepositionAfterAttack } from "../runCardEffects.js";
 import { getReachableTiles } from "../selectors.js";
 
 export function getSlipstreamTiles(state, unit) {
@@ -7,8 +8,12 @@ export function getSlipstreamTiles(state, unit) {
 
 // Slipstream is a post-attack reposition choice, so we preserve the normal
 // pending-action flow and only swap it into this dedicated follow-up state.
-export function prepareSlipstreamReposition(system, attacker) {
-  if (!canSlipstreamAfterAttack(system.state, attacker) || attacker.transport?.carriedByUnitId) {
+export function prepareSlipstreamReposition(system, attacker, options = {}) {
+  const canReposition =
+    canSlipstreamAfterAttack(system.state, attacker) ||
+    canRunCardRepositionAfterAttack(system.state, attacker, options);
+
+  if (!canReposition || attacker.transport?.carriedByUnitId) {
     return false;
   }
 

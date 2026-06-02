@@ -4,8 +4,7 @@ import {
   ENEMY_AI_ARCHETYPE_ORDER,
   ENEMY_STARTING_FUNDS,
   PROTOTYPE_RUN_GOAL,
-  TURN_SIDES,
-  UNIT_TAGS
+  TURN_SIDES
 } from "../core/constants.js";
 import { MAP_GOAL_TYPES } from "../content/mapGoals.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
@@ -17,10 +16,11 @@ import {
 } from "../content/commanders.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import {
+  drawRunUpgradeChoices,
+  getBattleEffectiveRunUpgrades,
   RUN_CARD_TYPES,
-  RUN_UPGRADES,
-  isGearUpgrade,
-  getRunRewardTypeForMap
+  getRunRewardTypeForMap,
+  normalizeOwnedRunCardIds
 } from "../content/runUpgrades.js";
 import { MAP_POOL, getMapById, getRunMapPoolForStage } from "../content/maps.js";
 import {
@@ -36,6 +36,7 @@ import {
   getEnemyStartingFunds
 } from "./enemyScaling.js";
 import { normalizeMissionState } from "../simulation/missionRules.js";
+import { applyRunCardDeploymentEffectsToUnit } from "../simulation/runCardEffects.js";
 
 function toSafeNumber(value) {
   return Number.isFinite(value) ? value : 0;
@@ -110,6 +111,7 @@ export function normalizeRunState(runState) {
     runUpgrades: [...(runState.runUpgrades ?? [])],
     availableRunCardIds: [...(runState.availableRunCardIds ?? [])],
     availableDraftUnitIds: [...(runState.availableDraftUnitIds ?? [])],
+    ownedRunCardIds: normalizeOwnedRunCardIds(runState),
     selectedRewards: [...(runState.selectedRewards ?? [])],
     pendingRewardChoices: [...(runState.pendingRewardChoices ?? [])],
     pendingGearReward: runState.pendingGearReward ? structuredClone(runState.pendingGearReward) : null,
@@ -132,6 +134,10 @@ export function normalizeBattleState(battleState) {
   if (nextBattleState.mode === BATTLE_MODES.RUN) {
     nextBattleState.rewardLedger = normalizeBattleRewardLedger(nextBattleState.rewardLedger);
   }
+
+  nextBattleState.runCards = {
+    ownedCardIds: normalizeOwnedRunCardIds(nextBattleState.runCards?.ownedCardIds ?? nextBattleState.runCards ?? [])
+  };
 
   normalizeMissionState(nextBattleState);
 
@@ -218,32 +224,63 @@ function createEnemyBattleRoster(mapDefinition, seed) {
 }
 
 function applyRunRewardsToUnits(runState, units) {
-  const rewards = runState.selectedRewards ?? [];
-  if (rewards.length === 0) {
+  const ownedRunCardIds = normalizeOwnedRunCardIds(runState);
+
+  if (ownedRunCardIds.length === 0) {
     return units;
   }
 
+  const effectState = {
+    runCards: {
+      ownedCardIds: ownedRunCardIds
+    },
+    player: {
+      units: []
+    },
+    enemy: {
+      units: []
+    },
+    map: {
+      buildings: [],
+      tiles: []
+    }
+  };
+
   return units.map((unit) => {
     const nextUnit = structuredClone(unit);
-
-    for (const reward of rewards) {
-      if (reward.id === "passive-drill" && nextUnit.family === UNIT_TAGS.INFANTRY) {
-        nextUnit.stats.movement += 1;
-      }
-
-      if (reward.id === "passive-plating" && nextUnit.family === UNIT_TAGS.VEHICLE) {
-        nextUnit.stats.armor += 1;
-      }
-    }
-
-    nextUnit.current = {
-      hp: nextUnit.stats.maxHealth,
-      stamina: nextUnit.stats.staminaMax,
-      ammo: nextUnit.stats.ammoMax
-    };
-
+    const baseStats = structuredClone(nextUnit.stats);
+    effectState.player.units = [nextUnit];
+    applyRunCardDeploymentEffectsToUnit(effectState, nextUnit);
+    nextUnit.runCardDeploymentDeltas = Object.fromEntries(
+      Object.entries(nextUnit.stats)
+        .filter(([stat, value]) => typeof value === "number" && typeof baseStats[stat] === "number")
+        .map(([stat, value]) => [stat, value - baseStats[stat]])
+        .filter(([, delta]) => delta !== 0)
+    );
     return nextUnit;
   });
+}
+
+function createPersistentRunUnitSnapshot(unit) {
+  const snapshotSource = structuredClone(unit);
+  const deploymentDeltas = snapshotSource.runCardDeploymentDeltas ?? {};
+
+  for (const [stat, delta] of Object.entries(deploymentDeltas)) {
+    if (typeof snapshotSource.stats?.[stat] !== "number" || typeof delta !== "number") {
+      continue;
+    }
+
+    snapshotSource.stats[stat] -= delta;
+
+    if (stat === "maxHealth") {
+      snapshotSource.stats[stat] = Math.max(1, snapshotSource.stats[stat]);
+    } else {
+      snapshotSource.stats[stat] = Math.max(0, snapshotSource.stats[stat]);
+    }
+  }
+
+  delete snapshotSource.runCardDeploymentDeltas;
+  return createPersistentUnitSnapshot(snapshotSource);
 }
 
 function pickEnemyCommander(seed, commanderId) {
@@ -299,6 +336,7 @@ export function createNewRunState({ slotId, commanderId }) {
     runUpgrades: [],
     availableRunCardIds: [],
     availableDraftUnitIds: [],
+    ownedRunCardIds: [],
     selectedRewards: [],
     pendingRewardChoices: [],
     pendingGearReward: null,
@@ -328,6 +366,7 @@ export function createBattleStateForRun(runState) {
   );
   const openingLog = [`${normalizedRunState.mapIndex + 1}/${normalizedRunState.targetMapCount}: ${mapDefinition.name}`];
   const rewardedPlayerUnits = applyRunRewardsToUnits(normalizedRunState, playerUnits);
+  const ownedRunCardIds = normalizeOwnedRunCardIds(normalizedRunState);
 
   if (difficultyTier > 1) {
     openingLog.push(`Enemy pressure increased to tier ${difficultyTier}.`);
@@ -341,8 +380,11 @@ export function createBattleStateForRun(runState) {
     );
   }
 
-  if ((normalizedRunState.selectedRewards ?? []).length > 0) {
-    openingLog.push(`Run upgrades active: ${(normalizedRunState.selectedRewards ?? []).map((reward) => reward.name).join(", ")}.`);
+  if (ownedRunCardIds.length > 0) {
+    const activeNames = getBattleEffectiveRunUpgrades({ runCards: { ownedCardIds: ownedRunCardIds } })
+      .map((reward) => reward.name)
+      .join(", ");
+    openingLog.push(`Run upgrades active: ${activeNames}.`);
   }
 
   const battleState = {
@@ -380,6 +422,9 @@ export function createBattleStateForRun(runState) {
     pendingAction: null,
     enemyTurn: null,
     levelUpQueue: [],
+    runCards: {
+      ownedCardIds: ownedRunCardIds
+    },
     rewardLedger: createEmptyBattleRewardLedger(),
     log: openingLog,
     victory: null
@@ -470,7 +515,7 @@ export function createSlotRecord(runState, battleState) {
 function extractRosterFromBattle(battleState) {
   return battleState.player.units
     .filter((unit) => unit.current.hp > 0 && !unit.temporary?.battleLocalOnly)
-    .map((unit) => createPersistentUnitSnapshot(unit));
+    .map((unit) => createPersistentRunUnitSnapshot(unit));
 }
 
 export function applyBattleVictoryToRun(runState, battleState) {
@@ -486,6 +531,7 @@ export function applyBattleVictoryToRun(runState, battleState) {
     completedMaps: [...normalizedRunState.completedMaps, battleState.map.id],
     mapIndex: normalizedRunState.mapIndex + 1,
     pendingRewardChoices: rewardChoices,
+    ownedRunCardIds: normalizeOwnedRunCardIds(normalizedRunState),
     selectedRewards: [...(normalizedRunState.selectedRewards ?? [])]
   };
 }
@@ -495,21 +541,11 @@ function buildRunRewardChoices(runState, battleState, forcedType) {
     return buildReinforcementDraftChoices(runState, battleState);
   }
 
-  const selectedRewardIds = new Set((runState.selectedRewards ?? []).map((reward) => reward.id));
-  const unlockedRewardIds = new Set(
-    (runState.availableRunCardIds?.length ? runState.availableRunCardIds : RUN_UPGRADES.map((upgrade) => upgrade.id))
-  );
-  const eligibleUpgrades = RUN_UPGRADES.filter(
-    (upgrade) =>
-      unlockedRewardIds.has(upgrade.id) &&
-      (isGearUpgrade(upgrade) || !selectedRewardIds.has(upgrade.id))
-  );
-  const shuffledEligible = shuffle(
-    stringToSeed(`${runState.seed}-${battleState.id}-${runState.mapIndex + 1}-rewards`),
-    eligibleUpgrades
-  ).value;
-
-  return shuffledEligible.slice(0, 3);
+  return drawRunUpgradeChoices(
+    runState,
+    runState.mapIndex + 1,
+    `${runState.seed}-${battleState.id}-${runState.mapIndex + 1}-rewards`
+  ).choices;
 }
 
 function nextUnitChoiceIdSeed(runState, battleState) {

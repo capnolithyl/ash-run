@@ -143,6 +143,7 @@ export const controllerFlowMethods = {
         : this.state.metaState.unlockedUnitIds)
     ];
     runState.roster = [...(previousRunState?.roster ?? [])];
+    runState.ownedRunCardIds = [...(previousRunState?.ownedRunCardIds ?? [])];
     runState.selectedRewards = [...(previousRunState?.selectedRewards ?? [])];
     runState.pendingRewardChoices = [];
     runState.pendingGearReward = null;
@@ -413,6 +414,7 @@ export const controllerFlowMethods = {
       .map((unit) => createPersistentUnitSnapshot(unit));
 
     runState.roster = purchasedRoster;
+    runState.ownedRunCardIds = [];
     const battleState = createBattleStateForRun(runState);
 
     this.battleSystem = new BattleSystem(battleState);

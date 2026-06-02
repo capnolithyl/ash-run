@@ -4,7 +4,15 @@ import {
   BATTLE_TURN_BANNER_SETTLE_MS,
   TURN_SIDES
 } from "../core/constants.js";
-import { canUnitEquipRunUpgrade, isGearUpgrade } from "../content/runUpgrades.js";
+import { randomInt } from "../core/random.js";
+import {
+  canUnitEquipRunUpgrade,
+  drawImmediateRunCards,
+  getRunUpgradeById,
+  getRunUpgradeValue,
+  isGearUpgrade,
+  normalizeOwnedRunCardIds
+} from "../content/runUpgrades.js";
 import {
   COMMANDER_POWER_PULSE_DURATION_MS,
   COMMANDER_POWER_TARGET_STAGGER_MS,
@@ -37,6 +45,62 @@ const ENEMY_TURN_MAX_WALL_TIME_MS = 30000;
 
 function getEligibleGearRosterUnits(runState, reward) {
   return (runState?.roster ?? []).filter((unit) => canUnitEquipRunUpgrade(unit, reward));
+}
+
+function getRunCardRewardSnapshot(cardId) {
+  const card = getRunUpgradeById(cardId);
+
+  if (!card) {
+    return null;
+  }
+
+  return {
+    id: card.id,
+    type: card.type,
+    name: card.name,
+    rarity: card.rarity,
+    summary: card.summary,
+    eligibleFamily: card.eligibleFamily ?? null
+  };
+}
+
+function reloadSandboxRunWithCards(controller, ownedRunCardIds) {
+  if (!controller.battleSystem || !controller.state.debugMode || !controller.state.runState) {
+    return false;
+  }
+
+  const currentBattleState = normalizeBattleState(controller.battleSystem.getStateForSave());
+  const currentRunState = normalizeRunState(controller.state.runState);
+  const currentMapId = currentBattleState?.map?.id ?? currentRunState.mapSequence?.[currentRunState.mapIndex] ?? null;
+  const nextOwnedRunCardIds = normalizeOwnedRunCardIds(ownedRunCardIds);
+  const nextRunState = normalizeRunState({
+    ...currentRunState,
+    ownedRunCardIds: nextOwnedRunCardIds,
+    selectedRewards: nextOwnedRunCardIds.map(getRunCardRewardSnapshot).filter(Boolean),
+    pendingRewardChoices: [],
+    pendingGearReward: null
+  });
+
+  if (currentMapId) {
+    nextRunState.mapSequence = [
+      currentMapId,
+      ...nextRunState.mapSequence.filter((mapId) => mapId !== currentMapId)
+    ].slice(0, nextRunState.targetMapCount);
+  }
+
+  const pauseMenuOpen = controller.state.battleUi.pauseMenuOpen;
+  const nextBattleState = createBattleStateForRun(nextRunState);
+  controller.battleSystem = new BattleSystem(nextBattleState);
+  controller.battleSystem.setDebugCommanders({
+    [TURN_SIDES.PLAYER]: currentBattleState.player.commanderId,
+    [TURN_SIDES.ENEMY]: currentBattleState.enemy.commanderId,
+    enemyAiArchetype: currentBattleState.enemy.aiArchetype
+  });
+  controller.state.runState = nextRunState;
+  controller.state.battleUi.pauseMenuOpen = pauseMenuOpen;
+  controller.state.battleUi.runCardsOpen = false;
+  controller.syncBattleState();
+  return true;
 }
 
 function clearCombatCutscene(controller) {
@@ -152,19 +216,54 @@ export const controllerRunMethods = {
       return;
     }
 
+    let ownedRunCardIds = normalizeOwnedRunCardIds(this.state.runState);
+    let selectedRewards = [...(this.state.runState.selectedRewards ?? [])];
+    let roster = [...(this.state.runState.roster ?? [])];
+    const bonusRewards = [];
+
+    if (reward.type === "unit" && reward.unitTypeId) {
+      roster = [
+        ...roster,
+        createPersistentUnitSnapshot(createUnitFromType(reward.unitTypeId, TURN_SIDES.PLAYER))
+      ];
+    } else {
+      ownedRunCardIds = [...new Set([...ownedRunCardIds, reward.id])];
+      selectedRewards = [...selectedRewards, reward];
+    }
+
+    if (reward.id === "lottery-ticket") {
+      const roll = randomInt(this.state.runState.seed, 1, 100);
+      const winChance = Math.round(getRunUpgradeValue("lottery-ticket", "winChance", 0.5) * 100);
+      const wonLottery = roll.value <= winChance;
+      const nextSeed = roll.seed;
+
+      if (wonLottery) {
+        const lotteryRunState = {
+          ...this.state.runState,
+          seed: nextSeed,
+          ownedRunCardIds
+        };
+        const lotteryDraw = drawImmediateRunCards(
+          lotteryRunState,
+          this.state.runState.mapIndex + 1,
+          `${this.state.runState.seed}-${this.state.runState.mapIndex}-lottery`,
+          getRunUpgradeValue("lottery-ticket", "cardCount", 2)
+        );
+        bonusRewards.push(...lotteryDraw.choices);
+        ownedRunCardIds = [...new Set([...ownedRunCardIds, ...bonusRewards.map((choice) => choice.id)])];
+        selectedRewards = [...selectedRewards, ...bonusRewards];
+      }
+
+      this.state.banner = wonLottery
+        ? `Lottery Ticket paid out: ${bonusRewards.map((choice) => choice.name).join(", ")}.`
+        : "Lottery Ticket missed. You win some, you lose some.";
+    }
+
     const nextRunState = {
       ...this.state.runState,
-      selectedRewards:
-        reward.type === "unit" || isGearUpgrade(reward)
-          ? [...(this.state.runState.selectedRewards ?? [])]
-          : [...(this.state.runState.selectedRewards ?? []), reward],
-      roster:
-        reward.type === "unit" && reward.unitTypeId
-          ? [
-              ...(this.state.runState.roster ?? []),
-              createPersistentUnitSnapshot(createUnitFromType(reward.unitTypeId, TURN_SIDES.PLAYER))
-            ]
-          : [...(this.state.runState.roster ?? [])],
+      ownedRunCardIds,
+      selectedRewards,
+      roster,
       pendingRewardChoices: [],
       pendingGearReward: isGearUpgrade(reward) ? reward : null
     };
@@ -601,6 +700,59 @@ export const controllerRunMethods = {
 
     if (changed) {
       await this.persistCurrentRun();
+    }
+  },
+
+  openRunCardsPanel() {
+    if (!this.battleSystem) {
+      return;
+    }
+
+    this.state.battleUi.runCardsOpen = true;
+    this.emit();
+  },
+
+  closeRunCardsPanel() {
+    this.state.battleUi.runCardsOpen = false;
+    this.emit();
+  },
+
+  debugAddRunCard(cardId) {
+    if (!this.battleSystem || !this.state.debugMode) {
+      return;
+    }
+
+    const card = getRunUpgradeById(cardId);
+
+    if (!card || card.hidden) {
+      return;
+    }
+
+    const ownedRunCardIds = normalizeOwnedRunCardIds(this.state.runState);
+    const nextOwnedRunCardIds = [...new Set([...ownedRunCardIds, card.id])];
+
+    if (reloadSandboxRunWithCards(this, nextOwnedRunCardIds)) {
+      this.state.banner = `${card.name} added to the sandbox run.`;
+      this.showBattleNotice({
+        title: "Upgrade Card Added",
+        message: `${card.name} is active in the reloaded sandbox battle.`,
+        tone: "success"
+      });
+    }
+  },
+
+  debugClearRunCards() {
+    if (!this.battleSystem || !this.state.debugMode) {
+      return;
+    }
+
+    if (reloadSandboxRunWithCards(this, [])) {
+      this.state.banner = "Sandbox upgrade cards cleared.";
+      this.showBattleNotice({
+        title: "Upgrade Cards Cleared",
+        message: "The sandbox battle was reloaded without run cards.",
+        tone: "info"
+      });
     }
   }
 };

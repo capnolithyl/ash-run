@@ -1046,6 +1046,101 @@ test("run-lost overlay shows preserved intel and progression access after a forf
   assert.match(html, /data-action="open-progression"/);
 });
 
+test("reward overlay renders rarity-backed upgrade cards", () => {
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN
+  });
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Route secured."
+  };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 1,
+      targetMapCount: 10,
+      pendingRewardChoices: [
+        {
+          id: "combat-stims-1",
+          type: "passive",
+          name: "Combat Stims I",
+          rarity: "common",
+          summary: "All units gain +2 attack."
+        },
+        {
+          id: "gear-final-transmission",
+          type: "gear",
+          name: "Final Transmission",
+          rarity: "legendary",
+          summary: "When this unit dies, it immediately performs one final attack."
+        }
+      ]
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: "reward",
+    banner: ""
+  });
+
+  assert.match(html, /Choose An Upgrade/);
+  assert.match(html, /overlay-card overlay-card--run-reward/);
+  assert.match(html, /battle-actions battle-actions--run-rewards/);
+  assert.match(html, /class="run-reward-card run-reward-card--common"/);
+  assert.match(html, /assets\/img\/upgrade-cards\/1_common\.png/);
+  assert.match(html, /class="run-reward-card run-reward-card--legendary"/);
+  assert.match(html, /assets\/img\/upgrade-cards\/6_legendary\.png/);
+  assert.match(html, /data-action="select-run-reward"/);
+});
+
+test("battle HUD card popup lists active, equipped, and superseded cards", () => {
+  const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  grunt.gear = { slot: "gear-aa-kit" };
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN,
+    playerUnits: [grunt]
+  });
+  battleState.runCards = {
+    ownedCardIds: ["combat-stims-1", "combat-stims-2", "gear-aa-kit"]
+  };
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 1,
+      targetMapCount: 10,
+      ownedRunCardIds: ["combat-stims-1", "combat-stims-2", "gear-aa-kit"]
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null,
+      runCardsOpen: true
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /Owned Upgrades/);
+  assert.match(html, /Combat Stims II/);
+  assert.match(html, /Owned Lower Tiers/);
+  assert.match(html, /Combat Stims I/);
+  assert.match(html, /Equipped Gear/);
+  assert.match(html, /AA Kit/);
+  assert.match(html, /data-action="close-run-cards"/);
+});
+
 test("reward-equip overlay shows eligible squad units and skip control", () => {
   const battleState = createTestBattleState({
     mode: BATTLE_MODES.RUN
@@ -1455,11 +1550,13 @@ test("debug pause menu groups tools into accordion sections", () => {
   assert.match(html, /data-battle-debug-accordion="battlefield" name="battle-debug-accordion"/);
   assert.match(html, /data-battle-debug-accordion="spawn" name="battle-debug-accordion"/);
   assert.match(html, /data-battle-debug-accordion="commanders" name="battle-debug-accordion"/);
+  assert.match(html, /data-battle-debug-accordion="upgrade-cards" name="battle-debug-accordion"/);
   assert.match(html, /data-battle-debug-accordion="shortcuts" name="battle-debug-accordion"/);
   assert.match(html, /data-battle-debug-accordion="selected-unit" name="battle-debug-accordion"/);
   assert.doesNotMatch(html, /<details class="debug-section"[^>]*\sopen/);
   assert.match(html, /<strong>Spawn Unit<\/strong>/);
   assert.match(html, /<strong>Commander Overrides<\/strong>/);
+  assert.match(html, /<strong>Upgrade Cards<\/strong>/);
   assert.match(html, /<strong>Battle Shortcuts<\/strong>/);
   assert.match(html, /<strong>Selected Unit Overrides<\/strong>/);
   assert.match(html, /Bruiser \| Tile 2, 2/);
@@ -1469,6 +1566,9 @@ test("debug pause menu groups tools into accordion sections", () => {
   assert.match(html, /data-debug-field="player-commander"/);
   assert.match(html, /data-debug-field="enemy-commander"/);
   assert.match(html, /data-debug-field="enemy-ai-archetype"/);
+  assert.match(html, /data-debug-field="run-card-id"/);
+  assert.match(html, /data-action="debug-add-run-card"/);
+  assert.match(html, /data-action="debug-clear-run-cards"/);
   assert.match(html, /data-debug-field="unit-hp"/);
 });
 

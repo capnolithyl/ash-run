@@ -4,7 +4,7 @@ import {
   ENEMY_AI_ARCHETYPE_ORDER,
   TURN_SIDES
 } from "../core/constants.js";
-import { createInitialGearState } from "../content/runUpgrades.js";
+import { createInitialGearState, normalizeOwnedRunCardIds } from "../content/runUpgrades.js";
 import { pushLevelUpEvents, appendLog } from "./battleLog.js";
 import { findUnitById } from "./battleUnits.js";
 import { buildBattlePresentation } from "./battlePresentation.js";
@@ -22,6 +22,9 @@ export class BattleSystem {
     this.state.mode ??= BATTLE_MODES.SKIRMISH;
     this.state.pendingAction ??= null;
     this.state.enemyTurn ??= null;
+    this.state.runCards = {
+      ownedCardIds: normalizeOwnedRunCardIds(this.state.runCards?.ownedCardIds ?? this.state.runCards ?? [])
+    };
     this.state.levelUpQueue ??= [];
     this.state.lastPowerResult ??= null;
     this.state.powerActivationCounter ??= 0;

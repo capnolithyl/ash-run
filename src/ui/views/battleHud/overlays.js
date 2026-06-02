@@ -1,9 +1,12 @@
 import { BATTLE_MODES, BATTLE_NOTICE_DISPLAY_MS, TURN_SIDES } from "../../../game/core/constants.js";
 import {
   canUnitEquipRunUpgrade,
-  getRunUpgradeById
+  getRunUpgradeById,
+  getRunUpgradeRarityAsset,
+  RUN_UPGRADE_RARITY_LABELS
 } from "../../../game/content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../../../game/phaser/assets.js";
+import { describeRunCardsForState } from "../../../game/simulation/runCardEffects.js";
 import { renderOptionFields } from "../optionFieldsView.js";
 import { renderDebugControls } from "./interactionPanels.js";
 
@@ -22,6 +25,49 @@ function renderIntelBreakdown(runState) {
       <div class="battle-results-breakdown__row"><span>Run Clear Bonus</span><strong>${intelLedger.runClearBonus}</strong></div>
       <div class="battle-results-breakdown__row battle-results-breakdown__row--total"><span>Total Earned</span><strong>${intelLedger.total}</strong></div>
     </div>
+  `;
+}
+
+function renderRunRewardChoice(choice) {
+  if (choice.type === "unit") {
+    return `
+      <button class="menu-button" data-action="select-run-reward" data-reward-id="${choice.id}">
+        <strong>${choice.name}</strong><br />
+        <small>${choice.summary}</small>
+      </button>
+    `;
+  }
+
+  const rarityLabel = RUN_UPGRADE_RARITY_LABELS[choice.rarity] ?? "Run Card";
+  const imageUrl = getRunUpgradeRarityAsset(choice);
+
+  return `
+    <button
+      class="run-reward-card run-reward-card--${choice.rarity ?? "common"}"
+      data-action="select-run-reward"
+      data-reward-id="${choice.id}"
+      style="--run-card-image:url('${imageUrl}')"
+    >
+      <span class="run-reward-card__rarity">${rarityLabel}</span>
+      <strong>${choice.name}</strong>
+      <small>${choice.summary}</small>
+    </button>
+  `;
+}
+
+function renderOwnedRunCardItem(card, { status = "active" } = {}) {
+  const rarityLabel = RUN_UPGRADE_RARITY_LABELS[card.rarity] ?? "Run Card";
+  const imageUrl = getRunUpgradeRarityAsset(card);
+
+  return `
+    <li
+      class="run-card-list__item run-card-list__item--${status} run-card-list__item--${card.rarity ?? "common"}"
+      style="--run-card-image:url('${imageUrl}')"
+    >
+      <span class="run-card-list__rarity">${rarityLabel}</span>
+      <strong>${card.name}</strong>
+      <small>${status === "superseded" ? "Superseded by a higher tier." : card.summary}</small>
+    </li>
   `;
 }
 
@@ -294,6 +340,77 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
   `;
 }
 
+export function renderRunCardsOverlay(state, battleSnapshot) {
+  if (!state.battleUi?.runCardsOpen) {
+    return "";
+  }
+
+  const ownedCardIds = state.runState?.ownedRunCardIds ?? battleSnapshot.runCards?.ownedCardIds ?? [];
+  const ownedCards = ownedCardIds
+    .map((cardId) => getRunUpgradeById(cardId))
+    .filter((card) => card && !card.hidden);
+  const { activeCards, gearCards } = describeRunCardsForState(battleSnapshot);
+  const activeCardIds = new Set(activeCards.map((card) => card.id));
+  const supersededCards = ownedCards.filter((card) => !activeCardIds.has(card.id));
+
+  return `
+    <div class="battle-overlay battle-overlay--run-cards">
+      <div class="overlay-card overlay-card--run-cards">
+        <div class="run-cards-overlay__header">
+          <div>
+            <p class="eyebrow">Run Cards</p>
+            <h2>Owned Upgrades</h2>
+          </div>
+          <button class="ghost-button ghost-button--small" data-action="close-run-cards">Close</button>
+        </div>
+        <div class="run-cards-overlay__body">
+          <section>
+            <h3>Active Cards</h3>
+            ${
+              activeCards.length > 0
+                ? `<ul class="run-card-list">${activeCards.map((card) => renderOwnedRunCardItem(card)).join("")}</ul>`
+                : '<p class="run-cards-overlay__empty">No run cards are active.</p>'
+            }
+          </section>
+          <section>
+            <h3>Equipped Gear</h3>
+            ${
+              gearCards.length > 0
+                ? `
+                  <ul class="run-card-gear-list">
+                    ${gearCards
+                      .map((entry) => `
+                        <li>
+                          <strong>${entry.card.name}</strong>
+                          <span>${entry.unitName}</span>
+                        </li>
+                      `)
+                      .join("")}
+                  </ul>
+                `
+                : '<p class="run-cards-overlay__empty">No squad gear is equipped.</p>'
+            }
+          </section>
+          ${
+            supersededCards.length > 0
+              ? `
+                <section>
+                  <h3>Owned Lower Tiers</h3>
+                  <ul class="run-card-list run-card-list--compact">
+                    ${supersededCards
+                      .map((card) => renderOwnedRunCardItem(card, { status: "superseded" }))
+                      .join("")}
+                  </ul>
+                </section>
+              `
+              : ""
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export function renderOutcomeOverlay(state, battleSnapshot) {
   if (!battleSnapshot?.victory) {
     return "";
@@ -337,20 +454,13 @@ export function renderOutcomeOverlay(state, battleSnapshot) {
       const choices = state.runState?.pendingRewardChoices ?? [];
       return `
         <div class="battle-overlay">
-          <div class="overlay-card">
+          <div class="overlay-card overlay-card--run-reward">
             <p class="eyebrow">Battle Won</p>
             <h2>Choose An Upgrade</h2>
             <p>Select one reward before deploying to the next map.</p>
-            <div class="battle-actions battle-actions--stack">
+            <div class="battle-actions battle-actions--run-rewards">
               ${choices
-                .map(
-                  (choice) => `
-                    <button class="menu-button" data-action="select-run-reward" data-reward-id="${choice.id}">
-                      <strong>${choice.name}</strong><br />
-                      <small>${choice.summary}</small>
-                    </button>
-                  `
-                )
+                .map((choice) => renderRunRewardChoice(choice))
                 .join("")}
             </div>
           </div>

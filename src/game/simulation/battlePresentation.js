@@ -46,6 +46,7 @@ import {
   getUnitAt,
   getUnitAttackProfile
 } from "./selectors.js";
+import { isUnitZombified } from "./runCardEffects.js";
 
 function getLivingUnitsForSide(state, side) {
   return getLivingUnits(state, side).filter((unit) => !unit.transport?.carriedByUnitId);
@@ -284,10 +285,12 @@ function createPendingActionView(state) {
   const unloadPreviewTiles = mode === "unload" ? validUnloadTiles : [];
   const isSlipstream = mode === "slipstream";
   const supportTargetFamily = unit.unitTypeId === "medic" ? "infantry" : unit.unitTypeId === "mechanic" ? "vehicle" : null;
+  const canAct = !isUnitZombified(unit);
   const canSupport =
     Boolean(supportTargetFamily) &&
     (unit.cooldowns?.support ?? 0) <= 0 &&
-    !isSlipstream;
+    !isSlipstream &&
+    canAct;
   const supportTargets = canSupport
     ? getLivingUnitsForSide(state, unit.owner)
         .filter((candidate) => {
@@ -304,7 +307,7 @@ function createPendingActionView(state) {
         .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id))
     : [];
   const medpackTargets =
-    unit.gear?.slot === "gear-field-meds" && !isSlipstream
+    unit.gear?.slot === "gear-field-meds" && !isSlipstream && canAct
       ? getLivingUnitsForSide(state, unit.owner)
           .filter((candidate) => {
             if (candidate.family !== "infantry" || candidate.transport?.carriedByUnitId) {
@@ -324,7 +327,7 @@ function createPendingActionView(state) {
           .filter((option) => option.needScore > 0)
           .sort((left, right) => right.needScore - left.needScore || left.target.id.localeCompare(right.target.id))
       : [];
-  const adjacentRunners = !isSlipstream && unit.family === "infantry" && !unit.temporary?.hostageCarrier
+  const adjacentRunners = !isSlipstream && canAct && unit.family === "infantry" && !unit.temporary?.hostageCarrier
     ? getLivingUnitsForSide(state, unit.owner)
         .filter((candidate) =>
           candidate.unitTypeId === "runner" &&
@@ -343,7 +346,7 @@ function createPendingActionView(state) {
   const medpackTargetUnitIds = mode === "medpack"
     ? medpackTargets.map((option) => option.target.id)
     : [];
-  const extinguishTargets = !isSlipstream && unit.family === "infantry"
+  const extinguishTargets = !isSlipstream && canAct && unit.family === "infantry"
     ? getLivingUnitsForSide(state, unit.owner)
         .filter(
           (candidate) =>
@@ -362,15 +365,15 @@ function createPendingActionView(state) {
     !unit.transport?.hasLockedUnload &&
     (unit.transport?.canUnloadAfterMove || unit.hasMoved) &&
     validUnloadTiles.length > 0;
-  const canRescue = !isSlipstream && canUnitRescueHostage(state, unit);
-  const canDropOff = !isSlipstream && canUnitDropOffHostage(state, unit);
+  const canRescue = !isSlipstream && canAct && canUnitRescueHostage(state, unit);
+  const canDropOff = !isSlipstream && canAct && canUnitDropOffHostage(state, unit);
 
   return {
     ...pendingAction,
     mode,
     unitName: unit.name,
-    canCapture: !isSlipstream && canCaptureBuilding(unit, building),
-    canFire: !isSlipstream && attackableUnitIds.length > 0,
+    canCapture: !isSlipstream && canAct && canCaptureBuilding(unit, building),
+    canFire: !isSlipstream && canAct && attackableUnitIds.length > 0,
     canSupport: supportTargets.length > 0,
     supportActionLabel: unit.unitTypeId === "medic" ? "Heal" : "Support",
     supportCooldown: unit.cooldowns?.support ?? 0,

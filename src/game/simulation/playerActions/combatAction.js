@@ -15,16 +15,27 @@ import {
 } from "../combatResolver.js";
 import { awardExperience } from "../progression.js";
 import { canUnitAttackTarget, getAntiAirGearAmmo, getAttackProfileForTarget } from "../selectors.js";
+import {
+  applyRunCardChainReaction,
+  applyRunCardOnDamageDealt,
+  applyRunCardOnKillEffects,
+  applyRunCardStrikeModifiers,
+  getRunCardAmmoCostForAttack
+} from "../runCardEffects.js";
 import { prepareSlipstreamReposition } from "./shared.js";
 
-function consumeAttackResources(unit, attackProfile) {
+function consumeAttackResources(state, unit, attackProfile) {
   if (attackProfile.consumesAmmo) {
-    unit.current.ammo = Math.max(0, unit.current.ammo - 1);
+    unit.current.ammo = Math.max(0, unit.current.ammo - getRunCardAmmoCostForAttack(state, unit, 1));
   }
 
   if (attackProfile.consumesGearAmmo) {
     unit.gearState.aaKitAmmo = Math.max(0, getAntiAirGearAmmo(unit) - 1);
   }
+}
+
+function appendNotes(state, notes = []) {
+  notes.forEach((note) => appendLog(state, note));
 }
 
 function appendStrikeLog(state, attacker, defender, strike, damageDealt, verb = "hit") {
@@ -90,6 +101,46 @@ function awardCombatXpToUnit(system, unit, target, damageDealt, killed) {
   pushLevelUpEvents(system.state, unit, nextUnit.levelUps);
 }
 
+function resolveFinalTransmission(system, fallenUnit, targetUnit) {
+  if (
+    !fallenUnit ||
+    !targetUnit ||
+    fallenUnit.current.hp > 0 ||
+    targetUnit.current.hp <= 0 ||
+    fallenUnit.gear?.slot !== "gear-final-transmission"
+  ) {
+    return false;
+  }
+
+  const attackProfile = getAttackProfileForTarget(fallenUnit, targetUnit);
+
+  if (!attackProfile) {
+    return false;
+  }
+
+  const previousFallenHp = fallenUnit.current.hp;
+  const targetHpBefore = targetUnit.current.hp;
+  fallenUnit.current.hp = fallenUnit.stats.maxHealth;
+  const strikeResult = applyRunCardStrikeModifiers(
+    system.state,
+    fallenUnit,
+    targetUnit,
+    getDamageResult(system.state, fallenUnit, targetUnit, attackProfile)
+  );
+  fallenUnit.current.hp = previousFallenHp;
+  targetUnit.current.hp = Math.max(0, targetUnit.current.hp - strikeResult.strike.damage);
+  const damageDealt = targetHpBefore - targetUnit.current.hp;
+
+  appendStrikeLog(system.state, fallenUnit, targetUnit, strikeResult.strike, damageDealt, "final-transmitted into");
+  appendNotes(system.state, strikeResult.notes);
+
+  if (targetUnit.current.hp <= 0) {
+    appendLog(system.state, `${targetUnit.name} was destroyed.`);
+  }
+
+  return damageDealt > 0;
+}
+
 export function attackTarget(system, attackerId, defenderId) {
   const attacker = findUnitById(system.state, attackerId);
   const defender = findUnitById(system.state, defenderId);
@@ -127,11 +178,16 @@ export function attackTarget(system, attackerId, defenderId) {
     const preemptiveStrike = zeroDamageCombat
       ? { damage: 0, weaponType: defenderProfile.type, isEffective: false, isCrit: false, isGlance: false }
       : getDamageResult(system.state, defender, attacker, defenderProfile);
+    const modifiedStrike = zeroDamageCombat
+      ? { strike: preemptiveStrike, notes: [] }
+      : applyRunCardStrikeModifiers(system.state, defender, attacker, preemptiveStrike);
 
-    attacker.current.hp = Math.max(0, attacker.current.hp - preemptiveStrike.damage);
+    attacker.current.hp = Math.max(0, attacker.current.hp - modifiedStrike.strike.damage);
     counterDamageDealt = attackerHpBefore - attacker.current.hp;
-    consumeAttackResources(defender, defenderProfile);
-    appendStrikeLog(system.state, defender, attacker, preemptiveStrike, counterDamageDealt, "countered");
+    consumeAttackResources(system.state, defender, defenderProfile);
+    appendStrikeLog(system.state, defender, attacker, modifiedStrike.strike, counterDamageDealt, "countered");
+    appendNotes(system.state, modifiedStrike.notes);
+    appendNotes(system.state, applyRunCardOnDamageDealt(system.state, defender, attacker, counterDamageDealt));
     applyChargeFromCombat(system.state, defender.owner, attacker.owner, counterDamageDealt, counterDamageDealt);
   }
 
@@ -140,11 +196,16 @@ export function attackTarget(system, attackerId, defenderId) {
     const primaryStrike = zeroDamageCombat
       ? { damage: 0, weaponType: attackProfile.type, isEffective: false, isCrit: false, isGlance: false }
       : getDamageResult(system.state, attacker, defender, attackProfile);
+    const modifiedStrike = zeroDamageCombat
+      ? { strike: primaryStrike, notes: [] }
+      : applyRunCardStrikeModifiers(system.state, attacker, defender, primaryStrike);
 
-    defender.current.hp = Math.max(0, defender.current.hp - primaryStrike.damage);
+    defender.current.hp = Math.max(0, defender.current.hp - modifiedStrike.strike.damage);
     primaryDamageDealt = defenderHpBefore - defender.current.hp;
-    consumeAttackResources(attacker, attackProfile);
-    appendStrikeLog(system.state, attacker, defender, primaryStrike, primaryDamageDealt);
+    consumeAttackResources(system.state, attacker, attackProfile);
+    appendStrikeLog(system.state, attacker, defender, modifiedStrike.strike, primaryDamageDealt);
+    appendNotes(system.state, modifiedStrike.notes);
+    appendNotes(system.state, applyRunCardOnDamageDealt(system.state, attacker, defender, primaryDamageDealt));
     applyChargeFromCombat(system.state, attacker.owner, defender.owner, primaryDamageDealt, primaryDamageDealt);
   }
 
@@ -153,11 +214,16 @@ export function attackTarget(system, attackerId, defenderId) {
     const counterStrike = zeroDamageCombat
       ? { damage: 0, weaponType: defenderProfile.type, isEffective: false, isCrit: false, isGlance: false }
       : getDamageResult(system.state, defender, attacker, defenderProfile);
+    const modifiedStrike = zeroDamageCombat
+      ? { strike: counterStrike, notes: [] }
+      : applyRunCardStrikeModifiers(system.state, defender, attacker, counterStrike);
 
-    attacker.current.hp = Math.max(0, attacker.current.hp - counterStrike.damage);
+    attacker.current.hp = Math.max(0, attacker.current.hp - modifiedStrike.strike.damage);
     counterDamageDealt = attackerHpBefore - attacker.current.hp;
-    consumeAttackResources(defender, defenderProfile);
-    appendStrikeLog(system.state, defender, attacker, counterStrike, counterDamageDealt, "countered");
+    consumeAttackResources(system.state, defender, defenderProfile);
+    appendStrikeLog(system.state, defender, attacker, modifiedStrike.strike, counterDamageDealt, "countered");
+    appendNotes(system.state, modifiedStrike.notes);
+    appendNotes(system.state, applyRunCardOnDamageDealt(system.state, defender, attacker, counterDamageDealt));
     applyChargeFromCombat(system.state, defender.owner, attacker.owner, counterDamageDealt, counterDamageDealt);
   }
 
@@ -169,19 +235,31 @@ export function attackTarget(system, attackerId, defenderId) {
 
   if (defender.current.hp <= 0) {
     appendLog(system.state, `${defender.name} was destroyed.`);
+    appendNotes(system.state, applyRunCardOnKillEffects(system.state, attacker, defender));
+    appendNotes(system.state, applyRunCardChainReaction(system.state, attacker, defender));
   }
 
   if (attacker.current.hp <= 0) {
     appendLog(system.state, `${attacker.name} was destroyed.`);
+    appendNotes(system.state, applyRunCardOnKillEffects(system.state, defender, attacker));
   }
 
+  if (defender.current.hp <= 0) {
+    resolveFinalTransmission(system, defender, attacker);
+  }
+
+  if (attacker.current.hp <= 0) {
+    resolveFinalTransmission(system, attacker, defender);
+  }
+
+  const defenderKilled = defender.current.hp <= 0;
   removeDeadUnits(system.state);
   const updatedAttacker = findUnitById(system.state, attacker.id);
   const preparedSlipstream =
     updatedAttacker &&
     updatedAttacker.owner === TURN_SIDES.PLAYER &&
     system.state.turn.activeSide === TURN_SIDES.PLAYER &&
-    prepareSlipstreamReposition(system, updatedAttacker);
+    prepareSlipstreamReposition(system, updatedAttacker, { killed: defenderKilled });
 
   if (!preparedSlipstream) {
     system.clearPendingAction();

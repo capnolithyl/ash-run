@@ -23,6 +23,7 @@ import {
   renderOutcomeOverlay,
   renderPauseOverlay,
   renderPowerOverlay,
+  renderRunCardsOverlay,
   renderTurnBanner
 } from "./battleHud/overlays.js";
 import { renderCombatCutsceneOverlay } from "./battleHud/combatCutsceneOverlay.js";
@@ -307,6 +308,12 @@ export function renderBattleHudView(state, options = {}) {
         >
           Intel
         </label>
+        <button
+          class="ghost-button ghost-button--small battle-footer-button battle-footer-button--cards"
+          data-action="open-run-cards"
+        >
+          Cards
+        </button>
         ${renderBattleFooterImageButton({
           action: "pause-battle",
           className: "battle-footer-button--pause",
@@ -360,6 +367,7 @@ export function renderBattleHudView(state, options = {}) {
       ${combatCutsceneActive ? "" : renderTurnBanner(turnBanner)}
       ${combatCutsceneActive ? "" : renderPowerOverlay(state.battleUi?.powerOverlay)}
       ${renderCombatCutsceneOverlay(combatCutscene, state.metaState?.options)}
+      ${combatCutsceneActive ? "" : renderRunCardsOverlay(state, battleSnapshot)}
       ${
         suppressLevelUpOverlay || combatCutsceneActive
           ? ""

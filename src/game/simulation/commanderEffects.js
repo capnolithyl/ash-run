@@ -2,6 +2,13 @@ import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 import { getCommanderById, getCommanderPowerMax } from "../content/commanders.js";
 import { createUnitFromType } from "./unitFactory.js";
 import { getLivingUnits, getBuildingAt, getTerrainAt, getUnitAt } from "./selectors.js";
+import {
+  canRunCardRepositionAfterAttack,
+  getRunCardArmorModifier,
+  getRunCardAttackModifier,
+  getRunCardMovementModifier,
+  getRunCardRangeModifier
+} from "./runCardEffects.js";
 
 const RECON_UNIT_IDS = new Set(["runner"]);
 const AIRCRAFT_FAMILY = UNIT_TAGS.AIR;
@@ -186,7 +193,7 @@ function getArmorPercentBonus(state, unit) {
 
 function getDisplayedAttackValue(state, unit) {
   const baseAttack = unit?.stats?.attack ?? 0;
-  return Math.max(0, Math.round(baseAttack * getAttackMultiplier(state, unit)));
+  return Math.max(0, Math.round(baseAttack * getAttackMultiplier(state, unit)) + getRunCardAttackModifier(state, unit));
 }
 
 function getDisplayedArmorValue(state, unit) {
@@ -196,14 +203,17 @@ function getDisplayedArmorValue(state, unit) {
   const percentArmorDelta = Math.round(baseArmor * armorPercent);
   const corruptedArmorDelta = getCorruptedStatPenalty(unit, "armor", baseArmor);
 
-  return Math.max(0, baseArmor + flatArmor + percentArmorDelta + corruptedArmorDelta);
+  return Math.max(0, baseArmor + flatArmor + percentArmorDelta + corruptedArmorDelta + getRunCardArmorModifier(state, unit));
 }
 
 function getDisplayedMovementValue(state, unit) {
   const baseMovement = unit?.stats?.movement ?? 0;
   return Math.max(
     0,
-    baseMovement + getStatuses(unit, "mobility") + getCorruptedStatPenalty(unit, "movement", baseMovement)
+    baseMovement +
+      getStatuses(unit, "mobility") +
+      getCorruptedStatPenalty(unit, "movement", baseMovement) +
+      getRunCardMovementModifier(state, unit)
   );
 }
 
@@ -211,7 +221,10 @@ function getDisplayedRangeCapValue(state, unit) {
   const baseRange = unit?.stats?.maxRange ?? 0;
   return Math.max(
     unit?.stats?.minRange ?? 0,
-    baseRange + getStatuses(unit, "range") + getCorruptedStatPenalty(unit, "range", baseRange)
+    baseRange +
+      getStatuses(unit, "range") +
+      getCorruptedStatPenalty(unit, "range", baseRange) +
+      getRunCardRangeModifier(state, unit)
   );
 }
 
@@ -366,7 +379,7 @@ export function canSlipstreamAfterAttack(state, unit) {
   }
 
   const commander = getCommanderForSide(state, unit.owner);
-  return commander?.passive.type === "echo-slipstream";
+  return commander?.passive.type === "echo-slipstream" || canRunCardRepositionAfterAttack(state, unit);
 }
 
 export function getAttackModifier(state, unit) {
@@ -413,9 +426,9 @@ export function getPositionArmorMultiplier(state, unit) {
   return getPositionalArmorMultiplier(state, unit);
 }
 
-export function getAttackPowerForProfile(state, unit, attackProfile) {
+export function getAttackPowerForProfile(state, unit, attackProfile, defender = null) {
   const baseAttack = attackProfile?.attack ?? unit?.stats?.attack ?? 0;
-  return Math.max(0, Math.round(baseAttack * getAttackMultiplier(state, unit)));
+  return Math.max(0, Math.round(baseAttack * getAttackMultiplier(state, unit)) + getRunCardAttackModifier(state, unit, { defender }));
 }
 
 function getFinalStrikeModifiers(state, attacker, defender) {
@@ -777,7 +790,9 @@ function applyNovaOverload(state, side, commander, notes) {
     if (ammoSpent > 0) {
       unit.statuses.push({
         type: "attackPercent",
+        source: "nova-overload",
         value: ammoSpent * (commander.active.attackPercentPerAmmo ?? 0.1),
+        primaryAttackWithoutAmmo: true,
         currentTurnOnly: true
       });
 

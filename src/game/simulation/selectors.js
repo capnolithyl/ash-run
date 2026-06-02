@@ -2,15 +2,22 @@ import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import { BUILDING_RECRUITMENT, UNIT_CATALOG } from "../content/unitCatalog.js";
 import { getTargetProfileForAttack, WEAPON_CLASSES } from "../content/weaponClasses.js";
 import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
+import {
+  canRunCardUnitCrossBlockedTerrain,
+  getRunCardStaminaCostMultiplier,
+  getRunCardTerrainMoveCost,
+  isUnitZombified
+} from "./runCardEffects.js";
 
 const SECONDARY_ATTACK_RATIO = 0.55;
+const NOVA_OVERLOAD_SOURCE = "nova-overload";
 
 function tileKey(x, y) {
   return `${x},${y}`;
 }
 
 export function getLivingUnits(state, side) {
-  return state[side].units.filter((unit) => unit.current.hp > 0);
+  return state[side].units.filter((unit) => unit.current.hp > 0 && !isUnitZombified(unit));
 }
 
 function getAllUnits(state) {
@@ -33,6 +40,15 @@ export function getEffectiveCurrentAmmo(unit) {
 export function getEffectiveCurrentStamina(unit) {
   const stamina = Math.max(0, unit?.current?.stamina ?? 0);
   return hasCorruptedStat(unit, "stamina") ? halveVisibleStat(stamina) : stamina;
+}
+
+function canUseOverloadedPrimaryAttack(unit) {
+  return (unit?.statuses ?? []).some(
+    (status) =>
+      status.type === "attackPercent" &&
+      status.source === NOVA_OVERLOAD_SOURCE &&
+      status.primaryAttackWithoutAmmo === true
+  );
 }
 
 export function getUnitAt(state, x, y) {
@@ -59,14 +75,16 @@ export function getUnitAttackProfile(unit) {
     return null;
   }
 
-  if (getEffectiveCurrentAmmo(unit) > 0) {
+  const hasPrimaryAmmo = getEffectiveCurrentAmmo(unit) > 0;
+
+  if (hasPrimaryAmmo || canUseOverloadedPrimaryAttack(unit)) {
     return {
       type: "primary",
       attack: unit.stats.attack,
       weaponClass: unit.stats.weaponClass,
       minRange: unit.stats.minRange,
       maxRange: unit.stats.maxRange,
-      consumesAmmo: true
+      consumesAmmo: hasPrimaryAmmo
     };
   }
 
@@ -155,7 +173,7 @@ export function getTerrainAt(state, x, y) {
   return TERRAIN_LIBRARY[terrainKey];
 }
 
-function getMovementCost(unit, terrain) {
+function getMovementCost(state, unit, terrain, terrainKey) {
   if (!terrain) {
     return 99;
   }
@@ -164,7 +182,8 @@ function getMovementCost(unit, terrain) {
     return 1;
   }
 
-  return unit.family === UNIT_TAGS.VEHICLE ? terrain.vehicleMoveCost : terrain.moveCost;
+  const baseCost = unit.family === UNIT_TAGS.VEHICLE ? terrain.vehicleMoveCost : terrain.moveCost;
+  return getRunCardTerrainMoveCost(state, unit, terrainKey, baseCost);
 }
 
 export function getUnitMovementAllowance(unit, movementBudget) {
@@ -176,12 +195,16 @@ export function getUnitMovementAllowance(unit, movementBudget) {
   return Math.max(minimumAllowance, Math.min(reducedBudget, currentStamina));
 }
 
-function isTerrainBlockedForUnit(unit, terrain) {
+function isTerrainBlockedForUnit(state, unit, terrain, terrainKey) {
   if (!terrain) {
     return true;
   }
 
   if (unit.family === UNIT_TAGS.AIR) {
+    return false;
+  }
+
+  if (canRunCardUnitCrossBlockedTerrain(state, unit, terrainKey)) {
     return false;
   }
 
@@ -205,9 +228,10 @@ function occupiesBlockingLayer(movingUnit, occupant) {
 }
 
 function canUnitOccupyTile(state, unit, x, y) {
-  const terrain = getTerrainAt(state, x, y);
+  const terrainKey = state.map.tiles[y]?.[x];
+  const terrain = TERRAIN_LIBRARY[terrainKey];
 
-  if (isTerrainBlockedForUnit(unit, terrain)) {
+  if (isTerrainBlockedForUnit(state, unit, terrain, terrainKey)) {
     return false;
   }
 
@@ -229,14 +253,22 @@ export function getValidUnloadTiles(state, runner, carriedUnit) {
 
 function getMovementSearch(state, unit, movementBudget) {
   const allowedBudget = getUnitMovementAllowance(unit, movementBudget);
-  const frontier = [{ x: unit.x, y: unit.y, cost: 0 }];
+  const currentStamina = Math.max(0, Math.floor(getEffectiveCurrentStamina(unit) ?? allowedBudget));
+  const frontier = [{ x: unit.x, y: unit.y, moveCost: 0, staminaCost: 0 }];
   const bestCosts = new Map([[tileKey(unit.x, unit.y), 0]]);
+  const bestStaminaCosts = new Map([[tileKey(unit.x, unit.y), 0]]);
   const previous = new Map();
   const settled = new Set();
   const reachable = [];
 
   while (frontier.length > 0) {
-    frontier.sort((left, right) => left.cost - right.cost || left.y - right.y || left.x - right.x);
+    frontier.sort(
+      (left, right) =>
+        left.moveCost - right.moveCost ||
+        left.staminaCost - right.staminaCost ||
+        left.y - right.y ||
+        left.x - right.x
+    );
     const current = frontier.shift();
     const currentKey = tileKey(current.x, current.y);
 
@@ -249,7 +281,7 @@ function getMovementSearch(state, unit, movementBudget) {
     const currentOccupant = getUnitAt(state, current.x, current.y);
 
     if (!currentOccupant || currentOccupant.id === unit.id) {
-      reachable.push({ x: current.x, y: current.y, cost: current.cost });
+      reachable.push({ x: current.x, y: current.y, cost: current.moveCost });
     }
 
     const directions = [
@@ -262,13 +294,17 @@ function getMovementSearch(state, unit, movementBudget) {
     for (const direction of directions) {
       const nextX = current.x + direction.x;
       const nextY = current.y + direction.y;
-      const terrain = getTerrainAt(state, nextX, nextY);
+      const terrainKey = state.map.tiles[nextY]?.[nextX];
+      const terrain = TERRAIN_LIBRARY[terrainKey];
 
       if (!terrain) {
         continue;
       }
 
-      const nextCost = current.cost + getMovementCost(unit, terrain);
+      const stepMoveCost = getMovementCost(state, unit, terrain, terrainKey);
+      const nextCost = current.moveCost + stepMoveCost;
+      const nextStaminaCost =
+        current.staminaCost + stepMoveCost * getRunCardStaminaCostMultiplier(state, unit);
       const key = tileKey(nextX, nextY);
       const occupant = getUnitAt(state, nextX, nextY);
       const occupiedByBlockingUnit =
@@ -277,25 +313,34 @@ function getMovementSearch(state, unit, movementBudget) {
         occupant.owner !== unit.owner &&
         occupiesBlockingLayer(unit, occupant);
       const bestKnownCost = bestCosts.get(key);
+      const bestKnownStaminaCost = bestStaminaCosts.get(key);
 
       if (
         nextCost > allowedBudget ||
-        isTerrainBlockedForUnit(unit, terrain) ||
+        nextStaminaCost > currentStamina ||
+        isTerrainBlockedForUnit(state, unit, terrain, terrainKey) ||
         occupiedByBlockingUnit ||
-        (bestKnownCost !== undefined && bestKnownCost <= nextCost)
+        (
+          bestKnownCost !== undefined &&
+          bestKnownStaminaCost !== undefined &&
+          bestKnownCost <= nextCost &&
+          bestKnownStaminaCost <= nextStaminaCost
+        )
       ) {
         continue;
       }
 
       bestCosts.set(key, nextCost);
+      bestStaminaCosts.set(key, nextStaminaCost);
       previous.set(key, currentKey);
-      frontier.push({ x: nextX, y: nextY, cost: nextCost });
+      frontier.push({ x: nextX, y: nextY, moveCost: nextCost, staminaCost: nextStaminaCost });
     }
   }
 
   return {
     reachable,
     bestCosts,
+    bestStaminaCosts,
     previous
   };
 }
@@ -338,7 +383,8 @@ export function getMovementPath(state, unit, movementBudget, targetX, targetY) {
 export function getMovementPathCost(state, unit, movementBudget, targetX, targetY) {
   const search = getMovementSearch(state, unit, movementBudget);
   const targetKey = tileKey(targetX, targetY);
-  return search.bestCosts.get(targetKey) ?? null;
+  const staminaCost = search.bestStaminaCosts.get(targetKey);
+  return staminaCost === undefined ? null : Math.ceil(staminaCost);
 }
 
 export function getTargetsInRange(state, unit, minimumRange, maximumRange) {
