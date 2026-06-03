@@ -1,10 +1,12 @@
 export {
+  pickBestPriorityAttack,
   pickBestAvailableAttack,
   pickBestFavorableAttack
 } from "./enemyAi/attackScoring.js";
 export {
   getBestCapturePlan,
   getBestMoveAttackOption,
+  getBestMoveSupportPlan,
   getBestRepairPlan,
   getBestSupportPlan,
   hasEnemyAttackOpportunity,

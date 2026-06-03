@@ -13,9 +13,9 @@ import {
 import { getSupportNeedScore, unitNeedsService } from "../supportScoring.js";
 import {
   getScoredAttackOptions,
+  isPriorityAttack,
   isAttackAcceptable,
-  pickBestAvailableAttack,
-  pickBestFavorableAttack
+  pickBestAvailableAttack
 } from "./attackScoring.js";
 import { getEnemyAiArchetype, getEnemyAiProfile } from "./profiles.js";
 import {
@@ -248,6 +248,65 @@ export function getBestSupportPlan(state, unit) {
     .sort((left, right) => right.score - left.score)[0] ?? null;
 }
 
+export function getBestMoveSupportPlan(state, unit, reachableTiles) {
+  const targetFamily =
+    unit.unitTypeId === "medic"
+      ? UNIT_TAGS.INFANTRY
+      : unit.unitTypeId === "mechanic"
+        ? UNIT_TAGS.VEHICLE
+        : null;
+
+  if (!targetFamily || (unit.cooldowns?.support ?? 0) > 0 || unit.transport?.carriedByUnitId) {
+    return null;
+  }
+
+  const originalPosition = { x: unit.x, y: unit.y };
+  const serviceTargets = getLivingUnits(state, unit.owner)
+    .filter((candidate) => {
+      if (
+        candidate.id === unit.id ||
+        candidate.family !== targetFamily ||
+        candidate.transport?.carriedByUnitId ||
+        !unitNeedsService(state, candidate)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+  if (serviceTargets.length === 0) {
+    return null;
+  }
+
+  return reachableTiles
+    .filter((tile) => tile.x !== originalPosition.x || tile.y !== originalPosition.y)
+    .flatMap((tile) =>
+      serviceTargets
+        .filter((target) => Math.abs(tile.x - target.x) + Math.abs(tile.y - target.y) === 1)
+        .map((target) => {
+          const currentDistance =
+            Math.abs(originalPosition.x - target.x) + Math.abs(originalPosition.y - target.y);
+          const nextDistance = Math.abs(tile.x - target.x) + Math.abs(tile.y - target.y);
+          const movementDistance = Math.abs(originalPosition.x - tile.x) + Math.abs(originalPosition.y - tile.y);
+          const needScore = getSupportNeedScore(state, target);
+
+          return {
+            target,
+            tile,
+            score:
+              needScore +
+              Math.max(1, target.cost / 200) +
+              (currentDistance - nextDistance) * 7 +
+              getStrategicObjectiveScore(state, unit, tile) * 0.04 -
+              movementDistance * 0.6
+          };
+        })
+    )
+    .filter((plan) => plan.score >= 8)
+    .sort((left, right) => right.score - left.score || left.target.id.localeCompare(right.target.id))[0] ?? null;
+}
+
 export function getBestCapturePlan(state, unit, reachableTiles) {
   if (unit.family !== UNIT_TAGS.INFANTRY) {
     return null;
@@ -358,7 +417,12 @@ export function getBestRepairPlan(state, unit, reachableTiles) {
     .sort((left, right) => right.score - left.score)[0] ?? null;
 }
 
-export function getBestMoveAttackOption(state, unit, reachableTiles, { allowRisky = false } = {}) {
+export function getBestMoveAttackOption(
+  state,
+  unit,
+  reachableTiles,
+  { allowRisky = false, priorityOnly = false } = {}
+) {
   const originalPosition = { x: unit.x, y: unit.y };
   let bestOption = null;
 
@@ -366,12 +430,13 @@ export function getBestMoveAttackOption(state, unit, reachableTiles, { allowRisk
     unit.x = tile.x;
     unit.y = tile.y;
 
+    const scoredOptions = getScoredAttackOptions(state, unit);
     const attackOption = allowRisky
-      ? getScoredAttackOptions(state, unit).find((option) => isAttackAcceptable(state, option, { allowRisky: true })) ??
-        pickBestAvailableAttack(state, unit)
-      : pickBestFavorableAttack(state, unit);
+      ? scoredOptions.find((option) => isAttackAcceptable(state, option, { allowRisky: true })) ??
+        (priorityOnly ? null : pickBestAvailableAttack(state, unit))
+      : scoredOptions.find((option) => isAttackAcceptable(state, option));
 
-    if (!attackOption) {
+    if (!attackOption || (priorityOnly && !isPriorityAttack(attackOption))) {
       continue;
     }
 

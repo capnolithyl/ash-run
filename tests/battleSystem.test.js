@@ -1820,6 +1820,58 @@ test("enemy turns queue a post-move attack so combat resolves after movement", (
   assert.ok(afterAttack.player.units[0].current.hp < startingHp);
 });
 
+test("enemy infantry take lethal move attacks before rescue-map capture staging", () => {
+  const breaker = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 4, 3, {
+    current: {
+      hp: 4
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 8, 3);
+  const battleState = createTestBattleState({
+    id: "enemy-lethal-rescue",
+    width: 10,
+    height: 7,
+    playerUnits: [breaker],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.map.buildings = [
+    { id: "player-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.PLAYER, x: 0, y: 3 },
+    { id: "neutral-sector", type: BUILDING_KEYS.SECTOR, owner: "neutral", x: 5, y: 3 },
+    { id: "hostage-sector", type: BUILDING_KEYS.SECTOR, owner: TURN_SIDES.ENEMY, x: 9, y: 4 },
+    { id: "enemy-command", type: BUILDING_KEYS.COMMAND, owner: TURN_SIDES.ENEMY, x: 9, y: 3 }
+  ];
+  battleState.map.goal = {
+    type: MAP_GOAL_TYPES.RESCUE,
+    target: {
+      x: 9,
+      y: 4
+    }
+  };
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const moveStep = system.processEnemyTurnStep();
+  const afterMove = system.getStateForSave();
+
+  assert.equal(moveStep.type, "move");
+  assert.deepEqual({ x: afterMove.enemy.units[0].x, y: afterMove.enemy.units[0].y }, { x: 5, y: 3 });
+  assert.equal(afterMove.map.buildings.find((building) => building.id === "neutral-sector").owner, "neutral");
+  assert.equal(afterMove.enemyTurn.pendingAttack.targetId, breaker.id);
+
+  const attackStep = system.processEnemyTurnStep();
+  const afterAttack = system.getStateForSave();
+
+  assert.equal(attackStep.type, "attack");
+  assert.equal(afterAttack.player.units.some((unit) => unit.id === breaker.id), false);
+});
+
 test("enemy units attack when player threat cannot be escaped", () => {
   const player = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 4, 3);
   const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 3);
@@ -2885,6 +2937,70 @@ test("enemy medics use support on damaged adjacent infantry", () => {
   assert.equal(updatedWounded.current.ammo, updatedWounded.stats.ammoMax);
   assert.equal(updatedWounded.current.stamina, updatedWounded.stats.staminaMax);
   assert.equal(updatedMedic.cooldowns.support, 2);
+});
+
+test("enemy support units move adjacent before servicing matching allies", () => {
+  const scenarios = [
+    {
+      supportType: "medic",
+      targetType: "grunt",
+      cooldown: 2
+    },
+    {
+      supportType: "mechanic",
+      targetType: "runner",
+      cooldown: 3
+    }
+  ];
+
+  for (const scenario of scenarios) {
+    const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0);
+    const support = createPlacedUnit(scenario.supportType, TURN_SIDES.ENEMY, 6, 3);
+    const wounded = createPlacedUnit(scenario.targetType, TURN_SIDES.ENEMY, 3, 3, {
+      current: {
+        hp: 5,
+        ammo: 0,
+        stamina: 0
+      }
+    });
+    const battleState = createTestBattleState({
+      id: `enemy-move-support-${scenario.supportType}`,
+      width: 10,
+      height: 7,
+      playerUnits: [player],
+      enemyUnits: [support, wounded],
+      activeSide: TURN_SIDES.ENEMY
+    });
+    battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+      Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+    );
+    battleState.map.buildings = [];
+    battleState.enemyTurn = {
+      pendingAttack: null,
+      pendingUnitIds: [support.id]
+    };
+
+    const system = new BattleSystem(battleState);
+    const moveStep = system.processEnemyTurnStep();
+    const afterMove = system.getStateForSave();
+    const movedSupport = afterMove.enemy.units.find((unit) => unit.id === support.id);
+
+    assert.equal(moveStep.type, "move");
+    assert.deepEqual({ x: movedSupport.x, y: movedSupport.y }, { x: 4, y: 3 });
+    assert.equal(afterMove.enemyTurn.pendingSupport.supporterId, support.id);
+    assert.equal(afterMove.enemyTurn.pendingSupport.targetId, wounded.id);
+
+    const supportStep = system.processEnemyTurnStep();
+    const afterSupport = system.getStateForSave();
+    const updatedSupport = afterSupport.enemy.units.find((unit) => unit.id === support.id);
+    const updatedWounded = afterSupport.enemy.units.find((unit) => unit.id === wounded.id);
+
+    assert.equal(supportStep.type, "support");
+    assert.ok(updatedWounded.current.hp > wounded.current.hp);
+    assert.equal(updatedWounded.current.ammo, updatedWounded.stats.ammoMax);
+    assert.equal(updatedWounded.current.stamina, updatedWounded.stats.staminaMax);
+    assert.equal(updatedSupport.cooldowns.support, scenario.cooldown);
+  }
 });
 
 test("enemy hq-rush runners can keep infantry loaded instead of auto-unloading", () => {

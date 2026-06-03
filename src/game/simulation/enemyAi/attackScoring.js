@@ -145,6 +145,14 @@ export function isAttackAcceptable(state, option, { allowRisky = false } = {}) {
   );
 }
 
+export function isPriorityAttack(option) {
+  return Boolean(option?.trade?.killsTarget);
+}
+
+export function pickBestPriorityAttack(state, unit) {
+  return getScoredAttackOptions(state, unit).find((option) => isPriorityAttack(option)) ?? null;
+}
+
 export function pickBestFavorableAttack(state, unit) {
   return getScoredAttackOptions(state, unit).find((option) => isAttackAcceptable(state, option)) ?? null;
 }

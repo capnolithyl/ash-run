@@ -30,6 +30,7 @@ import { applyRunCardTurnStartEffects, isUnitZombified } from "./runCardEffects.
 import {
   getBestCapturePlan,
   getBestMoveAttackOption,
+  getBestMoveSupportPlan,
   getBestRepairPlan,
   getBestRunnerTransportPlan,
   getBestSupportPlan,
@@ -37,6 +38,7 @@ import {
   getEnemyRecruitmentMapCap,
   hasEnemyAttackOpportunity,
   isUnitPinnedByThreat,
+  pickBestPriorityAttack,
   pickBestFavorableAttack,
   pickBestAvailableAttack,
   pickEnemyRecruitmentCandidate,
@@ -130,6 +132,7 @@ export function endTurn(system) {
     system.state.enemyTurn = {
       started: false,
       pendingAttack: null,
+      pendingSupport: null,
       pendingSlipstream: null,
       pendingUnitIds: [],
       forcePassed: false
@@ -170,6 +173,7 @@ export function startEnemyTurnActions(system) {
 export function hasPendingEnemyTurn(system) {
   return Boolean(
     system.state.enemyTurn?.pendingAttack ||
+      system.state.enemyTurn?.pendingSupport ||
       system.state.enemyTurn?.pendingSlipstream ||
       system.state.enemyTurn?.pendingUnitIds?.length
   );
@@ -184,6 +188,7 @@ export function forcePassEnemyTurn(system, reason = "safety") {
   }
 
   system.state.enemyTurn.pendingAttack = null;
+  system.state.enemyTurn.pendingSupport = null;
   system.state.enemyTurn.pendingSlipstream = null;
   system.state.enemyTurn.pendingUnitIds = [];
   system.state.enemyTurn.forcePassed = true;
@@ -255,6 +260,42 @@ function queueEnemySlipstreamMove(system, unitId) {
   };
 
   return system.state.enemyTurn.pendingSlipstream;
+}
+
+function queueEnemySupport(system, supporterId, targetId) {
+  system.state.enemyTurn.pendingSupport = {
+    supporterId,
+    targetId
+  };
+
+  return system.state.enemyTurn.pendingSupport;
+}
+
+function performQueuedEnemySupport(system) {
+  const queuedSupport = system.state.enemyTurn?.pendingSupport;
+
+  if (!queuedSupport) {
+    return null;
+  }
+
+  system.state.enemyTurn.pendingSupport = null;
+  const supporter = findUnitById(system.state, queuedSupport.supporterId);
+  const target = findUnitById(system.state, queuedSupport.targetId);
+
+  if (!supporter || !target || supporter.transport?.carriedByUnitId) {
+    return null;
+  }
+
+  if (!system.applySupportAbility(supporter, target)) {
+    return null;
+  }
+
+  return {
+    changed: true,
+    done: system.state.victory || !hasPendingEnemyTurn(system),
+    type: "support",
+    unitId: queuedSupport.supporterId
+  };
 }
 
 function performQueuedEnemySlipstreamMove(system) {
@@ -374,6 +415,14 @@ export function processEnemyTurnStep(system) {
     }
   }
 
+  if (system.state.enemyTurn.pendingSupport) {
+    const supportStep = performQueuedEnemySupport(system);
+
+    if (supportStep) {
+      return supportStep;
+    }
+  }
+
   if (system.state.enemyTurn.pendingSlipstream) {
     const slipstreamStep = performQueuedEnemySlipstreamMove(system);
 
@@ -431,6 +480,41 @@ export function processEnemyTurnStep(system) {
       };
     }
 
+    const movementBudget = unit.stats.movement + getMovementModifier(system.state, unit);
+    const reachableTiles = getReachableTiles(system.state, unit, movementBudget);
+    const priorityAttack = pickBestPriorityAttack(system.state, unit);
+
+    if (priorityAttack) {
+      system.attackTarget(unit.id, priorityAttack.target.id);
+      queueEnemySlipstreamMove(system, unit.id);
+      return {
+        changed: true,
+        done: system.state.victory || !hasPendingEnemyTurn(system),
+        type: "attack",
+        unitId
+      };
+    }
+
+    const priorityMoveAttack = getBestMoveAttackOption(system.state, unit, reachableTiles, { priorityOnly: true });
+
+    if (priorityMoveAttack) {
+      const movement = moveEnemyUnit(system, unit, priorityMoveAttack.tile, movementBudget);
+
+      if (movement.moved) {
+        system.state.enemyTurn.pendingAttack = {
+          attackerId: unit.id,
+          targetId: priorityMoveAttack.target.id
+        };
+        return {
+          changed: true,
+          done: system.state.victory || !hasPendingEnemyTurn(system),
+          type: "move",
+          unitId,
+          moveSegments: movement.moveSegments
+        };
+      }
+    }
+
     const supportPlan = getBestSupportPlan(system.state, unit);
 
     if (supportPlan && system.applySupportAbility(unit, supportPlan.target)) {
@@ -442,8 +526,23 @@ export function processEnemyTurnStep(system) {
       };
     }
 
-    const movementBudget = unit.stats.movement + getMovementModifier(system.state, unit);
-    const reachableTiles = getReachableTiles(system.state, unit, movementBudget);
+    const moveSupportPlan = getBestMoveSupportPlan(system.state, unit, reachableTiles);
+
+    if (moveSupportPlan) {
+      const movement = moveEnemyUnit(system, unit, moveSupportPlan.tile, movementBudget);
+
+      if (movement.moved) {
+        queueEnemySupport(system, unit.id, moveSupportPlan.target.id);
+        return {
+          changed: true,
+          done: system.state.victory || !hasPendingEnemyTurn(system),
+          type: "move",
+          unitId,
+          moveSegments: movement.moveSegments
+        };
+      }
+    }
+
     const repairPlan = getBestRepairPlan(system.state, unit, reachableTiles);
     const capturePlan = getBestCapturePlan(system.state, unit, reachableTiles);
     const isGrunt = unit.unitTypeId === "grunt";
