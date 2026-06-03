@@ -1,5 +1,8 @@
 import Phaser from "phaser";
-import { BATTLE_ATTACK_IMPACT_DELAY_MS, BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
+import {
+  BATTLE_ATTACK_IMPACT_DELAY_MS,
+  BATTLE_MOVE_SEGMENT_DURATION_MS,
+} from "../../core/constants.js";
 import { getGearBadgeLabel } from "../../content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
@@ -24,15 +27,23 @@ function getUnitVisualSpec(scene, unit) {
     return null;
   }
 
-  const hasLoadedAnimation = [spriteDefinition.idle, spriteDefinition.walk, spriteDefinition.attack].some(
-    (animationSpec) => animationSpec && scene.textures.exists(animationSpec.key)
+  const hasLoadedAnimation = [
+    spriteDefinition.idle,
+    spriteDefinition.walk,
+    spriteDefinition.attack,
+  ].some(
+    (animationSpec) =>
+      animationSpec && scene.textures.exists(animationSpec.key),
   );
 
   if (hasLoadedAnimation) {
     return spriteDefinition;
   }
 
-  if (spriteDefinition.fallbackKey && scene.textures.exists(spriteDefinition.fallbackKey)) {
+  if (
+    spriteDefinition.fallbackKey &&
+    scene.textures.exists(spriteDefinition.fallbackKey)
+  ) {
     return spriteDefinition;
   }
 
@@ -47,7 +58,8 @@ function ensureUnitAnimation(
   frameIndices = null,
 ) {
   const resolvedFrameIndices =
-    frameIndices ?? getAnimationRangeFrameIndices(getAnimationRange(animationSpec, rangeName));
+    frameIndices ??
+    getAnimationRangeFrameIndices(getAnimationRange(animationSpec, rangeName));
 
   if (!animationSpec?.key || resolvedFrameIndices.length <= 1) {
     return null;
@@ -60,10 +72,10 @@ function ensureUnitAnimation(
       key: animationKey,
       frames: resolvedFrameIndices.map((frame) => ({
         key: animationSpec.key,
-        frame
+        frame,
       })),
       frameRate: animationSpec.frameRate,
-      repeat
+      repeat,
     });
   }
 
@@ -74,9 +86,16 @@ const HEALTH_WEDGE_COLOR_STOPS = [
   { ratio: 0, color: 0xff4747 },
   { ratio: 0.35, color: 0xff9f43 },
   { ratio: 0.62, color: 0xffe65c },
-  { ratio: 1, color: 0x5dff38 }
+  { ratio: 1, color: 0x5dff38 },
 ];
 const UNIT_GROUND_SHADOW_ALPHA = 0.24;
+const UNIT_GLOW_ALPHA = 0.13;
+const UNIT_AURA_ALPHA = 0.18;
+const UNIT_READY_GLOW_ALPHA = 0.23;
+const UNIT_READY_AURA_ALPHA = 0.3;
+const UNIT_SPENT_ALPHA = 0.88;
+const UNIT_DEFEATED_ALPHA = 0.4;
+const UNIT_VISUAL_SIZE_MULTIPLIER = 0.94;
 
 function blendHexColors(startColor, endColor, weight) {
   const clampedWeight = Math.max(0, Math.min(1, weight));
@@ -87,7 +106,9 @@ function blendHexColors(startColor, endColor, weight) {
   const endGreen = (endColor >> 8) & 0xff;
   const endBlue = endColor & 0xff;
   const red = Math.round(startRed + (endRed - startRed) * clampedWeight);
-  const green = Math.round(startGreen + (endGreen - startGreen) * clampedWeight);
+  const green = Math.round(
+    startGreen + (endGreen - startGreen) * clampedWeight,
+  );
   const blue = Math.round(startBlue + (endBlue - startBlue) * clampedWeight);
   return (red << 16) | (green << 8) | blue;
 }
@@ -102,12 +123,26 @@ function getHealthWedgeColor(hpRatio) {
     const nextStop = HEALTH_WEDGE_COLOR_STOPS[index];
 
     if (hpRatio <= nextStop.ratio) {
-      const localWeight = (hpRatio - previousStop.ratio) / (nextStop.ratio - previousStop.ratio);
+      const localWeight =
+        (hpRatio - previousStop.ratio) / (nextStop.ratio - previousStop.ratio);
       return blendHexColors(previousStop.color, nextStop.color, localWeight);
     }
   }
 
   return HEALTH_WEDGE_COLOR_STOPS[HEALTH_WEDGE_COLOR_STOPS.length - 1].color;
+}
+
+function getUnitReadiness(unit, pendingUnitId, activeSide) {
+  const isAlive = unit.current.hp > 0;
+  const isSpent = Boolean(
+    unit.hasMoved || unit.hasAttacked || pendingUnitId === unit.id,
+  );
+
+  return {
+    isAlive,
+    isSpent,
+    isCommandReady: isAlive && unit.owner === activeSide && !isSpent,
+  };
 }
 
 export class UnitLayer {
@@ -121,6 +156,7 @@ export class UnitLayer {
     this.entities.forEach((entity) => {
       entity.queuedAttack = null;
       entity.afterMoveCallbacks = [];
+      this.stopReadyPulse(entity, { reset: false });
       this.stopMoveTween(entity);
       this.stopDestroyTimer(entity);
       this.stopAnimationTimer(entity);
@@ -138,10 +174,10 @@ export class UnitLayer {
     const color = getOwnerColor(unit.owner);
     const visualSpec = getUnitVisualSpec(this.scene, unit);
     const glow = this.scene.add
-      .circle(0, 0, layout.cellSize * 0.44, color, 0.13)
+      .circle(0, 0, layout.cellSize * 0.44, color, 1)
       .setBlendMode(Phaser.BlendModes.ADD);
     const aura = this.scene.add
-      .circle(0, 0, layout.cellSize * 0.35, color, 0.18)
+      .circle(0, 0, layout.cellSize * 0.35, color, 1)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     let visual = null;
@@ -150,8 +186,10 @@ export class UnitLayer {
 
     if (visualSpec) {
       const defaultTexture = getUnitDefaultTexture(visualSpec, unit.owner);
-      const textureKey = defaultTexture?.key ?? visualSpec.fallbackKey ?? visualSpec.key;
+      const textureKey =
+        defaultTexture?.key ?? visualSpec.fallbackKey ?? visualSpec.key;
       const textureFrame = defaultTexture?.frame;
+      const visualY = -layout.cellSize * 0.03;
 
       // Use a real ground shadow instead of a second offset copy of the unit art.
       shadow = this.scene.add
@@ -164,8 +202,18 @@ export class UnitLayer {
           UNIT_GROUND_SHADOW_ALPHA,
         )
         .setOrigin(0.5);
-      visual = this.scene.add.sprite(0, -layout.cellSize * 0.03, textureKey, textureFrame);
-      visual.setOrigin(0.5).setDisplaySize(layout.cellSize * 0.88, layout.cellSize * 0.88);
+      visual = this.scene.add.sprite(
+        0,
+        visualY,
+        textureKey,
+        textureFrame,
+      );
+      visual
+        .setOrigin(0.5)
+        .setDisplaySize(
+          layout.cellSize * UNIT_VISUAL_SIZE_MULTIPLIER,
+          layout.cellSize * UNIT_VISUAL_SIZE_MULTIPLIER,
+        );
       visual.setFlipX(defaultTexture?.flipX ?? getOwnerIdleFlipX(unit.owner));
     } else {
       visual = this.scene.add.circle(0, 0, layout.cellSize * 0.28, color, 0.95);
@@ -174,7 +222,7 @@ export class UnitLayer {
         .text(0, -4, unit.name.slice(0, 2).toUpperCase(), {
           fontFamily: "Bahnschrift SemiCondensed, sans-serif",
           fontSize: `${Math.max(12, Math.floor(layout.cellSize * 0.2))}px`,
-          color: "#240817"
+          color: "#240817",
         })
         .setOrigin(0.5);
     }
@@ -185,7 +233,7 @@ export class UnitLayer {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
         fontSize: `${Math.max(8, Math.floor(layout.cellSize * 0.15))}px`,
         color: "#f6fffe",
-        backgroundColor: "#12233a"
+        backgroundColor: "#12233a",
       })
       .setPadding(3, 1, 3, 1)
       .setOrigin(0.5)
@@ -195,7 +243,7 @@ export class UnitLayer {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
         fontSize: `${Math.max(8, Math.floor(layout.cellSize * 0.14))}px`,
         color: "#fefae0",
-        backgroundColor: "#16334d"
+        backgroundColor: "#16334d",
       })
       .setPadding(4, 1, 4, 1)
       .setOrigin(0.5)
@@ -205,14 +253,32 @@ export class UnitLayer {
         fontFamily: "Bahnschrift SemiCondensed, sans-serif",
         fontSize: `${Math.max(8, Math.floor(layout.cellSize * 0.14))}px`,
         color: "#12061f",
-        backgroundColor: "#fff18a"
+        backgroundColor: "#fff18a",
       })
       .setPadding(4, 1, 4, 1)
       .setOrigin(0.5)
       .setVisible(false);
     const children = fallbackLabel
-      ? [glow, aura, visual, healthMeter, fallbackLabel, transportIcon, gearIcon, hostageIcon]
-      : [glow, aura, shadow, visual, healthMeter, transportIcon, gearIcon, hostageIcon];
+      ? [
+          glow,
+          aura,
+          visual,
+          healthMeter,
+          fallbackLabel,
+          transportIcon,
+          gearIcon,
+          hostageIcon,
+        ]
+      : [
+          glow,
+          aura,
+          shadow,
+          visual,
+          healthMeter,
+          transportIcon,
+          gearIcon,
+          hostageIcon,
+        ];
 
     const container = this.scene.add.container(0, 0, children);
     container.setDepth(28);
@@ -247,23 +313,27 @@ export class UnitLayer {
       awaitingPowerEffect: false,
       destroyTimer: null,
       animationTimer: null,
+      readyPulseTween: null,
+      isCommandReady: false,
+      isSpent: false,
+      isAlive: unit.current.hp > 0,
       transportIcon,
       gearIcon,
-      hostageIcon
+      hostageIcon,
     };
   }
 
   getTileCenter(unit, layout) {
     return {
       x: layout.originX + unit.x * layout.cellSize + layout.cellSize / 2,
-      y: layout.originY + unit.y * layout.cellSize + layout.cellSize / 2
+      y: layout.originY + unit.y * layout.cellSize + layout.cellSize / 2,
     };
   }
 
   getTileCenterFromCoordinates(layout, x, y) {
     return {
       x: layout.originX + x * layout.cellSize + layout.cellSize / 2,
-      y: layout.originY + y * layout.cellSize + layout.cellSize / 2
+      y: layout.originY + y * layout.cellSize + layout.cellSize / 2,
     };
   }
 
@@ -339,7 +409,10 @@ export class UnitLayer {
       Number.isFinite(tween.totalDuration) &&
       tween.totalDuration > 0
     ) {
-      return Math.max(0, tween.totalDuration * (1 - tween.getOverallProgress()));
+      return Math.max(
+        0,
+        tween.totalDuration * (1 - tween.getOverallProgress()),
+      );
     }
 
     return BATTLE_MOVE_SEGMENT_DURATION_MS;
@@ -357,7 +430,7 @@ export class UnitLayer {
       entity.unitId,
       queuedAttack.directionX,
       queuedAttack.directionY,
-      queuedAttack.callbacks
+      queuedAttack.callbacks,
     );
   }
 
@@ -405,8 +478,9 @@ export class UnitLayer {
   }
 
   playLinearPathMovement(entity, layout, path) {
+    this.stopReadyPulse(entity);
     const worldPoints = path.map((tile) =>
-      this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
+      this.getTileCenterFromCoordinates(layout, tile.x, tile.y),
     );
     const totalSegments = Math.max(0, worldPoints.length - 1);
     entity.container.setPosition(worldPoints[0].x, worldPoints[0].y);
@@ -424,26 +498,34 @@ export class UnitLayer {
       duration: totalSegments * BATTLE_MOVE_SEGMENT_DURATION_MS,
       ease: "Linear",
       onUpdate: (tween) => {
-        const traveledSegments = Phaser.Math.Clamp(tween.getValue(), 0, totalSegments);
-        const segmentIndex = Math.min(totalSegments - 1, Math.floor(traveledSegments));
+        const traveledSegments = Phaser.Math.Clamp(
+          tween.getValue(),
+          0,
+          totalSegments,
+        );
+        const segmentIndex = Math.min(
+          totalSegments - 1,
+          Math.floor(traveledSegments),
+        );
         const segmentProgress = Math.min(1, traveledSegments - segmentIndex);
         const fromPoint = worldPoints[segmentIndex];
         const toPoint = worldPoints[segmentIndex + 1];
 
         entity.container.setPosition(
           Phaser.Math.Linear(fromPoint.x, toPoint.x, segmentProgress),
-          Phaser.Math.Linear(fromPoint.y, toPoint.y, segmentProgress)
+          Phaser.Math.Linear(fromPoint.y, toPoint.y, segmentProgress),
         );
       },
       onComplete: () => {
         this.completeMovement(entity);
-      }
+      },
     });
   }
 
   playTeleportMovement(entity, layout, path, movementPlayback) {
+    this.stopReadyPulse(entity);
     const worldPoints = path.map((tile) =>
-      this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
+      this.getTileCenterFromCoordinates(layout, tile.x, tile.y),
     );
     const totalSegments = Math.max(0, worldPoints.length - 1);
     const walkAnimation = movementPlayback.animation;
@@ -486,9 +568,10 @@ export class UnitLayer {
       duration: movementPlayback.totalDurationMs,
       ease: "Linear",
       onUpdate: (tween) => {
-        const progress = typeof tween.getOverallProgress === "function"
-          ? tween.getOverallProgress()
-          : tween.progress ?? 0;
+        const progress =
+          typeof tween.getOverallProgress === "function"
+            ? tween.getOverallProgress()
+            : (tween.progress ?? 0);
 
         if (hasTeleported || progress < movementPlayback.splitProgress) {
           return;
@@ -509,7 +592,7 @@ export class UnitLayer {
       },
       onComplete: () => {
         this.completeMovement(entity);
-      }
+      },
     });
   }
 
@@ -530,12 +613,15 @@ export class UnitLayer {
   setVisualScale(entity, multiplier = 1) {
     entity.visual.setScale(
       entity.visualBaseScaleX * multiplier,
-      entity.visualBaseScaleY * multiplier
+      entity.visualBaseScaleY * multiplier,
     );
   }
 
   drawHealthMeter(entity) {
-    const hpRatio = Math.max(0, Math.min(1, entity.displayedHp / Math.max(1, entity.maxHealth)));
+    const hpRatio = Math.max(
+      0,
+      Math.min(1, entity.displayedHp / Math.max(1, entity.maxHealth)),
+    );
     const wedgeSize = Math.max(8, Math.round(this.cellSize * 0.22));
     const wedgeX = -Math.round(this.cellSize * 0.34);
     const wedgeY = -Math.round(this.cellSize * 0.45);
@@ -551,7 +637,7 @@ export class UnitLayer {
       wedgeX + wedgeSize,
       wedgeY,
       wedgeX,
-      wedgeY + wedgeSize
+      wedgeY + wedgeSize,
     );
     entity.healthMeter.fillStyle(wedgeColor, 0.98);
     entity.healthMeter.fillTriangle(
@@ -560,7 +646,7 @@ export class UnitLayer {
       wedgeX + wedgeSize - innerInset,
       wedgeY + innerInset,
       wedgeX + innerInset,
-      wedgeY + wedgeSize - innerInset
+      wedgeY + wedgeSize - innerInset,
     );
     entity.healthMeter.lineStyle(1.4, 0xfdfbff, 0.98);
     entity.healthMeter.beginPath();
@@ -576,19 +662,99 @@ export class UnitLayer {
     entity.healthMeter.strokePath();
   }
 
+  setBaseGlowState(entity) {
+    entity.glow.setScale(1);
+    entity.aura.setScale(1);
+    entity.glow.setAlpha(UNIT_GLOW_ALPHA);
+    entity.aura.setAlpha(UNIT_AURA_ALPHA);
+  }
+
+  stopReadyPulse(entity, { reset = true } = {}) {
+    if (entity.readyPulseTween) {
+      entity.readyPulseTween.stop();
+      entity.readyPulseTween = null;
+    }
+
+    if (reset) {
+      this.setBaseGlowState(entity);
+    }
+  }
+
+  startReadyPulse(entity) {
+    if (entity.readyPulseTween) {
+      return;
+    }
+
+    this.setBaseGlowState(entity);
+    entity.readyPulseTween = this.scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 1180,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.InOut",
+      onUpdate: (tween) => {
+        const progress = tween.getValue();
+
+        entity.glow.setAlpha(
+          Phaser.Math.Linear(UNIT_GLOW_ALPHA, UNIT_READY_GLOW_ALPHA, progress),
+        );
+        entity.aura.setAlpha(
+          Phaser.Math.Linear(UNIT_AURA_ALPHA, UNIT_READY_AURA_ALPHA, progress),
+        );
+        entity.glow.setScale(Phaser.Math.Linear(1, 1.11, progress));
+        entity.aura.setScale(Phaser.Math.Linear(1, 1.09, progress));
+      },
+      onStop: () => {
+        entity.readyPulseTween = null;
+      },
+    });
+  }
+
+  syncReadyPulse(entity) {
+    const canPulse =
+      entity.isCommandReady &&
+      !entity.moveTween &&
+      !entity.awaitingDeploy &&
+      entity.effectTweens.length === 0;
+
+    if (canPulse) {
+      this.startReadyPulse(entity);
+      return;
+    }
+
+    this.stopReadyPulse(entity, { reset: entity.effectTweens.length === 0 });
+  }
+
+  updateEntityReadiness(entity, readiness) {
+    entity.isAlive = readiness.isAlive;
+    entity.isSpent = readiness.isSpent;
+    entity.isCommandReady = readiness.isCommandReady;
+    this.syncReadyPulse(entity);
+  }
+
+  updateOwnerVisuals(entity, color) {
+    entity.glow.setFillStyle(color, 1);
+    entity.aura.setFillStyle(color, 1);
+  }
+
   resetEntityEffects(entity) {
+    this.stopReadyPulse(entity, { reset: false });
     entity.container.setPosition(entity.targetX, entity.targetY);
     entity.container.setScale(1);
     entity.container.setAlpha(entity.alphaTarget);
     this.setVisualScale(entity, 1);
-    entity.glow.setScale(1);
-    entity.aura.setScale(1);
-    entity.glow.setAlpha(0.13);
-    entity.aura.setAlpha(0.18);
+    this.setBaseGlowState(entity);
     entity.shadow?.setAlpha(UNIT_GROUND_SHADOW_ALPHA);
+    this.syncReadyPulse(entity);
   }
 
-  setVisualTexture(entity, textureKey, frame, flipX = getOwnerIdleFlipX(entity.owner)) {
+  setVisualTexture(
+    entity,
+    textureKey,
+    frame,
+    flipX = getOwnerIdleFlipX(entity.owner),
+  ) {
     entity.visual.setTexture?.(textureKey, frame);
     entity.visual.setFlipX?.(flipX);
   }
@@ -597,7 +763,12 @@ export class UnitLayer {
     this.stopAnimationTimer(entity);
 
     const idleAnimation = entity.visualSpec?.idle;
-    const idleAnimationKey = ensureUnitAnimation(this.scene, idleAnimation, "default", -1);
+    const idleAnimationKey = ensureUnitAnimation(
+      this.scene,
+      idleAnimation,
+      "default",
+      -1,
+    );
 
     if (idleAnimationKey) {
       const range = getAnimationRange(idleAnimation, "default");
@@ -624,7 +795,12 @@ export class UnitLayer {
 
   playWalkAnimation(entity) {
     const walkAnimation = entity.visualSpec?.walk;
-    const walkAnimationKey = ensureUnitAnimation(this.scene, walkAnimation, "default", -1);
+    const walkAnimationKey = ensureUnitAnimation(
+      this.scene,
+      walkAnimation,
+      "default",
+      -1,
+    );
 
     if (!walkAnimationKey) {
       return;
@@ -642,6 +818,8 @@ export class UnitLayer {
   }
 
   stopEffectTweens(entity) {
+    this.stopReadyPulse(entity);
+
     for (const tween of entity.effectTweens) {
       tween.stop();
     }
@@ -653,9 +831,31 @@ export class UnitLayer {
   trackEffectTween(entity, tween) {
     entity.effectTweens.push(tween);
     tween.on("complete", () => {
-      entity.effectTweens = entity.effectTweens.filter((activeTween) => activeTween !== tween);
+      entity.effectTweens = entity.effectTweens.filter(
+        (activeTween) => activeTween !== tween,
+      );
     });
     return tween;
+  }
+
+  trackVisualScaleTween(entity, multiplier, duration, options = {}) {
+    return this.trackEffectTween(
+      entity,
+      this.scene.tweens.addCounter({
+        from: 1,
+        to: multiplier,
+        duration,
+        yoyo: options.yoyo ?? true,
+        ease: options.ease ?? "Sine.InOut",
+        onUpdate: (tween) => {
+          this.setVisualScale(entity, tween.getValue());
+        },
+        onComplete: () => {
+          this.setVisualScale(entity, 1);
+          options.onComplete?.();
+        },
+      }),
+    );
   }
 
   destroyEntity(unitId) {
@@ -673,6 +873,7 @@ export class UnitLayer {
     this.stopMoveTween(entity);
     this.stopDestroyTimer(entity);
     this.stopAnimationTimer(entity);
+    this.stopReadyPulse(entity, { reset: false });
 
     this.stopEffectTweens(entity);
 
@@ -682,7 +883,7 @@ export class UnitLayer {
       duration: 120,
       onComplete: () => {
         entity.container.destroy();
-      }
+      },
     });
 
     this.entities.delete(unitId);
@@ -734,7 +935,7 @@ export class UnitLayer {
 
     entity.afterMoveCallbacks.push({
       callback,
-      delay
+      delay,
     });
   }
 
@@ -746,6 +947,7 @@ export class UnitLayer {
     }
 
     entity.awaitingDeploy = false;
+    this.stopReadyPulse(entity);
     entity.container.setScale(0.22);
     entity.container.setAlpha(0);
     entity.container.y += this.cellSize ? this.cellSize * 0.14 : 6;
@@ -756,7 +958,7 @@ export class UnitLayer {
       scaleY: 1,
       y: entity.targetY,
       duration: 460,
-      ease: "Back.Out"
+      ease: "Back.Out",
     });
   }
 
@@ -779,7 +981,7 @@ export class UnitLayer {
       onComplete: () => {
         entity.displayedHp = pendingHp;
         this.drawHealthMeter(entity);
-      }
+      },
     });
 
     return true;
@@ -806,14 +1008,17 @@ export class UnitLayer {
       entity.queuedAttack = {
         directionX,
         directionY,
-        callbacks
+        callbacks,
       };
       return;
     }
 
     callbacks.onStart?.();
     const suppressVisuals = callbacks.suppressVisuals === true;
-    const impactDelayMs = Math.max(0, callbacks.impactDelayMs ?? BATTLE_ATTACK_IMPACT_DELAY_MS);
+    const impactDelayMs = Math.max(
+      0,
+      callbacks.impactDelayMs ?? BATTLE_ATTACK_IMPACT_DELAY_MS,
+    );
 
     if (suppressVisuals) {
       if (callbacks.onImpact) {
@@ -827,59 +1032,65 @@ export class UnitLayer {
     this.stopAnimationTimer(entity);
 
     const attackAnimation = entity.visualSpec?.attack;
-    const attackPlayback = getAttackAnimationPlayback(entity.owner, attackAnimation, directionX);
+    const attackPlayback = getAttackAnimationPlayback(
+      entity.owner,
+      attackAnimation,
+      directionX,
+    );
     const attackRange = attackPlayback?.range ?? null;
     const attackAnimationKey = ensureUnitAnimation(
       this.scene,
       attackAnimation,
       attackPlayback?.rangeName ?? "default",
-      0
+      0,
     );
     const hasAttackAnimation = Boolean(attackAnimationKey && attackRange);
 
-    const offsetX = Math.sign(directionX) * Math.max(5, (this.cellSize ?? 40) * 0.12);
-    const offsetY = Math.sign(directionY) * Math.max(5, (this.cellSize ?? 40) * 0.12);
+    const offsetX =
+      Math.sign(directionX) * Math.max(5, (this.cellSize ?? 40) * 0.12);
+    const offsetY =
+      Math.sign(directionY) * Math.max(5, (this.cellSize ?? 40) * 0.12);
     entity.glow.setAlpha(0.3);
     entity.aura.setAlpha(0.45);
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.container,
-      x: entity.targetX + offsetX,
-      y: entity.targetY + offsetY,
-      duration: hasAttackAnimation ? 90 : 120,
-      yoyo: true,
-      ease: "Sine.InOut",
-      onComplete: () => {
-        entity.container.setPosition(entity.targetX, entity.targetY);
-      }
-    }));
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.visual,
-      scaleX: entity.visualBaseScaleX * (hasAttackAnimation ? 1.08 : 1.14),
-      scaleY: entity.visualBaseScaleY * (hasAttackAnimation ? 1.08 : 1.14),
-      duration: hasAttackAnimation ? 90 : 110,
-      yoyo: true,
-      ease: "Sine.InOut",
-      onComplete: () => {
-        this.setVisualScale(entity, 1);
-      }
-    }));
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: [entity.glow, entity.aura],
-      scale: hasAttackAnimation ? 1.16 : 1.24,
-      duration: hasAttackAnimation ? 150 : 180,
-      yoyo: true,
-      ease: "Sine.InOut",
-      onComplete: () => {
-        this.resetEntityEffects(entity);
-      }
-    }));
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: entity.container,
+        x: entity.targetX + offsetX,
+        y: entity.targetY + offsetY,
+        duration: hasAttackAnimation ? 90 : 120,
+        yoyo: true,
+        ease: "Sine.InOut",
+        onComplete: () => {
+          entity.container.setPosition(entity.targetX, entity.targetY);
+        },
+      }),
+    );
+    this.trackVisualScaleTween(
+      entity,
+      hasAttackAnimation ? 1.08 : 1.14,
+      hasAttackAnimation ? 90 : 110,
+    );
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: [entity.glow, entity.aura],
+        scale: hasAttackAnimation ? 1.16 : 1.24,
+        duration: hasAttackAnimation ? 150 : 180,
+        yoyo: true,
+        ease: "Sine.InOut",
+        onComplete: () => {
+          this.resetEntityEffects(entity);
+        },
+      }),
+    );
 
     if (hasAttackAnimation) {
       this.setVisualTexture(
         entity,
         attackAnimation.key,
         attackPlayback.startFrame,
-        attackPlayback.flipX ?? false
+        attackPlayback.flipX ?? false,
       );
       entity.visual.play?.(attackAnimationKey);
       entity.animationTimer = this.scene.time.delayedCall(
@@ -887,7 +1098,7 @@ export class UnitLayer {
         () => {
           entity.animationTimer = null;
           this.playIdleAnimation(entity);
-        }
+        },
       );
     }
 
@@ -910,33 +1121,34 @@ export class UnitLayer {
 
     entity.aura.setAlpha(0.5);
     entity.glow.setAlpha(0.3);
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.container,
-      x: entity.targetX + (Math.random() > 0.5 ? 1 : -1) * Math.max(4, this.cellSize * 0.08),
-      duration: 52,
-      yoyo: true,
-      repeat: 2,
-      ease: "Sine.InOut"
-    }));
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.visual,
-      scaleX: entity.visualBaseScaleX * 1.24,
-      scaleY: entity.visualBaseScaleY * 1.24,
-      duration: 170,
-      yoyo: true,
-      ease: "Sine.InOut"
-    }));
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.aura,
-      scale: 1.32,
-      alpha: { from: 0.5, to: 0.2 },
-      duration: 170,
-      yoyo: true,
-      ease: "Sine.InOut",
-      onComplete: () => {
-        this.resetEntityEffects(entity);
-      }
-    }));
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: entity.container,
+        x:
+          entity.targetX +
+          (Math.random() > 0.5 ? 1 : -1) * Math.max(4, this.cellSize * 0.08),
+        duration: 52,
+        yoyo: true,
+        repeat: 2,
+        ease: "Sine.InOut",
+      }),
+    );
+    this.trackVisualScaleTween(entity, 1.24, 170);
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: entity.aura,
+        scale: 1.32,
+        alpha: { from: 0.5, to: 0.2 },
+        duration: 170,
+        yoyo: true,
+        ease: "Sine.InOut",
+        onComplete: () => {
+          this.resetEntityEffects(entity);
+        },
+      }),
+    );
   }
 
   playRestore(unitId, { tone = "heal" } = {}) {
@@ -949,31 +1161,43 @@ export class UnitLayer {
     entity.awaitingRestore = false;
     entity.awaitingPowerEffect = false;
     this.stopEffectTweens(entity);
-    this.animateDisplayedHp(entity, tone === "power-heal" ? 320 : 260, "Sine.Out");
+    this.animateDisplayedHp(
+      entity,
+      tone === "power-heal" ? 320 : 260,
+      "Sine.Out",
+    );
 
     const isPowerHeal = tone === "power-heal";
     entity.glow.setAlpha(isPowerHeal ? 0.34 : 0.28);
     entity.aura.setAlpha(isPowerHeal ? 0.44 : 0.38);
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: [entity.glow, entity.aura],
-      scale: isPowerHeal ? 1.65 : 1.42,
-      duration: isPowerHeal ? 320 : 240,
-      yoyo: true,
-      ease: "Sine.InOut",
-      onComplete: () => {
-        this.resetEntityEffects(entity);
-      }
-    }));
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.container,
-      y: entity.targetY - (isPowerHeal ? this.cellSize * 0.1 : this.cellSize * 0.06),
-      duration: isPowerHeal ? 180 : 140,
-      yoyo: true,
-      ease: "Sine.InOut",
-      onComplete: () => {
-        entity.container.y = entity.targetY;
-      }
-    }));
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: [entity.glow, entity.aura],
+        scale: isPowerHeal ? 1.65 : 1.42,
+        duration: isPowerHeal ? 320 : 240,
+        yoyo: true,
+        ease: "Sine.InOut",
+        onComplete: () => {
+          this.resetEntityEffects(entity);
+        },
+      }),
+    );
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: entity.container,
+        y:
+          entity.targetY -
+          (isPowerHeal ? this.cellSize * 0.1 : this.cellSize * 0.06),
+        duration: isPowerHeal ? 180 : 140,
+        yoyo: true,
+        ease: "Sine.InOut",
+        onComplete: () => {
+          entity.container.y = entity.targetY;
+        },
+      }),
+    );
   }
 
   playHeal(unitId) {
@@ -996,78 +1220,81 @@ export class UnitLayer {
         visualScale: 1.14,
         auraScale: 1.6,
         auraAlpha: 0.46,
-        duration: 260
+        duration: 260,
       },
       shield: {
         containerOffset: this.cellSize * 0.06,
         visualScale: 1.1,
         auraScale: 1.72,
         auraAlpha: 0.42,
-        duration: 300
+        duration: 300,
       },
       disrupt: {
         containerOffset: this.cellSize * 0.05,
         visualScale: 1.08,
         auraScale: 1.4,
         auraAlpha: 0.36,
-        duration: 220
+        duration: 220,
       },
       fortune: {
         containerOffset: this.cellSize * 0.07,
         visualScale: 1.16,
         auraScale: 1.68,
         auraAlpha: 0.48,
-        duration: 280
+        duration: 280,
       },
       deploy: {
         containerOffset: this.cellSize * 0.08,
         visualScale: 1.12,
         auraScale: 1.52,
         auraAlpha: 0.44,
-        duration: 280
-      }
+        duration: 280,
+      },
     }[tone] ?? {
       containerOffset: this.cellSize * 0.08,
       visualScale: 1.12,
       auraScale: 1.54,
       auraAlpha: 0.42,
-      duration: 260
+      duration: 260,
     };
 
     entity.glow.setAlpha(config.auraAlpha * 0.72);
     entity.aura.setAlpha(config.auraAlpha);
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.container,
-      y: entity.targetY - config.containerOffset,
-      duration: config.duration,
-      yoyo: true,
-      ease: tone === "disrupt" ? "Sine.InOut" : "Back.Out",
-      onComplete: () => {
-        entity.container.y = entity.targetY;
-      }
-    }));
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: entity.visual,
-      scaleX: entity.visualBaseScaleX * config.visualScale,
-      scaleY: entity.visualBaseScaleY * config.visualScale,
-      duration: Math.round(config.duration * 0.72),
-      yoyo: true,
-      ease: "Sine.InOut",
-      onComplete: () => {
-        this.setVisualScale(entity, 1);
-      }
-    }));
-    this.trackEffectTween(entity, this.scene.tweens.add({
-      targets: [entity.glow, entity.aura],
-      scale: config.auraScale,
-      alpha: { from: config.auraAlpha, to: Math.max(0.16, config.auraAlpha * 0.45) },
-      duration: config.duration,
-      yoyo: true,
-      ease: tone === "disrupt" ? "Sine.InOut" : "Cubic.Out",
-      onComplete: () => {
-        this.resetEntityEffects(entity);
-      }
-    }));
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: entity.container,
+        y: entity.targetY - config.containerOffset,
+        duration: config.duration,
+        yoyo: true,
+        ease: tone === "disrupt" ? "Sine.InOut" : "Back.Out",
+        onComplete: () => {
+          entity.container.y = entity.targetY;
+        },
+      }),
+    );
+    this.trackVisualScaleTween(
+      entity,
+      config.visualScale,
+      Math.round(config.duration * 0.72),
+    );
+    this.trackEffectTween(
+      entity,
+      this.scene.tweens.add({
+        targets: [entity.glow, entity.aura],
+        scale: config.auraScale,
+        alpha: {
+          from: config.auraAlpha,
+          to: Math.max(0.16, config.auraAlpha * 0.45),
+        },
+        duration: config.duration,
+        yoyo: true,
+        ease: tone === "disrupt" ? "Sine.InOut" : "Cubic.Out",
+        onComplete: () => {
+          this.resetEntityEffects(entity);
+        },
+      }),
+    );
   }
 
   render(snapshot, layout, movementEvents = [], lifecycleEvents = {}) {
@@ -1077,11 +1304,11 @@ export class UnitLayer {
     }
 
     const units = [...snapshot.player.units, ...snapshot.enemy.units].filter(
-      (unit) => !unit.transport?.carriedByUnitId
+      (unit) => !unit.transport?.carriedByUnitId,
     );
     const activeIds = new Set();
     const movementEventMap = new Map(
-      movementEvents.map((event) => [event.unitId, event])
+      movementEvents.map((event) => [event.unitId, event]),
     );
     const deployUnitIds = lifecycleEvents.deployUnitIds ?? new Set();
     const destroyUnitIds = lifecycleEvents.destroyUnitIds ?? new Set();
@@ -1109,12 +1336,8 @@ export class UnitLayer {
       const visualSpec = getUnitVisualSpec(this.scene, unit);
       entity.owner = unit.owner;
       entity.visualSpec = visualSpec;
-      entity.glow.setFillStyle(color, 0.13);
-      entity.aura.setFillStyle(color, 0.18);
-      if (
-        visualSpec &&
-        entity.textureKey !== visualSpec.key
-      ) {
+      this.updateOwnerVisuals(entity, color);
+      if (visualSpec && entity.textureKey !== visualSpec.key) {
         entity.textureKey = visualSpec.key;
       }
       entity.fallbackLabel?.setText(unit.name.slice(0, 2).toUpperCase());
@@ -1122,9 +1345,7 @@ export class UnitLayer {
       const pendingRestore = restoreByUnitId.get(unit.id);
       entity.maxHealth = unit.stats.maxHealth;
       entity.pendingHp =
-        pendingDamage?.nextHp ??
-        pendingRestore?.nextHp ??
-        unit.current.hp;
+        pendingDamage?.nextHp ?? pendingRestore?.nextHp ?? unit.current.hp;
 
       if (pendingRestore) {
         entity.awaitingRestore = true;
@@ -1145,22 +1366,24 @@ export class UnitLayer {
       entity.gearIcon?.setText(gearBadgeLabel ?? "");
       entity.gearIcon?.setVisible(Boolean(gearBadgeLabel));
       entity.hostageIcon?.setVisible(Boolean(unit.temporary?.hostageCarrier));
-      const dimmed =
-        unit.hasMoved ||
-        unit.hasAttacked ||
-        snapshot.presentation?.pendingAction?.unitId === unit.id;
-      entity.alphaTarget =
-        unit.current.hp > 0
-          ? dimmed
-            ? 0.68
-            : 1
-          : 0.4;
+      const readiness = getUnitReadiness(
+        unit,
+        snapshot.presentation?.pendingAction?.unitId,
+        snapshot.turn?.activeSide,
+      );
+      entity.alphaTarget = readiness.isAlive
+        ? readiness.isSpent
+          ? UNIT_SPENT_ALPHA
+          : 1
+        : UNIT_DEFEATED_ALPHA;
+      this.updateEntityReadiness(entity, readiness);
       entity.container.setAlpha(entity.awaitingDeploy ? 0 : entity.alphaTarget);
 
       const nextPosition = this.getTileCenter(unit, layout);
       const movementEvent = movementEventMap.get(unit.id);
       const distance =
-        Math.abs(nextPosition.x - entity.targetX) + Math.abs(nextPosition.y - entity.targetY);
+        Math.abs(nextPosition.x - entity.targetX) +
+        Math.abs(nextPosition.y - entity.targetY);
 
       if (distance > 0) {
         this.stopMoveTween(entity);
@@ -1176,7 +1399,7 @@ export class UnitLayer {
           this.playWalkAnimation(entity);
           const renderedDistance = getPointDistance(
             { x: entity.container.x, y: entity.container.y },
-            nextPosition
+            nextPosition,
           );
           entity.moveTween = this.scene.tweens.add({
             targets: entity.container,
@@ -1186,7 +1409,7 @@ export class UnitLayer {
             ease: "Sine.Out",
             onComplete: () => {
               this.completeMovement(entity);
-            }
+            },
           });
         }
       }
