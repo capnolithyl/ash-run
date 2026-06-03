@@ -1,4 +1,5 @@
 import {
+  BATTLE_ENEMY_MOVE_STEP_PAUSE_MS,
   BATTLE_POST_COMBAT_PAUSE_MS,
   BATTLE_FUNDS_GAIN_ANIMATION_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
@@ -555,6 +556,10 @@ export const controllerRunMethods = {
           }
         );
         await delay(Math.max(stepDelay, combatCutsceneDuration));
+
+        if (step.type === "move" && BATTLE_ENEMY_MOVE_STEP_PAUSE_MS > 0) {
+          await delay(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS);
+        }
       } catch {
         forcePassEnemyTurn(this, "error");
         enemyTurnForcePassed = true;

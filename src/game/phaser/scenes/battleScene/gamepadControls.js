@@ -17,6 +17,10 @@ export const battleSceneGamepadMethods = {
     if (isBattleScreen(this.latestState) && this.gridLayer?.renderFrameOverlay) {
       this.gridLayer.renderFrameOverlay(time);
     }
+
+    if (isBattleScreen(this.latestState) && this.selectionLayer?.renderMovementPathFrame) {
+      this.selectionLayer.renderMovementPathFrame(time);
+    }
   },
 
   pollGamepadInput(time) {

@@ -1,5 +1,11 @@
 import Phaser from "phaser";
 import { buildForecastTooltipLabel } from "./selectionTooltip.js";
+import {
+  createMovementPathTransitionState,
+  getMovementPathAnimationDurationMs,
+  getMovementPathKey,
+  resolveMovementPathFrame
+} from "./selectionPathAnimation.js";
 
 const SELECTION_DEPTH = 24;
 const CURSOR_DEPTH = 34;
@@ -46,6 +52,31 @@ function getTileCenter(layout, tile) {
     x: layout.originX + tile.x * layout.cellSize + layout.cellSize / 2,
     y: layout.originY + tile.y * layout.cellSize + layout.cellSize / 2
   };
+}
+
+function getSceneTime(scene) {
+  return scene?.time?.now ?? scene?.game?.loop?.time ?? 0;
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function getMovementPathContextKey(snapshot, layout) {
+  return [
+    snapshot?.id ?? "",
+    snapshot?.map?.id ?? "",
+    snapshot?.map?.width ?? "",
+    snapshot?.map?.height ?? "",
+    snapshot?.presentation?.selectedUnitId ?? "",
+    layout.originX,
+    layout.originY,
+    layout.cellSize
+  ].join(":");
 }
 
 function drawMovementPath(graphics, layout, path) {
@@ -262,6 +293,8 @@ export class SelectionLayer {
     this.scene = scene;
     this.graphics = scene.add.graphics();
     this.graphics.setDepth(SELECTION_DEPTH);
+    this.movementPathGraphics = scene.add.graphics();
+    this.movementPathGraphics.setDepth(SELECTION_DEPTH + 1);
     this.cursorGraphics = scene.add.graphics();
     this.cursorGraphics.setDepth(CURSOR_DEPTH);
     this.tooltipBackground = scene.add.rectangle(0, 0, 10, 10, 0x12061f, 0.9).setVisible(false);
@@ -278,15 +311,78 @@ export class SelectionLayer {
     this.tooltipBackground.setDepth(TOOLTIP_BACKGROUND_DEPTH);
     this.tooltipLabel.setDepth(TOOLTIP_LABEL_DEPTH);
     this.markerLabels = [];
+    this.movementPathState = null;
+    this.movementPathLayout = null;
   }
 
-  clear() {
+  clearStatic() {
     this.graphics.clear();
     this.cursorGraphics.clear();
     this.markerLabels.forEach((label) => label.destroy());
     this.markerLabels = [];
     this.tooltipBackground.setVisible(false);
     this.tooltipLabel.setVisible(false);
+  }
+
+  resetMovementPath() {
+    this.movementPathGraphics.clear();
+    this.movementPathState = null;
+    this.movementPathLayout = null;
+  }
+
+  clear() {
+    this.clearStatic();
+    this.resetMovementPath();
+  }
+
+  setHoveredMovementPath(snapshot, layout, path) {
+    const contextKey = getMovementPathContextKey(snapshot, layout);
+    const targetKey = getMovementPathKey(path);
+    const nowMs = getSceneTime(this.scene);
+
+    this.renderMovementPathFrame(nowMs);
+
+    if (
+      this.movementPathState?.contextKey === contextKey &&
+      this.movementPathState?.targetKey === targetKey
+    ) {
+      this.movementPathLayout = layout;
+      return;
+    }
+
+    this.movementPathLayout = layout;
+    this.movementPathState = createMovementPathTransitionState(this.movementPathState, {
+      targetPath: path,
+      contextKey,
+      nowMs,
+      durationMs: getMovementPathAnimationDurationMs(prefersReducedMotion())
+    });
+    this.renderMovementPathFrame(nowMs, { force: true });
+  }
+
+  renderMovementPathFrame(time = getSceneTime(this.scene), { force = false } = {}) {
+    if (!this.movementPathState || !this.movementPathLayout) {
+      if (force) {
+        this.movementPathGraphics.clear();
+      }
+      return;
+    }
+
+    if (!force && !this.movementPathState.isAnimating) {
+      return;
+    }
+
+    this.movementPathState = resolveMovementPathFrame(
+      this.movementPathState,
+      time,
+      Phaser.Math.Easing.Cubic.Out
+    );
+    this.movementPathGraphics.clear();
+    drawMovementPath(
+      this.movementPathGraphics,
+      this.movementPathLayout,
+      this.movementPathState.displayPath
+    );
   }
 
   render(
@@ -298,7 +394,7 @@ export class SelectionLayer {
     hoveredAttackForecast = null,
     options = {}
   ) {
-    this.clear();
+    this.clearStatic();
     const markerLabels = [];
 
     const presentation = snapshot.presentation ?? {};
@@ -426,7 +522,9 @@ export class SelectionLayer {
         drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xe8fbff, 0.9);
       }
 
-      drawMovementPath(this.graphics, layout, hoveredMovementPath);
+      this.setHoveredMovementPath(snapshot, layout, hoveredMovementPath);
+    } else {
+      this.setHoveredMovementPath(snapshot, layout, []);
     }
 
     for (const movementPath of options.enemyMovementPaths ?? []) {

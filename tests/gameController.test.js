@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  BATTLE_ENEMY_MOVE_STEP_PAUSE_MS,
   BATTLE_COMBAT_CUTSCENE_CLOSE_MS,
   BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS,
   BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS,
@@ -888,6 +889,80 @@ test("enemy turn sequence force-passes when enemy processing throws", async () =
   assert.equal(state.battleSnapshot.enemyTurn, null);
   assert.equal(state.battleSnapshot.log[0], "Enemy command stalled. Enemy passed the turn.");
   assert.equal(recruitmentCalls, 0);
+});
+
+test("enemy turn sequence waits for the configured pause after movement steps", async () => {
+  const controller = new GameController();
+  const timeoutDelays = [];
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  let hasPendingStep = true;
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.runState = { id: "run-movement-delay" };
+  controller.state.battleSnapshot = null;
+  controller.battleSystem = {
+    startEnemyTurnActions() {
+      return { changed: false };
+    },
+    getStateForSave() {
+      return { mode: BATTLE_MODES.RUN, victory: null };
+    },
+    shouldEnemyUsePower() {
+      return false;
+    },
+    getLastPowerResult() {
+      return null;
+    },
+    hasPendingEnemyTurn() {
+      return hasPendingStep;
+    },
+    processEnemyTurnStep() {
+      hasPendingStep = false;
+      return {
+        changed: true,
+        done: false,
+        type: "move",
+        unitId: "enemy-runner",
+        moveSegments: 1
+      };
+    },
+    performEnemyEndTurnRecruitment() {
+      return { changed: false, deployments: [] };
+    },
+    finalizeEnemyTurn() {
+      return { changed: false, incomeGain: null };
+    }
+  };
+  controller.syncBattleState = () => {
+    controller.state.battleSnapshot = {
+      id: "battle-movement-delay",
+      map: { id: "movement-delay-map", buildings: [], tiles: [] },
+      turn: { activeSide: TURN_SIDES.ENEMY },
+      player: { funds: 0, units: [] },
+      enemy: { funds: 0, units: [] },
+      selection: { type: null, id: null, x: null, y: null },
+      levelUpQueue: [],
+      victory: null
+    };
+  };
+  controller.persistCurrentRun = async () => {};
+
+  global.setTimeout = (callback, delayMs) => {
+    timeoutDelays.push(delayMs);
+    queueMicrotask(callback);
+    return timeoutDelays.length;
+  };
+  global.clearTimeout = () => {};
+
+  try {
+    await controller.runEnemyTurnSequence();
+  } finally {
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
+  }
+
+  assert.ok(timeoutDelays.includes(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS));
 });
 
 test("sandbox commander overrides update both battle sides without saving a run", async () => {

@@ -26,6 +26,7 @@ export const APP_TOAST_DISPLAY_MS = 2400;
 // Movement timing is shared between Phaser tweens and the enemy turn queue.
 export const BATTLE_MOVE_SEGMENT_DURATION_MS = 230;
 export const BATTLE_MOVE_SETTLE_MS = 70;
+export const BATTLE_ENEMY_MOVE_STEP_PAUSE_MS = 260;
 export const BATTLE_ATTACK_IMPACT_DELAY_MS = 140;
 export const BATTLE_ATTACK_WINDOW_MS = 620;
 export const BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS = 360;
