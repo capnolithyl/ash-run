@@ -451,8 +451,12 @@
 }
 
 .map-editor-chip--player.map-editor-chip--active {
-  border-color: rgba(102, 255, 191, 0.58);
-  background: linear-gradient(180deg, rgba(102, 255, 191, 0.2), rgba(19, 58, 54, 0.82));
+  border-color: color-mix(in srgb, var(--player-color) 58%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--player-color) 20%, transparent),
+    rgba(19, 20, 54, 0.82)
+  );
 }
 
 .map-editor-history__header {
@@ -534,8 +538,12 @@
 }
 
 .map-editor-chip--enemy.map-editor-chip--active {
-  border-color: rgba(255, 138, 61, 0.6);
-  background: linear-gradient(180deg, rgba(255, 138, 61, 0.2), rgba(75, 31, 24, 0.84));
+  border-color: color-mix(in srgb, var(--enemy-color) 60%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--enemy-color) 20%, transparent),
+    rgba(24, 31, 75, 0.84)
+  );
 }
 
 .map-editor-chip--neutral.map-editor-chip--active {
@@ -813,8 +821,8 @@
 .map-editor-load-preview__tile--mountain { background: rgba(91, 91, 117, 0.76); }
 .map-editor-load-preview__tile--water { background: rgba(45, 106, 176, 0.8); }
 .map-editor-load-preview__tile--ridge { background: rgba(73, 57, 86, 0.8); }
-.map-editor-load-preview__tile--player { box-shadow: inset 0 0 0 1px rgba(102, 255, 191, 0.62); }
-.map-editor-load-preview__tile--enemy { box-shadow: inset 0 0 0 1px rgba(255, 138, 61, 0.66); }
+.map-editor-load-preview__tile--player { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--player-color) 62%, transparent); }
+.map-editor-load-preview__tile--enemy { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--enemy-color) 66%, transparent); }
 .map-editor-load-preview__tile--neutral { box-shadow: inset 0 0 0 1px rgba(255, 242, 212, 0.5); }
 
 .map-editor-load-dialog__actions {

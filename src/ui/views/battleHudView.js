@@ -376,7 +376,11 @@ export function renderBattleHudView(state, options = {}) {
       ${
         suppressLevelUpOverlay || combatCutsceneActive
           ? ""
-          : renderLevelUpOverlay(battleSnapshot, levelUpPresentation)
+          : renderLevelUpOverlay(
+              battleSnapshot,
+              levelUpPresentation,
+              state.metaState?.options
+            )
       }
       ${combatCutsceneActive ? "" : renderPauseOverlay(state, battleSnapshot, displayContext)}
       ${suppressOutcomeOverlay || combatCutsceneActive ? "" : renderOutcomeOverlay(state, battleSnapshot)}

@@ -82,8 +82,12 @@ function getStaticSpriteSheetPosition(frameIndex, columns, rows) {
   return { x, y };
 }
 
-function renderLevelUpUnitArt(levelUpEvent) {
-  const spriteDefinition = getUnitSpriteDefinition(levelUpEvent.unitTypeId, levelUpEvent.owner);
+function renderLevelUpUnitArt(levelUpEvent, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(
+    levelUpEvent.unitTypeId,
+    levelUpEvent.owner,
+    colorOptions
+  );
   const idleAnimation = spriteDefinition?.idle ?? null;
   const frameStart = idleAnimation?.ranges?.default?.start ?? 0;
   const frameCount = idleAnimation?.ranges?.default
@@ -151,7 +155,7 @@ function buildFinalLevelUpPresentation(levelUpEvent) {
   };
 }
 
-export function renderLevelUpOverlay(battleSnapshot, presentation = null) {
+export function renderLevelUpOverlay(battleSnapshot, presentation = null, colorOptions = {}) {
   const levelUpEvent = battleSnapshot.levelUpQueue?.[0];
 
   if (!levelUpEvent) {
@@ -197,7 +201,7 @@ export function renderLevelUpOverlay(battleSnapshot, presentation = null) {
             )
             .join("")}
           </div>
-          ${renderLevelUpUnitArt(levelUpEvent)}
+          ${renderLevelUpUnitArt(levelUpEvent, colorOptions)}
         </div>
         <div class="level-up-card__footer${continueEnabled ? " level-up-card__footer--visible" : ""}">
           <button class="menu-button" data-action="acknowledge-level-up" ${continueEnabled ? "" : "disabled"}>Continue</button>
@@ -293,18 +297,22 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
   return `
     <div class="battle-overlay battle-overlay--pause">
       <div class="overlay-card overlay-card--pause">
-        <p class="eyebrow">Paused</p>
-        <h2>Battle Intermission</h2>
+        <div class="pause-card__header">
+          <p class="eyebrow">Paused</p>
+          <h2>Battle Intermission</h2>
+        </div>
         ${
           confirmingExit
             ? `
-              <div class="pause-warning">
-                <p>${isRunBattle ? "Forfeit this run?" : "Return to the main menu?"}</p>
-                <p>${
-                  isRunBattle
-                    ? "The battle will count as a loss. Earned Intel Credits stay banked, but you will not get a map-clear payout."
-                    : "The active battle will be discarded when you leave this screen."
-                }</p>
+              <div class="pause-card__body">
+                <div class="pause-warning">
+                  <p>${isRunBattle ? "Forfeit this run?" : "Return to the main menu?"}</p>
+                  <p>${
+                    isRunBattle
+                      ? "The battle will count as a loss. Earned Intel Credits stay banked, but you will not get a map-clear payout."
+                      : "The active battle will be discarded when you leave this screen."
+                  }</p>
+                </div>
               </div>
               <div class="battle-actions">
                 <button class="menu-button menu-button--danger" data-action="confirm-abandon-run">${isRunBattle ? "Forfeit Run" : "Return To Main Menu"}</button>
@@ -312,23 +320,25 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
               </div>
             `
             : `
-              <div class="options-list options-list--compact">
-                ${renderOptionFields(state.metaState.options, {
-                  ...displayContext,
-                  showDisplayOptions: true
-                })}
+              <div class="pause-card__body">
+                <div class="options-list options-list--compact">
+                  ${renderOptionFields(state.metaState.options, {
+                    ...displayContext,
+                    showDisplayOptions: true
+                  })}
+                </div>
+                ${state.debugMode ? `
+                  <details class="pause-section" open>
+                    <summary>
+                      <span>
+                        <strong>Debug Toolkit</strong>
+                        <small>Spawn, charge, and stat tools</small>
+                      </span>
+                    </summary>
+                    ${renderDebugControls(state, battleSnapshot)}
+                  </details>
+                ` : ""}
               </div>
-              ${state.debugMode ? `
-                <details class="pause-section" open>
-                  <summary>
-                    <span>
-                      <strong>Debug Toolkit</strong>
-                      <small>Spawn, charge, and stat tools</small>
-                    </span>
-                  </summary>
-                  ${renderDebugControls(state, battleSnapshot)}
-                </details>
-              ` : ""}
               <div class="battle-actions">
                 <button class="menu-button" data-action="resume-battle">Continue Battle</button>
                 <button class="ghost-button" data-action="prompt-abandon-run">${isRunBattle ? "Forfeit Run" : "Back To Main Menu"}</button>

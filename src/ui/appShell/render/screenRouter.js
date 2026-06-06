@@ -10,6 +10,7 @@ import { renderSkirmishSetupView } from "../../views/skirmishSetupView.js";
 import { renderTitleView } from "../../views/titleView.js";
 import { renderTutorialView } from "../../views/tutorialView.js";
 import { renderAppToast } from "../../views/appToastView.js";
+import { applyUnitColorTheme } from "../../unitColorTheme.js";
 
 export const appShellScreenRouterMethods = {
   syncAppToast(state) {
@@ -31,6 +32,7 @@ export const appShellScreenRouterMethods = {
 
   render(state) {
     this.applyDisplayRootAttributes?.();
+    applyUnitColorTheme(this.root, state.metaState?.options);
     this.renderWindowChrome?.();
 
     if (state.screen !== SCREEN_IDS.MAP_EDITOR) {

@@ -34,12 +34,13 @@ This folder contains first-pass 64x64 pixel-art-style SVG sprites for every unit
 ## Variant pipeline
 
 - Top-level SVGs are source masters for `scripts/generate-sprite-variants.mjs`.
-- Runtime sprites load from generated `player/` and `enemy/` owner-color folders.
+- Runtime sprites load from the `purple/`, `blue/`, `green/`, `orange/`, and `pink/` color folders.
 - Optional unit animation metadata lives at `assets/sprites/units/<unitTypeId>.animations.json`.
-- Animated sheets live beside the owner SVG in a per-unit folder, such as `player/grunt/grunt-idle.png`, `player/grunt/grunt-walk.png`, or `player/grunt/grunt-attack.png`.
+- Animated sheets live beside the color SVG in a per-unit folder, such as `purple/grunt/grunt-idle.png`, `purple/grunt/grunt-walk.png`, or `purple/grunt/grunt-attack.png`.
 - Metadata defines `frameWidth`, `frameHeight`, and the animation clips to emit from each sheet. Frame sizes can differ by unit.
 - Idle and walk use a `ranges.default` clip.
 - Attack can use `ranges.left` and `ranges.right`, or a single directional clip if the opposite facing should be mirrored at runtime.
-- Owner folders can omit any animation sheet. Missing sheets fall back to the owner SVG at runtime.
+- Color folders can omit any animation sheet. Missing sheets fall back to that color's SVG at runtime.
+- A color is enabled in Options after its folder contains a static SVG for every active unit.
 - Restart the dev server or run `yarn sprites:sheets` after adding or changing a sheet so the generated manifest can pick it up.
 - Static owner SVGs must remain in place as the fallback for units without an animated sheet.

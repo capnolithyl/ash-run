@@ -23,8 +23,12 @@ function formatWeaponLabel(weaponClass) {
     .join(" ");
 }
 
-function getIdleAnimationConfig(unit, side) {
-  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, side);
+function getIdleAnimationConfig(unit, side, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(
+    unit.unitTypeId,
+    side,
+    colorOptions
+  );
   const idleAnimation = spriteDefinition?.idle ?? null;
   const idleRange = getAnimationRange(idleAnimation, "default");
   const idleFrameCount = getAnimationRangeFrameCount(idleRange);
@@ -60,8 +64,12 @@ function getIdleAnimationConfig(unit, side) {
   };
 }
 
-function getAttackSheetConfig(unit, side, cutscene) {
-  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, side);
+function getAttackSheetConfig(unit, side, cutscene, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(
+    unit.unitTypeId,
+    side,
+    colorOptions
+  );
   const attackAnimation = spriteDefinition?.attack ?? null;
   const attackPlayback = getAttackAnimationPlayback(side, attackAnimation, 0);
   const attackRange = attackPlayback?.range ?? null;
@@ -87,14 +95,19 @@ function getAttackSheetConfig(unit, side, cutscene) {
   return null;
 }
 
-function getIdleLayerConfig(unit, side, cutscene) {
-  const idleAnimationConfig = getIdleAnimationConfig(unit, side);
+function getIdleLayerConfig(unit, side, cutscene, colorOptions = {}) {
+  const idleAnimationConfig = getIdleAnimationConfig(unit, side, colorOptions);
 
   if (idleAnimationConfig.mode !== "text") {
     return idleAnimationConfig;
   }
 
-  const attackSheetConfig = getAttackSheetConfig(unit, side, cutscene);
+  const attackSheetConfig = getAttackSheetConfig(
+    unit,
+    side,
+    cutscene,
+    colorOptions
+  );
 
   if (attackSheetConfig) {
     return {
@@ -109,14 +122,19 @@ function getIdleLayerConfig(unit, side, cutscene) {
   return idleAnimationConfig;
 }
 
-function getAttackLayerConfig(unit, side, cutscene) {
-  const attackSheetConfig = getAttackSheetConfig(unit, side, cutscene);
+function getAttackLayerConfig(unit, side, cutscene, colorOptions = {}) {
+  const attackSheetConfig = getAttackSheetConfig(
+    unit,
+    side,
+    cutscene,
+    colorOptions
+  );
 
   if (attackSheetConfig) {
     return attackSheetConfig;
   }
 
-  return getIdleAnimationConfig(unit, side);
+  return getIdleAnimationConfig(unit, side, colorOptions);
 }
 
 function renderSpriteLayer(layerConfig, side, layerType) {
@@ -184,9 +202,16 @@ function renderSpriteLayer(layerConfig, side, layerType) {
   `;
 }
 
-function renderUnitSprite(unit, side, cutscene, activeStep, impactStep) {
-  const idleConfig = getIdleLayerConfig(unit, side, cutscene);
-  const attackConfig = getAttackLayerConfig(unit, side, cutscene);
+function renderUnitSprite(
+  unit,
+  side,
+  cutscene,
+  activeStep,
+  impactStep,
+  colorOptions = {}
+) {
+  const idleConfig = getIdleLayerConfig(unit, side, cutscene, colorOptions);
+  const attackConfig = getAttackLayerConfig(unit, side, cutscene, colorOptions);
   const actorClasses = [
     "combat-cutscene__sprite-actor",
     activeStep?.attackerSide === side ? "combat-cutscene__sprite-actor--attacking" : "",
@@ -229,7 +254,16 @@ function renderHealthColumn(side, unit, currentHp, impactStep) {
   `;
 }
 
-function renderCombatLane(side, unit, terrainId, currentHp, cutscene, activeStep, impactStep) {
+function renderCombatLane(
+  side,
+  unit,
+  terrainId,
+  currentHp,
+  cutscene,
+  activeStep,
+  impactStep,
+  colorOptions = {}
+) {
   const laneClasses = [
     "combat-cutscene__lane",
     `combat-cutscene__lane--${side}`,
@@ -251,7 +285,14 @@ function renderCombatLane(side, unit, terrainId, currentHp, cutscene, activeStep
         <div class="combat-cutscene__grid" aria-hidden="true"></div>
         <div class="combat-cutscene__platform" aria-hidden="true"></div>
         <div class="combat-cutscene__sprite-wrap">
-          ${renderUnitSprite(unit, side, cutscene, activeStep, impactStep)}
+          ${renderUnitSprite(
+            unit,
+            side,
+            cutscene,
+            activeStep,
+            impactStep,
+            colorOptions
+          )}
         </div>
       </div>
     </section>
@@ -308,7 +349,8 @@ export function renderCombatCutsceneOverlay(cutscene, options = {}) {
             timeline.displayedHpBySide[TURN_SIDES.PLAYER],
             cutscene,
             timeline.activeStep,
-            timeline.impactStep
+            timeline.impactStep,
+            options
           )}
           <div class="combat-cutscene__divider" aria-hidden="true"></div>
           ${renderCombatLane(
@@ -318,7 +360,8 @@ export function renderCombatCutsceneOverlay(cutscene, options = {}) {
             timeline.displayedHpBySide[TURN_SIDES.ENEMY],
             cutscene,
             timeline.activeStep,
-            timeline.impactStep
+            timeline.impactStep,
+            options
           )}
         </div>
         <footer class="combat-cutscene__footer">

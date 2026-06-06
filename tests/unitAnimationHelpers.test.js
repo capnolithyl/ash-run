@@ -18,7 +18,7 @@ test("getUnitAttackRangeName uses horizontal direction and owner defaults", () =
 
 test("attack playback helper resolves the clip and duration for directional attacks", () => {
   const attackAnimation = {
-    key: "spritesheet:units:player:grunt:attack",
+    key: "spritesheet:units:purple:grunt:attack",
     frameRate: 5,
     ranges: {
       right: { start: 0, end: 2 },
@@ -44,7 +44,7 @@ test("attack playback helper resolves the clip and duration for directional atta
 
 test("attack playback helper mirrors a single directional attack clip when needed", () => {
   const attackAnimation = {
-    key: "spritesheet:units:player:grunt:attack",
+    key: "spritesheet:units:purple:grunt:attack",
     frameRate: 5,
     ranges: {
       right: { start: 0, end: 2 },
@@ -76,26 +76,26 @@ test("attack playback helper mirrors a single directional attack clip when neede
 
 test("default texture helper prefers idle animation and otherwise falls back to svg", () => {
   const visualWithIdle = {
-    fallbackKey: "sprite:units:enemy:grunt",
+    fallbackKey: "sprite:units:blue:grunt",
     idle: {
-      key: "spritesheet:units:enemy:grunt:idle",
+      key: "spritesheet:units:blue:grunt:idle",
       ranges: {
         default: { start: 0, end: 1 },
       },
     },
   };
   const visualWithoutIdle = {
-    fallbackKey: "sprite:units:player:grunt",
+    fallbackKey: "sprite:units:purple:grunt",
     idle: null,
   };
 
   assert.deepEqual(getUnitDefaultTexture(visualWithIdle, "enemy"), {
-    key: "spritesheet:units:enemy:grunt:idle",
+    key: "spritesheet:units:blue:grunt:idle",
     frame: 0,
     flipX: true,
   });
   assert.deepEqual(getUnitDefaultTexture(visualWithoutIdle, "player"), {
-    key: "sprite:units:player:grunt",
+    key: "sprite:units:purple:grunt",
     frame: undefined,
     flipX: false,
   });

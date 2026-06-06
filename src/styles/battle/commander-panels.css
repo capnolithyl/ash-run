@@ -339,8 +339,8 @@
 }
 
 .commander-panel--player {
-  --side-color: #ff4fd8;
-  --side-glow: rgba(255, 79, 216, 0.2);
+  --side-color: var(--player-color);
+  --side-glow: color-mix(in srgb, var(--player-color) 20%, transparent);
   clip-path: polygon(
     0 1rem,
     1rem 0,
@@ -353,8 +353,8 @@
 }
 
 .commander-panel--enemy {
-  --side-color: #ff8a3d;
-  --side-glow: rgba(255, 138, 61, 0.2);
+  --side-color: var(--enemy-color);
+  --side-glow: color-mix(in srgb, var(--enemy-color) 20%, transparent);
   flex-direction: row-reverse;
   text-align: right;
   clip-path: polygon(

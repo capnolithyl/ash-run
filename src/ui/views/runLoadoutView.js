@@ -92,8 +92,8 @@ function getLoadoutCounts(units = []) {
   return counts;
 }
 
-function renderUnitPreview(unitTypeId, unitName, previewStyles) {
-  const spriteDefinition = getUnitSpriteDefinition(unitTypeId, "player");
+function renderUnitPreview(unitTypeId, unitName, previewStyles, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(unitTypeId, "player", colorOptions);
   const idleAnimation = spriteDefinition?.idle ?? null;
   const idleFrameIndices = getAnimationRangeFrameIndices(idleAnimation, "default");
   const idleFrameCount = idleFrameIndices.length;
@@ -231,7 +231,7 @@ export function renderRunLoadoutView(state) {
         <td>
           <div class="run-loadout-unit-cell">
             <div class="run-unit-card__preview run-loadout-unit-cell__preview">
-              ${renderUnitPreview(unitTypeId, unit.name, previewStyles)}
+              ${renderUnitPreview(unitTypeId, unit.name, previewStyles, state.metaState?.options)}
             </div>
             <div class="run-loadout-unit-cell__body">
               <strong>${unit.name}</strong>

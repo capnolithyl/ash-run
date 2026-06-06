@@ -148,8 +148,8 @@
 }
 
 .battle-side-panel-shell--selected {
-  --battle-side-color: #ff4fd8;
-  --battle-side-accent: #6ee4ff;
+  --battle-side-color: var(--player-color);
+  --battle-side-accent: color-mix(in srgb, var(--player-color) 72%, white);
   --battle-side-shell-tilt: 4deg;
   --battle-side-shell-shift: -0.18rem;
   --battle-side-backplate-shift: 0.92rem;
@@ -158,8 +158,8 @@
 
 .battle-side-panel-shell--target,
 .battle-side-panel-shell--feed {
-  --battle-side-color: #ff8a3d;
-  --battle-side-accent: #ff54da;
+  --battle-side-color: var(--enemy-color);
+  --battle-side-accent: color-mix(in srgb, var(--enemy-color) 72%, white);
   --battle-side-shell-tilt: -4deg;
   --battle-side-shell-shift: 0.18rem;
   --battle-side-backplate-shift: -0.92rem;
@@ -195,9 +195,9 @@
 }
 
 .battle-side-panel {
-  --battle-side-color: #ff4fd8;
-  --battle-side-accent: #6ee4ff;
-  --battle-side-glow: rgba(255, 79, 216, 0.16);
+  --battle-side-color: var(--player-color);
+  --battle-side-accent: color-mix(in srgb, var(--player-color) 72%, white);
+  --battle-side-glow: color-mix(in srgb, var(--player-color) 16%, transparent);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -292,9 +292,9 @@
 }
 
 .battle-side-panel--selected {
-  --battle-side-color: #ff4fd8;
-  --battle-side-accent: #6ee4ff;
-  --battle-side-glow: rgba(255, 79, 216, 0.18);
+  --battle-side-color: var(--player-color);
+  --battle-side-accent: color-mix(in srgb, var(--player-color) 72%, white);
+  --battle-side-glow: color-mix(in srgb, var(--player-color) 18%, transparent);
   grid-column: 1;
   clip-path: polygon(
     0 1.15rem,
@@ -321,9 +321,9 @@
 
 .battle-side-panel--target,
 .battle-side-panel--feed {
-  --battle-side-color: #ff8a3d;
-  --battle-side-accent: #ff54da;
-  --battle-side-glow: rgba(255, 138, 61, 0.16);
+  --battle-side-color: var(--enemy-color);
+  --battle-side-accent: color-mix(in srgb, var(--enemy-color) 72%, white);
+  --battle-side-glow: color-mix(in srgb, var(--enemy-color) 16%, transparent);
   clip-path: polygon(
     1.2rem 0,
     100% 0,
@@ -414,8 +414,8 @@
 }
 
 .battle-footer-meta {
-  --battle-shell-color: rgba(255, 79, 216, 0.26);
-  --battle-shell-accent: rgba(255, 138, 61, 0.22);
+  --battle-shell-color: color-mix(in srgb, var(--player-color) 26%, transparent);
+  --battle-shell-accent: color-mix(in srgb, var(--enemy-color) 22%, transparent);
   position: absolute;
   left: var(--battle-desktop-inset);
   bottom: max(0.85rem, env(safe-area-inset-bottom));
@@ -425,13 +425,13 @@
   gap: 0;
   padding: 0.28rem;
   isolation: isolate;
-  border: 1px solid rgba(255, 79, 216, 0.24);
+  border: 1px solid color-mix(in srgb, var(--player-color) 24%, transparent);
   background:
     linear-gradient(
       90deg,
-      rgba(255, 79, 216, 0.16),
+      color-mix(in srgb, var(--player-color) 16%, transparent),
       rgba(110, 228, 255, 0.08) 32%,
-      rgba(255, 138, 61, 0.12)
+      color-mix(in srgb, var(--enemy-color) 12%, transparent)
     ),
     linear-gradient(
       180deg,
@@ -442,7 +442,7 @@
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.02),
     0 18px 36px rgba(5, 1, 14, 0.44),
-    0 0 28px rgba(255, 79, 216, 0.16);
+    0 0 28px color-mix(in srgb, var(--player-color) 16%, transparent);
   backdrop-filter: blur(16px);
   clip-path: polygon(
     0 0.92rem,
@@ -696,9 +696,9 @@
 }
 
 .battle-rail {
-  --rail-color: #ff4fd8;
-  --rail-accent: #ff8a3d;
-  --rail-glow: rgba(255, 79, 216, 0.16);
+  --rail-color: var(--player-color);
+  --rail-accent: color-mix(in srgb, var(--player-color) 72%, white);
+  --rail-glow: color-mix(in srgb, var(--player-color) 16%, transparent);
   position: absolute;
   top: 12.55rem;
   bottom: 6.8rem;
@@ -782,8 +782,9 @@
 }
 
 .battle-rail--right {
-  --rail-color: #ff8a3d;
-  --rail-glow: rgba(255, 138, 61, 0.16);
+  --rail-color: var(--enemy-color);
+  --rail-accent: color-mix(in srgb, var(--enemy-color) 72%, white);
+  --rail-glow: color-mix(in srgb, var(--enemy-color) 16%, transparent);
   right: 1.25rem;
 }
 

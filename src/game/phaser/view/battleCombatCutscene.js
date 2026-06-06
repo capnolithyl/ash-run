@@ -56,8 +56,12 @@ function getDisplayUnit(previousUnit, nextUnit, owner) {
   };
 }
 
-function getCutsceneLoopCount(unit, side, stepWindowMs) {
-  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, side);
+function getCutsceneLoopCount(unit, side, stepWindowMs, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(
+    unit.unitTypeId,
+    side,
+    colorOptions
+  );
   const attackAnimation = spriteDefinition?.attack ?? null;
   const attackPlayback = getAttackAnimationPlayback(side, attackAnimation, 0);
   const attackRange = attackPlayback?.range ?? null;
@@ -77,8 +81,12 @@ function getCutsceneLoopCount(unit, side, stepWindowMs) {
     : BATTLE_COMBAT_CUTSCENE_LOOP_MIN;
 }
 
-function getCutsceneStepPlayback(unit, side, stepWindowMs) {
-  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, side);
+function getCutsceneStepPlayback(unit, side, stepWindowMs, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(
+    unit.unitTypeId,
+    side,
+    colorOptions
+  );
   const attackAnimation = spriteDefinition?.attack ?? null;
   const attackPlayback = getAttackAnimationPlayback(side, attackAnimation, 0);
   const explicitLoopCount = Number.isInteger(attackAnimation?.cutsceneLoopCount)
@@ -93,12 +101,16 @@ function getCutsceneStepPlayback(unit, side, stepWindowMs) {
   }
 
   return {
-    loopCount: getCutsceneLoopCount(unit, side, stepWindowMs),
+    loopCount: getCutsceneLoopCount(unit, side, stepWindowMs, colorOptions),
     windowMs: stepWindowMs,
   };
 }
 
-function getCutsceneRevealStartMsFromPendingMove(snapshot, attackerId) {
+function getCutsceneRevealStartMsFromPendingMove(
+  snapshot,
+  attackerId,
+  colorOptions = {}
+) {
   const pendingAction = snapshot?.presentation?.pendingAction ?? snapshot?.pendingAction ?? null;
 
   if (
@@ -138,12 +150,25 @@ function getCutsceneRevealStartMsFromPendingMove(snapshot, attackerId) {
     return 0;
   }
 
-  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, unit.owner);
+  const spriteDefinition = getUnitSpriteDefinition(
+    unit.unitTypeId,
+    unit.owner,
+    colorOptions
+  );
   return getUnitMovementPlayback(spriteDefinition, moveSegments).totalDurationMs + BATTLE_MOVE_SETTLE_MS;
 }
 
-function getCutsceneRevealStartMs(snapshot, animationEvents, attackerId) {
-  const pendingMoveRevealStartMs = getCutsceneRevealStartMsFromPendingMove(snapshot, attackerId);
+function getCutsceneRevealStartMs(
+  snapshot,
+  animationEvents,
+  attackerId,
+  colorOptions = {}
+) {
+  const pendingMoveRevealStartMs = getCutsceneRevealStartMsFromPendingMove(
+    snapshot,
+    attackerId,
+    colorOptions
+  );
 
   if (pendingMoveRevealStartMs > 0) {
     return pendingMoveRevealStartMs;
@@ -232,8 +257,16 @@ export function getBattleCombatCutsceneState(cutscene, now = Date.now()) {
   };
 }
 
-export function deriveBattleCombatCutscene(previousSnapshot, nextSnapshot) {
-  const animationEvents = deriveBattleAnimationEvents(previousSnapshot, nextSnapshot);
+export function deriveBattleCombatCutscene(
+  previousSnapshot,
+  nextSnapshot,
+  colorOptions = {}
+) {
+  const animationEvents = deriveBattleAnimationEvents(
+    previousSnapshot,
+    nextSnapshot,
+    colorOptions
+  );
   const attackEvents = animationEvents
     .filter((event) => event.type === "attack")
     .sort((left, right) => (left.delay ?? 0) - (right.delay ?? 0));
@@ -267,7 +300,8 @@ export function deriveBattleCombatCutscene(previousSnapshot, nextSnapshot) {
   const focusStartMs = getCutsceneRevealStartMs(
     previousSnapshot,
     animationEvents,
-    firstAttack.attackerId
+    firstAttack.attackerId,
+    colorOptions
   );
   const revealStartMs = focusStartMs + BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS;
   let cursorMs =
@@ -282,6 +316,7 @@ export function deriveBattleCombatCutscene(previousSnapshot, nextSnapshot) {
       attackerUnit,
       attackerSide,
       BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS,
+      colorOptions
     );
     const impactDelayMs = Math.min(
       windowMs - 220,

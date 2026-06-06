@@ -6,6 +6,7 @@ import {
   getMovementPathKey,
   resolveMovementPathFrame
 } from "./selectionPathAnimation.js";
+import { getOwnerColor } from "./ownerPalette.js";
 
 const SELECTION_DEPTH = 24;
 const CURSOR_DEPTH = 34;
@@ -79,7 +80,7 @@ function getMovementPathContextKey(snapshot, layout) {
   ].join(":");
 }
 
-function drawMovementPath(graphics, layout, path) {
+function drawMovementPath(graphics, layout, path, accentColor = 0xff8a3d) {
   if (!path || path.length < 2) {
     return;
   }
@@ -102,7 +103,7 @@ function drawMovementPath(graphics, layout, path) {
   }
   graphics.strokePath();
 
-  graphics.lineStyle(Math.max(2, Math.floor(layout.cellSize * 0.05)), 0xff8a3d, 0.95);
+  graphics.lineStyle(Math.max(2, Math.floor(layout.cellSize * 0.05)), accentColor, 0.95);
   graphics.beginPath();
   graphics.moveTo(points[0].x, points[0].y);
   for (const point of points.slice(1)) {
@@ -113,7 +114,7 @@ function drawMovementPath(graphics, layout, path) {
   for (const point of points.slice(1, -1)) {
     graphics.fillStyle(0xfff2d4, 0.94);
     graphics.fillCircle(point.x, point.y, Math.max(3.5, layout.cellSize * 0.07));
-    graphics.lineStyle(2, 0xff8a3d, 0.9);
+    graphics.lineStyle(2, accentColor, 0.9);
     graphics.strokeCircle(point.x, point.y, Math.max(3.5, layout.cellSize * 0.07));
   }
 
@@ -125,7 +126,7 @@ function drawMovementPath(graphics, layout, path) {
   const rightAngle = angle - Math.PI * 0.82;
 
   graphics.fillStyle(0xfff2d4, 0.98);
-  graphics.lineStyle(2, 0xff8a3d, 0.96);
+  graphics.lineStyle(2, accentColor, 0.96);
   graphics.beginPath();
   graphics.moveTo(tip.x, tip.y);
   graphics.lineTo(
@@ -172,13 +173,16 @@ function drawSpawnMarker(graphics, layout, spawn, color, label) {
   return text;
 }
 
-function drawObjectiveMarker(graphics, layout, marker) {
+function drawObjectiveMarker(graphics, layout, marker, colorOptions = {}) {
   const center = getTileCenter(layout, marker);
   const radius = Math.max(10, layout.cellSize * 0.18);
+  const markerColor = marker.owner
+    ? getOwnerColor(marker.owner, colorOptions)
+    : marker.color ?? 0xff8a3d;
 
   graphics.fillStyle(0x12061f, 0.9);
   graphics.fillCircle(center.x, center.y, radius + 4);
-  graphics.fillStyle(marker.color ?? 0xff8a3d, 0.95);
+  graphics.fillStyle(markerColor, 0.95);
   graphics.fillCircle(center.x, center.y, radius);
   graphics.lineStyle(2, 0xfff2d4, 0.95);
   graphics.strokeCircle(center.x, center.y, radius + 1);
@@ -193,10 +197,10 @@ function drawObjectiveMarker(graphics, layout, marker) {
     .setDepth(CURSOR_DEPTH + 1);
 }
 
-function getTutorialHighlightColor(tone) {
+function getTutorialHighlightColor(tone, colorOptions = {}) {
   switch (tone) {
     case "ally":
-      return 0x66ffbf;
+      return getOwnerColor("player", colorOptions);
     case "danger":
       return 0xff6f78;
     case "goal":
@@ -248,14 +252,21 @@ function resolveTutorialHighlight(snapshot, highlight) {
   return null;
 }
 
-function drawTutorialHighlight(graphics, layout, snapshot, highlight, index) {
+function drawTutorialHighlight(
+  graphics,
+  layout,
+  snapshot,
+  highlight,
+  index,
+  colorOptions = {}
+) {
   const resolved = resolveTutorialHighlight(snapshot, highlight);
 
   if (!resolved) {
     return null;
   }
 
-  const color = getTutorialHighlightColor(resolved.tone);
+  const color = getTutorialHighlightColor(resolved.tone, colorOptions);
   const x = layout.originX + resolved.x * layout.cellSize;
   const y = layout.originY + resolved.y * layout.cellSize;
   const inset = Math.max(3, Math.floor(layout.cellSize * 0.06));
@@ -313,6 +324,7 @@ export class SelectionLayer {
     this.markerLabels = [];
     this.movementPathState = null;
     this.movementPathLayout = null;
+    this.movementPathColor = 0xff8a3d;
   }
 
   clearStatic() {
@@ -335,7 +347,7 @@ export class SelectionLayer {
     this.resetMovementPath();
   }
 
-  setHoveredMovementPath(snapshot, layout, path) {
+  setHoveredMovementPath(snapshot, layout, path, color = 0xff8a3d) {
     const contextKey = getMovementPathContextKey(snapshot, layout);
     const targetKey = getMovementPathKey(path);
     const nowMs = getSceneTime(this.scene);
@@ -347,10 +359,12 @@ export class SelectionLayer {
       this.movementPathState?.targetKey === targetKey
     ) {
       this.movementPathLayout = layout;
+      this.movementPathColor = color;
       return;
     }
 
     this.movementPathLayout = layout;
+    this.movementPathColor = color;
     this.movementPathState = createMovementPathTransitionState(this.movementPathState, {
       targetPath: path,
       contextKey,
@@ -381,7 +395,8 @@ export class SelectionLayer {
     drawMovementPath(
       this.movementPathGraphics,
       this.movementPathLayout,
-      this.movementPathState.displayPath
+      this.movementPathState.displayPath,
+      this.movementPathColor
     );
   }
 
@@ -396,6 +411,10 @@ export class SelectionLayer {
   ) {
     this.clearStatic();
     const markerLabels = [];
+    const colorOptions = options.colorOptions ?? {};
+    const playerColor = getOwnerColor("player", colorOptions);
+    const enemyColor = getOwnerColor("enemy", colorOptions);
+    this.tooltipBackground.setStrokeStyle(2, enemyColor, 0.95);
 
     const presentation = snapshot.presentation ?? {};
     const unloadTiles =
@@ -406,11 +425,11 @@ export class SelectionLayer {
     for (const tile of unloadTiles) {
       const x = layout.originX + tile.x * layout.cellSize;
       const y = layout.originY + tile.y * layout.cellSize;
-      this.graphics.fillStyle(0x66ffbf, 0.28);
+      this.graphics.fillStyle(playerColor, 0.28);
       this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
       this.graphics.lineStyle(3, 0xf6fffe, 0.78);
       this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 4);
-      drawCornerMarkers(this.graphics, x + 4, y + 4, layout.cellSize - 10, 0x66ffbf, 0.95);
+      drawCornerMarkers(this.graphics, x + 4, y + 4, layout.cellSize - 10, playerColor, 0.95);
     }
 
     if (showGridHighlights) {
@@ -424,16 +443,16 @@ export class SelectionLayer {
       for (const tile of moveTiles) {
         const x = layout.originX + tile.x * layout.cellSize;
         const y = layout.originY + tile.y * layout.cellSize;
-        this.graphics.fillStyle(0x985dff, moveFillAlpha);
+        this.graphics.fillStyle(playerColor, moveFillAlpha);
         this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-        this.graphics.lineStyle(2, 0xff4fd8, moveStrokeAlpha);
+        this.graphics.lineStyle(2, playerColor, moveStrokeAlpha);
         this.graphics.strokeRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 4);
       }
 
       for (const tile of presentation.attackPreviewTiles ?? []) {
         const x = layout.originX + tile.x * layout.cellSize;
         const y = layout.originY + tile.y * layout.cellSize;
-        this.graphics.lineStyle(1.8, 0xff8a3d, 0.36);
+        this.graphics.lineStyle(1.8, enemyColor, 0.36);
         this.graphics.strokeRoundedRect(x + 6, y + 6, layout.cellSize - 14, layout.cellSize - 14, 6);
       }
 
@@ -448,7 +467,7 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.lineStyle(3, 0xff8a3d, 0.92);
+        this.graphics.lineStyle(3, enemyColor, 0.92);
         this.graphics.strokeRoundedRect(x + 4, y + 4, layout.cellSize - 10, layout.cellSize - 10, 6);
       }
 
@@ -463,7 +482,7 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.graphics.lineStyle(3, playerColor, 0.96);
         this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
         drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
       }
@@ -479,9 +498,9 @@ export class SelectionLayer {
 
         const x = layout.originX + target.x * layout.cellSize;
         const y = layout.originY + target.y * layout.cellSize;
-        this.graphics.fillStyle(0x66ffbf, 0.2);
+        this.graphics.fillStyle(playerColor, 0.2);
         this.graphics.fillRoundedRect(x, y, layout.cellSize - 2, layout.cellSize - 2, 6);
-        this.graphics.lineStyle(3, 0x66ffbf, 0.96);
+        this.graphics.lineStyle(3, playerColor, 0.96);
         this.graphics.strokeRoundedRect(x + 3, y + 3, layout.cellSize - 8, layout.cellSize - 8, 6);
         drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xf6fffe, 0.9);
       }
@@ -522,29 +541,38 @@ export class SelectionLayer {
         drawCornerMarkers(this.graphics, x + 5, y + 5, layout.cellSize - 12, 0xe8fbff, 0.9);
       }
 
-      this.setHoveredMovementPath(snapshot, layout, hoveredMovementPath);
+      this.setHoveredMovementPath(snapshot, layout, hoveredMovementPath, playerColor);
     } else {
-      this.setHoveredMovementPath(snapshot, layout, []);
+      this.setHoveredMovementPath(snapshot, layout, [], playerColor);
     }
 
     for (const movementPath of options.enemyMovementPaths ?? []) {
-      drawMovementPath(this.graphics, layout, movementPath);
+      drawMovementPath(this.graphics, layout, movementPath, enemyColor);
     }
 
     for (const spawn of options.editorSpawns?.player ?? []) {
-      markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, 0x66ffbf, "P"));
+      markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, playerColor, "P"));
     }
 
     for (const spawn of options.editorSpawns?.enemy ?? []) {
-      markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, 0xff8a3d, "E"));
+      markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, enemyColor, "E"));
     }
 
     for (const marker of presentation.mission?.markers ?? []) {
-      markerLabels.push(drawObjectiveMarker(this.cursorGraphics, layout, marker));
+      markerLabels.push(
+        drawObjectiveMarker(this.cursorGraphics, layout, marker, colorOptions)
+      );
     }
 
     for (const [index, highlight] of (options.tutorialHighlights ?? []).entries()) {
-      const label = drawTutorialHighlight(this.cursorGraphics, layout, snapshot, highlight, index);
+      const label = drawTutorialHighlight(
+        this.cursorGraphics,
+        layout,
+        snapshot,
+        highlight,
+        index,
+        colorOptions
+      );
 
       if (label) {
         markerLabels.push(label);
@@ -554,7 +582,7 @@ export class SelectionLayer {
     if (presentation.selectedTile) {
       const x = layout.originX + presentation.selectedTile.x * layout.cellSize;
       const y = layout.originY + presentation.selectedTile.y * layout.cellSize;
-      this.graphics.lineStyle(3, 0xff4fd8, 0.98);
+      this.graphics.lineStyle(3, playerColor, 0.98);
       this.graphics.strokeRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 6);
     }
 
@@ -562,7 +590,14 @@ export class SelectionLayer {
       const x = layout.originX + hoveredTile.x * layout.cellSize;
       const y = layout.originY + hoveredTile.y * layout.cellSize;
       drawCornerMarkers(this.cursorGraphics, x, y, layout.cellSize - 2, 0xfff1c9, 0.96);
-      drawCornerMarkers(this.cursorGraphics, x + 2, y + 2, layout.cellSize - 6, 0xff8a3d, 0.82);
+      drawCornerMarkers(
+        this.cursorGraphics,
+        x + 2,
+        y + 2,
+        layout.cellSize - 6,
+        hoveredAttackForecast ? enemyColor : playerColor,
+        0.82
+      );
     }
 
     if (hoveredAttackForecast) {

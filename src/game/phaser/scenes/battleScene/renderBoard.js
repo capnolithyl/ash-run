@@ -45,6 +45,7 @@ export const battleSceneRenderMethods = {
 
   renderBattle() {
     const snapshot = getBoardSnapshot(this.latestState, this.hoveredTile);
+    const colorOptions = this.latestState?.metaState?.options ?? {};
 
     if (!snapshot) {
       this.resetBattlefieldCamera();
@@ -74,13 +75,14 @@ export const battleSceneRenderMethods = {
       this.fxLayer.clear();
       this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: true });
       this.selectionLayer.render(snapshot, layout, false, this.hoveredTile, [], null, {
+        colorOptions,
         editorSpawns: {
           player: snapshot.map.playerSpawns,
           enemy: snapshot.map.enemySpawns
         }
       });
-      this.buildingLayer.render(snapshot, layout);
-      this.unitLayer.render(snapshot, layout, []);
+      this.buildingLayer.render(snapshot, layout, colorOptions);
+      this.unitLayer.render(snapshot, layout, [], { colorOptions });
       this.previousSnapshot = null;
       return;
     }
@@ -97,7 +99,11 @@ export const battleSceneRenderMethods = {
       this.fxLayer.clear();
     }
 
-    const animationEvents = deriveBattleAnimationEvents(previousSnapshot, snapshot);
+    const animationEvents = deriveBattleAnimationEvents(
+      previousSnapshot,
+      snapshot,
+      colorOptions
+    );
     const movementEvents = animationEvents.filter((event) => event.type === "move");
     const powerEvents = animationEvents.filter((event) => event.type === "power");
     const powerTargetUnitIds = getCommanderPowerTargetUnitIds(powerEvents);
@@ -173,17 +179,20 @@ export const battleSceneRenderMethods = {
       hoveredMovementPath,
       hoveredAttackForecast,
       {
+        colorOptions,
         enemyMovementPaths,
         tutorialHighlights: snapshot.presentation?.tutorial?.battlefieldHighlights ?? []
       }
     );
-    this.buildingLayer.render(snapshot, layout);
+    this.buildingLayer.render(snapshot, layout, colorOptions);
     this.unitLayer.render(snapshot, layout, movementEvents, {
       deployUnitIds,
       destroyUnitIds,
       damageByUnitId,
-      restoreByUnitId
+      restoreByUnitId,
+      colorOptions
     });
+    this.fxLayer.setColorOptions(colorOptions);
     const maxMoveDelay = movementEvents.length
       ? Math.max(
           ...movementEvents.map((event) =>

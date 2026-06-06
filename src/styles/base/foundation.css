@@ -76,6 +76,8 @@
   --accent: #ff8a3d;
   --accent-hot: #ff4fd8;
   --accent-cool: #985dff;
+  --player-color: #b65cff;
+  --enemy-color: #5db8ff;
   --danger: #ff5b8f;
   --shadow: 0 24px 80px rgba(6, 0, 14, 0.68);
   --scrollbar-size: 0.62rem;

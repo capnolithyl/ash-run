@@ -195,11 +195,11 @@ export function getStaticMapGoalMarkers(mapData, goalInput) {
 
   if (goal.type === MAP_GOAL_TYPES.HQ_CAPTURE) {
     if (playerHq) {
-      markers.push({ x: playerHq.x, y: playerHq.y, label: "HQ", color: 0x66ffbf });
+      markers.push({ x: playerHq.x, y: playerHq.y, label: "HQ", owner: TURN_SIDES.PLAYER });
     }
 
     if (enemyHq) {
-      markers.push({ x: enemyHq.x, y: enemyHq.y, label: "HQ", color: 0xff8a3d });
+      markers.push({ x: enemyHq.x, y: enemyHq.y, label: "HQ", owner: TURN_SIDES.ENEMY });
     }
   }
 
@@ -209,7 +209,7 @@ export function getStaticMapGoalMarkers(mapData, goalInput) {
     }
 
     if (playerHq) {
-      markers.push({ x: playerHq.x, y: playerHq.y, label: "HQ", color: 0x66ffbf });
+      markers.push({ x: playerHq.x, y: playerHq.y, label: "HQ", owner: TURN_SIDES.PLAYER });
     }
   }
 

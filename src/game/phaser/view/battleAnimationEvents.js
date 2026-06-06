@@ -92,13 +92,17 @@ function getTurnTransitionDelayMs(previousSnapshot, nextSnapshot) {
   return BATTLE_TURN_BANNER_SETTLE_MS;
 }
 
-function getMovementEventDurationMs(event) {
+function getMovementEventDurationMs(event, colorOptions = {}) {
   if (event.teleport) {
     return 0;
   }
 
   const moveSegments = Math.max(0, (event.path?.length ?? 1) - 1);
-  const spriteDefinition = getUnitSpriteDefinition(event.unitTypeId, event.owner);
+  const spriteDefinition = getUnitSpriteDefinition(
+    event.unitTypeId,
+    event.owner,
+    colorOptions
+  );
   return getUnitMovementPlayback(spriteDefinition, moveSegments).totalDurationMs;
 }
 
@@ -356,15 +360,23 @@ function buildCommanderPowerEvent(previousSnapshot, nextSnapshot, previousUnits,
 export function getBattleSnapshotTransitionDurationMs(
   previousSnapshot,
   nextSnapshot,
-  { combatCutsceneDurationMs = 0, postCombatDelayMs = 0 } = {}
+  {
+    combatCutsceneDurationMs = 0,
+    postCombatDelayMs = 0,
+    colorOptions = {}
+  } = {}
 ) {
   return getBattleAnimationDurationMs(
-    deriveBattleAnimationEvents(previousSnapshot, nextSnapshot),
+    deriveBattleAnimationEvents(previousSnapshot, nextSnapshot, colorOptions),
     { combatCutsceneDurationMs, postCombatDelayMs }
   );
 }
 
-export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
+export function deriveBattleAnimationEvents(
+  previousSnapshot,
+  nextSnapshot,
+  colorOptions = {}
+) {
   if (
     !previousSnapshot ||
     !nextSnapshot ||
@@ -650,7 +662,10 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
 
   const turnTransitionDelayMs = getTurnTransitionDelayMs(previousSnapshot, nextSnapshot);
   const moveDurationsByUnitId = new Map(
-    movements.map((event) => [event.unitId, getMovementEventDurationMs(event)])
+    movements.map((event) => [
+      event.unitId,
+      getMovementEventDurationMs(event, colorOptions)
+    ])
   );
   const maxMoveDurationMs = Math.max(0, ...moveDurationsByUnitId.values());
   const firstAttack = orderedAttacks[0] ?? null;
@@ -670,8 +685,11 @@ export function deriveBattleAnimationEvents(previousSnapshot, nextSnapshot) {
   const timedMovements = movements.map((event) => ({
     ...event,
     startDelayMs: turnTransitionDelayMs,
-    durationMs: getMovementEventDurationMs(event),
-    endDelayMs: turnTransitionDelayMs + getMovementEventDurationMs(event) + BATTLE_MOVE_SETTLE_MS
+    durationMs: getMovementEventDurationMs(event, colorOptions),
+    endDelayMs:
+      turnTransitionDelayMs +
+      getMovementEventDurationMs(event, colorOptions) +
+      BATTLE_MOVE_SETTLE_MS
   }));
   const timedAttacks = orderedAttacks.map((event) => ({
     ...event,

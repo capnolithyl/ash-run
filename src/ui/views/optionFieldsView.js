@@ -4,6 +4,12 @@ import {
   DISPLAY_RESOLUTION_PRESETS,
   normalizeDisplayOptions
 } from "../../game/core/displayOptions.js";
+import {
+  UNIT_COLOR_DEFINITIONS,
+  UNIT_COLOR_IDS,
+  normalizeUnitColorOptions
+} from "../../game/core/unitColors.js";
+import { getUnitSpriteColorAvailability } from "../../game/phaser/assets.js";
 
 function renderDisplaySettings(options, displayContext = {}) {
   if (!displayContext.showDisplayOptions) {
@@ -106,6 +112,87 @@ function renderDisplaySettings(options, displayContext = {}) {
   `;
 }
 
+function renderUnitColorPicker({
+  owner,
+  label,
+  selectedColor,
+  opposingColor,
+  availability
+}) {
+  return `
+    <fieldset class="unit-color-picker">
+      <legend>${label}</legend>
+      <div class="unit-color-picker__swatches">
+        ${UNIT_COLOR_IDS.map((colorId) => {
+          const definition = UNIT_COLOR_DEFINITIONS[colorId];
+          const available = availability[colorId] === true;
+          const selected = selectedColor === colorId;
+          const conflicts = opposingColor === colorId && !selected;
+          const disabled = !available || conflicts;
+          const status = !available
+            ? "Coming soon"
+            : conflicts
+              ? "Used by the other side"
+              : "Available";
+
+          return `
+            <label
+              class="unit-color-swatch${selected ? " unit-color-swatch--selected" : ""}${disabled ? " unit-color-swatch--disabled" : ""}"
+              style="--unit-color-swatch:${definition.hex}"
+              title="${definition.label}: ${status}"
+            >
+              <input
+                type="radio"
+                name="${owner}Color"
+                value="${colorId}"
+                data-option="${owner}Color"
+                aria-label="${label}: ${definition.label}${available ? "" : " (coming soon)"}"
+                ${selected ? "checked" : ""}
+                ${disabled ? "disabled" : ""}
+              />
+              <span class="unit-color-swatch__chip" aria-hidden="true"></span>
+              <span class="unit-color-swatch__label">${definition.label}</span>
+            </label>
+          `;
+        }).join("")}
+      </div>
+    </fieldset>
+  `;
+}
+
+function renderUnitColorSettings(options = {}) {
+  const normalized = normalizeUnitColorOptions(options);
+  const availability = getUnitSpriteColorAvailability();
+
+  return `
+    <section class="options-section options-section--unit-colors" aria-label="Unit color settings">
+      <div class="options-section__header">
+        <span>Unit Colors</span>
+        <strong>Choose distinct sides</strong>
+      </div>
+      <div class="unit-color-settings">
+        ${renderUnitColorPicker({
+          owner: "player",
+          label: "Player Units",
+          selectedColor: normalized.playerColor,
+          opposingColor: normalized.enemyColor,
+          availability
+        })}
+        ${renderUnitColorPicker({
+          owner: "enemy",
+          label: "Enemy Units",
+          selectedColor: normalized.enemyColor,
+          opposingColor: normalized.playerColor,
+          availability
+        })}
+      </div>
+      <small class="unit-color-settings__note">
+        Additional colors unlock when their complete unit sprite sets are installed.
+      </small>
+    </section>
+  `;
+}
+
 export function renderOptionFields(options = {}, displayContext = {}) {
   const masterVolume = Number.isFinite(Number(options.masterVolume))
     ? Math.max(0, Math.min(1, Number(options.masterVolume)))
@@ -115,6 +202,7 @@ export function renderOptionFields(options = {}, displayContext = {}) {
 
   return `
     ${renderDisplaySettings(options, displayContext)}
+    ${renderUnitColorSettings(options)}
     <label class="option-row option-row--toggle">
       <span>Show Grid Highlights</span>
       <input type="checkbox" ${options.showGrid ? "checked" : ""} data-option="showGrid" />

@@ -614,7 +614,11 @@ test("battle HUD renders the combat cutscene overlay with stable sprite layers a
   assert.equal(system.attackTarget(attacker.id, defender.id), true);
 
   const after = system.getSnapshot();
-  const cutscene = deriveBattleCombatCutscene(before, after);
+  const colorOptions = {
+    playerColor: "blue",
+    enemyColor: "purple"
+  };
+  const cutscene = deriveBattleCombatCutscene(before, after, colorOptions);
   const html = renderBattleHudView({
     battleSnapshot: after,
     runState: {
@@ -642,7 +646,8 @@ test("battle HUD renders the combat cutscene overlay with stable sprite layers a
         screenShake: true,
         combatCutsceneAnimations: true,
         masterVolume: 0.4,
-        muted: false
+        muted: false,
+        ...colorOptions
       }
     },
     debugMode: false,
@@ -661,11 +666,11 @@ test("battle HUD renders the combat cutscene overlay with stable sprite layers a
   assert.match(html, /combat-cutscene__sprite-sheet-viewport/);
   assert.match(html, /data-cutscene-attack-strip="player"/);
   assert.match(html, /data-cutscene-attack-strip="enemy"/);
-  assert.match(html, /assets\/sprites\/units\/player\/grunt\/grunt-attack\.png/);
-  assert.match(html, /assets\/sprites\/units\/enemy\/grunt\/grunt-attack\.png/);
-  assert.match(html, /assets\/sprites\/units\/player\/grunt\/grunt-idle\.png/);
-  assert.match(html, /assets\/sprites\/units\/enemy\/grunt\/grunt-idle\.png/);
-  assert.doesNotMatch(html, /assets\/sprites\/units\/player\/grunt\.svg/);
+  assert.match(html, /assets\/sprites\/units\/blue\/grunt\/grunt-attack\.png/);
+  assert.match(html, /assets\/sprites\/units\/purple\/grunt\/grunt-attack\.png/);
+  assert.match(html, /assets\/sprites\/units\/blue\/grunt\/grunt-idle\.png/);
+  assert.match(html, /assets\/sprites\/units\/purple\/grunt\/grunt-idle\.png/);
+  assert.doesNotMatch(html, /assets\/sprites\/units\/blue\/grunt\.svg/);
   assert.doesNotMatch(html, /combat-cutscene__sprite-figure/);
   assert.match(html, /combat-cutscene__footer[\s\S]*Rifle/i);
 });
@@ -755,8 +760,8 @@ test("battle HUD combat cutscene uses idle sheets and mirrors the enemy lane", (
     banner: ""
   });
 
-  assert.match(html, /assets\/sprites\/units\/player\/longshot\/longshot-idle\.png/);
-  assert.match(html, /assets\/sprites\/units\/player\/longshot\/longshot-attack\.png/);
+  assert.match(html, /assets\/sprites\/units\/purple\/longshot\/longshot-idle\.png/);
+  assert.match(html, /assets\/sprites\/units\/purple\/longshot\/longshot-attack\.png/);
   assert.match(
     html,
     /data-cutscene-lane="enemy"[\s\S]*?--sheet-flip-x:-1;[\s\S]*?data-cutscene-sheet="enemy:idle"/

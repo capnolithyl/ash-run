@@ -14,12 +14,12 @@ export class BuildingLayer {
     this.containers = [];
   }
 
-  render(snapshot, layout) {
+  render(snapshot, layout, colorOptions = {}) {
     this.clear();
 
     for (const building of snapshot.map.buildings) {
       const metadata = getBuildingTypeMetadata(building.type);
-      const accent = getOwnerColor(building.owner);
+      const accent = getOwnerColor(building.owner, colorOptions);
       const centerX = layout.originX + building.x * layout.cellSize + layout.cellSize / 2;
       const centerY = layout.originY + building.y * layout.cellSize + layout.cellSize / 2;
       const textureKey = getBuildingSpriteKey(building.type, building.owner);

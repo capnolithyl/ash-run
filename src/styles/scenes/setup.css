@@ -441,11 +441,11 @@
 }
 
 .skirmish-map-tile--player {
-  background: #56d8ff;
+  background: var(--player-color);
 }
 
 .skirmish-map-tile--enemy {
-  background: #ff5f9f;
+  background: var(--enemy-color);
 }
 
 .skirmish-map-tile--neutral {

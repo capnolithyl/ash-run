@@ -8,6 +8,7 @@ import { renderRunLoadoutView } from "../ui/views/runLoadoutView.js";
 import { renderSkirmishSetupView } from "../ui/views/skirmishSetupView.js";
 import { renderTitleView } from "../ui/views/titleView.js";
 import { UI_HARNESS_SCENES, createUiHarnessScene } from "./uiHarnessFixtures.js";
+import { applyUnitColorTheme } from "../ui/unitColorTheme.js";
 
 const params = new URLSearchParams(window.location.search);
 const requestedSceneId = params.get("scene") ?? "title";
@@ -24,6 +25,7 @@ toolbar.hidden = embedMode;
 
 function renderScene() {
   const { sceneId, state } = createUiHarnessScene(requestedSceneId);
+  applyUnitColorTheme(root, state.metaState?.options);
   root.innerHTML = renderSceneMarkup(sceneId, state);
   document.title = `Ash Run '84 UI Harness - ${sceneId}`;
   syncToolbar(sceneId);

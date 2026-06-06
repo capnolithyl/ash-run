@@ -318,7 +318,8 @@ export const appShellBattlePresentationPlaybackMethods = {
     const postCombatPauseMs = combatCutsceneDuration > 0 ? BATTLE_POST_COMBAT_PAUSE_MS : 0;
     const experienceEvents = deriveBattleAnimationEvents(
       this.previousBattleSnapshot,
-      state.battleSnapshot
+      state.battleSnapshot,
+      state.metaState?.options
     ).filter((event) => event.type === "experience");
 
     for (const event of experienceEvents) {

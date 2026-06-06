@@ -1,4 +1,10 @@
 import { BUILDING_KEYS } from "../core/constants.js";
+import {
+  DEFAULT_ENEMY_COLOR,
+  DEFAULT_PLAYER_COLOR,
+  UNIT_COLOR_IDS,
+  getUnitColorIdForOwner
+} from "../core/unitColors.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import { GENERATED_BUILDING_SPRITE_PNG_OWNERS } from "./generated/buildingSpritePngOwners.js";
@@ -15,6 +21,14 @@ const generatedUnitSpriteAnimationsFallback = Reflect.get(
 const GENERATED_UNIT_SPRITE_ANIMATIONS =
   generatedUnitSpriteAnimationsModule.GENERATED_UNIT_SPRITE_ANIMATIONS ??
   generatedUnitSpriteAnimationsFallback?.GENERATED_UNIT_SPRITE_ANIMATIONS ??
+  {};
+const GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY =
+  generatedUnitSpriteAnimationsModule.GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY ??
+  generatedUnitSpriteAnimationsFallback?.GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY ??
+  {};
+const GENERATED_UNIT_SPRITE_STATIC_COLORS =
+  generatedUnitSpriteAnimationsModule.GENERATED_UNIT_SPRITE_STATIC_COLORS ??
+  generatedUnitSpriteAnimationsFallback?.GENERATED_UNIT_SPRITE_STATIC_COLORS ??
   {};
 
 const SPRITE_ASSET_ROOT = "./assets/sprites";
@@ -188,6 +202,7 @@ const TERRAIN_TRANSITION_REGISTRY = {
   },
 };
 export const UNIT_OWNER_VARIANTS = ["player", "enemy"];
+export const UNIT_COLOR_VARIANTS = [...UNIT_COLOR_IDS];
 export const BUILDING_OWNER_VARIANTS = ["player", "enemy", "neutral"];
 export const SPLASH_ASSET_IDS = {
   BACKGROUND: "background",
@@ -222,9 +237,9 @@ const UNIT_SPRITES = Object.fromEntries(
   Object.keys(UNIT_CATALOG).map((unitTypeId) => [
     unitTypeId,
     Object.fromEntries(
-      UNIT_OWNER_VARIANTS.map((owner) => [
-        owner,
-        createSpriteAsset("units", unitTypeId, owner),
+      (GENERATED_UNIT_SPRITE_STATIC_COLORS[unitTypeId] ?? []).map((colorId) => [
+        colorId,
+        createSpriteAsset("units", unitTypeId, colorId),
       ]),
     ),
   ]),
@@ -424,21 +439,47 @@ export function getMusicTrackKey(trackId) {
   return MUSIC_TRACKS[trackId]?.key ?? null;
 }
 
-export function getUnitSpriteKey(unitTypeId, owner = "player") {
-  return (
-    UNIT_SPRITES[unitTypeId]?.[owner]?.key ??
-    UNIT_SPRITES[unitTypeId]?.player?.key ??
-    null
+export function getUnitSpriteColorAvailability() {
+  return Object.fromEntries(
+    UNIT_COLOR_IDS.map((colorId) => [
+      colorId,
+      GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY[colorId] === true
+    ])
   );
 }
 
-export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
+export function isUnitSpriteColorAvailable(colorId) {
+  return GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY[colorId] === true;
+}
+
+export function resolveUnitSpriteColor(owner = "player", colorOptions = {}) {
+  const requestedColorId = getUnitColorIdForOwner(owner, colorOptions);
+
+  if (isUnitSpriteColorAvailable(requestedColorId)) {
+    return requestedColorId;
+  }
+
+  const ownerFallback = owner === "enemy" ? DEFAULT_ENEMY_COLOR : DEFAULT_PLAYER_COLOR;
+
+  if (isUnitSpriteColorAvailable(ownerFallback)) {
+    return ownerFallback;
+  }
+
+  return UNIT_COLOR_IDS.find((colorId) => isUnitSpriteColorAvailable(colorId)) ?? requestedColorId;
+}
+
+export function getUnitSpriteKey(unitTypeId, owner = "player", colorOptions = {}) {
+  const colorId = resolveUnitSpriteColor(owner, colorOptions);
+  return UNIT_SPRITES[unitTypeId]?.[colorId]?.key ?? null;
+}
+
+export function getUnitSpriteDefinition(unitTypeId, owner = "player", colorOptions = {}) {
+  const requestedColorId = getUnitColorIdForOwner(owner, colorOptions);
+  const colorId = resolveUnitSpriteColor(owner, colorOptions);
   const fallbackAsset =
-    UNIT_SPRITES[unitTypeId]?.[owner] ??
-    UNIT_SPRITES[unitTypeId]?.player ??
-    null;
+    UNIT_SPRITES[unitTypeId]?.[colorId] ?? null;
   const fallbackKey = fallbackAsset?.key ?? null;
-  const animationBundle = GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[owner] ?? null;
+  const animationBundle = GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[colorId] ?? null;
   const idleAnimation = animationBundle?.animations?.idle ?? null;
 
   if (!fallbackKey && !animationBundle) {
@@ -446,6 +487,9 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player") {
   }
 
   return {
+    owner,
+    requestedColorId,
+    colorId,
     type: idleAnimation ? "spritesheet" : "image",
     key: idleAnimation?.key ?? fallbackKey,
     url: idleAnimation?.url ?? fallbackAsset?.url ?? null,

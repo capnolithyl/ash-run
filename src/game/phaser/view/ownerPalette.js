@@ -1,9 +1,7 @@
-const OWNER_PALETTE = {
-  player: 0xc35cff,
-  enemy: 0xff8a3d,
-  neutral: 0xd8b65d
-};
+import { getUnitColorDefinitionForOwner } from "../../core/unitColors.js";
 
-export function getOwnerColor(owner) {
-  return OWNER_PALETTE[owner] ?? OWNER_PALETTE.neutral;
+const NEUTRAL_OWNER_COLOR = 0xd8b65d;
+
+export function getOwnerColor(owner, colorOptions = {}) {
+  return getUnitColorDefinitionForOwner(owner, colorOptions)?.color ?? NEUTRAL_OWNER_COLOR;
 }

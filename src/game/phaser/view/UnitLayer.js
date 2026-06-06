@@ -17,8 +17,12 @@ function getPointDistance(left, right) {
   return Phaser.Math.Distance.Between(left.x, left.y, right.x, right.y);
 }
 
-function getUnitVisualSpec(scene, unit) {
-  const spriteDefinition = getUnitSpriteDefinition(unit.unitTypeId, unit.owner);
+function getUnitVisualSpec(scene, unit, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(
+    unit.unitTypeId,
+    unit.owner,
+    colorOptions
+  );
 
   if (!spriteDefinition) {
     return null;
@@ -134,9 +138,9 @@ export class UnitLayer {
     this.cellSize = null;
   }
 
-  createEntity(unit, layout) {
-    const color = getOwnerColor(unit.owner);
-    const visualSpec = getUnitVisualSpec(this.scene, unit);
+  createEntity(unit, layout, colorOptions = {}) {
+    const color = getOwnerColor(unit.owner, colorOptions);
+    const visualSpec = getUnitVisualSpec(this.scene, unit, colorOptions);
     const glow = this.scene.add
       .circle(0, 0, layout.cellSize * 0.44, color, 0.13)
       .setBlendMode(Phaser.BlendModes.ADD);
@@ -1087,6 +1091,7 @@ export class UnitLayer {
     const destroyUnitIds = lifecycleEvents.destroyUnitIds ?? new Set();
     const damageByUnitId = lifecycleEvents.damageByUnitId ?? new Map();
     const restoreByUnitId = lifecycleEvents.restoreByUnitId ?? new Map();
+    const colorOptions = lifecycleEvents.colorOptions ?? {};
 
     for (const unit of units) {
       activeIds.add(unit.id);
@@ -1094,7 +1099,7 @@ export class UnitLayer {
       let entity = this.entities.get(unit.id);
 
       if (!entity) {
-        entity = this.createEntity(unit, layout);
+        entity = this.createEntity(unit, layout, colorOptions);
         this.entities.set(unit.id, entity);
         const initialPosition = this.getTileCenter(unit, layout);
         entity.container.setPosition(initialPosition.x, initialPosition.y);
@@ -1105,8 +1110,11 @@ export class UnitLayer {
         entity.awaitingDeploy = true;
       }
 
-      const color = getOwnerColor(unit.owner);
-      const visualSpec = getUnitVisualSpec(this.scene, unit);
+      const color = getOwnerColor(unit.owner, colorOptions);
+      const visualSpec = getUnitVisualSpec(this.scene, unit, colorOptions);
+      const colorChanged =
+        entity.visualSpec?.colorId !== visualSpec?.colorId ||
+        entity.visualSpec?.key !== visualSpec?.key;
       entity.owner = unit.owner;
       entity.visualSpec = visualSpec;
       entity.glow.setFillStyle(color, 0.13);
@@ -1116,6 +1124,10 @@ export class UnitLayer {
         entity.textureKey !== visualSpec.key
       ) {
         entity.textureKey = visualSpec.key;
+      }
+      if (colorChanged && visualSpec && !entity.moveTween) {
+        entity.visual.stop?.();
+        this.playIdleAnimation(entity);
       }
       entity.fallbackLabel?.setText(unit.name.slice(0, 2).toUpperCase());
       const pendingDamage = damageByUnitId.get(unit.id);

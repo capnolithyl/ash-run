@@ -5,6 +5,11 @@ const root = process.cwd();
 const spriteRoot = path.resolve(root, "assets/sprites");
 
 const PALETTES = {
+  purple: ["#12071d", "#34204c", "#7040a6", "#b65cff", "#efd8ff"],
+  blue: ["#07131d", "#102f4d", "#1f669a", "#5db8ff", "#d8efff"],
+  green: ["#071a13", "#174c37", "#2f9369", "#66ffbf", "#d9ffef"],
+  orange: ["#1d0d07", "#4d2110", "#9a431f", "#ff8a3d", "#ffd1a8"],
+  pink: ["#1d0718", "#4c123e", "#9a277f", "#ff4fd8", "#ffd8f5"],
   player: ["#12071d", "#34204c", "#7040a6", "#b65cff", "#efd8ff"],
   enemy: ["#1d0d07", "#4d2110", "#9a431f", "#ff8a3d", "#ffd1a8"],
   neutral: ["#15121b", "#4a4153", "#84704f", "#d8b65d", "#fff0b0"]
@@ -13,7 +18,7 @@ const PALETTES = {
 const GROUPS = [
   {
     name: "units",
-    variants: ["player", "enemy"]
+    variants: ["purple", "blue", "green", "orange", "pink"]
   },
   {
     name: "buildings",

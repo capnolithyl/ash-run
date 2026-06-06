@@ -74,7 +74,7 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-tooltip="/);
   assert.match(html, /assets\/sprites\/terrain\/plain\.png/);
   assert.match(html, /assets\/sprites\/buildings\/neutral\/command\.(png|svg)/);
-  assert.match(html, /assets\/sprites\/units\/player\/grunt/);
+  assert.match(html, /assets\/sprites\/units\/purple\/grunt/);
   assert.match(html, /data-map-editor-preview-styles="true"/);
   assert.equal((html.match(/Ready To Save/g) ?? []).length, 1);
   assert.doesNotMatch(html, /<dt>Tool<\/dt>/);
@@ -119,6 +119,29 @@ test("map editor view renders history confirmation controls for a pending restor
   assert.match(html, /data-action="map-editor-cancel-history-revert"/);
   assert.match(html, /Go back to this state\?/);
   assert.match(html, /Current state/);
+});
+
+test("map editor unit previews follow the configured side colors", () => {
+  const mapData = createBlankMapDefinition({
+    id: "editor-colors",
+    name: "Editor Colors"
+  });
+  const state = {
+    metaState: {
+      options: {
+        playerColor: "blue",
+        enemyColor: "purple"
+      }
+    },
+    mapEditor: {
+      ...createDefaultMapEditorState(mapData),
+      selectedUnitOwner: TURN_SIDES.ENEMY
+    }
+  };
+
+  const html = renderMapEditorView(state);
+
+  assert.match(html, /assets\/sprites\/units\/purple\/grunt/);
 });
 
 test("map editor accordions render closed by default and only open the requested section", () => {

@@ -1,5 +1,6 @@
 import { DEFAULT_SAVE_VERSION, PROTOTYPE_RUN_GOAL, SLOT_IDS } from "../core/constants.js";
 import { normalizeDisplayOptions } from "../core/displayOptions.js";
+import { normalizeUnitColorOptions } from "../core/unitColors.js";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
 import {
   getDefaultUnlockedRunCardIds,
@@ -14,6 +15,7 @@ export function createDefaultOptions() {
     combatCutsceneAnimations: true,
     masterVolume: 0.4,
     muted: false,
+    ...normalizeUnitColorOptions(),
     ...normalizeDisplayOptions()
   };
 }
@@ -22,6 +24,7 @@ export function normalizeMetaOptions(options = {}) {
   return {
     ...createDefaultOptions(),
     ...options,
+    ...normalizeUnitColorOptions(options),
     ...normalizeDisplayOptions(options)
   };
 }

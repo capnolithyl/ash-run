@@ -14,10 +14,15 @@ const CRITICAL_SELECTORS_BY_SCENE = {
   ],
   "skirmish-commanders": ['[data-action="skirmish-next-step"]'],
   "skirmish-map": ['[data-action="start-skirmish"]'],
-  "options": ['[data-display-option="displayMode"]', '[data-display-option="windowResolution"]'],
+  "options": [
+    '[data-display-option="displayMode"]',
+    '[data-display-option="windowResolution"]',
+    ".unit-color-settings"
+  ],
   "battle-pause": [
     '[data-display-option="displayMode"]',
     '[data-display-option="windowResolution"]',
+    ".unit-color-settings",
     '[data-action="resume-battle"]'
   ],
   "battle-reward": ['[data-action="select-run-reward"]'],

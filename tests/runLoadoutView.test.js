@@ -40,8 +40,8 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /data-action="run-loadout-add"/);
   assert.match(html, /data-action="run-loadout-remove"/);
   assert.match(html, /data-action="back-to-commander-select"/);
-  assert.match(html, /assets\/sprites\/units\/player\/grunt\.svg/);
-  assert.match(html, /assets\/sprites\/units\/player\/bruiser\/bruiser-idle\.png/);
+  assert.match(html, /assets\/sprites\/units\/purple\/grunt\.svg/);
+  assert.match(html, /assets\/sprites\/units\/purple\/bruiser\/bruiser-idle\.png/);
   assert.match(html, /run-unit-card__preview-image--sheet/);
   assert.match(html, /run-unit-card__preview-sheet-surface/);
   assert.match(html, /@keyframes run-unit-preview-bruiser-idle-0-2-2x2/);
@@ -72,4 +72,17 @@ test("run loadout commander summary keeps blaze and echo status text concise", (
   assert.doesNotMatch(blazeHtml, /halves attack/i);
   assert.match(echoHtml, /All enemy units get -1 movement and become Corrupted for 1 turn\./);
   assert.doesNotMatch(echoHtml, /randomly halves one visible stat/i);
+});
+
+test("run loadout previews follow the saved player color", () => {
+  const state = createRunLoadoutState();
+  state.metaState.options = {
+    playerColor: "blue",
+    enemyColor: "purple"
+  };
+
+  const html = renderRunLoadoutView(state);
+
+  assert.match(html, /assets\/sprites\/units\/blue\/grunt\.svg/);
+  assert.doesNotMatch(html, /assets\/sprites\/units\/purple\/grunt\.svg/);
 });

@@ -556,7 +556,11 @@ export const appShellEventMethods = {
     }
 
     const nextValue =
-      event.target.type === "checkbox" ? event.target.checked : Number(event.target.value);
+      event.target.type === "checkbox"
+        ? event.target.checked
+        : event.target.type === "range" || event.target.type === "number"
+          ? Number(event.target.value)
+          : event.target.value;
 
     await this.controller.updateOptions({
       [optionKey]: nextValue

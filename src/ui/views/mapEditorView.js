@@ -229,8 +229,8 @@ function renderBuildingPreview(buildingType, owner) {
   return renderStaticPreview(spriteDefinition?.url, label);
 }
 
-function renderUnitPreview(unitTypeId, owner, unitName, previewStyles) {
-  const spriteDefinition = getUnitSpriteDefinition(unitTypeId, owner);
+function renderUnitPreview(unitTypeId, owner, unitName, previewStyles, colorOptions = {}) {
+  const spriteDefinition = getUnitSpriteDefinition(unitTypeId, owner, colorOptions);
   const idleAnimation = spriteDefinition?.idle ?? null;
   const frameIndices = getAnimationRangeFrameIndices(idleAnimation, "default");
 
@@ -351,7 +351,13 @@ function renderUnitTools(state, previewStyles) {
           type="button"
         >
           <span class="map-editor-tool__swatch map-editor-tool__swatch--preview map-editor-tool__swatch--unit">
-            ${renderUnitPreview(unit.id, state.mapEditor.selectedUnitOwner, unit.name, previewStyles)}
+            ${renderUnitPreview(
+              unit.id,
+              state.mapEditor.selectedUnitOwner,
+              unit.name,
+              previewStyles,
+              state.metaState?.options
+            )}
           </span>
           <span class="map-editor-tool__copy">
             <strong>${unit.name}</strong>
@@ -514,7 +520,13 @@ function renderQuickSelectSection(state, previewStyles) {
           disabled: !lastUnitMetadata,
           action: "map-editor-restore-last-unit",
           previewMarkup: lastUnitMetadata
-            ? renderUnitPreview(lastUnit.unitTypeId, lastUnit.owner, lastUnitMetadata.name, previewStyles)
+            ? renderUnitPreview(
+                lastUnit.unitTypeId,
+                lastUnit.owner,
+                lastUnitMetadata.name,
+                previewStyles,
+                state.metaState?.options
+              )
             : `<span class="map-editor-tool__preview-fallback" aria-hidden="true">--</span>`,
           title: "Last Unit",
           detail: lastUnitMetadata ? `${lastUnitMetadata.name} L${lastUnit.level} (${lastUnit.owner})` : "Not set yet",

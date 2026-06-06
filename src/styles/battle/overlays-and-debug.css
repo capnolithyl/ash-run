@@ -185,16 +185,16 @@
 }
 
 .turn-banner--player .turn-banner__card {
-  border-color: rgba(255, 79, 216, 0.4);
+  border-color: color-mix(in srgb, var(--player-color) 40%, transparent);
   box-shadow:
-    0 0 34px rgba(255, 79, 216, 0.18),
+    0 0 34px color-mix(in srgb, var(--player-color) 18%, transparent),
     0 24px 40px rgba(5, 2, 14, 0.44);
 }
 
 .turn-banner--enemy .turn-banner__card {
-  border-color: rgba(255, 138, 61, 0.42);
+  border-color: color-mix(in srgb, var(--enemy-color) 42%, transparent);
   box-shadow:
-    0 0 34px rgba(255, 138, 61, 0.18),
+    0 0 34px color-mix(in srgb, var(--enemy-color) 18%, transparent),
     0 24px 40px rgba(5, 2, 14, 0.44);
 }
 
@@ -207,13 +207,13 @@
 }
 
 .turn-banner--player .turn-banner__card h2 {
-  color: #ffd8f6;
-  text-shadow: 0 0 20px rgba(255, 79, 216, 0.28);
+  color: color-mix(in srgb, var(--player-color) 38%, white);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--player-color) 28%, transparent);
 }
 
 .turn-banner--enemy .turn-banner__card h2 {
-  color: #ffe1c6;
-  text-shadow: 0 0 20px rgba(255, 138, 61, 0.28);
+  color: color-mix(in srgb, var(--enemy-color) 38%, white);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--enemy-color) 28%, transparent);
 }
 
 .battle-notice {
@@ -791,15 +791,19 @@
   height: min(32rem, calc(100dvh - 5rem));
   padding: 1rem 1.1rem 1.05rem;
   border-radius: 1.6rem;
-  border: 1px solid rgba(255, 79, 216, 0.34);
+  border: 1px solid color-mix(in srgb, var(--player-color) 34%, transparent);
   background:
-    linear-gradient(180deg, rgba(255, 79, 216, 0.07), rgba(93, 184, 255, 0.03)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--player-color) 7%, transparent),
+      color-mix(in srgb, var(--enemy-color) 3%, transparent)
+    ),
     rgba(5, 3, 16, 0.96);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.04),
     0 0 0 2px rgba(150, 73, 255, 0.08),
-    0 0 42px rgba(255, 79, 216, 0.2),
-    0 0 56px rgba(93, 184, 255, 0.08),
+    0 0 42px color-mix(in srgb, var(--player-color) 20%, transparent),
+    0 0 56px color-mix(in srgb, var(--enemy-color) 8%, transparent),
     0 28px 56px rgba(0, 0, 0, 0.56);
   overflow: hidden;
   opacity: 1;
@@ -824,10 +828,10 @@
 }
 
 .combat-cutscene::before {
-  border: 1px solid rgba(255, 79, 216, 0.32);
+  border: 1px solid color-mix(in srgb, var(--player-color) 32%, transparent);
   box-shadow:
-    0 0 18px rgba(255, 79, 216, 0.2),
-    0 0 26px rgba(93, 184, 255, 0.14);
+    0 0 18px color-mix(in srgb, var(--player-color) 20%, transparent),
+    0 0 26px color-mix(in srgb, var(--enemy-color) 14%, transparent);
 }
 
 .combat-cutscene::after {
@@ -866,13 +870,14 @@
 
 .combat-cutscene__unit-summary--player {
   justify-self: start;
-  text-shadow: 0 0 20px rgba(255, 79, 216, 0.35);
+  color: color-mix(in srgb, var(--player-color) 38%, white);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--player-color) 35%, transparent);
 }
 
 .combat-cutscene__unit-summary--enemy {
   justify-self: end;
-  color: #d9e8ff;
-  text-shadow: 0 0 20px rgba(93, 184, 255, 0.32);
+  color: color-mix(in srgb, var(--enemy-color) 38%, white);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--enemy-color) 32%, transparent);
 }
 
 .combat-cutscene__unit-badge {
@@ -895,7 +900,11 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background:
-    linear-gradient(180deg, rgba(255, 79, 216, 0.1), rgba(93, 184, 255, 0.06)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--player-color) 10%, transparent),
+      color-mix(in srgb, var(--enemy-color) 6%, transparent)
+    ),
     rgba(11, 7, 26, 0.96);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
@@ -915,11 +924,15 @@
 
 .combat-cutscene__divider {
   background:
-    linear-gradient(180deg, rgba(255, 79, 216, 0.25), rgba(93, 184, 255, 0.25)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--player-color) 25%, transparent),
+      color-mix(in srgb, var(--enemy-color) 25%, transparent)
+    ),
     rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 0 18px rgba(255, 79, 216, 0.28),
-    0 0 22px rgba(93, 184, 255, 0.2);
+    0 0 18px color-mix(in srgb, var(--player-color) 28%, transparent),
+    0 0 22px color-mix(in srgb, var(--enemy-color) 20%, transparent);
 }
 
 .combat-cutscene__lane {
@@ -935,14 +948,22 @@
 
 .combat-cutscene__lane--player {
   background:
-    linear-gradient(180deg, rgba(255, 79, 216, 0.08), transparent 46%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--player-color) 8%, transparent),
+      transparent 46%
+    ),
     rgba(0, 0, 0, 0.94);
 }
 
 .combat-cutscene__lane--enemy {
   grid-template-columns: minmax(0, 1fr) 4.35rem;
   background:
-    linear-gradient(180deg, rgba(93, 184, 255, 0.08), transparent 46%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--enemy-color) 8%, transparent),
+      transparent 46%
+    ),
     rgba(0, 0, 0, 0.94);
 }
 
@@ -998,11 +1019,11 @@
 }
 
 .combat-cutscene__health--player {
-  color: #ff79dc;
+  color: var(--player-color);
 }
 
 .combat-cutscene__health--enemy {
-  color: #5bd6ff;
+  color: var(--enemy-color);
 }
 
 .combat-cutscene__health-header {
@@ -1401,16 +1422,29 @@
 }
 
 .overlay-card--pause {
+  display: flex;
+  flex-direction: column;
   width: min(52rem, calc(100vw - 2rem));
   max-height: calc(100vh - var(--app-window-chrome-height) - 2rem);
   max-height: calc(100dvh - var(--app-window-chrome-height) - 2rem);
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   text-align: left;
 }
 
+.pause-card__header {
+  flex: 0 0 auto;
+}
+
+.pause-card__body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
 .options-list--compact {
-  margin: 0.9rem 0 1rem;
+  margin: 0.9rem 0 0;
   gap: 0.55rem;
 }
 
@@ -1557,11 +1591,10 @@
 }
 
 .overlay-card--pause > .battle-actions {
-  position: sticky;
-  bottom: 0;
+  flex: 0 0 auto;
   z-index: 3;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 1rem -1.5rem -1.5rem;
+  margin: 0.75rem -1.5rem -1.5rem;
   padding: 0.9rem 1.5rem 1.5rem;
   border-top: 1px solid rgba(255, 138, 61, 0.18);
   background:

@@ -1,13 +1,13 @@
 /* Battle intel rails, selection cards, and targeting details */
 
 .battle-rail:first-of-type .card-block {
-  border-color: rgba(255, 79, 216, 0.18);
-  box-shadow: inset 0 0 22px rgba(255, 79, 216, 0.035);
+  border-color: color-mix(in srgb, var(--player-color) 18%, transparent);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--player-color) 3.5%, transparent);
 }
 
 .battle-rail--right .card-block {
-  border-color: rgba(255, 138, 61, 0.18);
-  box-shadow: inset 0 0 22px rgba(255, 138, 61, 0.035);
+  border-color: color-mix(in srgb, var(--enemy-color) 18%, transparent);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--enemy-color) 3.5%, transparent);
 }
 
 .battle-side-panel--selected > .card-block {
@@ -27,10 +27,10 @@
 
 .battle-side-panel--target .card-block,
 .battle-side-panel--feed .card-block {
-  border-color: rgba(255, 138, 61, 0.22);
+  border-color: color-mix(in srgb, var(--enemy-color) 22%, transparent);
   box-shadow:
-    inset 0 0 24px rgba(255, 138, 61, 0.05),
-    0 0 18px rgba(255, 138, 61, 0.04);
+    inset 0 0 24px color-mix(in srgb, var(--enemy-color) 5%, transparent),
+    0 0 18px color-mix(in srgb, var(--enemy-color) 4%, transparent);
 }
 
 .meter__bar {

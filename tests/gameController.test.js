@@ -84,6 +84,32 @@ test("initialize expands stale run card unlocks to the current default catalog",
   assert.equal(unlockedRunCardIds.length, getDefaultUnlockedRunCardIds().length);
 });
 
+test("unit color option updates normalize and persist", async () => {
+  let savedMeta = null;
+  const controller = new GameController({
+    async saveMeta(metaState) {
+      savedMeta = structuredClone(metaState);
+    }
+  });
+
+  await controller.updateOptions({
+    playerColor: "blue",
+    enemyColor: "purple"
+  });
+
+  assert.equal(controller.getState().metaState.options.playerColor, "blue");
+  assert.equal(controller.getState().metaState.options.enemyColor, "purple");
+  assert.equal(savedMeta.options.playerColor, "blue");
+  assert.equal(savedMeta.options.enemyColor, "purple");
+
+  await controller.updateOptions({
+    enemyColor: "blue"
+  });
+
+  assert.equal(controller.getState().metaState.options.playerColor, "blue");
+  assert.equal(controller.getState().metaState.options.enemyColor, "purple");
+});
+
 test("loading a stale run slot expands available run cards to the current catalog", async () => {
   const staleCardIds = ["passive-drill", "passive-plating", "gear-aa-kit", "gear-field-meds"];
   const battleState = createTestBattleState({

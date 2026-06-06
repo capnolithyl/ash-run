@@ -2,10 +2,7 @@ import Phaser from "phaser";
 import {
   BATTLE_ATTACK_WINDOW_MS
 } from "../../core/constants.js";
-
-function ownerColor(owner) {
-  return owner === "player" ? 0xff5fd6 : 0xff8a3d;
-}
+import { getOwnerColor } from "./ownerPalette.js";
 
 function resolveAccentColor(accent, fallback) {
   if (typeof accent !== "string" || accent.length === 0) {
@@ -42,6 +39,7 @@ export class BattleFxLayer {
     this.activeObjects = new Set();
     this.activeTimers = new Set();
     this.screenShakeEnabled = true;
+    this.colorOptions = {};
   }
 
   clear() {
@@ -76,6 +74,10 @@ export class BattleFxLayer {
 
   setScreenShakeEnabled(enabled) {
     this.screenShakeEnabled = enabled;
+  }
+
+  setColorOptions(options = {}) {
+    this.colorOptions = options;
   }
 
   playEvents(events, layout, options = {}) {
@@ -128,7 +130,7 @@ export class BattleFxLayer {
   }
 
   playAttack(event, layout) {
-    const color = ownerColor(event.owner);
+    const color = getOwnerColor(event.owner, this.colorOptions);
     const from = toWorldPoint(layout, event.fromX, event.fromY);
     const to = toWorldPoint(layout, event.toX, event.toY);
     const length = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
@@ -248,7 +250,10 @@ export class BattleFxLayer {
   }
 
   playCommanderPowerWave(event, layout) {
-    const color = resolveAccentColor(event.accent, ownerColor(event.side));
+    const color = resolveAccentColor(
+      event.accent,
+      getOwnerColor(event.side, this.colorOptions)
+    );
     const width = this.scene.scale.width * 0.88;
     const height = Math.max(layout.cellSize * 0.7, 26);
     const centerX = this.scene.scale.width / 2;
@@ -300,7 +305,7 @@ export class BattleFxLayer {
             ? 0x78f5d9
             : target.pulse === "fortune"
               ? 0x8ac79b
-              : ownerColor(target.owner);
+              : getOwnerColor(target.owner, this.colorOptions);
     const color = resolveAccentColor(event.accent, fallbackColor);
     const point = toWorldPoint(layout, target.x, target.y);
     const outerRing = this.track(
@@ -456,7 +461,7 @@ export class BattleFxLayer {
 
   playLevelUpBurst(event, layout, level = null) {
     const point = toWorldPoint(layout, event.x, event.y);
-    const color = ownerColor(event.owner);
+    const color = getOwnerColor(event.owner, this.colorOptions);
     const container = this.track(
       this.scene.add.container(point.x, point.y - layout.cellSize * 1.14)
     );
@@ -688,7 +693,7 @@ export class BattleFxLayer {
   }
 
   playCapture(event, layout) {
-    const color = ownerColor(event.owner);
+    const color = getOwnerColor(event.owner, this.colorOptions);
     const point = toWorldPoint(layout, event.x, event.y);
     const pulse = this.track(
       this.scene.add
@@ -745,7 +750,7 @@ export class BattleFxLayer {
   }
 
   playDeploy(event, layout) {
-    const color = ownerColor(event.owner);
+    const color = getOwnerColor(event.owner, this.colorOptions);
     const point = toWorldPoint(layout, event.x, event.y);
     const beam = this.track(
       this.scene.add

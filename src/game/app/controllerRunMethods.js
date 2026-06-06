@@ -124,7 +124,11 @@ function maybeSyncCombatCutscene(controller, previousSnapshot, nextSnapshot) {
     return;
   }
 
-  const cutscene = deriveBattleCombatCutscene(previousSnapshot, nextSnapshot);
+  const cutscene = deriveBattleCombatCutscene(
+    previousSnapshot,
+    nextSnapshot,
+    controller.state.metaState.options
+  );
 
   if (!cutscene) {
     return;
@@ -552,7 +556,9 @@ export const controllerRunMethods = {
           this.state.battleSnapshot,
           {
             combatCutsceneDurationMs: combatCutsceneDuration,
-            postCombatDelayMs: combatCutsceneDuration > 0 ? BATTLE_POST_COMBAT_PAUSE_MS : 0
+            postCombatDelayMs:
+              combatCutsceneDuration > 0 ? BATTLE_POST_COMBAT_PAUSE_MS : 0,
+            colorOptions: this.state.metaState.options
           }
         );
         await delay(Math.max(stepDelay, combatCutsceneDuration));

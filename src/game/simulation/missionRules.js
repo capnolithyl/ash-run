@@ -462,20 +462,20 @@ export function getMissionMarkers(state) {
     if (mission.playerHq) {
       markers.push({
         kind: "friendly-hq",
+        owner: TURN_SIDES.PLAYER,
         x: mission.playerHq.x,
         y: mission.playerHq.y,
-        label: "HQ",
-        color: 0x66ffbf
+        label: "HQ"
       });
     }
 
     if (mission.enemyHq) {
       markers.push({
         kind: "enemy-hq",
+        owner: TURN_SIDES.ENEMY,
         x: mission.enemyHq.x,
         y: mission.enemyHq.y,
-        label: "HQ",
-        color: 0xff8a3d
+        label: "HQ"
       });
     }
   }
@@ -494,10 +494,10 @@ export function getMissionMarkers(state) {
     if (mission.playerHq) {
       markers.push({
         kind: "dropoff",
+        owner: TURN_SIDES.PLAYER,
         x: mission.playerHq.x,
         y: mission.playerHq.y,
-        label: "HQ",
-        color: 0x66ffbf
+        label: "HQ"
       });
     }
   }
