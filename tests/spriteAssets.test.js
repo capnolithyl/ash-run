@@ -361,7 +361,7 @@ test("building sprites prefer png when both png and svg exist", () => {
 });
 
 test("unit sprite sheets are preferred over static fallbacks when present", () => {
-  const bruiserSheetPath = path.resolve(process.cwd(), "assets/sprites/units/purple/bruiser/bruiser-idle.png");
+  const bruiserSheetPath = path.resolve(process.cwd(), "assets/sprites/units/purple/bruiser/bruiser-full.png");
 
   if (!fs.existsSync(bruiserSheetPath)) {
     return;
@@ -371,11 +371,24 @@ test("unit sprite sheets are preferred over static fallbacks when present", () =
 
   assert.equal(spriteDefinition.type, "spritesheet");
   assert.equal(spriteDefinition.fallbackKey, getUnitSpriteKey("bruiser", "player"));
-  assert.equal(spriteDefinition.idle.key, "spritesheet:units:purple:bruiser:idle");
+  assert.equal(spriteDefinition.idle.key, "spritesheet:units:purple:bruiser:sheet");
   assert.equal(spriteDefinition.idle.frameCount, 3);
   assert.deepEqual(spriteDefinition.idle.ranges.default, { start: 0, end: 2 });
-  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameWidth, 128);
-  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameHeight, 128);
+  assert.equal(spriteDefinition.walk.key, spriteDefinition.idle.key);
+  assert.equal(spriteDefinition.attack.key, spriteDefinition.idle.key);
+  assert.deepEqual(spriteDefinition.walk.ranges.right, { start: 0, end: 2 });
+  assert.deepEqual(spriteDefinition.walk.ranges.down, { start: 3, end: 3 });
+  assert.deepEqual(spriteDefinition.walk.ranges.up, { start: 4, end: 4 });
+  assert.deepEqual(spriteDefinition.attack.ranges.right, { start: 5, end: 9 });
+  assert.equal(spriteDefinition.attack.cutsceneLoopCount, 1);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameWidth, 192);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameHeight, 192);
+  assert.equal(spriteDefinition.idle.sheetColumns, 3);
+  assert.equal(spriteDefinition.idle.sheetRows, 4);
+  assert.equal(
+    SPRITE_ASSETS.filter((asset) => asset.key === spriteDefinition.idle.key).length,
+    1,
+  );
 });
 
 test("unit animation manifest supports color-specific omissions and mirrored attacks", () => {
@@ -395,8 +408,13 @@ test("unit animation manifest supports color-specific omissions and mirrored att
   assert.deepEqual(playerBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyBreakerDefinition.idle.key, "spritesheet:units:blue:breaker:idle");
   assert.deepEqual(enemyBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
-  assert.equal(enemyBruiserDefinition.idle.key, "spritesheet:units:blue:bruiser:idle");
-  assert.equal(enemyBruiserDefinition.attack, null);
+  assert.equal(enemyBruiserDefinition.idle.key, "spritesheet:units:blue:bruiser:sheet");
+  assert.equal(enemyBruiserDefinition.walk.key, enemyBruiserDefinition.idle.key);
+  assert.equal(enemyBruiserDefinition.attack.key, enemyBruiserDefinition.idle.key);
+  assert.equal(
+    SPRITE_ASSETS.filter((asset) => asset.key === enemyBruiserDefinition.idle.key).length,
+    1,
+  );
 });
 
 test("gunship, runner, and skyguard sheets use the expected frame geometry", () => {

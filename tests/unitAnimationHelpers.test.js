@@ -7,6 +7,7 @@ import {
   getOwnerIdleFlipX,
   getUnitAttackRangeName,
   getUnitDefaultTexture,
+  getWalkAnimationPlayback,
 } from "../src/game/phaser/view/unitAnimationHelpers.js";
 
 test("getUnitAttackRangeName uses horizontal direction and owner defaults", () => {
@@ -103,4 +104,60 @@ test("default texture helper prefers idle animation and otherwise falls back to 
   assert.equal(getOwnerIdleFlipX("player"), false);
   assert.deepEqual(getAnimationRange(visualWithIdle.idle, "default"), { start: 0, end: 1 });
   assert.equal(getAnimationRangeFrameCount({ start: 3, end: 5 }), 3);
+});
+
+test("walk playback resolves directional clips, mirrors horizontal travel, and holds single frames", () => {
+  const walkAnimation = {
+    key: "spritesheet:units:purple:bruiser:sheet",
+    ranges: {
+      right: { start: 0, end: 2 },
+      down: { start: 3, end: 3 },
+      up: { start: 4, end: 4 },
+    },
+  };
+
+  assert.deepEqual(getWalkAnimationPlayback("player", walkAnimation, 1, 0), {
+    rangeName: "right",
+    range: { start: 0, end: 2 },
+    startFrame: 0,
+    flipX: false,
+  });
+  assert.deepEqual(getWalkAnimationPlayback("player", walkAnimation, -1, 0), {
+    rangeName: "right",
+    range: { start: 0, end: 2 },
+    startFrame: 0,
+    flipX: true,
+  });
+  assert.deepEqual(getWalkAnimationPlayback("enemy", walkAnimation, 0, 1), {
+    rangeName: "down",
+    range: { start: 3, end: 3 },
+    startFrame: 3,
+    flipX: false,
+  });
+  assert.deepEqual(getWalkAnimationPlayback("enemy", walkAnimation, 0, -1), {
+    rangeName: "up",
+    range: { start: 4, end: 4 },
+    startFrame: 4,
+    flipX: false,
+  });
+});
+
+test("walk playback preserves owner-facing default clips for existing units", () => {
+  const walkAnimation = {
+    key: "spritesheet:units:blue:grunt:walk",
+    ranges: {
+      default: { start: 0, end: 3 },
+    },
+  };
+
+  assert.deepEqual(getWalkAnimationPlayback("enemy", walkAnimation, 1, 0), {
+    rangeName: "default",
+    range: { start: 0, end: 3 },
+    startFrame: 0,
+    flipX: true,
+  });
+  assert.equal(
+    getWalkAnimationPlayback("player", { key: walkAnimation.key, ranges: {} }, 0, -1),
+    null,
+  );
 });

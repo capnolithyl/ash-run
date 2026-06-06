@@ -11,6 +11,7 @@ import {
   getOwnerIdleFlipX,
   getUnitDefaultTexture,
   getUnitMovementPlayback,
+  getWalkAnimationPlayback,
 } from "./unitAnimationHelpers.js";
 
 function getPointDistance(left, right) {
@@ -414,13 +415,29 @@ export class UnitLayer {
     );
     const totalSegments = Math.max(0, worldPoints.length - 1);
     entity.container.setPosition(worldPoints[0].x, worldPoints[0].y);
-    this.playWalkAnimation(entity);
 
     if (totalSegments === 0) {
       entity.container.setPosition(entity.targetX, entity.targetY);
       this.completeMovement(entity);
       return;
     }
+
+    let activeSegmentIndex = -1;
+    const playSegmentAnimation = (segmentIndex) => {
+      if (segmentIndex === activeSegmentIndex) {
+        return;
+      }
+
+      activeSegmentIndex = segmentIndex;
+      const fromTile = path[segmentIndex];
+      const toTile = path[segmentIndex + 1];
+      this.playWalkAnimation(
+        entity,
+        Math.sign(toTile.x - fromTile.x),
+        Math.sign(toTile.y - fromTile.y),
+      );
+    };
+    playSegmentAnimation(0);
 
     entity.moveTween = this.scene.tweens.addCounter({
       from: 0,
@@ -433,6 +450,7 @@ export class UnitLayer {
         const segmentProgress = Math.min(1, traveledSegments - segmentIndex);
         const fromPoint = worldPoints[segmentIndex];
         const toPoint = worldPoints[segmentIndex + 1];
+        playSegmentAnimation(segmentIndex);
 
         entity.container.setPosition(
           Phaser.Math.Linear(fromPoint.x, toPoint.x, segmentProgress),
@@ -626,23 +644,37 @@ export class UnitLayer {
     }
   }
 
-  playWalkAnimation(entity) {
+  playWalkAnimation(entity, directionX = 0, directionY = 0) {
     const walkAnimation = entity.visualSpec?.walk;
-    const walkAnimationKey = ensureUnitAnimation(this.scene, walkAnimation, "default", -1);
+    const walkPlayback = getWalkAnimationPlayback(
+      entity.owner,
+      walkAnimation,
+      directionX,
+      directionY,
+    );
 
-    if (!walkAnimationKey) {
+    if (!walkPlayback) {
       return;
     }
 
     this.stopAnimationTimer(entity);
-    const range = getAnimationRange(walkAnimation, "default");
+    entity.visual.stop?.();
     this.setVisualTexture(
       entity,
       walkAnimation.key,
-      range.start,
-      getOwnerIdleFlipX(entity.owner),
+      walkPlayback.startFrame,
+      walkPlayback.flipX,
     );
-    entity.visual.play?.(walkAnimationKey);
+    const walkAnimationKey = ensureUnitAnimation(
+      this.scene,
+      walkAnimation,
+      walkPlayback.rangeName,
+      -1,
+    );
+
+    if (walkAnimationKey) {
+      entity.visual.play?.(walkAnimationKey);
+    }
   }
 
   stopEffectTweens(entity) {
@@ -1185,7 +1217,11 @@ export class UnitLayer {
         } else if (movementEvent?.path?.length > 1) {
           this.playPathMovement(entity, layout, movementEvent.path);
         } else {
-          this.playWalkAnimation(entity);
+          this.playWalkAnimation(
+            entity,
+            Math.sign(nextPosition.x - entity.container.x),
+            Math.sign(nextPosition.y - entity.container.y),
+          );
           const renderedDistance = getPointDistance(
             { x: entity.container.x, y: entity.container.y },
             nextPosition

@@ -47,6 +47,69 @@ export function getUnitAttackRangeName(owner = "player", directionX = 0) {
   return owner === "enemy" ? "left" : "right";
 }
 
+export function getWalkAnimationPlayback(
+  owner,
+  walkAnimation,
+  directionX = 0,
+  directionY = 0,
+) {
+  if (!walkAnimation?.key) {
+    return null;
+  }
+
+  const ranges = walkAnimation.ranges ?? {};
+  const ownerFlipX = getOwnerIdleFlipX(owner);
+  let requestedRangeName = "default";
+
+  if (directionY < 0) {
+    requestedRangeName = "up";
+  } else if (directionY > 0) {
+    requestedRangeName = "down";
+  } else if (directionX > 0) {
+    requestedRangeName = "right";
+  } else if (directionX < 0) {
+    requestedRangeName = "left";
+  }
+
+  if (ranges[requestedRangeName]) {
+    return {
+      rangeName: requestedRangeName,
+      range: ranges[requestedRangeName],
+      startFrame: ranges[requestedRangeName].start,
+      flipX: requestedRangeName === "default" ? ownerFlipX : false,
+    };
+  }
+
+  if (requestedRangeName === "left" && ranges.right) {
+    return {
+      rangeName: "right",
+      range: ranges.right,
+      startFrame: ranges.right.start,
+      flipX: true,
+    };
+  }
+
+  if (requestedRangeName === "right" && ranges.left) {
+    return {
+      rangeName: "left",
+      range: ranges.left,
+      startFrame: ranges.left.start,
+      flipX: true,
+    };
+  }
+
+  if (!ranges.default) {
+    return null;
+  }
+
+  return {
+    rangeName: "default",
+    range: ranges.default,
+    startFrame: ranges.default.start,
+    flipX: ownerFlipX,
+  };
+}
+
 export function getUnitDefaultTexture(visualSpec, owner = "player") {
   const idleRange = getAnimationRange(visualSpec?.idle, "default");
 

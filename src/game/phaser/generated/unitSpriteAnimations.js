@@ -479,18 +479,18 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
   },
   "bruiser": {
     "purple": {
-      "frameWidth": 128,
-      "frameHeight": 128,
+      "frameWidth": 192,
+      "frameHeight": 192,
       "animations": {
         "idle": {
-          "key": "spritesheet:units:purple:bruiser:idle",
-          "url": "./assets/sprites/units/purple/bruiser/bruiser-idle.png",
+          "key": "spritesheet:units:purple:bruiser:sheet",
+          "url": "./assets/sprites/units/purple/bruiser/bruiser-full.png",
           "frameRate": 5,
           "frameCount": 3,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
           "animationKeyBase": "animation:units:purple:bruiser:idle",
           "ranges": {
             "default": {
@@ -498,22 +498,65 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
               "end": 2
             }
           }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:bruiser:sheet",
+          "url": "./assets/sprites/units/purple/bruiser/bruiser-full.png",
+          "frameRate": 5,
+          "frameCount": 5,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:bruiser:walk",
+          "ranges": {
+            "right": {
+              "start": 0,
+              "end": 2
+            },
+            "down": {
+              "start": 3,
+              "end": 3
+            },
+            "up": {
+              "start": 4,
+              "end": 4
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:purple:bruiser:sheet",
+          "url": "./assets/sprites/units/purple/bruiser/bruiser-full.png",
+          "frameRate": 5,
+          "frameCount": 10,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:bruiser:attack",
+          "ranges": {
+            "right": {
+              "start": 5,
+              "end": 9
+            }
+          },
+          "cutsceneLoopCount": 1
         }
       }
     },
     "blue": {
-      "frameWidth": 128,
-      "frameHeight": 128,
+      "frameWidth": 192,
+      "frameHeight": 192,
       "animations": {
         "idle": {
-          "key": "spritesheet:units:blue:bruiser:idle",
-          "url": "./assets/sprites/units/blue/bruiser/bruiser-idle.png",
+          "key": "spritesheet:units:blue:bruiser:sheet",
+          "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
           "frameRate": 5,
           "frameCount": 3,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
           "animationKeyBase": "animation:units:blue:bruiser:idle",
           "ranges": {
             "default": {
@@ -521,6 +564,49 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
               "end": 2
             }
           }
+        },
+        "walk": {
+          "key": "spritesheet:units:blue:bruiser:sheet",
+          "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
+          "frameRate": 5,
+          "frameCount": 5,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:blue:bruiser:walk",
+          "ranges": {
+            "right": {
+              "start": 0,
+              "end": 2
+            },
+            "down": {
+              "start": 3,
+              "end": 3
+            },
+            "up": {
+              "start": 4,
+              "end": 4
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:blue:bruiser:sheet",
+          "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
+          "frameRate": 5,
+          "frameCount": 10,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:blue:bruiser:attack",
+          "ranges": {
+            "right": {
+              "start": 5,
+              "end": 9
+            }
+          },
+          "cutsceneLoopCount": 1
         }
       }
     }

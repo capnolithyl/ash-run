@@ -1,14 +1,41 @@
 {
-  "frameWidth": 128,
-  "frameHeight": 128,
+  "file": "bruiser-full.png",
+  "frameWidth": 192,
+  "frameHeight": 192,
   "animations": {
     "idle": {
-      "file": "bruiser-idle.png",
       "frameRate": 5,
       "ranges": {
         "default": {
           "start": 0,
           "end": 2
+        }
+      }
+    },
+    "walk": {
+      "frameRate": 5,
+      "ranges": {
+        "right": {
+          "start": 0,
+          "end": 2
+        },
+        "down": {
+          "start": 3,
+          "end": 3
+        },
+        "up": {
+          "start": 4,
+          "end": 4
+        }
+      }
+    },
+    "attack": {
+      "frameRate": 5,
+      "cutsceneLoopCount": 1,
+      "ranges": {
+        "right": {
+          "start": 5,
+          "end": 9
         }
       }
     }

@@ -41,12 +41,12 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /data-action="run-loadout-remove"/);
   assert.match(html, /data-action="back-to-commander-select"/);
   assert.match(html, /assets\/sprites\/units\/purple\/grunt\.svg/);
-  assert.match(html, /assets\/sprites\/units\/purple\/bruiser\/bruiser-idle\.png/);
+  assert.match(html, /assets\/sprites\/units\/purple\/bruiser\/bruiser-full\.png/);
   assert.match(html, /run-unit-card__preview-image--sheet/);
   assert.match(html, /run-unit-card__preview-sheet-surface/);
-  assert.match(html, /@keyframes run-unit-preview-bruiser-idle-0-2-2x2/);
-  assert.match(html, /--preview-columns:2;/);
-  assert.match(html, /--preview-rows:2;/);
+  assert.match(html, /@keyframes run-unit-preview-bruiser-idle-0-2-3x4/);
+  assert.match(html, /--preview-columns:3;/);
+  assert.match(html, /--preview-rows:4;/);
   assert.doesNotMatch(html, /run-unit-card__preview-strip/);
   assert.match(html, /class="selection-stat run-loadout-stat"/);
   assert.match(html, /class="selection-stat__background-icon" src="\.\/*assets\/img\/icons\/battle-hud\/stats\/atk\.png"/);

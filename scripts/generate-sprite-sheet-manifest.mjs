@@ -65,6 +65,13 @@ async function readAnimationMetadata(root, unitTypeId) {
       throw new Error(`Animation metadata must include an animations object: ${metadataPath}`);
     }
 
+    if (
+      parsed.file !== undefined &&
+      (typeof parsed.file !== "string" || parsed.file.length === 0)
+    ) {
+      throw new Error(`${unitTypeId} shared animation file must be a non-empty string.`);
+    }
+
     return parsed;
   } catch (error) {
     if (error?.code === "ENOENT") {
@@ -141,8 +148,19 @@ async function readColorAnimationSpec(root, colorId, unitTypeId, animationMetada
       throw new Error(`${unitTypeId} ${animationId} animation metadata must be an object.`);
     }
 
-    if (typeof animationSpec.file !== "string" || animationSpec.file.length === 0) {
-      throw new Error(`${unitTypeId} ${animationId} animation metadata must include a file.`);
+    if (
+      animationSpec.file !== undefined &&
+      (typeof animationSpec.file !== "string" || animationSpec.file.length === 0)
+    ) {
+      throw new Error(`${unitTypeId} ${animationId} file must be a non-empty string.`);
+    }
+
+    const animationFile = animationSpec.file ?? animationMetadata.file;
+
+    if (typeof animationFile !== "string" || animationFile.length === 0) {
+      throw new Error(
+        `${unitTypeId} ${animationId} animation metadata must include a file or inherit one.`,
+      );
     }
 
     if (
@@ -163,7 +181,8 @@ async function readColorAnimationSpec(root, colorId, unitTypeId, animationMetada
       );
     }
 
-    const relativePath = `assets/sprites/units/${colorId}/${unitTypeId}/${animationSpec.file}`;
+    const usesSharedFile = animationSpec.file === undefined;
+    const relativePath = `assets/sprites/units/${colorId}/${unitTypeId}/${animationFile}`;
     const filePath = path.resolve(root, relativePath);
 
     try {
@@ -185,9 +204,10 @@ async function readColorAnimationSpec(root, colorId, unitTypeId, animationMetada
         unitTypeId,
       );
       const frameCount = Math.max(...Object.values(normalizedRanges).map((range) => range.end)) + 1;
+      const textureKeySuffix = usesSharedFile ? "sheet" : animationId;
 
       ownerSpec.animations[animationId] = {
-        key: `spritesheet:units:${colorId}:${unitTypeId}:${animationId}`,
+        key: `spritesheet:units:${colorId}:${unitTypeId}:${textureKeySuffix}`,
         url: `./${relativePath}`,
         frameRate: Number.isFinite(animationSpec.frameRate) ? animationSpec.frameRate : 5,
         frameCount,

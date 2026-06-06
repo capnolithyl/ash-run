@@ -772,6 +772,53 @@ test("battle HUD combat cutscene uses idle sheets and mirrors the enemy lane", (
   );
 });
 
+test("battle HUD combat cutscene reads bruiser idle and attack clips from the full sheet", () => {
+  const attacker = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 1);
+  const system = new BattleSystem(
+    createTestBattleState({
+      playerUnits: [attacker],
+      enemyUnits: [defender]
+    })
+  );
+
+  const before = system.getSnapshot();
+  assert.equal(system.attackTarget(attacker.id, defender.id), true);
+  const after = system.getSnapshot();
+  const cutscene = deriveBattleCombatCutscene(before, after);
+  const html = renderBattleHudView({
+    battleSnapshot: after,
+    battleUi: {
+      combatCutscene: {
+        id: "cutscene-bruiser-full-sheet",
+        startedAt: Date.now(),
+        ...cutscene
+      }
+    },
+    metaState: {
+      options: {
+        combatCutsceneAnimations: true
+      }
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(
+    html,
+    /assets\/sprites\/units\/purple\/bruiser\/bruiser-full\.png/,
+  );
+  assert.match(
+    html,
+    /data-cutscene-sheet="player:idle"[\s\S]*?data-frame-start="0"/,
+  );
+  assert.match(
+    html,
+    /data-cutscene-sheet="player:attack"[\s\S]*?data-frame-count="5"[\s\S]*?data-frame-start="5"/,
+  );
+});
+
 test("battle HUD keeps the combat cutscene overlay hidden until movement lead-in finishes", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);

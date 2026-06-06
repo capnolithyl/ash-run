@@ -350,24 +350,30 @@ const BATTLEFIELD_ASSETS = {
 };
 
 function flattenUnitAnimationAssets() {
-  return Object.values(GENERATED_UNIT_SPRITE_ANIMATIONS).flatMap((ownerVariants) =>
-    Object.values(ownerVariants).flatMap((ownerSpec) =>
-      UNIT_ANIMATION_IDS.flatMap((animationId) => {
+  const assetsByKey = new Map();
+
+  for (const ownerVariants of Object.values(GENERATED_UNIT_SPRITE_ANIMATIONS)) {
+    for (const ownerSpec of Object.values(ownerVariants)) {
+      for (const animationId of UNIT_ANIMATION_IDS) {
         const animationSpec = ownerSpec?.animations?.[animationId];
 
         if (!animationSpec) {
-          return [];
+          continue;
         }
 
-        return [{
-          ...animationSpec,
-          type: "spritesheet",
-          frameWidth: ownerSpec.frameWidth,
-          frameHeight: ownerSpec.frameHeight,
-        }];
-      }),
-    ),
-  );
+        if (!assetsByKey.has(animationSpec.key)) {
+          assetsByKey.set(animationSpec.key, {
+            ...animationSpec,
+            type: "spritesheet",
+            frameWidth: ownerSpec.frameWidth,
+            frameHeight: ownerSpec.frameHeight,
+          });
+        }
+      }
+    }
+  }
+
+  return [...assetsByKey.values()];
 }
 
 export const SPRITE_ASSETS = [
