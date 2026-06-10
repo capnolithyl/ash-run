@@ -210,6 +210,12 @@ function renderUnitSprite(
   impactStep,
   colorOptions = {}
 ) {
+  const spriteDefinition = getUnitSpriteDefinition(
+    unit.unitTypeId,
+    side,
+    colorOptions,
+  );
+  const combatScale = spriteDefinition?.presentation?.combatCutsceneScale ?? 1;
   const idleConfig = getIdleLayerConfig(unit, side, cutscene, colorOptions);
   const attackConfig = getAttackLayerConfig(unit, side, cutscene, colorOptions);
   const actorClasses = [
@@ -221,7 +227,18 @@ function renderUnitSprite(
     .join(" ");
 
   return `
-    <div class="${actorClasses}" data-cutscene-sprite="${side}" role="img" aria-label="${unit.name} combat portrait">
+    <div
+      class="${actorClasses}"
+      data-cutscene-sprite="${side}"
+      role="img"
+      aria-label="${unit.name} combat portrait"
+      style="
+        --combat-unit-scale:${combatScale};
+        --combat-unit-size:${(15 * combatScale).toFixed(3)}rem;
+        --combat-unit-size-compact:${(12.5 * combatScale).toFixed(3)}rem;
+        --combat-unit-size-mobile:${(9 * combatScale).toFixed(3)}rem;
+      "
+    >
       ${renderSpriteLayer(idleConfig, side, "idle")}
       ${renderSpriteLayer(attackConfig, side, "attack")}
     </div>

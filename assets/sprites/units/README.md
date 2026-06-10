@@ -38,8 +38,9 @@ This folder contains first-pass 64x64 pixel-art-style SVG sprites for every unit
 - Optional unit animation metadata lives at `assets/sprites/units/<unitTypeId>.animations.json`.
 - Animated sheets live beside the color SVG in a per-unit folder, such as `purple/grunt/grunt-idle.png`, `purple/grunt/grunt-walk.png`, or `purple/grunt/grunt-attack.png`.
 - A unit can define a top-level `file` when idle, walk, and attack clips share one sheet. Individual animations can still override it with their own `file`.
-- Metadata defines `frameWidth`, `frameHeight`, and the animation clips to emit from each sheet. Frame sizes can differ by unit.
+- Metadata defines `frameWidth`, `frameHeight`, and the animation clips to emit from each sheet. Frame sizes can differ by unit, and an individual animation can override the unit dimensions when its sheet uses a different grid.
 - Idle uses `ranges.default`. Walk can use `default`, `right`, `up`, and `down`; left movement mirrors `right` when no left range exists.
+- Walk animations can optionally define `movementPhases.start`, `movementPhases.loop`, and `movementPhases.end` for one-shot departure, repeating travel, and one-shot arrival clips.
 - Attack can use `ranges.left` and `ranges.right`, or a single directional clip if the opposite facing should be mirrored at runtime.
 - Color folders can omit any animation sheet. Missing sheets fall back to that color's SVG at runtime.
 - A color is enabled in Options after its folder contains a static SVG for every active unit.

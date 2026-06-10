@@ -6,6 +6,7 @@ import { UNIT_COLOR_IDS } from "../src/game/core/unitColors.js";
 
 const GENERATED_MANIFEST_PATH = "src/game/phaser/generated/unitSpriteAnimations.js";
 const SUPPORTED_ANIMATION_IDS = ["idle", "walk", "attack"];
+const MOVEMENT_PHASE_IDS = ["start", "loop", "end"];
 
 function readPngMetadata(buffer, filePath) {
   const isPng =
@@ -116,6 +117,45 @@ function normalizeRanges(animationId, ranges, totalFrames, unitTypeId) {
   return normalizedRanges;
 }
 
+function normalizeMovementPhases(animationId, movementPhases, totalFrames, unitTypeId) {
+  if (movementPhases === undefined) {
+    return null;
+  }
+
+  if (animationId !== "walk") {
+    throw new Error(`${unitTypeId} ${animationId} movementPhases are only supported for walk animations.`);
+  }
+
+  if (!isPlainObject(movementPhases)) {
+    throw new Error(`${unitTypeId} walk movementPhases must be an object.`);
+  }
+
+  const unsupportedPhaseIds = Object.keys(movementPhases).filter(
+    (phaseId) => !MOVEMENT_PHASE_IDS.includes(phaseId),
+  );
+
+  if (unsupportedPhaseIds.length > 0) {
+    throw new Error(
+      `${unitTypeId} walk movementPhases include unsupported phases: ${unsupportedPhaseIds.join(", ")}.`,
+    );
+  }
+
+  return normalizeRanges(
+    "walk movement phase",
+    Object.fromEntries(
+      MOVEMENT_PHASE_IDS.map((phaseId) => {
+        if (!isPlainObject(movementPhases[phaseId])) {
+          throw new Error(`${unitTypeId} walk movementPhases must include ${phaseId}.`);
+        }
+
+        return [phaseId, movementPhases[phaseId]];
+      }),
+    ),
+    totalFrames,
+    unitTypeId,
+  );
+}
+
 async function pathExists(filePath) {
   try {
     await fs.access(filePath);
@@ -181,6 +221,25 @@ async function readColorAnimationSpec(root, colorId, unitTypeId, animationMetada
       );
     }
 
+    for (const dimensionName of ["frameWidth", "frameHeight"]) {
+      if (animationSpec[dimensionName] === undefined) {
+        continue;
+      }
+
+      assertInteger(
+        animationSpec[dimensionName],
+        `${unitTypeId} ${animationId} ${dimensionName}`,
+      );
+
+      if (animationSpec[dimensionName] <= 0) {
+        throw new Error(
+          `${unitTypeId} ${animationId} ${dimensionName} must be greater than zero.`,
+        );
+      }
+    }
+
+    const animationFrameWidth = animationSpec.frameWidth ?? frameWidth;
+    const animationFrameHeight = animationSpec.frameHeight ?? frameHeight;
     const usesSharedFile = animationSpec.file === undefined;
     const relativePath = `assets/sprites/units/${colorId}/${unitTypeId}/${animationFile}`;
     const filePath = path.resolve(root, relativePath);
@@ -190,20 +249,34 @@ async function readColorAnimationSpec(root, colorId, unitTypeId, animationMetada
       const metadata = readPngMetadata(buffer, filePath);
       const { width, height } = metadata;
 
-      if (width % frameWidth !== 0 || height % frameHeight !== 0) {
+      if (
+        width % animationFrameWidth !== 0 ||
+        height % animationFrameHeight !== 0
+      ) {
         throw new Error(
-          `${unitTypeId} ${animationId} sheet must be divisible by ${frameWidth}x${frameHeight}: ${relativePath}`
+          `${unitTypeId} ${animationId} sheet must be divisible by ${animationFrameWidth}x${animationFrameHeight}: ${relativePath}`
         );
       }
 
-      const totalFrames = (width / frameWidth) * (height / frameHeight);
+      const totalFrames =
+        (width / animationFrameWidth) * (height / animationFrameHeight);
       const normalizedRanges = normalizeRanges(
         animationId,
         animationSpec.ranges,
         totalFrames,
         unitTypeId,
       );
-      const frameCount = Math.max(...Object.values(normalizedRanges).map((range) => range.end)) + 1;
+      const normalizedMovementPhases = normalizeMovementPhases(
+        animationId,
+        animationSpec.movementPhases,
+        totalFrames,
+        unitTypeId,
+      );
+      const referencedRanges = [
+        ...Object.values(normalizedRanges),
+        ...Object.values(normalizedMovementPhases ?? {}),
+      ];
+      const frameCount = Math.max(...referencedRanges.map((range) => range.end)) + 1;
       const textureKeySuffix = usesSharedFile ? "sheet" : animationId;
 
       ownerSpec.animations[animationId] = {
@@ -213,11 +286,23 @@ async function readColorAnimationSpec(root, colorId, unitTypeId, animationMetada
         frameCount,
         sheetWidth: width,
         sheetHeight: height,
-        sheetColumns: width / frameWidth,
-        sheetRows: height / frameHeight,
+        sheetColumns: width / animationFrameWidth,
+        sheetRows: height / animationFrameHeight,
         animationKeyBase: `animation:units:${colorId}:${unitTypeId}:${animationId}`,
         ranges: normalizedRanges,
       };
+
+      if (normalizedMovementPhases) {
+        ownerSpec.animations[animationId].movementPhases = normalizedMovementPhases;
+      }
+
+      if (animationSpec.frameWidth !== undefined) {
+        ownerSpec.animations[animationId].frameWidth = animationFrameWidth;
+      }
+
+      if (animationSpec.frameHeight !== undefined) {
+        ownerSpec.animations[animationId].frameHeight = animationFrameHeight;
+      }
 
       if (Number.isInteger(animationSpec.cutsceneLoopCount) && animationSpec.cutsceneLoopCount > 0) {
         ownerSpec.animations[animationId].cutsceneLoopCount = animationSpec.cutsceneLoopCount;

@@ -62,11 +62,12 @@ function getSupportNeedScore(state, unit) {
   );
 }
 
-function createEmptyPresentation() {
+function createEmptyPresentation(spentUnitIds = []) {
   return {
     mission: null,
     selectedTile: null,
     pendingAction: null,
+    spentUnitIds,
     reachableTiles: [],
     movePreviewTiles: [],
     attackPreviewTiles: [],
@@ -79,6 +80,30 @@ function createEmptyPresentation() {
     movementBudget: null,
     recruitOptions: []
   };
+}
+
+export function getSpentUnitIds(state) {
+  const activeSide = state.turn?.activeSide;
+
+  if (!activeSide || (activeSide === TURN_SIDES.ENEMY && state.enemyTurn?.started !== true)) {
+    return [];
+  }
+
+  const pendingUnitIds = new Set([
+    state.pendingAction?.unitId,
+    state.enemyTurn?.pendingAttack?.attackerId,
+    state.enemyTurn?.pendingSlipstream?.unitId,
+  ].filter(Boolean));
+
+  return (state[activeSide]?.units ?? [])
+    .filter(
+      (unit) =>
+        unit.current.hp > 0 &&
+        unit.hasMoved &&
+        unit.hasAttacked &&
+        !pendingUnitIds.has(unit.id),
+    )
+    .map((unit) => unit.id);
 }
 
 function formatSelectionOwner(owner) {
@@ -406,6 +431,7 @@ export function buildBattlePresentation(snapshot) {
   const selectedTile = buildSelectedTile(snapshot, getSelectionCoordinates(snapshot));
   const pendingAction = createPendingActionView(snapshot);
   const mission = buildMissionPresentation(snapshot);
+  const spentUnitIds = getSpentUnitIds(snapshot);
 
   if (selectedUnit) {
     const attackProfile = getUnitAttackProfile(selectedUnit);
@@ -444,7 +470,7 @@ export function buildBattlePresentation(snapshot) {
         : [];
 
     return {
-      ...createEmptyPresentation(),
+      ...createEmptyPresentation(spentUnitIds),
       mission,
       selectedUnitId: selectedUnit.id,
       selectedTile,
@@ -494,7 +520,7 @@ export function buildBattlePresentation(snapshot) {
 
   if (selectedBuilding) {
     return {
-      ...createEmptyPresentation(),
+      ...createEmptyPresentation(spentUnitIds),
       mission,
       selectedBuildingId: selectedBuilding.id,
       selectedTile,
@@ -510,7 +536,7 @@ export function buildBattlePresentation(snapshot) {
 
   if (selectedTile) {
     return {
-      ...createEmptyPresentation(),
+      ...createEmptyPresentation(spentUnitIds),
       mission,
       selectedTile,
       pendingAction
@@ -518,7 +544,7 @@ export function buildBattlePresentation(snapshot) {
   }
 
   return {
-    ...createEmptyPresentation(),
+    ...createEmptyPresentation(spentUnitIds),
     mission,
     pendingAction
   };

@@ -379,11 +379,16 @@ test("unit sprite sheets are preferred over static fallbacks when present", () =
   assert.deepEqual(spriteDefinition.walk.ranges.right, { start: 0, end: 2 });
   assert.deepEqual(spriteDefinition.walk.ranges.down, { start: 3, end: 3 });
   assert.deepEqual(spriteDefinition.walk.ranges.up, { start: 4, end: 4 });
-  assert.deepEqual(spriteDefinition.attack.ranges.right, { start: 5, end: 9 });
+  assert.deepEqual(spriteDefinition.attack.ranges.right, { start: 5, end: 12 });
   assert.equal(spriteDefinition.attack.cutsceneLoopCount, 1);
-  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameWidth, 192);
-  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameHeight, 192);
-  assert.equal(spriteDefinition.idle.sheetColumns, 3);
+  assert.deepEqual(spriteDefinition.presentation, {
+    battlefieldScale: 1,
+    battlefieldMaxScale: 1,
+    combatCutsceneScale: 1,
+  });
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameWidth, 384);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.purple.frameHeight, 384);
+  assert.equal(spriteDefinition.idle.sheetColumns, 4);
   assert.equal(spriteDefinition.idle.sheetRows, 4);
   assert.equal(
     SPRITE_ASSETS.filter((asset) => asset.key === spriteDefinition.idle.key).length,
@@ -411,6 +416,23 @@ test("unit animation manifest supports color-specific omissions and mirrored att
   assert.equal(enemyBruiserDefinition.idle.key, "spritesheet:units:blue:bruiser:sheet");
   assert.equal(enemyBruiserDefinition.walk.key, enemyBruiserDefinition.idle.key);
   assert.equal(enemyBruiserDefinition.attack.key, enemyBruiserDefinition.idle.key);
+  assert.deepEqual(enemyBruiserDefinition.presentation, {
+    battlefieldScale: 1,
+    battlefieldMaxScale: 1,
+    combatCutsceneScale: 1,
+  });
+  assert.deepEqual(playerGruntDefinition.presentation, {
+    battlefieldScale: 0.9,
+    battlefieldMaxScale: 0.9,
+    combatCutsceneScale: 0.88,
+  });
+  assert.deepEqual(getUnitSpriteDefinition("runner", "player").presentation, {
+    battlefieldScale: 1,
+    battlefieldMaxScale: 1,
+    combatCutsceneScale: 1,
+  });
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.blue.frameWidth, 384);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.bruiser.blue.frameHeight, 384);
   assert.equal(
     SPRITE_ASSETS.filter((asset) => asset.key === enemyBruiserDefinition.idle.key).length,
     1,
@@ -458,6 +480,32 @@ test("gunship, runner, and skyguard sheets use the expected frame geometry", () 
       assert.equal(generatedDefinition.frameHeight, frameHeight);
     }
   }
+
+  const playerGunshipDefinition = getUnitSpriteDefinition("gunship", "player");
+  const enemyGunshipDefinition = getUnitSpriteDefinition("gunship", "enemy");
+  const gunshipWalkAsset = SPRITE_ASSETS.find(
+    (asset) => asset.key === playerGunshipDefinition.walk?.key,
+  );
+
+  assert.equal(
+    playerGunshipDefinition.walk.key,
+    "spritesheet:units:purple:gunship:walk",
+  );
+  assert.deepEqual(playerGunshipDefinition.walk.ranges.default, { start: 0, end: 6 });
+  assert.deepEqual(playerGunshipDefinition.walk.ranges.right, { start: 0, end: 6 });
+  assert.deepEqual(playerGunshipDefinition.walk.ranges.down, { start: 5, end: 6 });
+  assert.deepEqual(playerGunshipDefinition.walk.movementPhases, {
+    start: { start: 0, end: 1 },
+    loop: { start: 2, end: 4 },
+    end: { start: 5, end: 6 },
+  });
+  assert.equal(playerGunshipDefinition.walk.frameWidth, 192);
+  assert.equal(playerGunshipDefinition.walk.frameHeight, 192);
+  assert.equal(playerGunshipDefinition.walk.sheetColumns, 3);
+  assert.equal(playerGunshipDefinition.walk.sheetRows, 3);
+  assert.equal(gunshipWalkAsset.frameWidth, 192);
+  assert.equal(gunshipWalkAsset.frameHeight, 192);
+  assert.equal(enemyGunshipDefinition.walk, null);
 });
 
 test("juggernaut, longshot, and medic sheets use the expected owner coverage and metadata", () => {

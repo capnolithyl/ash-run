@@ -166,6 +166,7 @@ test("the fire command arms a pending unit to attack an enemy tile", () => {
 
   assert.ok(afterAttack.enemy.units.length === 0 || afterAttack.enemy.units[0].current.hp < startingHp);
   assert.equal(afterAttack.pendingAction, null);
+  assert.ok(system.getSnapshot().presentation.spentUnitIds.includes(unit.id));
 });
 
 test("ground units can move through aircraft but cannot stop on occupied tiles", () => {
@@ -1604,6 +1605,7 @@ test("hospitals restore infantry once per owner and do not service vehicles", ()
   assert.equal(restoredPlayer.current.hp, restoredPlayer.stats.maxHealth);
   assert.equal(restoredPlayer.current.ammo, restoredPlayer.stats.ammoMax);
   assert.equal(restoredPlayer.current.stamina, restoredPlayer.stats.staminaMax);
+  assert.ok(system.getSnapshot().presentation.spentUnitIds.includes(playerInfantry.id));
 
   restoredPlayer.x = hospital.x + 1;
   const enemyCaptor = afterCapture.enemy.units.find((unit) => unit.id === enemyInfantry.id);
@@ -2750,6 +2752,7 @@ test("infantry choose which adjacent runner to board when multiple are available
   assert.equal(updatedRightRunner.transport.carryingUnitId, infantry.id);
   assert.equal(afterBoarding.pendingAction, null);
   assert.equal(afterBoarding.selection.id, rightRunner.id);
+  assert.ok(system.getSnapshot().presentation.spentUnitIds.includes(infantry.id));
 });
 
 test("medics choose which adjacent infantry to support when multiple need service", () => {
@@ -2804,6 +2807,7 @@ test("medics choose which adjacent infantry to support when multiple need servic
   assert.equal(updatedRight.current.stamina, updatedRight.stats.staminaMax);
   assert.equal(updatedMedic.cooldowns.support, 2);
   assert.equal(afterSupport.pendingAction, null);
+  assert.ok(system.getSnapshot().presentation.spentUnitIds.includes(medic.id));
 });
 
 test("mechanics choose which adjacent vehicle to support when multiple need service", () => {

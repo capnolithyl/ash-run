@@ -111,6 +111,7 @@ export const battleSceneRenderMethods = {
     const attackEvents = animationEvents
       .filter((event) => event.type === "attack")
       .sort((left, right) => (left.delay ?? 0) - (right.delay ?? 0));
+    const attackingUnitIds = new Set(attackEvents.map((event) => event.attackerId));
     const experienceEvents = animationEvents.filter((event) => event.type === "experience");
     const deployUnitIds = new Set(
       animationEvents
@@ -190,6 +191,7 @@ export const battleSceneRenderMethods = {
       destroyUnitIds,
       damageByUnitId,
       restoreByUnitId,
+      attackingUnitIds,
       colorOptions
     });
     this.fxLayer.setColorOptions(colorOptions);
@@ -352,6 +354,7 @@ export const battleSceneRenderMethods = {
           event.toY - event.fromY,
           {
             impactDelayMs,
+            durationMs: attackWindowMs,
             suppressVisuals: combatCutsceneActive,
             onStart: () => {
               if (!combatCutsceneActive) {

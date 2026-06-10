@@ -1,7 +1,7 @@
 {
   "file": "bruiser-full.png",
-  "frameWidth": 192,
-  "frameHeight": 192,
+  "frameWidth": 384,
+  "frameHeight": 384,
   "animations": {
     "idle": {
       "frameRate": 5,
@@ -30,12 +30,12 @@
       }
     },
     "attack": {
-      "frameRate": 5,
+      "frameRate": 8,
       "cutsceneLoopCount": 1,
       "ranges": {
         "right": {
           "start": 5,
-          "end": 9
+          "end": 12
         }
       }
     }

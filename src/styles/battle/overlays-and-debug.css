@@ -1135,10 +1135,10 @@
 
 .combat-cutscene__sprite-actor {
   position: relative;
-  width: min(100%, 15rem);
-  height: 15rem;
-  max-width: 15rem;
-  max-height: 15rem;
+  width: min(100%, var(--combat-unit-size, 15rem));
+  height: var(--combat-unit-size, 15rem);
+  max-width: var(--combat-unit-size, 15rem);
+  max-height: var(--combat-unit-size, 15rem);
   flex: 0 0 auto;
   overflow: hidden;
   transform-origin: center bottom;
@@ -1834,10 +1834,10 @@
   }
 
   .combat-cutscene__sprite-actor {
-    width: min(100%, 12.5rem);
-    height: 12.5rem;
-    max-width: 12.5rem;
-    max-height: 12.5rem;
+    width: min(100%, var(--combat-unit-size-compact, 12.5rem));
+    height: var(--combat-unit-size-compact, 12.5rem);
+    max-width: var(--combat-unit-size-compact, 12.5rem);
+    max-height: var(--combat-unit-size-compact, 12.5rem);
   }
 
   .combat-cutscene__footer span {
@@ -1901,10 +1901,10 @@
   }
 
   .combat-cutscene__sprite-actor {
-    width: min(100%, 9rem);
-    height: 9rem;
-    max-width: 9rem;
-    max-height: 9rem;
+    width: min(100%, var(--combat-unit-size-mobile, 9rem));
+    height: var(--combat-unit-size-mobile, 9rem);
+    max-width: var(--combat-unit-size-mobile, 9rem);
+    max-height: var(--combat-unit-size-mobile, 9rem);
   }
 
   .combat-cutscene__platform {

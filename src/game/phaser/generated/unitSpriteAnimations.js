@@ -479,17 +479,17 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
   },
   "bruiser": {
     "purple": {
-      "frameWidth": 192,
-      "frameHeight": 192,
+      "frameWidth": 384,
+      "frameHeight": 384,
       "animations": {
         "idle": {
           "key": "spritesheet:units:purple:bruiser:sheet",
           "url": "./assets/sprites/units/purple/bruiser/bruiser-full.png",
           "frameRate": 5,
           "frameCount": 3,
-          "sheetWidth": 576,
-          "sheetHeight": 768,
-          "sheetColumns": 3,
+          "sheetWidth": 1536,
+          "sheetHeight": 1536,
+          "sheetColumns": 4,
           "sheetRows": 4,
           "animationKeyBase": "animation:units:purple:bruiser:idle",
           "ranges": {
@@ -504,9 +504,9 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/purple/bruiser/bruiser-full.png",
           "frameRate": 5,
           "frameCount": 5,
-          "sheetWidth": 576,
-          "sheetHeight": 768,
-          "sheetColumns": 3,
+          "sheetWidth": 1536,
+          "sheetHeight": 1536,
+          "sheetColumns": 4,
           "sheetRows": 4,
           "animationKeyBase": "animation:units:purple:bruiser:walk",
           "ranges": {
@@ -527,17 +527,17 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
         "attack": {
           "key": "spritesheet:units:purple:bruiser:sheet",
           "url": "./assets/sprites/units/purple/bruiser/bruiser-full.png",
-          "frameRate": 5,
-          "frameCount": 10,
-          "sheetWidth": 576,
-          "sheetHeight": 768,
-          "sheetColumns": 3,
+          "frameRate": 8,
+          "frameCount": 13,
+          "sheetWidth": 1536,
+          "sheetHeight": 1536,
+          "sheetColumns": 4,
           "sheetRows": 4,
           "animationKeyBase": "animation:units:purple:bruiser:attack",
           "ranges": {
             "right": {
               "start": 5,
-              "end": 9
+              "end": 12
             }
           },
           "cutsceneLoopCount": 1
@@ -545,17 +545,17 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
       }
     },
     "blue": {
-      "frameWidth": 192,
-      "frameHeight": 192,
+      "frameWidth": 384,
+      "frameHeight": 384,
       "animations": {
         "idle": {
           "key": "spritesheet:units:blue:bruiser:sheet",
           "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
           "frameRate": 5,
           "frameCount": 3,
-          "sheetWidth": 576,
-          "sheetHeight": 768,
-          "sheetColumns": 3,
+          "sheetWidth": 1536,
+          "sheetHeight": 1536,
+          "sheetColumns": 4,
           "sheetRows": 4,
           "animationKeyBase": "animation:units:blue:bruiser:idle",
           "ranges": {
@@ -570,9 +570,9 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
           "frameRate": 5,
           "frameCount": 5,
-          "sheetWidth": 576,
-          "sheetHeight": 768,
-          "sheetColumns": 3,
+          "sheetWidth": 1536,
+          "sheetHeight": 1536,
+          "sheetColumns": 4,
           "sheetRows": 4,
           "animationKeyBase": "animation:units:blue:bruiser:walk",
           "ranges": {
@@ -593,17 +593,17 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
         "attack": {
           "key": "spritesheet:units:blue:bruiser:sheet",
           "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
-          "frameRate": 5,
-          "frameCount": 10,
-          "sheetWidth": 576,
-          "sheetHeight": 768,
-          "sheetColumns": 3,
+          "frameRate": 8,
+          "frameCount": 13,
+          "sheetWidth": 1536,
+          "sheetHeight": 1536,
+          "sheetColumns": 4,
           "sheetRows": 4,
           "animationKeyBase": "animation:units:blue:bruiser:attack",
           "ranges": {
             "right": {
               "start": 5,
-              "end": 9
+              "end": 12
             }
           },
           "cutsceneLoopCount": 1
@@ -796,6 +796,47 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
               "end": 1
             }
           }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:gunship:walk",
+          "url": "./assets/sprites/units/purple/gunship/gunship-move.png",
+          "frameRate": 12,
+          "frameCount": 7,
+          "sheetWidth": 576,
+          "sheetHeight": 576,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:gunship:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 6
+            },
+            "right": {
+              "start": 0,
+              "end": 6
+            },
+            "down": {
+              "start": 5,
+              "end": 6
+            }
+          },
+          "movementPhases": {
+            "start": {
+              "start": 0,
+              "end": 1
+            },
+            "loop": {
+              "start": 2,
+              "end": 4
+            },
+            "end": {
+              "start": 5,
+              "end": 6
+            }
+          },
+          "frameWidth": 192,
+          "frameHeight": 192
         },
         "attack": {
           "key": "spritesheet:units:purple:gunship:attack",

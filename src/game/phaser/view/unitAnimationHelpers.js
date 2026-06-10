@@ -170,36 +170,102 @@ export function getAttackAnimationPlayback(owner, attackAnimation, directionX = 
 
 export function getUnitMovementPlayback(visualSpec, moveSegments = 0) {
   const walkAnimation = visualSpec?.walk ?? null;
-  const forwardFrameIndices = getAnimationRangeFrameIndices(
-    getAnimationRange(walkAnimation, "default"),
-  );
+  const defaultRange = getAnimationRange(walkAnimation, "default");
+  const forwardFrameIndices = getAnimationRangeFrameIndices(defaultRange);
   const canTeleport =
     walkAnimation?.movementStyle === "teleport" &&
     Boolean(walkAnimation?.key) &&
     forwardFrameIndices.length > 1;
 
-  if (!canTeleport) {
+  if (canTeleport) {
+    const reverseFrameIndices = [...forwardFrameIndices].reverse();
+
     return {
-      style: "path",
+      style: "teleport",
+      animation: walkAnimation,
+      forwardFrameIndices,
+      reverseFrameIndices,
+      splitProgress: forwardFrameIndices.length / (forwardFrameIndices.length + reverseFrameIndices.length),
+      totalDurationMs: getAnimationPlaybackDurationMs(
+        forwardFrameIndices.length + reverseFrameIndices.length,
+        walkAnimation.frameRate,
+      ),
+    };
+  }
+
+  const movementPhases = walkAnimation?.movementPhases ?? null;
+  const phaseFrameIndices = movementPhases
+    ? {
+        start: getAnimationRangeFrameIndices(movementPhases.start),
+        loop: getAnimationRangeFrameIndices(movementPhases.loop),
+        end: getAnimationRangeFrameIndices(movementPhases.end),
+      }
+    : null;
+  const hasPhasedPath =
+    moveSegments > 0 &&
+    Boolean(walkAnimation?.key) &&
+    phaseFrameIndices &&
+    phaseFrameIndices.start.length > 0 &&
+    phaseFrameIndices.loop.length > 0 &&
+    phaseFrameIndices.end.length > 0;
+
+  if (hasPhasedPath) {
+    const travelDurationMs = getBattleMoveDuration(moveSegments);
+    const startDurationMs = getAnimationPlaybackDurationMs(
+      phaseFrameIndices.start.length,
+      walkAnimation.frameRate,
+    );
+    const endDurationMs = getAnimationPlaybackDurationMs(
+      phaseFrameIndices.end.length,
+      walkAnimation.frameRate,
+    );
+    const directionalFrameIndices = Object.fromEntries(
+      Object.entries(walkAnimation.ranges ?? {})
+        .filter(
+          ([rangeName, range]) =>
+            rangeName !== "default" &&
+            (range.start !== defaultRange?.start || range.end !== defaultRange?.end),
+        )
+        .map(([rangeName, range]) => [
+          rangeName,
+          getAnimationRangeFrameIndices(range),
+        ]),
+    );
+
+    return {
+      style: "phased-path",
       animation: walkAnimation,
       forwardFrameIndices,
       reverseFrameIndices: [],
       splitProgress: 1,
-      totalDurationMs: getBattleMoveDuration(moveSegments),
+      travelDurationMs,
+      totalDurationMs: travelDurationMs + endDurationMs,
+      directionalFrameIndices,
+      phases: {
+        start: {
+          frameIndices: phaseFrameIndices.start,
+          durationMs: startDurationMs,
+        },
+        loop: {
+          frameIndices: phaseFrameIndices.loop,
+        },
+        end: {
+          frameIndices: phaseFrameIndices.end,
+          durationMs: endDurationMs,
+        },
+      },
     };
   }
 
-  const reverseFrameIndices = [...forwardFrameIndices].reverse();
+  const travelDurationMs = getBattleMoveDuration(moveSegments);
 
   return {
-    style: "teleport",
+    style: "path",
     animation: walkAnimation,
     forwardFrameIndices,
-    reverseFrameIndices,
-    splitProgress: forwardFrameIndices.length / (forwardFrameIndices.length + reverseFrameIndices.length),
-    totalDurationMs: getAnimationPlaybackDurationMs(
-      forwardFrameIndices.length + reverseFrameIndices.length,
-      walkAnimation.frameRate,
-    ),
+    reverseFrameIndices: [],
+    splitProgress: 1,
+    travelDurationMs,
+    totalDurationMs: travelDurationMs,
   };
 }

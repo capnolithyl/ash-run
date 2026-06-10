@@ -452,6 +452,36 @@ test("enemy grunt movement keeps segment-based timing without teleport sheets", 
   assert.equal(moveEvent.endDelayMs, getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS);
 });
 
+test("purple gunship move events include the stationary outro before settling", () => {
+  const gunship = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
+  const battleState = createTestBattleState({
+    width: 6,
+    height: 4,
+    playerUnits: [gunship],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 3)]
+  });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.selection = { type: "unit", id: gunship.id, x: gunship.x, y: gunship.y };
+
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.handleTileSelection(3, 1), true);
+
+  const after = system.getSnapshot();
+  const moveEvent = deriveBattleAnimationEvents(before, after).find(
+    (event) => event.type === "move" && event.unitId === gunship.id
+  );
+  const expectedDurationMs = getBattleMoveDuration(2) + 167;
+
+  assert.ok(moveEvent);
+  assert.equal(moveEvent.durationMs, expectedDurationMs);
+  assert.equal(moveEvent.endDelayMs, expectedDurationMs + BATTLE_MOVE_SETTLE_MS);
+  assert.equal(getBattleSnapshotTransitionDurationMs(before, after), expectedDurationMs);
+});
+
 test("battle combat cutscene payload keeps player-left mapping, split terrain ids, and HP beats", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);
@@ -579,6 +609,39 @@ test("battle combat cutscene waits for move-and-settle before revealing the duel
     expectedRevealStartMs +
       BATTLE_COMBAT_CUTSCENE_OPEN_MS +
       BATTLE_COMBAT_CUTSCENE_INTRO_HOLD_MS
+  );
+});
+
+test("battle combat cutscene waits for the gunship outro before revealing the duel popup", () => {
+  const attacker = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
+  const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 1);
+  const battleState = createTestBattleState({
+    width: 6,
+    height: 4,
+    playerUnits: [attacker],
+    enemyUnits: [defender]
+  });
+  battleState.map.tiles = Array.from({ length: battleState.map.height }, () =>
+    Array.from({ length: battleState.map.width }, () => TERRAIN_KEYS.ROAD)
+  );
+  battleState.selection = { type: "unit", id: attacker.id, x: attacker.x, y: attacker.y };
+
+  const system = new BattleSystem(battleState);
+  assert.equal(system.handleTileSelection(3, 1), true);
+  assert.equal(system.beginPendingAttack(), true);
+  const before = system.getSnapshot();
+  assert.equal(system.handleTileSelection(defender.x, defender.y), true);
+  const after = system.getSnapshot();
+
+  const cutscene = deriveBattleCombatCutscene(before, after);
+  const expectedFocusStartMs =
+    getBattleMoveDuration(2) + 167 + BATTLE_MOVE_SETTLE_MS;
+
+  assert.ok(cutscene);
+  assert.equal(cutscene.focusStartMs, expectedFocusStartMs);
+  assert.equal(
+    cutscene.revealStartMs,
+    expectedFocusStartMs + BATTLE_COMBAT_CUTSCENE_FOCUS_IN_MS
   );
 });
 

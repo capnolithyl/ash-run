@@ -2,6 +2,8 @@ import Phaser from "phaser";
 import { BATTLE_ATTACK_IMPACT_DELAY_MS, BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
 import { getGearBadgeLabel } from "../../content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../assets.js";
+import { getClampedBattlefieldEffectMultiplier } from "../unitSpritePresentation.js";
+import { ensureGrayscaleTexture } from "./grayscaleTexture.js";
 import { getOwnerColor } from "./ownerPalette.js";
 import {
   getAnimationRange,
@@ -152,11 +154,13 @@ export class UnitLayer {
     let visual = null;
     let shadow = null;
     let fallbackLabel = null;
+    let movementFlipX = getOwnerIdleFlipX(unit.owner);
 
     if (visualSpec) {
       const defaultTexture = getUnitDefaultTexture(visualSpec, unit.owner);
       const textureKey = defaultTexture?.key ?? visualSpec.fallbackKey ?? visualSpec.key;
       const textureFrame = defaultTexture?.frame;
+      movementFlipX = defaultTexture?.flipX ?? movementFlipX;
 
       // Use a real ground shadow instead of a second offset copy of the unit art.
       shadow = this.scene.add
@@ -170,8 +174,14 @@ export class UnitLayer {
         )
         .setOrigin(0.5);
       visual = this.scene.add.sprite(0, -layout.cellSize * 0.03, textureKey, textureFrame);
-      visual.setOrigin(0.5).setDisplaySize(layout.cellSize * 0.88, layout.cellSize * 0.88);
-      visual.setFlipX(defaultTexture?.flipX ?? getOwnerIdleFlipX(unit.owner));
+      const battlefieldScale = visualSpec.presentation?.battlefieldScale ?? 1;
+      visual
+        .setOrigin(0.5)
+        .setDisplaySize(
+          layout.cellSize * 0.88 * battlefieldScale,
+          layout.cellSize * 0.88 * battlefieldScale,
+        );
+      visual.setFlipX(movementFlipX);
     } else {
       visual = this.scene.add.circle(0, 0, layout.cellSize * 0.28, color, 0.95);
       visual.setStrokeStyle(2, 0xfff2fc, 0.78);
@@ -232,11 +242,20 @@ export class UnitLayer {
       shadow,
       visual,
       visualSpec,
+      visualDisplayWidth: visual.displayWidth,
+      visualDisplayHeight: visual.displayHeight,
       visualBaseScaleX: visual.scaleX,
       visualBaseScaleY: visual.scaleY,
       fallbackLabel,
       textureKey: visualSpec?.key ?? null,
       moveTween: null,
+      movementPhaseTimer: null,
+      activeMovementPlayback: null,
+      movementAnimationMode: null,
+      movementFlipX,
+      isSpent: false,
+      deferSpentStyle: false,
+      fallbackColor: color,
       effectTweens: [],
       targetX: 0,
       targetY: 0,
@@ -273,12 +292,27 @@ export class UnitLayer {
   }
 
   stopMoveTween(entity) {
-    if (!entity.moveTween) {
+    if (entity.moveTween) {
+      entity.moveTween.stop();
+      entity.moveTween = null;
+    }
+
+    this.stopMovementPhaseTimer(entity);
+    entity.activeMovementPlayback = null;
+    entity.movementAnimationMode = null;
+  }
+
+  stopMovementPhaseTimer(entity) {
+    if (!entity?.movementPhaseTimer) {
       return;
     }
 
-    entity.moveTween.stop();
-    entity.moveTween = null;
+    entity.movementPhaseTimer.remove(false);
+    entity.movementPhaseTimer = null;
+  }
+
+  isMovementActive(entity) {
+    return Boolean(entity?.moveTween || entity?.movementPhaseTimer);
   }
 
   stopDestroyTimer(entity) {
@@ -317,37 +351,57 @@ export class UnitLayer {
   }
 
   getMoveTweenRemaining(unitId) {
-    const tween = this.entities.get(unitId)?.moveTween;
+    const entity = this.entities.get(unitId);
+    const tween = entity?.moveTween;
 
     if (!tween) {
+      const timer = entity?.movementPhaseTimer;
+
+      if (
+        Number.isFinite(timer?.delay) &&
+        timer.delay > 0 &&
+        Number.isFinite(timer.elapsed)
+      ) {
+        return Math.max(0, timer.delay - timer.elapsed);
+      }
+
+      if (typeof timer?.getProgress === "function" && Number.isFinite(timer.delay)) {
+        return Math.max(0, timer.delay * (1 - timer.getProgress()));
+      }
+
       return 0;
     }
+
+    let remainingDuration = 0;
 
     if (
       Number.isFinite(tween.totalDuration) &&
       tween.totalDuration > 0 &&
       Number.isFinite(tween.elapsed)
     ) {
-      return Math.max(0, tween.totalDuration - tween.elapsed);
-    }
-
-    if (
+      remainingDuration = Math.max(0, tween.totalDuration - tween.elapsed);
+    } else if (
       Number.isFinite(tween.duration) &&
       tween.duration > 0 &&
       Number.isFinite(tween.progress)
     ) {
-      return Math.max(0, tween.duration * (1 - tween.progress));
-    }
-
-    if (
+      remainingDuration = Math.max(0, tween.duration * (1 - tween.progress));
+    } else if (
       typeof tween.getOverallProgress === "function" &&
       Number.isFinite(tween.totalDuration) &&
       tween.totalDuration > 0
     ) {
-      return Math.max(0, tween.totalDuration * (1 - tween.getOverallProgress()));
+      remainingDuration = Math.max(0, tween.totalDuration * (1 - tween.getOverallProgress()));
+    } else {
+      remainingDuration = BATTLE_MOVE_SEGMENT_DURATION_MS;
     }
 
-    return BATTLE_MOVE_SEGMENT_DURATION_MS;
+    const outroDuration =
+      entity.activeMovementPlayback?.style === "phased-path"
+        ? entity.activeMovementPlayback.phases?.end?.durationMs ?? 0
+        : 0;
+
+    return remainingDuration + outroDuration;
   }
 
   playQueuedAttack(entity) {
@@ -366,12 +420,181 @@ export class UnitLayer {
     );
   }
 
-  completeMovement(entity) {
+  finalizeMovement(entity) {
     entity.moveTween = null;
+    this.stopMovementPhaseTimer(entity);
+    entity.activeMovementPlayback = null;
+    entity.movementAnimationMode = null;
     entity.container.setPosition(entity.targetX, entity.targetY);
     this.playIdleAnimation(entity);
     this.runAfterMoveCallbacks(entity);
     this.playQueuedAttack(entity);
+  }
+
+  completeMovement(entity) {
+    entity.moveTween = null;
+    entity.container.setPosition(entity.targetX, entity.targetY);
+
+    const movementPlayback = entity.activeMovementPlayback;
+    const endPhase = movementPlayback?.phases?.end;
+
+    if (
+      movementPlayback?.style !== "phased-path" ||
+      !endPhase?.frameIndices?.length ||
+      !(endPhase.durationMs > 0)
+    ) {
+      this.finalizeMovement(entity);
+      return;
+    }
+
+    this.stopMovementPhaseTimer(entity);
+    this.playMovementPhase(entity, movementPlayback, "end", 0);
+    entity.movementPhaseTimer = this.scene.time.delayedCall(
+      endPhase.durationMs,
+      () => {
+        entity.movementPhaseTimer = null;
+        this.finalizeMovement(entity);
+      },
+    );
+  }
+
+  updatePhasedMovementDirection(
+    entity,
+    movementPlayback,
+    directionX = 0,
+    directionY = 0,
+    { syncAnimation = false } = {},
+  ) {
+    const walkPlayback = getWalkAnimationPlayback(
+      entity.owner,
+      entity.visualSpec?.walk,
+      directionX,
+      directionY,
+    );
+
+    if (!walkPlayback) {
+      return;
+    }
+
+    entity.movementFlipX = walkPlayback.flipX;
+    entity.visual.setFlipX?.(walkPlayback.flipX);
+
+    if (!syncAnimation) {
+      return false;
+    }
+
+    const directionalFrameIndices =
+      movementPlayback.directionalFrameIndices?.[walkPlayback.rangeName] ?? [];
+
+    if (directionalFrameIndices.length > 0) {
+      const animationMode = `direction:${walkPlayback.rangeName}`;
+
+      if (entity.movementAnimationMode !== animationMode) {
+        this.stopMovementPhaseTimer(entity);
+        entity.visual.stop?.();
+        this.setVisualTexture(
+          entity,
+          movementPlayback.animation.key,
+          directionalFrameIndices[0],
+          entity.movementFlipX,
+        );
+        const animationKey = ensureUnitAnimation(
+          this.scene,
+          movementPlayback.animation,
+          `movement-direction-${walkPlayback.rangeName}`,
+          -1,
+          directionalFrameIndices,
+        );
+
+        if (animationKey) {
+          entity.visual.play?.(animationKey);
+        }
+
+        entity.movementAnimationMode = animationMode;
+      }
+
+      return true;
+    }
+
+    if (entity.movementAnimationMode?.startsWith("direction:")) {
+      this.stopMovementPhaseTimer(entity);
+      this.playMovementPhase(entity, movementPlayback, "loop", -1);
+    }
+
+    return false;
+  }
+
+  playMovementPhase(entity, movementPlayback, phaseName, repeat) {
+    const phase = movementPlayback?.phases?.[phaseName];
+    const walkAnimation = movementPlayback?.animation;
+
+    if (!phase?.frameIndices?.length || !walkAnimation?.key) {
+      return false;
+    }
+
+    entity.visual.stop?.();
+    this.setVisualTexture(
+      entity,
+      walkAnimation.key,
+      phase.frameIndices[0],
+      entity.movementFlipX,
+    );
+    const animationKey = ensureUnitAnimation(
+      this.scene,
+      walkAnimation,
+      `movement-${phaseName}`,
+      repeat,
+      phase.frameIndices,
+    );
+
+    if (animationKey) {
+      entity.visual.play?.(animationKey);
+    }
+
+    entity.movementAnimationMode = `phase:${phaseName}`;
+    return true;
+  }
+
+  startPhasedMovement(entity, movementPlayback, directionX = 0, directionY = 0) {
+    entity.activeMovementPlayback = movementPlayback;
+    this.stopMovementPhaseTimer(entity);
+    const usesDirectionalAnimation = this.updatePhasedMovementDirection(
+      entity,
+      movementPlayback,
+      directionX,
+      directionY,
+      { syncAnimation: true },
+    );
+
+    if (usesDirectionalAnimation) {
+      return;
+    }
+
+    this.playMovementPhase(entity, movementPlayback, "start", 0);
+
+    const startDurationMs = movementPlayback.phases?.start?.durationMs ?? 0;
+    const playLoop = () => {
+      entity.movementPhaseTimer = null;
+
+      if (
+        entity.activeMovementPlayback !== movementPlayback ||
+        !entity.moveTween
+      ) {
+        return;
+      }
+
+      this.playMovementPhase(entity, movementPlayback, "loop", -1);
+    };
+
+    if (startDurationMs > 0) {
+      entity.movementPhaseTimer = this.scene.time.delayedCall(
+        startDurationMs,
+        playLoop,
+      );
+      return;
+    }
+
+    playLoop();
   }
 
   getTeleportAccessoryVisibility(entity) {
@@ -409,7 +632,7 @@ export class UnitLayer {
     entity.fallbackLabel?.setVisible(false);
   }
 
-  playLinearPathMovement(entity, layout, path) {
+  playLinearPathMovement(entity, layout, path, movementPlayback) {
     const worldPoints = path.map((tile) =>
       this.getTileCenterFromCoordinates(layout, tile.x, tile.y)
     );
@@ -422,19 +645,44 @@ export class UnitLayer {
       return;
     }
 
+    entity.activeMovementPlayback = movementPlayback;
     let activeSegmentIndex = -1;
     const playSegmentAnimation = (segmentIndex) => {
       if (segmentIndex === activeSegmentIndex) {
         return;
       }
 
+      const isFirstSegment = activeSegmentIndex < 0;
       activeSegmentIndex = segmentIndex;
       const fromTile = path[segmentIndex];
       const toTile = path[segmentIndex + 1];
+      const directionX = Math.sign(toTile.x - fromTile.x);
+      const directionY = Math.sign(toTile.y - fromTile.y);
+
+      if (movementPlayback.style === "phased-path") {
+        if (isFirstSegment) {
+          this.startPhasedMovement(
+            entity,
+            movementPlayback,
+            directionX,
+            directionY,
+          );
+        } else {
+          this.updatePhasedMovementDirection(
+            entity,
+            movementPlayback,
+            directionX,
+            directionY,
+            { syncAnimation: true },
+          );
+        }
+        return;
+      }
+
       this.playWalkAnimation(
         entity,
-        Math.sign(toTile.x - fromTile.x),
-        Math.sign(toTile.y - fromTile.y),
+        directionX,
+        directionY,
       );
     };
     playSegmentAnimation(0);
@@ -442,7 +690,9 @@ export class UnitLayer {
     entity.moveTween = this.scene.tweens.addCounter({
       from: 0,
       to: totalSegments,
-      duration: totalSegments * BATTLE_MOVE_SEGMENT_DURATION_MS,
+      duration:
+        movementPlayback.travelDurationMs ??
+        totalSegments * BATTLE_MOVE_SEGMENT_DURATION_MS,
       ease: "Linear",
       onUpdate: (tween) => {
         const traveledSegments = Phaser.Math.Clamp(tween.getValue(), 0, totalSegments);
@@ -546,14 +796,30 @@ export class UnitLayer {
       return;
     }
 
-    this.playLinearPathMovement(entity, layout, path);
+    this.playLinearPathMovement(entity, layout, path, movementPlayback);
   }
 
   setVisualScale(entity, multiplier = 1) {
-    entity.visual.setScale(
-      entity.visualBaseScaleX * multiplier,
-      entity.visualBaseScaleY * multiplier
+    const effectMultiplier = getClampedBattlefieldEffectMultiplier(
+      entity.visualSpec?.presentation,
+      multiplier,
     );
+    entity.visual.setScale(
+      entity.visualBaseScaleX * effectMultiplier,
+      entity.visualBaseScaleY * effectMultiplier
+    );
+  }
+
+  getVisualScale(entity, multiplier = 1) {
+    const effectMultiplier = getClampedBattlefieldEffectMultiplier(
+      entity.visualSpec?.presentation,
+      multiplier,
+    );
+
+    return {
+      scaleX: entity.visualBaseScaleX * effectMultiplier,
+      scaleY: entity.visualBaseScaleY * effectMultiplier,
+    };
   }
 
   drawHealthMeter(entity) {
@@ -612,20 +878,52 @@ export class UnitLayer {
 
   setVisualTexture(entity, textureKey, frame, flipX = getOwnerIdleFlipX(entity.owner)) {
     entity.visual.setTexture?.(textureKey, frame);
+    if (
+      Number.isFinite(entity.visualDisplayWidth) &&
+      Number.isFinite(entity.visualDisplayHeight)
+    ) {
+      entity.visual.setDisplaySize?.(
+        entity.visualDisplayWidth,
+        entity.visualDisplayHeight,
+      );
+      entity.visualBaseScaleX = entity.visual.scaleX;
+      entity.visualBaseScaleY = entity.visual.scaleY;
+    }
     entity.visual.setFlipX?.(flipX);
   }
 
-  playIdleAnimation(entity) {
+  playIdleAnimation(entity, { forceColor = false } = {}) {
     this.stopAnimationTimer(entity);
 
     const idleAnimation = entity.visualSpec?.idle;
-    const idleAnimationKey = ensureUnitAnimation(this.scene, idleAnimation, "default", -1);
+    const useSpentStyle =
+      entity.isSpent &&
+      !entity.deferSpentStyle &&
+      !forceColor;
+    const grayscaleIdleKey =
+      useSpentStyle && idleAnimation?.key
+        ? ensureGrayscaleTexture(this.scene, idleAnimation.key)
+        : null;
+    const displayedIdleAnimation =
+      grayscaleIdleKey
+        ? {
+            ...idleAnimation,
+            key: grayscaleIdleKey,
+            animationKeyBase: `${idleAnimation.animationKeyBase ?? idleAnimation.key}:spent`,
+          }
+        : idleAnimation;
+    const idleAnimationKey = ensureUnitAnimation(
+      this.scene,
+      displayedIdleAnimation,
+      "default",
+      -1,
+    );
 
     if (idleAnimationKey) {
-      const range = getAnimationRange(idleAnimation, "default");
+      const range = getAnimationRange(displayedIdleAnimation, "default");
       this.setVisualTexture(
         entity,
-        idleAnimation.key,
+        displayedIdleAnimation.key,
         range.start,
         getOwnerIdleFlipX(entity.owner),
       );
@@ -635,11 +933,21 @@ export class UnitLayer {
 
     entity.visual.stop?.();
     if (entity.visualSpec?.fallbackKey) {
+      const fallbackTextureKey =
+        useSpentStyle
+          ? ensureGrayscaleTexture(this.scene, entity.visualSpec.fallbackKey) ??
+            entity.visualSpec.fallbackKey
+          : entity.visualSpec.fallbackKey;
       this.setVisualTexture(
         entity,
-        entity.visualSpec.fallbackKey,
+        fallbackTextureKey,
         undefined,
         getOwnerIdleFlipX(entity.owner),
+      );
+    } else if (entity.fallbackLabel) {
+      entity.visual.setFillStyle?.(
+        useSpentStyle ? 0x8a8a8a : entity.fallbackColor,
+        0.95,
       );
     }
   }
@@ -758,7 +1066,7 @@ export class UnitLayer {
   queueAfterMovement(unitId, callback, delay = 0) {
     const entity = this.entities.get(unitId);
 
-    if (!entity?.moveTween) {
+    if (!this.isMovementActive(entity)) {
       if (delay > 0) {
         this.scene.time.delayedCall(delay, callback);
         return;
@@ -838,7 +1146,7 @@ export class UnitLayer {
       return;
     }
 
-    if (entity.moveTween) {
+    if (this.isMovementActive(entity)) {
       entity.queuedAttack = {
         directionX,
         directionY,
@@ -852,6 +1160,20 @@ export class UnitLayer {
     const impactDelayMs = Math.max(0, callbacks.impactDelayMs ?? BATTLE_ATTACK_IMPACT_DELAY_MS);
 
     if (suppressVisuals) {
+      this.playIdleAnimation(entity, { forceColor: true });
+      const presentationDurationMs = Math.max(
+        impactDelayMs,
+        callbacks.durationMs ?? impactDelayMs,
+      );
+      entity.animationTimer = this.scene.time.delayedCall(
+        presentationDurationMs,
+        () => {
+          entity.animationTimer = null;
+          entity.deferSpentStyle = false;
+          this.playIdleAnimation(entity);
+        },
+      );
+
       if (callbacks.onImpact) {
         this.scene.time.delayedCall(impactDelayMs, callbacks.onImpact);
       }
@@ -888,10 +1210,13 @@ export class UnitLayer {
         entity.container.setPosition(entity.targetX, entity.targetY);
       }
     }));
+    const attackScale = this.getVisualScale(
+      entity,
+      hasAttackAnimation ? 1.08 : 1.14,
+    );
     this.trackEffectTween(entity, this.scene.tweens.add({
       targets: entity.visual,
-      scaleX: entity.visualBaseScaleX * (hasAttackAnimation ? 1.08 : 1.14),
-      scaleY: entity.visualBaseScaleY * (hasAttackAnimation ? 1.08 : 1.14),
+      ...attackScale,
       duration: hasAttackAnimation ? 90 : 110,
       yoyo: true,
       ease: "Sine.InOut",
@@ -922,9 +1247,17 @@ export class UnitLayer {
         attackPlayback.durationMs,
         () => {
           entity.animationTimer = null;
+          entity.deferSpentStyle = false;
           this.playIdleAnimation(entity);
         }
       );
+    } else if (entity.isSpent || entity.deferSpentStyle) {
+      this.playIdleAnimation(entity, { forceColor: true });
+      entity.animationTimer = this.scene.time.delayedCall(180, () => {
+        entity.animationTimer = null;
+        entity.deferSpentStyle = false;
+        this.playIdleAnimation(entity);
+      });
     }
 
     if (callbacks.onImpact) {
@@ -954,10 +1287,10 @@ export class UnitLayer {
       repeat: 2,
       ease: "Sine.InOut"
     }));
+    const damageScale = this.getVisualScale(entity, 1.24);
     this.trackEffectTween(entity, this.scene.tweens.add({
       targets: entity.visual,
-      scaleX: entity.visualBaseScaleX * 1.24,
-      scaleY: entity.visualBaseScaleY * 1.24,
+      ...damageScale,
       duration: 170,
       yoyo: true,
       ease: "Sine.InOut"
@@ -1082,10 +1415,10 @@ export class UnitLayer {
         entity.container.y = entity.targetY;
       }
     }));
+    const powerScale = this.getVisualScale(entity, config.visualScale);
     this.trackEffectTween(entity, this.scene.tweens.add({
       targets: entity.visual,
-      scaleX: entity.visualBaseScaleX * config.visualScale,
-      scaleY: entity.visualBaseScaleY * config.visualScale,
+      ...powerScale,
       duration: Math.round(config.duration * 0.72),
       yoyo: true,
       ease: "Sine.InOut",
@@ -1123,7 +1456,9 @@ export class UnitLayer {
     const destroyUnitIds = lifecycleEvents.destroyUnitIds ?? new Set();
     const damageByUnitId = lifecycleEvents.damageByUnitId ?? new Map();
     const restoreByUnitId = lifecycleEvents.restoreByUnitId ?? new Map();
+    const attackingUnitIds = lifecycleEvents.attackingUnitIds ?? new Set();
     const colorOptions = lifecycleEvents.colorOptions ?? {};
+    const spentUnitIds = new Set(snapshot.presentation?.spentUnitIds ?? []);
 
     for (const unit of units) {
       activeIds.add(unit.id);
@@ -1149,6 +1484,13 @@ export class UnitLayer {
         entity.visualSpec?.key !== visualSpec?.key;
       entity.owner = unit.owner;
       entity.visualSpec = visualSpec;
+      entity.isSpent = spentUnitIds.has(unit.id);
+      if (!entity.isSpent) {
+        entity.deferSpentStyle = false;
+      } else if (attackingUnitIds.has(unit.id)) {
+        entity.deferSpentStyle = true;
+      }
+      entity.fallbackColor = color;
       entity.glow.setFillStyle(color, 0.13);
       entity.aura.setFillStyle(color, 0.18);
       if (
@@ -1157,7 +1499,7 @@ export class UnitLayer {
       ) {
         entity.textureKey = visualSpec.key;
       }
-      if (colorChanged && visualSpec && !entity.moveTween) {
+      if (colorChanged && visualSpec && !this.isMovementActive(entity)) {
         entity.visual.stop?.();
         this.playIdleAnimation(entity);
       }
@@ -1189,16 +1531,7 @@ export class UnitLayer {
       entity.gearIcon?.setText(gearBadgeLabel ?? "");
       entity.gearIcon?.setVisible(Boolean(gearBadgeLabel));
       entity.hostageIcon?.setVisible(Boolean(unit.temporary?.hostageCarrier));
-      const dimmed =
-        unit.hasMoved ||
-        unit.hasAttacked ||
-        snapshot.presentation?.pendingAction?.unitId === unit.id;
-      entity.alphaTarget =
-        unit.current.hp > 0
-          ? dimmed
-            ? 0.68
-            : 1
-          : 0.4;
+      entity.alphaTarget = unit.current.hp > 0 ? 1 : 0.4;
       entity.container.setAlpha(entity.awaitingDeploy ? 0 : entity.alphaTarget);
 
       const nextPosition = this.getTileCenter(unit, layout);
@@ -1217,11 +1550,25 @@ export class UnitLayer {
         } else if (movementEvent?.path?.length > 1) {
           this.playPathMovement(entity, layout, movementEvent.path);
         } else {
-          this.playWalkAnimation(
-            entity,
-            Math.sign(nextPosition.x - entity.container.x),
-            Math.sign(nextPosition.y - entity.container.y),
-          );
+          const directionX = Math.sign(nextPosition.x - entity.container.x);
+          const directionY = Math.sign(nextPosition.y - entity.container.y);
+          const movementPlayback = getUnitMovementPlayback(entity.visualSpec, 1);
+
+          entity.activeMovementPlayback = movementPlayback;
+          if (movementPlayback.style === "phased-path") {
+            this.startPhasedMovement(
+              entity,
+              movementPlayback,
+              directionX,
+              directionY,
+            );
+          } else {
+            this.playWalkAnimation(
+              entity,
+              directionX,
+              directionY,
+            );
+          }
           const renderedDistance = getPointDistance(
             { x: entity.container.x, y: entity.container.y },
             nextPosition
@@ -1239,7 +1586,7 @@ export class UnitLayer {
         }
       }
 
-      if (!entity.moveTween && !entity.animationTimer) {
+      if (!this.isMovementActive(entity) && !entity.animationTimer) {
         this.playIdleAnimation(entity);
       }
     }

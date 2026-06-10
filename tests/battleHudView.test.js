@@ -815,7 +815,15 @@ test("battle HUD combat cutscene reads bruiser idle and attack clips from the fu
   );
   assert.match(
     html,
-    /data-cutscene-sheet="player:attack"[\s\S]*?data-frame-count="5"[\s\S]*?data-frame-start="5"/,
+    /data-cutscene-sheet="player:attack"[\s\S]*?data-frame-count="8"[\s\S]*?data-frame-start="5"/,
+  );
+  assert.match(
+    html,
+    /data-cutscene-sprite="player"[\s\S]*?--combat-unit-scale:1;/,
+  );
+  assert.match(
+    html,
+    /data-cutscene-sprite="enemy"[\s\S]*?--combat-unit-scale:0\.88;/,
   );
 });
 

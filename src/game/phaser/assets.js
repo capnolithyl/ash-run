@@ -13,6 +13,7 @@ import {
   GENERATED_TERRAIN_SPRITE_PNG_IDS
 } from "./generated/terrainSpritePngIds.js";
 import * as generatedUnitSpriteAnimationsModule from "./generated/unitSpriteAnimations.js";
+import { getUnitSpritePresentation } from "./unitSpritePresentation.js";
 
 const generatedUnitSpriteAnimationsFallback = Reflect.get(
   generatedUnitSpriteAnimationsModule,
@@ -365,8 +366,8 @@ function flattenUnitAnimationAssets() {
           assetsByKey.set(animationSpec.key, {
             ...animationSpec,
             type: "spritesheet",
-            frameWidth: ownerSpec.frameWidth,
-            frameHeight: ownerSpec.frameHeight,
+            frameWidth: animationSpec.frameWidth ?? ownerSpec.frameWidth,
+            frameHeight: animationSpec.frameHeight ?? ownerSpec.frameHeight,
           });
         }
       }
@@ -510,6 +511,7 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player", colorOptio
     idle: idleAnimation,
     walk: animationBundle?.animations?.walk ?? null,
     attack: animationBundle?.animations?.attack ?? null,
+    presentation: getUnitSpritePresentation(unitTypeId),
   };
 }
 

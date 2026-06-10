@@ -44,8 +44,8 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /assets\/sprites\/units\/purple\/bruiser\/bruiser-full\.png/);
   assert.match(html, /run-unit-card__preview-image--sheet/);
   assert.match(html, /run-unit-card__preview-sheet-surface/);
-  assert.match(html, /@keyframes run-unit-preview-bruiser-idle-0-2-3x4/);
-  assert.match(html, /--preview-columns:3;/);
+  assert.match(html, /@keyframes run-unit-preview-bruiser-idle-0-2-4x4/);
+  assert.match(html, /--preview-columns:4;/);
   assert.match(html, /--preview-rows:4;/);
   assert.doesNotMatch(html, /run-unit-card__preview-strip/);
   assert.match(html, /class="selection-stat run-loadout-stat"/);
