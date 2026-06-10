@@ -37,6 +37,7 @@ import {
   getEnemyRecruitmentMapCap,
   hasEnemyAttackOpportunity,
   isUnitPinnedByThreat,
+  planEnemyTurn,
   pickBestFavorableAttack,
   pickBestAvailableAttack,
   pickEnemyRecruitmentCandidate,
@@ -316,6 +317,45 @@ function resolveEnemyCapturePlan(system, unit, capturePlan, movementBudget) {
   return null;
 }
 
+function resolveEnemyRepairPlan(system, unit, repairPlan, movementBudget) {
+  const movement = moveEnemyUnit(system, unit, repairPlan.tile, movementBudget);
+
+  if (!movement.moved) {
+    unit.hasMoved = true;
+  }
+
+  unit.hasAttacked = true;
+  unit.cooldowns.repairMode = Math.max(
+    unit.cooldowns.repairMode ?? 0,
+    repairPlan.canRepairAfterMove ? (movement.moved ? 2 : 1) : 2
+  );
+  appendLog(
+    system.state,
+    `${unit.name} entered repair mode near ${describeBuilding(repairPlan.building).name}.`
+  );
+
+  return {
+    changed: true,
+    done: system.state.victory || system.state.enemyTurn.pendingUnitIds.length === 0,
+    type: movement.moved ? "move" : "repair",
+    unitId: unit.id,
+    moveSegments: movement.moveSegments
+  };
+}
+
+function takePendingEnemyUnitId(enemyTurn, preferredUnitId = null) {
+  if (preferredUnitId) {
+    const preferredIndex = enemyTurn.pendingUnitIds.indexOf(preferredUnitId);
+
+    if (preferredIndex >= 0) {
+      enemyTurn.pendingUnitIds.splice(preferredIndex, 1);
+      return preferredUnitId;
+    }
+  }
+
+  return enemyTurn.pendingUnitIds.shift() ?? null;
+}
+
 function resolveEnemyTransportPlan(system, unit, transportPlan, movementBudget) {
   if (!transportPlan) {
     return null;
@@ -383,7 +423,15 @@ export function processEnemyTurnStep(system) {
   }
 
   while (system.state.enemyTurn.pendingUnitIds.length > 0) {
-    const unitId = system.state.enemyTurn.pendingUnitIds.shift();
+    const plannedTurn = planEnemyTurn(
+      system.state,
+      system.state.enemyTurn.pendingUnitIds
+    );
+    const plannedAction = plannedTurn?.action ?? null;
+    const unitId = takePendingEnemyUnitId(
+      system.state.enemyTurn,
+      plannedAction?.unitId
+    );
     const unit = findUnitById(system.state, unitId);
 
     if (
@@ -449,30 +497,85 @@ export function processEnemyTurnStep(system) {
     const isGrunt = unit.unitTypeId === "grunt";
     const isSecondaryCapturer = ["breaker", "longshot"].includes(unit.unitTypeId);
 
-    if (repairPlan) {
-      const movement = moveEnemyUnit(system, unit, repairPlan.tile, movementBudget);
+    if (plannedAction?.unitId === unit.id) {
+      if (plannedAction.type === "attack") {
+        const movement = moveEnemyUnit(
+          system,
+          unit,
+          plannedAction.tile,
+          movementBudget
+        );
 
-      if (!movement.moved) {
-        unit.hasMoved = true;
+        if (movement.moved) {
+          system.state.enemyTurn.pendingAttack = {
+            attackerId: unit.id,
+            targetId: plannedAction.targetId
+          };
+          return {
+            changed: true,
+            done: system.state.victory || !hasPendingEnemyTurn(system),
+            type: "move",
+            unitId,
+            moveSegments: movement.moveSegments
+          };
+        }
+
+        if (system.attackTarget(unit.id, plannedAction.targetId)) {
+          queueEnemySlipstreamMove(system, unit.id);
+          return {
+            changed: true,
+            done: system.state.victory || !hasPendingEnemyTurn(system),
+            type: "attack",
+            unitId
+          };
+        }
       }
 
-      unit.hasAttacked = true;
-      unit.cooldowns.repairMode = Math.max(
-        unit.cooldowns.repairMode ?? 0,
-        repairPlan.canRepairAfterMove ? (movement.moved ? 2 : 1) : 2
-      );
-      appendLog(
-        system.state,
-        `${unit.name} entered repair mode near ${describeBuilding(repairPlan.building).name}.`
-      );
+      if (plannedAction.type === "capture") {
+        const building = system.state.map.buildings.find(
+          (candidate) => candidate.id === plannedAction.buildingId
+        );
 
-      return {
-        changed: true,
-        done: system.state.victory || system.state.enemyTurn.pendingUnitIds.length === 0,
-        type: movement.moved ? "move" : "repair",
-        unitId,
-        moveSegments: movement.moveSegments
-      };
+        if (building) {
+          const result = resolveEnemyCapturePlan(
+            system,
+            unit,
+            {
+              building,
+              tile: plannedAction.tile,
+              canCaptureAfterMove: plannedAction.canCaptureAfterMove
+            },
+            movementBudget
+          );
+
+          if (result) {
+            return result;
+          }
+        }
+      }
+
+      if (plannedAction.type === "repair") {
+        const building = system.state.map.buildings.find(
+          (candidate) => candidate.id === plannedAction.buildingId
+        );
+
+        if (building) {
+          return resolveEnemyRepairPlan(
+            system,
+            unit,
+            {
+              building,
+              tile: plannedAction.tile,
+              canRepairAfterMove: plannedAction.canRepairAfterMove
+            },
+            movementBudget
+          );
+        }
+      }
+    }
+
+    if (repairPlan) {
+      return resolveEnemyRepairPlan(system, unit, repairPlan, movementBudget);
     }
 
     if (isGrunt && capturePlan) {

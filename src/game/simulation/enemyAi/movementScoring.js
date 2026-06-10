@@ -14,8 +14,7 @@ import { getSupportNeedScore, unitNeedsService } from "../supportScoring.js";
 import {
   getScoredAttackOptions,
   isAttackAcceptable,
-  pickBestAvailableAttack,
-  pickBestFavorableAttack
+  pickBestAvailableAttack
 } from "./attackScoring.js";
 import { getEnemyAiArchetype, getEnemyAiProfile } from "./profiles.js";
 import {
@@ -248,9 +247,9 @@ export function getBestSupportPlan(state, unit) {
     .sort((left, right) => right.score - left.score)[0] ?? null;
 }
 
-export function getBestCapturePlan(state, unit, reachableTiles) {
+export function getCapturePlans(state, unit, reachableTiles) {
   if (unit.family !== UNIT_TAGS.INFANTRY) {
-    return null;
+    return [];
   }
 
   return state.map.buildings
@@ -293,24 +292,34 @@ export function getBestCapturePlan(state, unit, reachableTiles) {
       };
     })
     .filter(Boolean)
-    .sort((left, right) => right.score - left.score)[0] ?? null;
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.building.id.localeCompare(right.building.id)
+    );
 }
 
-export function getBestRepairPlan(state, unit, reachableTiles) {
+export function getBestCapturePlan(state, unit, reachableTiles) {
+  return getCapturePlans(state, unit, reachableTiles)[0] ?? null;
+}
+
+export function getRepairPlans(state, unit, reachableTiles) {
   if (!wantsRepairMode(state, unit)) {
-    return null;
+    return [];
   }
 
   const currentBuilding = getBuildingAt(state, unit.x, unit.y);
 
   if (canRepairUnitAtBuilding(unit, currentBuilding)) {
-    return {
-      building: currentBuilding,
-      tile: { x: unit.x, y: unit.y },
-      canRepairAfterMove: true,
-      isCurrentTile: true,
-      score: 999
-    };
+    return [
+      {
+        building: currentBuilding,
+        tile: { x: unit.x, y: unit.y },
+        canRepairAfterMove: true,
+        isCurrentTile: true,
+        score: 999
+      }
+    ];
   }
 
   return state.map.buildings
@@ -355,49 +364,91 @@ export function getBestRepairPlan(state, unit, reachableTiles) {
       };
     })
     .filter(Boolean)
-    .sort((left, right) => right.score - left.score)[0] ?? null;
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.building.id.localeCompare(right.building.id)
+    );
+}
+
+export function getBestRepairPlan(state, unit, reachableTiles) {
+  return getRepairPlans(state, unit, reachableTiles)[0] ?? null;
+}
+
+export function getScoredMoveAttackOptions(
+  state,
+  unit,
+  reachableTiles,
+  { allowRisky = false, maxTilesPerTarget = Number.POSITIVE_INFINITY } = {}
+) {
+  const originalPosition = { x: unit.x, y: unit.y };
+  const candidates = [];
+
+  try {
+    for (const tile of reachableTiles) {
+      unit.x = tile.x;
+      unit.y = tile.y;
+
+      const scoredOptions = getScoredAttackOptions(state, unit);
+      let attackOptions = scoredOptions.filter((option) =>
+        isAttackAcceptable(state, option, { allowRisky })
+      );
+
+      if (allowRisky && attackOptions.length === 0 && scoredOptions[0]) {
+        attackOptions = [scoredOptions[0]];
+      }
+
+      for (const attackOption of attackOptions) {
+        const movementDistance =
+          Math.abs(originalPosition.x - tile.x) +
+          Math.abs(originalPosition.y - tile.y);
+        const movementPenalty = attackOption.trade.isRangedAttack
+          ? movementDistance * 0.35
+          : movementDistance * 2.2;
+        const score =
+          attackOption.trade.score +
+          (attackOption.trade.isEffective ? 5 : 0) +
+          (attackOption.trade.isRangedAttack ? 4 : 0) +
+          getStrategicObjectiveScore(state, unit, tile) * 0.08 -
+          movementPenalty;
+
+        candidates.push({
+          ...attackOption,
+          tile: { x: tile.x, y: tile.y },
+          movementDistance,
+          score
+        });
+      }
+    }
+  } finally {
+    unit.x = originalPosition.x;
+    unit.y = originalPosition.y;
+  }
+
+  const targetTileCounts = new Map();
+
+  return candidates
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.target.id.localeCompare(right.target.id) ||
+        left.tile.y - right.tile.y ||
+        left.tile.x - right.tile.x
+    )
+    .filter((candidate) => {
+      const count = targetTileCounts.get(candidate.target.id) ?? 0;
+
+      if (count >= maxTilesPerTarget) {
+        return false;
+      }
+
+      targetTileCounts.set(candidate.target.id, count + 1);
+      return true;
+    });
 }
 
 export function getBestMoveAttackOption(state, unit, reachableTiles, { allowRisky = false } = {}) {
-  const originalPosition = { x: unit.x, y: unit.y };
-  let bestOption = null;
-
-  for (const tile of reachableTiles) {
-    unit.x = tile.x;
-    unit.y = tile.y;
-
-    const attackOption = allowRisky
-      ? getScoredAttackOptions(state, unit).find((option) => isAttackAcceptable(state, option, { allowRisky: true })) ??
-        pickBestAvailableAttack(state, unit)
-      : pickBestFavorableAttack(state, unit);
-
-    if (!attackOption) {
-      continue;
-    }
-
-    const movementCost = Math.abs(originalPosition.x - tile.x) + Math.abs(originalPosition.y - tile.y);
-    const movementPenalty = attackOption.trade.isRangedAttack
-      ? movementCost * 0.35
-      : movementCost * 2.2;
-    const score =
-      attackOption.trade.score +
-      (attackOption.trade.isEffective ? 5 : 0) +
-      (attackOption.trade.isRangedAttack ? 4 : 0) +
-      getStrategicObjectiveScore(state, unit, tile) * 0.08 -
-      movementPenalty;
-
-    if (!bestOption || score > bestOption.score) {
-      bestOption = {
-        ...attackOption,
-        tile,
-        score
-      };
-    }
-  }
-
-  unit.x = originalPosition.x;
-  unit.y = originalPosition.y;
-  return bestOption;
+  return getScoredMoveAttackOptions(state, unit, reachableTiles, { allowRisky })[0] ?? null;
 }
 
 export function pickEnemySlipstreamTile(state, unit, reachableTiles) {
