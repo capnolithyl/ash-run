@@ -7,6 +7,7 @@ import {
   TURN_SIDES
 } from "../game/core/constants.js";
 import { createBlankMapDefinition, createDefaultMapEditorState } from "../game/content/mapEditor.js";
+import { REINFORCEMENT_TRIGGER_TYPES } from "../game/content/reinforcements.js";
 import { RUN_UPGRADES } from "../game/content/runUpgrades.js";
 import {
   createTutorialBattleSession,
@@ -250,6 +251,36 @@ function createMapEditorState() {
         x: 3,
         y: 2
       }
+    ],
+    reinforcements: [
+      {
+        id: "pursuit-wave",
+        name: "Rescue Pursuit",
+        maxActivations: 2,
+        trigger: {
+          type: REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED,
+          tiles: [
+            { x: 5, y: 3 },
+            { x: 6, y: 3 }
+          ]
+        },
+        units: [
+          {
+            id: "pursuit-grunt",
+            unitTypeId: "grunt",
+            level: 3,
+            x: 7,
+            y: 3
+          },
+          {
+            id: "pursuit-runner",
+            unitTypeId: "runner",
+            level: 2,
+            x: 8,
+            y: 4
+          }
+        ]
+      }
     ]
   });
 
@@ -257,7 +288,8 @@ function createMapEditorState() {
     screen: SCREEN_IDS.MAP_EDITOR,
     mapEditor: {
       ...createDefaultMapEditorState(mapData),
-      selectedTile: { x: 1, y: 1 }
+      selectedTile: { x: 7, y: 3 },
+      selectedReinforcementWaveId: "pursuit-wave"
     },
     metaState: createBaseMetaState()
   };

@@ -68,6 +68,47 @@ test("createNewRunState builds map sequences from each run stage pool", () => {
   }
 });
 
+test("createBattleStateForRun loads the selected stage from a map bundle", () => {
+  replaceCustomMaps([
+    {
+      format: "ash-run-map-bundle-v1",
+      id: "bundle-run",
+      name: "Bundle Run",
+      stages: [
+        {
+          id: "bundle-run-stage-1",
+          name: "Bundle Run",
+          theme: "ash",
+          width: 8,
+          height: 8,
+          stage: 1,
+          variantStage: 1,
+          runStages: [1]
+        },
+        {
+          id: "bundle-run-stage-2",
+          name: "Bundle Run",
+          theme: "ash",
+          width: 9,
+          height: 9,
+          stage: 2,
+          variantStage: 2,
+          runStages: [2]
+        }
+      ]
+    }
+  ]);
+
+  const battleState = createBattleStateForRun(createRunState({
+    mapIndex: 1,
+    mapSequence: ["bundle-run-stage-1-run", "bundle-run-stage-2-run"]
+  }));
+
+  assert.equal(battleState.map.id, "bundle-run-stage-2-run");
+  assert.equal(battleState.map.variantStage, 2);
+  assert.equal(battleState.map.width, 9);
+});
+
 test("createUnitFromType preserves armor and weapon classes in the new stat model", () => {
   const breaker = createUnitFromType("breaker", TURN_SIDES.PLAYER);
 

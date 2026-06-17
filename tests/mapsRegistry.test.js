@@ -3,6 +3,7 @@ import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { BUILDING_KEYS } from "../src/game/core/constants.js";
+import { expandMapBundleDefinitions } from "../src/game/content/mapEditor.js";
 import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
 import {
   getMapById,
@@ -13,24 +14,25 @@ import {
   upsertCustomMap
 } from "../src/game/content/maps.js";
 
-async function collectBundledMapFiles(rootDirectory) {
+async function collectBundledMapDefinitions(rootDirectory) {
   const directoryEntries = await fs.readdir(rootDirectory, { withFileTypes: true });
-  const fileNames = [];
+  const mapDefinitions = [];
 
   for (const entry of directoryEntries) {
     const entryPath = path.join(rootDirectory, entry.name);
 
     if (entry.isDirectory()) {
-      fileNames.push(...(await collectBundledMapFiles(entryPath)));
+      mapDefinitions.push(...(await collectBundledMapDefinitions(entryPath)));
       continue;
     }
 
     if (entry.isFile() && entry.name.endsWith(".json")) {
-      fileNames.push(path.relative(rootDirectory, entryPath).replace(/\\/g, "/"));
+      const parsed = JSON.parse(await fs.readFile(entryPath, "utf8"));
+      mapDefinitions.push(...expandMapBundleDefinitions(parsed));
     }
   }
 
-  return fileNames.sort((left, right) => left.localeCompare(right));
+  return mapDefinitions.sort((left, right) => left.id.localeCompare(right.id));
 }
 
 test.afterEach(() => {
@@ -39,15 +41,11 @@ test.afterEach(() => {
 
 test("maps registry loads every JSON map file from the maps folder", async () => {
   const mapsDir = path.resolve("src/game/content/maps");
-  const fileNames = await collectBundledMapFiles(mapsDir);
+  const mapDefinitions = await collectBundledMapDefinitions(mapsDir);
 
-  assert.equal(MAP_POOL.length, fileNames.length);
   assert.deepEqual(
-    MAP_POOL.map((mapDefinition) =>
-      fileNames.find((fileName) => fileName.endsWith(`/${mapDefinition.id}.json`))
-      ?? fileNames.find((fileName) => fileName === `${mapDefinition.id}.json`)
-    ),
-    fileNames
+    MAP_POOL.map((mapDefinition) => mapDefinition.id).sort(),
+    mapDefinitions.map((mapDefinition) => mapDefinition.id)
   );
 });
 
@@ -144,6 +142,106 @@ test("custom map run variants preserve stage metadata for staged pools", () => {
   );
   assert.equal(
     getRunMapPoolForStage(2).some((mapDefinition) => mapDefinition.id === "custom-district-stage-2-run"),
+    true
+  );
+});
+
+test("custom map bundles expand into stage-specific runtime maps", () => {
+  replaceCustomMaps([
+    {
+      format: "ash-run-map-bundle-v1",
+      id: "bundle-district",
+      name: "Bundle District",
+      stages: [
+        {
+          id: "bundle-district-stage-1",
+          name: "Bundle District",
+          theme: "ash",
+          width: 8,
+          height: 8,
+          stage: 1,
+          variantStage: 1,
+          runStages: [1]
+        },
+        {
+          id: "bundle-district-stage-2",
+          name: "Bundle District",
+          theme: "ash",
+          width: 8,
+          height: 8,
+          stage: 2,
+          variantStage: 2,
+          runStages: [2]
+        }
+      ]
+    }
+  ]);
+
+  assert.ok(getMapById("bundle-district-stage-1"));
+  assert.ok(getMapById("bundle-district-stage-2"));
+  assert.ok(getMapById("bundle-district-stage-1-run"));
+  assert.ok(getMapById("bundle-district-stage-2-run"));
+  assert.equal(
+    getRunMapPoolForStage(1).some((mapDefinition) => mapDefinition.id === "bundle-district-stage-2-run"),
+    false
+  );
+  assert.equal(
+    getRunMapPoolForStage(2).some((mapDefinition) => mapDefinition.id === "bundle-district-stage-2-run"),
+    true
+  );
+});
+
+test("custom map bundles override lingering single-stage duplicates", () => {
+  replaceCustomMaps([
+    {
+      id: "duplicate-family-stage-2",
+      name: "Duplicate Family",
+      theme: "ash",
+      width: 6,
+      height: 6,
+      variantStage: 2,
+      runStages: [2]
+    },
+    {
+      format: "ash-run-map-bundle-v1",
+      id: "duplicate-family",
+      name: "Duplicate Family",
+      stages: [
+        {
+          id: "duplicate-family-stage-2",
+          name: "Duplicate Family",
+          theme: "ash",
+          width: 10,
+          height: 10,
+          stage: 2,
+          variantStage: 2,
+          runStages: [2]
+        }
+      ]
+    }
+  ]);
+
+  assert.equal(getMapById("duplicate-family-stage-2")?.width, 10);
+});
+
+test("legacy variantStage maps without runStages stay eligible only for that stage", () => {
+  replaceCustomMaps([
+    {
+      id: "late-stage-only",
+      name: "Late Stage Only",
+      theme: "ash",
+      width: 8,
+      height: 8,
+      variantStage: 10
+    }
+  ]);
+
+  assert.equal(
+    getRunMapPoolForStage(1).some((mapDefinition) => mapDefinition.id === "late-stage-only-run"),
+    false
+  );
+  assert.equal(
+    getRunMapPoolForStage(10).some((mapDefinition) => mapDefinition.id === "late-stage-only-run"),
     true
   );
 });

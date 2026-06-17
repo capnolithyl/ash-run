@@ -372,6 +372,12 @@
   gap: 0;
   min-height: 3.15rem;
   padding: 0.32rem;
+  overflow: clip;
+}
+
+.map-editor-tool--compact:hover,
+.map-editor-tool--compact:focus-visible {
+  overflow: visible;
 }
 
 .map-editor-tool--compact .map-editor-tool__swatch {

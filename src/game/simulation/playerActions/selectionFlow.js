@@ -4,6 +4,7 @@ import { findUnitById, getReadyPlayerUnits } from "../battleUnits.js";
 import { getMovementModifier } from "../commanderEffects.js";
 import {
   getBuildingAt,
+  getMovementPath,
   getMovementPathCost,
   getReachableTiles,
   getSelectedUnit,
@@ -22,6 +23,7 @@ import {
 } from "./pendingActionFlow.js";
 import { getSlipstreamTiles } from "./shared.js";
 import { isUnitZombified } from "../runCardEffects.js";
+import { resolveReinforcementTileCrossing } from "../reinforcementRules.js";
 
 export function handleTileSelection(system, x, y) {
   if (system.state.victory) {
@@ -86,6 +88,7 @@ export function handleTileSelection(system, x, y) {
         system.syncTransportCargoPosition(pendingUnit);
       }
       appendLog(system.state, `${pendingUnit.name} slipped into a new position.`);
+      resolveReinforcementTileCrossing(system.state, [{ x, y }]);
       system.clearPendingAction();
       system.clearSelection();
       return true;
@@ -165,6 +168,15 @@ export function handleTileSelection(system, x, y) {
     const isCurrentTile = selectedUnit.x === x && selectedUnit.y === y;
 
     if (canMoveToTile) {
+      const movementPath = isCurrentTile
+        ? []
+        : getMovementPath(
+            system.state,
+            selectedUnit,
+            movementBudget,
+            x,
+            y
+          );
       system.state.pendingAction = {
         type: "move",
         unitId: selectedUnit.id,
@@ -173,7 +185,8 @@ export function handleTileSelection(system, x, y) {
         fromY: selectedUnit.y,
         fromStamina: selectedUnit.current.stamina,
         toX: x,
-        toY: y
+        toY: y,
+        path: movementPath
       };
 
       if (!isCurrentTile) {
@@ -193,6 +206,13 @@ export function handleTileSelection(system, x, y) {
           system.syncTransportCargoPosition(selectedUnit);
         }
         appendLog(system.state, `${selectedUnit.name} repositioned.`);
+        const activations = resolveReinforcementTileCrossing(
+          system.state,
+          movementPath.slice(1)
+        );
+        system.state.pendingAction.reinforcementLocked = activations.some(
+          (activation) => activation.deployments.length > 0
+        );
       }
 
       system.state.selection = { type: "unit", id: selectedUnit.id, x, y };
@@ -273,7 +293,7 @@ export function handleContextAction(system) {
       return true;
     }
 
-    return redoPendingMove(system);
+    return pendingAction.reinforcementLocked ? false : redoPendingMove(system);
   }
 
   if (system.state.selection?.type) {

@@ -13,6 +13,7 @@ import {
   getBuildingAt,
   getValidUnloadTiles
 } from "../selectors.js";
+import { resolveReinforcementTileCrossing } from "../reinforcementRules.js";
 import {
   applyExtinguishAbility,
   getExtinguishTargetsForUnit,
@@ -110,6 +111,7 @@ export function unloadTransportWithPendingUnit(system, x, y) {
   runner.hasMoved = true;
   runner.hasAttacked = true;
   appendLog(system.state, `${carried.name} disembarked from ${runner.name}.`);
+  resolveReinforcementTileCrossing(system.state, [{ x, y }]);
   system.clearPendingAction();
   system.clearSelection();
   return true;
@@ -340,7 +342,7 @@ export function dropOffHostageWithPendingUnit(system) {
 export function redoPendingMove(system) {
   const pendingAction = system.state.pendingAction;
 
-  if (!pendingAction) {
+  if (!pendingAction || pendingAction.reinforcementLocked) {
     return false;
   }
 

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { BUILDING_KEYS, TURN_SIDES } from "../src/game/core/constants.js";
 import { createBlankMapDefinition, createDefaultMapEditorState } from "../src/game/content/mapEditor.js";
+import { REINFORCEMENT_TRIGGER_TYPES } from "../src/game/content/reinforcements.js";
 import { renderMapEditorView } from "../src/ui/views/mapEditorView.js";
 
 test("map editor view renders the battle-style editor shell and controls", () => {
@@ -46,7 +47,7 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.match(html, /data-action="map-editor-select-tool"/);
   assert.match(html, /data-map-editor-field="name"/);
   assert.match(html, /data-map-editor-field="theme"/);
-  assert.match(html, /Run Variant/);
+  assert.match(html, /Run Stages/);
   assert.match(html, /Quick Select/);
   assert.match(html, /data-action="map-editor-restore-last-terrain"/);
   assert.match(html, /data-action="map-editor-restore-last-building"/);
@@ -87,6 +88,51 @@ test("map editor view renders the battle-style editor shell and controls", () =>
   assert.doesNotMatch(html, /Clears terrain, buildings, and units/);
   assert.doesNotMatch(html, /map-editor-header/);
   assert.match(html, /data-action="map-editor-undo"/);
+});
+
+test("map editor view exposes reinforcement palette, inspector, and selected tile details", () => {
+  const mapData = createBlankMapDefinition({
+    id: "reinforcement-view",
+    name: "Reinforcement View",
+    reinforcements: [
+      {
+        id: "pursuit-wave",
+        name: "Pursuit Wave",
+        maxActivations: 3,
+        trigger: {
+          type: REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED,
+          tiles: [{ x: 2, y: 2 }]
+        },
+        units: [
+          {
+            id: "pursuit-grunt",
+            unitTypeId: "grunt",
+            level: 4,
+            x: 2,
+            y: 2
+          }
+        ]
+      }
+    ]
+  });
+  const state = {
+    mapEditor: {
+      ...createDefaultMapEditorState(mapData),
+      selectedTile: { x: 2, y: 2 }
+    }
+  };
+
+  const html = renderMapEditorView(state, { openAccordion: "reinforcements" });
+
+  assert.match(html, /data-map-editor-accordion="reinforcements"[\s\S]*?open/);
+  assert.match(html, /data-action="map-editor-add-reinforcement-wave"/);
+  assert.match(html, /data-action="map-editor-select-reinforcement-wave"/);
+  assert.match(html, /data-action="map-editor-select-reinforcement-unit"/);
+  assert.match(html, /data-map-editor-field="reinforcementTriggerType"/);
+  assert.match(html, /data-map-editor-field="reinforcementMaxActivations"/);
+  assert.match(html, /data-map-editor-tool="reinforcement-trigger"/);
+  assert.match(html, /Pursuit Wave: Grunt L4/);
+  assert.match(html, /Trigger tile for pursuit-wave/);
 });
 
 test("map editor view renders history confirmation controls for a pending restore", () => {

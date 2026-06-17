@@ -12,6 +12,7 @@ import { getRecruitDiscount } from "./commanderEffects.js";
 import * as debugActions from "./debugActions.js";
 import * as missionRules from "./missionRules.js";
 import * as playerActions from "./playerActions.js";
+import { normalizeReinforcementState } from "./reinforcementRules.js";
 import { awardExperience } from "./progression.js";
 import * as transportRules from "./transportRules.js";
 import * as turnFlow from "./turnFlow.js";
@@ -71,10 +72,12 @@ export class BattleSystem {
     }
     this.state.enemy.recruitDiscount = getRecruitDiscount(this.state, TURN_SIDES.ENEMY);
     missionRules.normalizeMissionState(this.state);
+    normalizeReinforcementState(this.state);
   }
 
   getSnapshot() {
     missionRules.normalizeMissionState(this.state);
+    normalizeReinforcementState(this.state);
     const snapshot = structuredClone(this.state);
     snapshot.presentation = buildBattlePresentation(snapshot);
     return snapshot;
@@ -82,6 +85,7 @@ export class BattleSystem {
 
   getStateForSave() {
     missionRules.normalizeMissionState(this.state);
+    normalizeReinforcementState(this.state);
     return structuredClone(this.state);
   }
 

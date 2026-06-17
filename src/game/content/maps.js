@@ -1,5 +1,12 @@
 import { BUILDING_KEYS, PROTOTYPE_RUN_GOAL, TURN_SIDES } from "../core/constants.js";
-import { exportMapDefinition, normalizeMapDefinition } from "./mapEditor.js";
+import {
+  expandMapBundleDefinitions,
+  exportMapDefinition,
+  getMapDefinitionFamilyId,
+  getMapDefinitionStage,
+  isMapBundleDefinition,
+  normalizeMapDefinition
+} from "./mapEditor.js";
 import { GENERATED_MAP_MODULES } from "./maps.generated.js";
 
 const VITE_MAP_MODULES =
@@ -20,6 +27,27 @@ const PRODUCTION_BUILDINGS = new Set([
 
 function toExportedMapDefinition(mapDefinition) {
   return exportMapDefinition(normalizeMapDefinition(mapDefinition));
+}
+
+function expandMapDefinitions(mapDefinition) {
+  return expandMapBundleDefinitions(mapDefinition).map(toExportedMapDefinition);
+}
+
+function expandMapDefinitionEntries(mapDefinition) {
+  return expandMapDefinitions(mapDefinition).map((expandedMap) => ({
+    mapDefinition: expandedMap,
+    isBundle: isMapBundleDefinition(mapDefinition)
+  }));
+}
+
+function dedupeExpandedMapEntries(entries) {
+  const dedupedMaps = new Map();
+
+  for (const entry of entries.sort((left, right) => Number(left.isBundle) - Number(right.isBundle))) {
+    dedupedMaps.set(entry.mapDefinition.id, entry.mapDefinition);
+  }
+
+  return [...dedupedMaps.values()].sort((left, right) => left.id.localeCompare(right.id));
 }
 
 function createRunMapVariant(mapDefinition) {
@@ -66,8 +94,21 @@ function getNormalizedRunStages(mapDefinition) {
 export function isRunMapEligibleForStage(mapDefinition, stage) {
   const normalizedStage = normalizeRunStage(stage);
   const runStages = getNormalizedRunStages(mapDefinition);
+  const variantStage = normalizeRunStage(getMapDefinitionStage(mapDefinition));
 
-  return Boolean(normalizedStage) && (runStages.length === 0 || runStages.includes(normalizedStage));
+  if (!normalizedStage) {
+    return false;
+  }
+
+  if (runStages.length > 0) {
+    return runStages.includes(normalizedStage);
+  }
+
+  if (variantStage) {
+    return variantStage === normalizedStage;
+  }
+
+  return true;
 }
 
 export function getRunMapPoolForStage(stage) {
@@ -80,16 +121,18 @@ export function getRunMapPoolForStage(stage) {
   }
 
   const unstagedMaps = RUN_MAP_POOL.filter(
-    (mapDefinition) => getNormalizedRunStages(mapDefinition).length === 0
+    (mapDefinition) =>
+      getNormalizedRunStages(mapDefinition).length === 0 &&
+      !normalizeRunStage(getMapDefinitionStage(mapDefinition))
   );
 
   return unstagedMaps.length > 0 ? unstagedMaps : RUN_MAP_POOL;
 }
 
 function loadBundledMapPool() {
-  return Object.values(RAW_MAP_MODULES)
-    .map(toExportedMapDefinition)
-    .sort((left, right) => left.id.localeCompare(right.id));
+  return dedupeExpandedMapEntries(
+    Object.values(RAW_MAP_MODULES).flatMap(expandMapDefinitionEntries)
+  );
 }
 
 const BUNDLED_MAP_POOL = loadBundledMapPool();
@@ -119,28 +162,33 @@ function rebuildMapPools() {
 }
 
 export function replaceCustomMaps(customMaps = []) {
+  const expandedCustomMaps = dedupeExpandedMapEntries(
+    customMaps.flatMap(expandMapDefinitionEntries)
+  );
+
   customMapPool.splice(
     0,
     customMapPool.length,
-    ...customMaps.map((mapDefinition) => toExportedMapDefinition(mapDefinition))
+    ...expandedCustomMaps
   );
   rebuildMapPools();
 }
 
 export function upsertCustomMap(mapDefinition) {
-  const exportedMap = toExportedMapDefinition(mapDefinition);
-  const existingIndex = customMapPool.findIndex(
-    (candidate) => candidate.id === exportedMap.id
+  const exportedMaps = expandMapDefinitions(mapDefinition);
+  const replacementIds = new Set(exportedMaps.map((candidate) => candidate.id));
+  const replacementFamilyIds = new Set(
+    exportedMaps.map((candidate) => getMapDefinitionFamilyId(candidate))
+  );
+  const retainedMaps = customMapPool.filter(
+    (candidate) =>
+      !replacementIds.has(candidate.id) &&
+      !replacementFamilyIds.has(getMapDefinitionFamilyId(candidate))
   );
 
-  if (existingIndex === -1) {
-    customMapPool.push(exportedMap);
-  } else {
-    customMapPool.splice(existingIndex, 1, exportedMap);
-  }
-
+  customMapPool.splice(0, customMapPool.length, ...retainedMaps, ...exportedMaps);
   rebuildMapPools();
-  return exportedMap;
+  return exportedMaps;
 }
 
 export function getMapById(mapId) {

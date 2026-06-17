@@ -408,6 +408,7 @@ function createPendingActionView(state) {
     canExtinguish: extinguishTargets.length > 0,
     canEnterTransport,
     canUnloadTransport,
+    canRedoMove: !isSlipstream && !pendingAction.reinforcementLocked,
     isSlipstream,
     isTargeting: mode === "fire",
     isChoosingTransport: mode === "transport",

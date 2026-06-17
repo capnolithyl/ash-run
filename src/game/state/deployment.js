@@ -138,7 +138,7 @@ function resolveDeploymentPoints(mapDefinition, owner, spawnPoints) {
  * Deployment starts from the authored spawn list, then fans out to the nearest
  * valid tile so carried rosters and scaled enemy openers never overlap.
  */
-export function findOpenDeploymentPoint(mapDefinition, unit, origin, occupiedTiles) {
+export function findAvailableDeploymentPoint(mapDefinition, unit, origin, occupiedTiles) {
   const queue = [{ x: origin.x, y: origin.y }];
   const visited = new Set([tileKey(origin.x, origin.y)]);
   const directions = [
@@ -183,7 +183,11 @@ export function findOpenDeploymentPoint(mapDefinition, unit, origin, occupiedTil
     }
   }
 
-  return origin;
+  return null;
+}
+
+export function findOpenDeploymentPoint(mapDefinition, unit, origin, occupiedTiles) {
+  return findAvailableDeploymentPoint(mapDefinition, unit, origin, occupiedTiles) ?? origin;
 }
 
 export function getOccupiedTiles(units) {

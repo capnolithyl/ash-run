@@ -23,11 +23,19 @@ import {
 } from "../../game/content/mapGoals.js";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "../../game/content/terrain.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
+import {
+  getReinforcementTriggerLabel,
+  isIntervalReinforcementTrigger,
+  isOneShotReinforcementTrigger,
+  REINFORCEMENT_TRIGGER_ORDER,
+  REINFORCEMENT_TRIGGER_TYPES
+} from "../../game/content/reinforcements.js";
 
 const MAP_EDITOR_ACCORDION_IDS = {
   TERRAIN: "terrain",
   BUILDINGS: "buildings",
   UNITS: "units",
+  REINFORCEMENTS: "reinforcements",
   MIRROR: "mirror"
 };
 
@@ -43,7 +51,9 @@ const TERRAIN_PREVIEW_KEYS = {
 const MAP_EDITOR_TOOL_TOOLTIPS = {
   [MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER]: "Reset only the terrain on a tile back to plains.",
   [MAP_EDITOR_TOOL_IDS.BUILDING_ERASER]: "Remove only the building on a tile.",
-  [MAP_EDITOR_TOOL_IDS.UNIT_ERASER]: "Remove only the unit on a tile."
+  [MAP_EDITOR_TOOL_IDS.UNIT_ERASER]: "Remove only the starting unit on a tile.",
+  [MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER]: "Remove a unit from the selected reinforcement wave.",
+  [MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER]: "Remove a trigger tile from the selected reinforcement wave."
 };
 
 const MAP_EDITOR_MIRROR_DESCRIPTIONS = {
@@ -334,18 +344,22 @@ function renderBuildingTools(state) {
     .join("");
 }
 
-function renderUnitTools(state, previewStyles) {
+function renderUnitTools(state, previewStyles, options = {}) {
+  const action = options.action ?? "map-editor-select-unit";
+  const activeTool = options.activeTool ?? MAP_EDITOR_TOOL_IDS.UNIT;
+  const owner = options.owner ?? state.mapEditor.selectedUnitOwner;
+
   return Object.values(UNIT_CATALOG)
     .map((unit) => {
       const isActive =
-        state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT &&
+        state.mapEditor.selectedTool === activeTool &&
         state.mapEditor.selectedUnitTypeId === unit.id;
       const tooltip = `${unit.family} unit. Range ${unit.minRange}-${unit.maxRange}. Move ${unit.movement}.`;
 
       return `
         <button
           class="ghost-button ghost-button--small map-editor-tool map-editor-tool--unit map-editor-has-tooltip ${isActive ? "map-editor-tool--active" : ""}"
-          data-action="map-editor-select-unit"
+          data-action="${action}"
           data-unit-type-id="${unit.id}"
           ${renderTooltipAttributes(tooltip)}
           type="button"
@@ -353,7 +367,7 @@ function renderUnitTools(state, previewStyles) {
           <span class="map-editor-tool__swatch map-editor-tool__swatch--preview map-editor-tool__swatch--unit">
             ${renderUnitPreview(
               unit.id,
-              state.mapEditor.selectedUnitOwner,
+              owner,
               unit.name,
               previewStyles,
               state.metaState?.options
@@ -589,6 +603,15 @@ function renderActiveTool(state) {
     return `${unit?.name ?? "Unit"} L${state.mapEditor.selectedUnitLevel ?? 1} (${state.mapEditor.selectedUnitOwner})`;
   }
 
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT) {
+    const unit = UNIT_CATALOG[state.mapEditor.selectedUnitTypeId];
+    return `${unit?.name ?? "Unit"} L${state.mapEditor.selectedUnitLevel ?? 1} reinforcement`;
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER) {
+    return "Reinforcement Trigger Tile";
+  }
+
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN) {
     return TERRAIN_LIBRARY[state.mapEditor.selectedTerrainId]?.label ?? "Terrain";
   }
@@ -603,6 +626,14 @@ function renderActiveTool(state) {
 
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT_ERASER) {
     return "Unit Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER) {
+    return "Reinforcement Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER) {
+    return "Trigger Eraser";
   }
 
   return "Tool";
@@ -618,6 +649,15 @@ function renderCompactTool(state) {
     return `${unitName} L${state.mapEditor.selectedUnitLevel ?? 1}`;
   }
 
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT) {
+    const unitName = UNIT_CATALOG[state.mapEditor.selectedUnitTypeId]?.name ?? "Unit";
+    return `${unitName} Reinforcement`;
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER) {
+    return "Trigger Tile";
+  }
+
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.TERRAIN) {
     return TERRAIN_LIBRARY[state.mapEditor.selectedTerrainId]?.label ?? "Terrain";
   }
@@ -632,6 +672,14 @@ function renderCompactTool(state) {
 
   if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.UNIT_ERASER) {
     return "Unit Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER) {
+    return "Reinforcement Eraser";
+  }
+
+  if (state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER) {
+    return "Trigger Eraser";
   }
 
   return "Tool";
@@ -985,6 +1033,18 @@ function renderTileSummary(tileDetails) {
       <p>${tileDetails.buildingMetadata ? `${tileDetails.buildingMetadata.name} (${tileDetails.building.owner})` : "No building"}</p>
       <p>${tileDetails.unitMetadata ? `${tileDetails.unitMetadata.name} (${tileDetails.unit.owner}) L${tileDetails.unit.level ?? 1}` : "No unit"}</p>
       ${
+        tileDetails.reinforcementUnits.length > 0
+          ? `<p>${tileDetails.reinforcementUnits.map((unit) =>
+              `${escapeHtml(unit.waveName)}: ${escapeHtml(UNIT_CATALOG[unit.unitTypeId]?.name ?? unit.unitTypeId)} L${unit.level}`
+            ).join("<br />")}</p>`
+          : "<p>No reinforcements</p>"
+      }
+      ${
+        tileDetails.reinforcementTriggerWaveIds.length > 0
+          ? `<p>Trigger tile for ${tileDetails.reinforcementTriggerWaveIds.map(escapeHtml).join(", ")}</p>`
+          : ""
+      }
+      ${
         tileDetails.unit
           ? `
             <div class="debug-grid">
@@ -1006,17 +1066,22 @@ function renderTileSummary(tileDetails) {
   `;
 }
 
-function renderRunSetupSection(map) {
+function renderRunSetupSection(map, mapStages = {}) {
   const variantStage = Number(map.variantStage) || 1;
+  const authoredStages = new Set(
+    Object.keys(mapStages ?? {})
+      .map((stage) => Number(stage))
+      .filter((stage) => Number.isInteger(stage) && stage > 0)
+  );
+  authoredStages.add(variantStage);
 
   return `
     <div class="card-block">
-      <p class="eyebrow">Run Variant</p>
-      <p>Each map save now belongs to exactly one run stage.</p>
+      <p class="eyebrow">Run Stages</p>
       <div class="map-editor-owner-row" aria-label="Run stage">
         ${getMapEditorRunStageOptions().map((stage) => `
           <button
-            class="ghost-button ghost-button--small map-editor-chip ${variantStage === stage ? "map-editor-chip--active" : ""}"
+            class="ghost-button ghost-button--small map-editor-chip ${variantStage === stage ? "map-editor-chip--active" : ""} ${authoredStages.has(stage) ? "map-editor-chip--authored" : ""}"
             data-action="map-editor-set-variant-stage"
             data-variant-stage="${stage}"
             type="button"
@@ -1102,6 +1167,208 @@ function renderHistorySection(state) {
           .reverse()
           .join("")}
       </div>
+    </div>
+  `;
+}
+
+function getSelectedReinforcementWave(state) {
+  return (
+    state.mapEditor.mapData.reinforcements.find(
+      (wave) => wave.id === state.mapEditor.selectedReinforcementWaveId
+    ) ?? null
+  );
+}
+
+function renderReinforcementPalette(state, previewStyles) {
+  const wave = getSelectedReinforcementWave(state);
+
+  if (!wave) {
+    return `<p>Add a reinforcement wave in the Inspector before placing units.</p>`;
+  }
+
+  const canPaintTrigger = wave.trigger.type === REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED;
+
+  return `
+    <p><strong>${escapeHtml(wave.name)}</strong></p>
+    <div class="debug-grid">
+      <label>
+        <span>Unit Level</span>
+        <input
+          type="number"
+          data-map-editor-field="selectedUnitLevel"
+          value="${state.mapEditor.selectedUnitLevel ?? 1}"
+          min="1"
+          max="${MAP_EDITOR_MAX_UNIT_LEVEL}"
+        />
+      </label>
+    </div>
+    <div class="map-editor-tool-grid map-editor-tool-grid--units" data-map-editor-scroll="reinforcements">
+      ${renderUnitTools(state, previewStyles, {
+        action: "map-editor-select-reinforcement-unit",
+        activeTool: MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT,
+        owner: TURN_SIDES.ENEMY
+      })}
+    </div>
+    <div class="map-editor-tool-grid">
+      <button
+        class="ghost-button ghost-button--small map-editor-tool ${state.mapEditor.selectedTool === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER ? "map-editor-tool--active" : ""}"
+        data-action="map-editor-select-tool"
+        data-map-editor-tool="${MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER}"
+        type="button"
+        ${canPaintTrigger ? "" : "disabled"}
+      >
+        <span class="map-editor-tool__swatch map-editor-tool__swatch--marker">T</span>
+        <span class="map-editor-tool__copy">
+          <strong>Trigger Tile</strong>
+          <small>${canPaintTrigger ? "Paint crossed tiles" : "Choose Tile Crossed"}</small>
+        </span>
+      </button>
+      ${renderSelectiveEraserTool(
+        state,
+        MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER,
+        "Reinforcement Eraser"
+      )}
+      ${renderSelectiveEraserTool(
+        state,
+        MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER,
+        "Trigger Eraser"
+      )}
+    </div>
+  `;
+}
+
+function renderReinforcementSection(state, tileDetails) {
+  const map = state.mapEditor.mapData;
+  const wave = getSelectedReinforcementWave(state);
+  const selectedEnemy = tileDetails?.unit?.owner === TURN_SIDES.ENEMY
+    ? tileDetails.unit
+    : null;
+  const targetUnit = wave?.trigger?.targetUnitId
+    ? map.units.find((unit) => unit.id === wave.trigger.targetUnitId) ?? null
+    : null;
+
+  return `
+    <div class="card-block map-editor-reinforcements">
+      <div class="map-editor-history__header">
+        <div>
+          <p class="eyebrow">Reinforcements</p>
+          <p class="map-editor-history__copy">Author enemy waves and their activation rules.</p>
+        </div>
+        <button
+          class="ghost-button ghost-button--small"
+          data-action="map-editor-add-reinforcement-wave"
+          type="button"
+        >
+          Add Wave
+        </button>
+      </div>
+      ${
+        map.reinforcements.length > 0
+          ? `
+            <div class="map-editor-owner-row" aria-label="Reinforcement waves">
+              ${map.reinforcements.map((candidate, index) => `
+                <button
+                  class="ghost-button ghost-button--small map-editor-chip ${candidate.id === wave?.id ? "map-editor-chip--active" : ""}"
+                  data-action="map-editor-select-reinforcement-wave"
+                  data-reinforcement-wave-id="${candidate.id}"
+                  type="button"
+                >
+                  ${index + 1}. ${escapeHtml(candidate.name)}
+                </button>
+              `).join("")}
+            </div>
+          `
+          : `<p>No waves authored.</p>`
+      }
+      ${
+        wave
+          ? `
+            <div class="debug-grid">
+              <label>
+                <span>Name</span>
+                <input
+                  type="text"
+                  data-map-editor-field="reinforcementName"
+                  value="${escapeAttribute(wave.name)}"
+                  maxlength="60"
+                />
+              </label>
+              <label>
+                <span>Trigger</span>
+                <select data-map-editor-field="reinforcementTriggerType">
+                  ${REINFORCEMENT_TRIGGER_ORDER.map((triggerType) => `
+                    <option value="${triggerType}" ${wave.trigger.type === triggerType ? "selected" : ""}>
+                      ${getReinforcementTriggerLabel(triggerType)}
+                    </option>
+                  `).join("")}
+                </select>
+              </label>
+              ${
+                isIntervalReinforcementTrigger(wave.trigger.type)
+                  ? `
+                    <label>
+                      <span>Every</span>
+                      <input
+                        type="number"
+                        data-map-editor-field="reinforcementEvery"
+                        value="${wave.trigger.every ?? 1}"
+                        min="1"
+                        max="99"
+                      />
+                    </label>
+                  `
+                  : ""
+              }
+              ${
+                !isOneShotReinforcementTrigger(wave.trigger.type)
+                  ? `
+                    <label>
+                      <span>Activations</span>
+                      <input
+                        type="number"
+                        data-map-editor-field="reinforcementMaxActivations"
+                        value="${wave.maxActivations}"
+                        min="1"
+                        max="99"
+                      />
+                    </label>
+                  `
+                  : ""
+              }
+            </div>
+            <p>
+              <strong>${wave.units.length}</strong> unit${wave.units.length === 1 ? "" : "s"}
+              ${wave.trigger.type === REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED
+                ? ` | <strong>${wave.trigger.tiles.length}</strong> trigger tile${wave.trigger.tiles.length === 1 ? "" : "s"}`
+                : ""}
+            </p>
+            ${
+              wave.trigger.type === REINFORCEMENT_TRIGGER_TYPES.UNIT_KILLED
+                ? `
+                  <p><strong>Target</strong> ${targetUnit ? `${targetUnit.unitTypeId} at ${targetUnit.x}, ${targetUnit.y}` : "No enemy selected"}</p>
+                  <button
+                    class="ghost-button ghost-button--small"
+                    data-action="map-editor-reinforcement-use-selected-unit"
+                    type="button"
+                    ${selectedEnemy ? "" : "disabled"}
+                  >
+                    Use Selected Enemy
+                  </button>
+                `
+                : ""
+            }
+            <div class="map-editor-inline-actions">
+              <button
+                class="ghost-button ghost-button--small"
+                data-action="map-editor-delete-reinforcement-wave"
+                type="button"
+              >
+                Delete Wave
+              </button>
+            </div>
+          `
+          : ""
+      }
     </div>
   `;
 }
@@ -1294,6 +1561,14 @@ export function renderMapEditorView(state, uiState = {}) {
         )}
 
         ${renderAccordion(
+          MAP_EDITOR_ACCORDION_IDS.REINFORCEMENTS,
+          "Reinforcements",
+          "Place enemy waves and tile triggers.",
+          renderReinforcementPalette(state, previewStyles),
+          openAccordion
+        )}
+
+        ${renderAccordion(
           MAP_EDITOR_ACCORDION_IDS.MIRROR,
           "Mirror + Cleanup",
           "Mirror your brush or switch cleanup tools.",
@@ -1366,7 +1641,8 @@ export function renderMapEditorView(state, uiState = {}) {
           </div>
         </div>
 
-        ${renderRunSetupSection(map)}
+        ${renderRunSetupSection(map, state.mapEditor.mapStages)}
+        ${renderReinforcementSection(state, tileDetails)}
         ${renderHistorySection(state)}
         ${renderGoalSection(map, tileDetails)}
         ${renderTileSummary(tileDetails)}

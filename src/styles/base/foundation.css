@@ -283,6 +283,7 @@ textarea:disabled {
 }
 
 #game-root canvas {
+  display: block;
   touch-action: none;
   cursor: var(--cursor-default);
   filter: none;

@@ -6,8 +6,13 @@ import {
   buildMapEditorUnitId,
   createBlankMapDefinition,
   createDefaultMapEditorState,
+  expandMapBundleDefinitions,
   exportMapDefinition,
+  exportMapBundleDefinition,
+  getMapDefinitionFamilyId,
+  getMapDefinitionStage,
   getMapEditorValidation,
+  isMapBundleDefinition,
   MAP_EDITOR_HISTORY_LIMIT,
   MAP_EDITOR_MIRROR_MODES,
   MAP_EDITOR_TOOL_IDS,
@@ -17,6 +22,15 @@ import {
   normalizeMapDefinition,
   resizeMapDefinition
 } from "../content/mapEditor.js";
+import {
+  createDefaultReinforcementWave,
+  getReinforcementValidationErrors,
+  isIntervalReinforcementTrigger,
+  isOneShotReinforcementTrigger,
+  normalizeMapReinforcements,
+  REINFORCEMENT_TRIGGER_ORDER,
+  REINFORCEMENT_TRIGGER_TYPES
+} from "../content/reinforcements.js";
 import { getMapGoalLabel, MAP_GOAL_ORDER, normalizeMapGoal } from "../content/mapGoals.js";
 import { MAP_THEME_PALETTES } from "../content/terrain.js";
 import { upsertCustomMap } from "../content/maps.js";
@@ -54,19 +68,17 @@ function getMapEditorBaseId(value) {
 function ensureEditableMapVariant(mapInput) {
   const mapData = normalizeMapDefinition(mapInput);
   const resolvedVariantStage =
+    normalizeMapVariantStage(mapData.stage)
+    ??
     normalizeMapVariantStage(mapData.variantStage)
     ?? normalizeMapRunStages(mapData.runStages)[0]
     ?? 1;
 
+  mapData.stage = resolvedVariantStage;
   mapData.variantStage = resolvedVariantStage;
   mapData.runStages = [resolvedVariantStage];
 
   return mapData;
-}
-
-function getMapEditorVariantSummary(mapData) {
-  const variantStage = normalizeMapVariantStage(mapData?.variantStage);
-  return variantStage ? `Stage ${variantStage}` : "Stage 1";
 }
 
 function createLastSelectedBuildingSnapshot(editorState, overrides = {}) {
@@ -102,11 +114,10 @@ function createLastSelectedUnitSnapshot(editorState, overrides = {}) {
   return { unitTypeId, owner, level };
 }
 
-function buildMapEditorSuggestedRelativePath(mapData) {
-  const normalizedMap = ensureEditableMapVariant(mapData);
-  const baseMapId = getMapEditorBaseId(normalizedMap.id || normalizedMap.name || "custom-map");
+function buildMapEditorSuggestedRelativePath(mapBundle) {
+  const baseMapId = getMapEditorBaseId(mapBundle?.id || mapBundle?.name || "custom-map");
 
-  return `${baseMapId}/${normalizedMap.id}.json`;
+  return `${baseMapId}/${baseMapId}.json`;
 }
 
 function resetMapEditorLoadDialogState(editorState, overrides = {}) {
@@ -118,12 +129,13 @@ function resetMapEditorLoadDialogState(editorState, overrides = {}) {
   editorState.loadDialogError = overrides.error ?? "";
 }
 
-function applyLoadedMapToEditorState(editorState, mapInput) {
-  editorState.mapData = synchronizeMapEditorIdentity(ensureEditableMapVariant(mapInput));
-  editorState.selectedTile = null;
-  editorState.hoveredTile = null;
-  editorState.isPainting = false;
-  initializeMapEditorHistory(editorState, "Map loaded");
+function applyLoadedMapToEditorState(editorState, mapInput, metadata = null) {
+  const selectedStage = getLoadedSelectedStage(mapInput, metadata);
+  const stageMaps = isMapBundleDefinition(mapInput)
+    ? expandMapBundleDefinitions(mapInput)
+    : [mapInput];
+
+  applyStageMapsToEditorState(editorState, stageMaps, selectedStage, "Map loaded");
 }
 
 function getMapLoadGroupKey(entry) {
@@ -138,6 +150,204 @@ function cloneSelectedTile(tile) {
   return tile && Number.isInteger(tile.x) && Number.isInteger(tile.y)
     ? { x: tile.x, y: tile.y }
     : null;
+}
+
+function getEditorStageNumber(mapData) {
+  return getMapDefinitionStage(mapData) ?? 1;
+}
+
+function getStageKey(stage) {
+  return String(normalizeMapVariantStage(stage) ?? 1);
+}
+
+function createStageHistorySnapshot(editorState) {
+  return {
+    historyEntries: structuredClone(editorState.historyEntries ?? []),
+    currentHistoryIndex: Number(editorState.currentHistoryIndex ?? -1),
+    pendingHistoryIndex: Number.isInteger(editorState.pendingHistoryIndex)
+      ? editorState.pendingHistoryIndex
+      : null,
+    historySequence: Number(editorState.historySequence ?? 0),
+    selectedTile: cloneSelectedTile(editorState.selectedTile),
+    selectedReinforcementWaveId: editorState.selectedReinforcementWaveId ?? null
+  };
+}
+
+function restoreStageHistorySnapshot(editorState, stage, label) {
+  const snapshot = editorState.stageHistories?.[getStageKey(stage)] ?? null;
+
+  if (!snapshot) {
+    initializeMapEditorHistory(editorState, label);
+    return;
+  }
+
+  editorState.historyEntries = structuredClone(snapshot.historyEntries ?? []);
+  editorState.currentHistoryIndex = Number(snapshot.currentHistoryIndex ?? -1);
+  editorState.pendingHistoryIndex = Number.isInteger(snapshot.pendingHistoryIndex)
+    ? snapshot.pendingHistoryIndex
+    : null;
+  editorState.historySequence = Number(snapshot.historySequence ?? 0);
+  editorState.selectedTile = cloneSelectedTile(snapshot.selectedTile);
+  editorState.selectedReinforcementWaveId =
+    editorState.mapData.reinforcements.some(
+      (wave) => wave.id === snapshot.selectedReinforcementWaveId
+    )
+      ? snapshot.selectedReinforcementWaveId
+      : editorState.mapData.reinforcements[0]?.id ?? null;
+}
+
+function syncActiveMapEditorStage(editorState) {
+  if (!editorState?.mapData) {
+    return null;
+  }
+
+  const stage = getEditorStageNumber(editorState.mapData);
+  editorState.activeMapStage = stage;
+  editorState.mapStages ??= {};
+  editorState.mapStages[getStageKey(stage)] = cloneMapData(editorState.mapData);
+  return stage;
+}
+
+function saveMapEditorStageSession(editorState) {
+  const stage = syncActiveMapEditorStage(editorState);
+
+  if (!stage) {
+    return;
+  }
+
+  editorState.stageHistories ??= {};
+  editorState.stageHistories[getStageKey(stage)] = createStageHistorySnapshot(editorState);
+}
+
+function getMapEditorStageMaps(editorState) {
+  syncActiveMapEditorStage(editorState);
+
+  return Object.values(editorState.mapStages ?? {})
+    .map((mapData) => synchronizeMapEditorIdentity(ensureEditableMapVariant(mapData)))
+    .sort((left, right) => getEditorStageNumber(left) - getEditorStageNumber(right));
+}
+
+function getNearestStageTemplate(stageMaps, targetStage) {
+  const previousStages = stageMaps.filter((mapData) => getEditorStageNumber(mapData) < targetStage);
+
+  if (previousStages.length > 0) {
+    return previousStages.at(-1);
+  }
+
+  return stageMaps[0] ?? null;
+}
+
+function cloneMapEditorStage(stageMaps, targetStage, activeMap) {
+  const template = getNearestStageTemplate(stageMaps, targetStage) ?? activeMap;
+  const familyName = activeMap?.name ?? template?.name ?? "Custom Map";
+  const familyTheme = activeMap?.theme ?? template?.theme ?? "ash";
+
+  return buildEditorStageMap(
+    {
+      ...cloneMapData(template ?? createBlankMapDefinition()),
+      name: familyName,
+      theme: familyTheme,
+      stage: targetStage,
+      variantStage: targetStage,
+      runStages: [targetStage]
+    },
+    targetStage
+  );
+}
+
+function updateMapEditorFamilyName(editorState, name) {
+  const nextName = String(name ?? "").trimStart();
+  const stageMaps = getMapEditorStageMaps(editorState).map((mapData) =>
+    synchronizeMapEditorIdentity({
+      ...mapData,
+      name: nextName
+    })
+  );
+
+  editorState.mapStages = Object.fromEntries(
+    stageMaps.map((mapData) => [getStageKey(getEditorStageNumber(mapData)), cloneMapData(mapData)])
+  );
+  editorState.mapData = cloneMapData(
+    stageMaps.find((mapData) => getEditorStageNumber(mapData) === editorState.activeMapStage)
+      ?? stageMaps[0]
+  );
+  editorState.stageHistories = {};
+}
+
+function updateMapEditorFamilyTheme(editorState, theme) {
+  const stageMaps = getMapEditorStageMaps(editorState).map((mapData) => ({
+    ...mapData,
+    theme
+  }));
+
+  editorState.mapStages = Object.fromEntries(
+    stageMaps.map((mapData) => [getStageKey(getEditorStageNumber(mapData)), cloneMapData(mapData)])
+  );
+  editorState.mapData = cloneMapData(
+    stageMaps.find((mapData) => getEditorStageNumber(mapData) === editorState.activeMapStage)
+      ?? stageMaps[0]
+  );
+  editorState.stageHistories = {};
+}
+
+function validateEditableMap(mapInput) {
+  const normalizedInput = normalizeMapDefinition(mapInput);
+  const reinforcementErrors = getReinforcementValidationErrors(
+    normalizedInput,
+    mapInput?.reinforcements
+  );
+
+  if (reinforcementErrors.length > 0) {
+    throw new Error(reinforcementErrors[0]);
+  }
+
+  return normalizedInput;
+}
+
+function buildEditorStageMap(mapInput, stage = null) {
+  const stageNumber = normalizeMapVariantStage(stage) ?? getEditorStageNumber(mapInput);
+  return synchronizeMapEditorIdentity(
+    ensureEditableMapVariant({
+      ...validateEditableMap(mapInput),
+      stage: stageNumber,
+      variantStage: stageNumber,
+      runStages: [stageNumber]
+    })
+  );
+}
+
+function getLoadedSelectedStage(mapInput, metadata = null) {
+  return (
+    normalizeMapVariantStage(metadata?.variantStage)
+    ?? normalizeMapVariantStage(metadata?.stage)
+    ?? normalizeMapVariantStage(metadata?.bundleStage)
+    ?? getMapDefinitionStage(mapInput)
+    ?? 1
+  );
+}
+
+function applyStageMapsToEditorState(editorState, stageMaps, activeStage, historyLabel) {
+  const stageEntries = stageMaps
+    .map((mapData) => buildEditorStageMap(mapData))
+    .sort((left, right) => getEditorStageNumber(left) - getEditorStageNumber(right));
+  const selectedStage = normalizeMapVariantStage(activeStage) ?? getEditorStageNumber(stageEntries[0]);
+  const selectedMap =
+    stageEntries.find((mapData) => getEditorStageNumber(mapData) === selectedStage)
+    ?? stageEntries[0];
+
+  editorState.mapStages = Object.fromEntries(
+    stageEntries.map((mapData) => [getStageKey(getEditorStageNumber(mapData)), cloneMapData(mapData)])
+  );
+  editorState.stageHistories = {};
+  editorState.mapData = cloneMapData(selectedMap);
+  editorState.activeMapStage = getEditorStageNumber(selectedMap);
+  editorState.selectedReinforcementWaveId =
+    editorState.mapData.reinforcements[0]?.id ?? null;
+  editorState.selectedTile = null;
+  editorState.hoveredTile = null;
+  editorState.isPainting = false;
+  initializeMapEditorHistory(editorState, historyLabel);
+  saveMapEditorStageSession(editorState);
 }
 
 function createMapEditorHistoryEntry(editorState, label, mapData, selectedTile = null) {
@@ -189,6 +399,14 @@ function restoreMapEditorHistoryEntry(editorState, historyIndex) {
   }
 
   editorState.mapData = cloneMapData(entry.mapData);
+  if (
+    !editorState.mapData.reinforcements.some(
+      (wave) => wave.id === editorState.selectedReinforcementWaveId
+    )
+  ) {
+    editorState.selectedReinforcementWaveId =
+      editorState.mapData.reinforcements[0]?.id ?? null;
+  }
   editorState.selectedTile = cloneSelectedTile(entry.selectedTile);
   editorState.hoveredTile = null;
   editorState.isPainting = false;
@@ -199,6 +417,60 @@ function restoreMapEditorHistoryEntry(editorState, historyIndex) {
 
 function mapsEqual(left, right) {
   return JSON.stringify(exportMapDefinition(left)) === JSON.stringify(exportMapDefinition(right));
+}
+
+function getMapEditorBundleValidation(editorState) {
+  const stageMaps = getMapEditorStageMaps(editorState);
+
+  for (const mapData of stageMaps) {
+    const validation = getMapEditorValidation(mapData);
+
+    if (!validation.isValid) {
+      return {
+        isValid: false,
+        errors: validation.errors.map((error) => `Stage ${getEditorStageNumber(mapData)}: ${error}`),
+        stageMaps
+      };
+    }
+  }
+
+  return {
+    isValid: true,
+    errors: [],
+    stageMaps
+  };
+}
+
+function exportMapEditorBundle(editorState) {
+  saveMapEditorStageSession(editorState);
+  const validation = getMapEditorBundleValidation(editorState);
+
+  if (!validation.isValid) {
+    return {
+      validation,
+      exportedBundle: null
+    };
+  }
+
+  const activeMap = editorState.mapData;
+  const exportedBundle = exportMapBundleDefinition({
+    id: getMapDefinitionFamilyId(activeMap),
+    name: activeMap.name,
+    stages: validation.stageMaps
+  });
+
+  return {
+    validation,
+    exportedBundle
+  };
+}
+
+function getSelectedReinforcementWave(editorState) {
+  return (
+    editorState?.mapData?.reinforcements?.find(
+      (wave) => wave.id === editorState.selectedReinforcementWaveId
+    ) ?? null
+  );
 }
 
 function buildMapEditorToolHistoryLabel(editorState, x, y, overrideToolId = null) {
@@ -221,6 +493,15 @@ function buildMapEditorToolHistoryLabel(editorState, x, y, overrideToolId = null
     return `Place ${unitName} L${level} at ${x}, ${y}`;
   }
 
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT) {
+    const unit = UNIT_CATALOG[editorState?.selectedUnitTypeId];
+    return `Place ${unit?.name ?? "reinforcement"} at ${x}, ${y}`;
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER) {
+    return `Mark reinforcement trigger at ${x}, ${y}`;
+  }
+
   if (toolId === MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER) {
     return `Clear terrain at ${x}, ${y}`;
   }
@@ -233,6 +514,14 @@ function buildMapEditorToolHistoryLabel(editorState, x, y, overrideToolId = null
     return `Remove unit at ${x}, ${y}`;
   }
 
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER) {
+    return `Remove reinforcement at ${x}, ${y}`;
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER) {
+    return `Remove reinforcement trigger at ${x}, ${y}`;
+  }
+
   return `Edit ${x}, ${y}`;
 }
 
@@ -241,18 +530,38 @@ function synchronizeMapEditorIdentity(mapData) {
     return mapData;
   }
 
-  const nextMapId = deriveMapEditorIdFromName(mapData.name, mapData.variantStage);
+  const stage = getEditorStageNumber(mapData);
+  const nextMapId = deriveMapEditorIdFromName(mapData.name, stage);
+
+  const units = mapData.units.map((unit) => ({
+    ...unit,
+    id: buildMapEditorUnitId(nextMapId, unit.unitTypeId, unit.owner, unit.x, unit.y)
+  }));
+  const remappedUnitIds = new Map(
+    mapData.units.map((unit, index) => [unit.id, units[index].id])
+  );
 
   return {
     ...mapData,
     id: nextMapId,
+    stage,
+    variantStage: stage,
+    runStages: [stage],
     buildings: mapData.buildings.map((building) => ({
       ...building,
       id: buildMapEditorBuildingId(nextMapId, building.type, building.owner, building.x, building.y)
     })),
-    units: mapData.units.map((unit) => ({
-      ...unit,
-      id: buildMapEditorUnitId(nextMapId, unit.unitTypeId, unit.owner, unit.x, unit.y)
+    units,
+    reinforcements: mapData.reinforcements.map((wave) => ({
+      ...wave,
+      trigger:
+        wave.trigger.type === REINFORCEMENT_TRIGGER_TYPES.UNIT_KILLED &&
+        remappedUnitIds.has(wave.trigger.targetUnitId)
+          ? {
+              ...wave.trigger,
+              targetUnitId: remappedUnitIds.get(wave.trigger.targetUnitId)
+            }
+          : wave.trigger
     }))
   };
 }
@@ -263,6 +572,7 @@ export const controllerMapEditorMethods = {
       synchronizeMapEditorIdentity(ensureEditableMapVariant(createBlankMapDefinition()))
     );
     initializeMapEditorHistory(editorState, "Map created");
+    saveMapEditorStageSession(editorState);
     this.state.mapEditor = editorState;
     this.state.screen = SCREEN_IDS.MAP_EDITOR;
     this.state.banner = "Map editor active.";
@@ -279,6 +589,7 @@ export const controllerMapEditorMethods = {
       )
     );
     initializeMapEditorHistory(editorState, "Map created");
+    saveMapEditorStageSession(editorState);
     this.state.mapEditor = editorState;
     this.emit();
   },
@@ -345,6 +656,20 @@ export const controllerMapEditorMethods = {
     this.emit();
   },
 
+  selectMapEditorReinforcementUnitType(unitTypeId) {
+    if (!Object.hasOwn(UNIT_CATALOG, unitTypeId) || !getSelectedReinforcementWave(this.state.mapEditor)) {
+      return;
+    }
+
+    this.state.mapEditor.selectedUnitTypeId = unitTypeId;
+    this.state.mapEditor.lastSelectedUnit = createLastSelectedUnitSnapshot(
+      this.state.mapEditor,
+      { unitTypeId, owner: TURN_SIDES.ENEMY }
+    );
+    this.state.mapEditor.selectedTool = MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT;
+    this.emit();
+  },
+
   selectMapEditorUnitOwner(owner) {
     if (![TURN_SIDES.PLAYER, TURN_SIDES.ENEMY].includes(owner)) {
       return;
@@ -404,27 +729,115 @@ export const controllerMapEditorMethods = {
     this.emit();
   },
 
-  setMapEditorVariantStage(stage) {
-    const mapData = this.state.mapEditor?.mapData;
-    const normalizedStage = normalizeMapVariantStage(stage);
-
-    if (!mapData || !normalizedStage) {
+  selectMapEditorReinforcementWave(waveId) {
+    if (!this.state.mapEditor?.mapData?.reinforcements.some((wave) => wave.id === waveId)) {
       return;
     }
 
-    if (mapData.variantStage === normalizedStage && normalizeMapRunStages(mapData.runStages)[0] === normalizedStage) {
+    this.state.mapEditor.selectedReinforcementWaveId = waveId;
+    this.emit();
+  },
+
+  addMapEditorReinforcementWave() {
+    const editorState = this.state.mapEditor;
+    if (!editorState?.mapData) {
       return;
     }
 
-    mapData.variantStage = normalizedStage;
-    mapData.runStages = [normalizedStage];
-    this.state.mapEditor.mapData = synchronizeMapEditorIdentity(mapData);
+    const wave = createDefaultReinforcementWave(editorState.mapData.reinforcements);
+    editorState.mapData.reinforcements.push(wave);
+    editorState.selectedReinforcementWaveId = wave.id;
+    editorState.selectedTool = MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT;
+    pushMapEditorHistory(editorState, `Add ${wave.name}`, editorState.selectedTile);
+    this.emit();
+  },
+
+  deleteSelectedMapEditorReinforcementWave() {
+    const editorState = this.state.mapEditor;
+    const wave = getSelectedReinforcementWave(editorState);
+    if (!wave) {
+      return;
+    }
+
+    editorState.mapData.reinforcements = editorState.mapData.reinforcements.filter(
+      (candidate) => candidate.id !== wave.id
+    );
+    editorState.selectedReinforcementWaveId =
+      editorState.mapData.reinforcements[0]?.id ?? null;
+    if (!editorState.selectedReinforcementWaveId) {
+      editorState.selectedTool = MAP_EDITOR_TOOL_IDS.TERRAIN;
+    }
+    pushMapEditorHistory(editorState, `Delete ${wave.name}`, editorState.selectedTile);
+    this.emit();
+  },
+
+  setMapEditorReinforcementTargetFromSelectedUnit() {
+    const editorState = this.state.mapEditor;
+    const wave = getSelectedReinforcementWave(editorState);
+    const selectedTile = editorState?.selectedTile;
+    const unit = selectedTile
+      ? editorState.mapData.units.find(
+          (candidate) =>
+            candidate.owner === TURN_SIDES.ENEMY &&
+            candidate.x === selectedTile.x &&
+            candidate.y === selectedTile.y
+        )
+      : null;
+
+    if (
+      !wave ||
+      wave.trigger.type !== REINFORCEMENT_TRIGGER_TYPES.UNIT_KILLED ||
+      !unit
+    ) {
+      return;
+    }
+
+    wave.trigger.targetUnitId = unit.id;
     pushMapEditorHistory(
-      this.state.mapEditor,
-      `Run variant Stage ${normalizedStage}`,
-      this.state.mapEditor.selectedTile
+      editorState,
+      `Set ${wave.name} target to ${unit.unitTypeId}`,
+      selectedTile
     );
     this.emit();
+  },
+
+  switchMapEditorStage(stage) {
+    const editorState = this.state.mapEditor;
+    const normalizedStage = normalizeMapVariantStage(stage);
+
+    if (!editorState?.mapData || !normalizedStage) {
+      return false;
+    }
+
+    if (getEditorStageNumber(editorState.mapData) === normalizedStage) {
+      return false;
+    }
+
+    saveMapEditorStageSession(editorState);
+    const stageMaps = getMapEditorStageMaps(editorState);
+    const targetMap =
+      stageMaps.find((mapData) => getEditorStageNumber(mapData) === normalizedStage)
+      ?? cloneMapEditorStage(stageMaps, normalizedStage, editorState.mapData);
+
+    editorState.mapData = cloneMapData(targetMap);
+    editorState.activeMapStage = normalizedStage;
+    editorState.mapStages[getStageKey(normalizedStage)] = cloneMapData(targetMap);
+    editorState.hoveredTile = null;
+    editorState.isPainting = false;
+    restoreStageHistorySnapshot(
+      editorState,
+      normalizedStage,
+      stageMaps.some((mapData) => getEditorStageNumber(mapData) === normalizedStage)
+        ? `Stage ${normalizedStage} loaded`
+        : `Stage ${normalizedStage} created`
+    );
+    saveMapEditorStageSession(editorState);
+    this.emit();
+    return true;
+  },
+
+  setMapEditorVariantStage(stage) {
+    return this.switchMapEditorStage(stage);
   },
 
   undoMapEditorHistory() {
@@ -506,21 +919,18 @@ export const controllerMapEditorMethods = {
     let historyLabel = null;
 
     if (field === "name") {
-      mapData.name = String(value ?? "").trimStart();
-      this.state.mapEditor.mapData = synchronizeMapEditorIdentity(mapData);
+      updateMapEditorFamilyName(this.state.mapEditor, value);
       historyLabel = `Rename map to ${this.state.mapEditor.mapData.name || "Untitled Map"}`;
     } else if (field === "variantStage") {
       const variantStage = normalizeMapVariantStage(value);
-      mapData.variantStage = variantStage ?? 1;
-      mapData.runStages = [mapData.variantStage];
-      this.state.mapEditor.mapData = synchronizeMapEditorIdentity(mapData);
-      historyLabel = `Run variant Stage ${mapData.variantStage}`;
+      this.switchMapEditorStage(variantStage ?? 1);
+      return;
     } else if (field === "theme") {
       if (!Object.hasOwn(MAP_THEME_PALETTES, value)) {
         return;
       }
 
-      mapData.theme = value;
+      updateMapEditorFamilyTheme(this.state.mapEditor, value);
       historyLabel = `Theme ${value}`;
     } else if (field === "selectedUnitLevel") {
       this.state.mapEditor.selectedUnitLevel = normalizeMapEditorUnitLevel(Number(value));
@@ -542,6 +952,46 @@ export const controllerMapEditorMethods = {
 
       unit.level = normalizeMapEditorUnitLevel(Number(value));
       historyLabel = `Set unit level to ${unit.level} at ${selectedTile.x}, ${selectedTile.y}`;
+    } else if (field === "reinforcementName") {
+      const wave = getSelectedReinforcementWave(this.state.mapEditor);
+      if (!wave) {
+        return;
+      }
+
+      wave.name = String(value ?? "").trimStart() || wave.name;
+      historyLabel = `Rename reinforcement wave to ${wave.name}`;
+    } else if (field === "reinforcementTriggerType") {
+      const wave = getSelectedReinforcementWave(this.state.mapEditor);
+      if (!wave || !REINFORCEMENT_TRIGGER_ORDER.includes(value)) {
+        return;
+      }
+
+      wave.trigger = {
+        type: value,
+        ...(value === REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED ? { tiles: [] } : {}),
+        ...(value === REINFORCEMENT_TRIGGER_TYPES.UNIT_KILLED ? { targetUnitId: "" } : {}),
+        ...(isIntervalReinforcementTrigger(value) ? { every: 1 } : {})
+      };
+      wave.maxActivations = isOneShotReinforcementTrigger(value)
+        ? 1
+        : Math.max(1, wave.maxActivations ?? 1);
+      historyLabel = `Set ${wave.name} trigger to ${value}`;
+    } else if (field === "reinforcementEvery") {
+      const wave = getSelectedReinforcementWave(this.state.mapEditor);
+      if (!wave || !isIntervalReinforcementTrigger(wave.trigger.type)) {
+        return;
+      }
+
+      wave.trigger.every = Math.max(1, Math.min(99, Math.floor(Number(value) || 1)));
+      historyLabel = `Set ${wave.name} interval to ${wave.trigger.every}`;
+    } else if (field === "reinforcementMaxActivations") {
+      const wave = getSelectedReinforcementWave(this.state.mapEditor);
+      if (!wave || isOneShotReinforcementTrigger(wave.trigger.type)) {
+        return;
+      }
+
+      wave.maxActivations = Math.max(1, Math.min(99, Math.floor(Number(value) || 1)));
+      historyLabel = `Set ${wave.name} activations to ${wave.maxActivations}`;
     } else if (field === "width" || field === "height") {
       const nextWidth = field === "width" ? Number(value) : mapData.width;
       const nextHeight = field === "height" ? Number(value) : mapData.height;
@@ -573,6 +1023,13 @@ export const controllerMapEditorMethods = {
       historyLabel = `Set goal turn limit to ${mapData.goal.turnLimit ?? Number(value)}`;
     } else {
       return;
+    }
+
+    if (field.startsWith("reinforcement")) {
+      this.state.mapEditor.mapData.reinforcements = normalizeMapReinforcements(
+        this.state.mapEditor.mapData.reinforcements,
+        this.state.mapEditor.mapData
+      );
     }
 
     if (
@@ -772,7 +1229,7 @@ export const controllerMapEditorMethods = {
         throw new Error("The selected map file could not be loaded.");
       }
 
-      applyLoadedMapToEditorState(editorState, JSON.parse(result.text));
+      applyLoadedMapToEditorState(editorState, JSON.parse(result.text), result.metadata);
       resetMapEditorLoadDialogState(editorState);
       this.showToast({
         title: "Map loaded",
@@ -892,16 +1349,15 @@ export const controllerMapEditorMethods = {
   },
 
   exportMapEditorMap() {
-    const validation = getMapEditorValidation(this.state.mapEditor?.mapData);
+    const { exportedBundle } = exportMapEditorBundle(this.state.mapEditor);
 
-    if (!validation.isValid) {
+    if (!exportedBundle) {
       return null;
     }
 
-    const exportedMap = exportMapDefinition(validation.mapData);
     return {
-      filename: `${exportedMap.id}.json`,
-      text: JSON.stringify(exportedMap, null, 2)
+      filename: `${exportedBundle.id}.json`,
+      text: JSON.stringify(exportedBundle, null, 2)
     };
   },
 
@@ -909,7 +1365,7 @@ export const controllerMapEditorMethods = {
     const exportedMap = this.exportMapEditorMap();
 
     if (!exportedMap) {
-      const validation = getMapEditorValidation(this.state.mapEditor?.mapData);
+      const validation = getMapEditorBundleValidation(this.state.mapEditor);
       this.showToast({
         title: "Map not saved",
         message: validation.errors[0] ?? "Resolve the remaining validation issues and try again.",
@@ -940,11 +1396,11 @@ export const controllerMapEditorMethods = {
       }
 
       const savedMap = JSON.parse(exportedMap.text);
-      const registeredMap = upsertCustomMap(savedMap);
-      const variantSummary = getMapEditorVariantSummary(registeredMap);
+      const registeredMaps = upsertCustomMap(savedMap);
+      const stageCount = registeredMaps.length;
       this.showToast({
         title: "Map saved",
-        message: `${registeredMap.name} (${variantSummary})`,
+        message: `${savedMap.name} (${stageCount} stage${stageCount === 1 ? "" : "s"})`,
         tone: "success"
       });
 
@@ -952,7 +1408,9 @@ export const controllerMapEditorMethods = {
         mode: "saved",
         filename: exportedMap.filename,
         filePath: saveResult.filePath ?? null,
-        mapData: registeredMap
+        mapData: registeredMaps[0] ?? null,
+        mapBundle: savedMap,
+        mapStages: registeredMaps
       };
     } catch (error) {
       if (/No handler registered for 'map-files:(save|export)'/i.test(String(error?.message ?? ""))) {

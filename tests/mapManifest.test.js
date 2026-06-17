@@ -8,7 +8,7 @@ import { generateMapManifest } from "../scripts/generate-map-manifest.shared.mjs
 test("map manifest generation includes nested map files under map-family folders", async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "ash-run-map-manifest-"));
   const mapsRoot = path.join(tempRoot, "src/game/content/maps");
-  const nestedMapPath = path.join(mapsRoot, "crossfire-creek", "crossfire-creek-stage-2.json");
+  const nestedMapPath = path.join(mapsRoot, "crossfire-creek", "crossfire-creek.json");
   const flatMapPath = path.join(mapsRoot, "river-city.json");
 
   try {
@@ -20,7 +20,12 @@ test("map manifest generation includes nested map files under map-family folders
     );
     await fs.writeFile(
       nestedMapPath,
-      JSON.stringify({ id: "crossfire-creek-stage-2", name: "Crossfire Creek", width: 8, height: 8 }, null, 2),
+      JSON.stringify({
+        format: "ash-run-map-bundle-v1",
+        id: "crossfire-creek",
+        name: "Crossfire Creek",
+        stages: [{ id: "crossfire-creek-stage-2", name: "Crossfire Creek", width: 8, height: 8, stage: 2 }]
+      }, null, 2),
       "utf8"
     );
 
@@ -32,7 +37,7 @@ test("map manifest generation includes nested map files under map-family folders
     );
 
     assert.match(output, /\.\/maps\/river-city\.json/);
-    assert.match(output, /\.\/maps\/crossfire-creek\/crossfire-creek-stage-2\.json/);
+    assert.match(output, /\.\/maps\/crossfire-creek\/crossfire-creek\.json/);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

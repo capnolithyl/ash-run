@@ -306,6 +306,21 @@ export const appShellEventMethods = {
       case "map-editor-select-unit-owner":
         this.controller.selectMapEditorUnitOwner(trigger.dataset.unitOwner);
         break;
+      case "map-editor-select-reinforcement-unit":
+        this.controller.selectMapEditorReinforcementUnitType(trigger.dataset.unitTypeId);
+        break;
+      case "map-editor-select-reinforcement-wave":
+        this.controller.selectMapEditorReinforcementWave(trigger.dataset.reinforcementWaveId);
+        break;
+      case "map-editor-add-reinforcement-wave":
+        this.controller.addMapEditorReinforcementWave();
+        break;
+      case "map-editor-delete-reinforcement-wave":
+        this.controller.deleteSelectedMapEditorReinforcementWave();
+        break;
+      case "map-editor-reinforcement-use-selected-unit":
+        this.controller.setMapEditorReinforcementTargetFromSelectedUnit();
+        break;
       case "map-editor-restore-last-terrain":
         this.controller.restoreLastMapEditorTerrain?.();
         break;

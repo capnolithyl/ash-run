@@ -17,12 +17,19 @@ import {
 } from "../src/game/content/mapEditor.js";
 import { getMapById, replaceCustomMaps } from "../src/game/content/maps.js";
 import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
+import { REINFORCEMENT_TRIGGER_TYPES } from "../src/game/content/reinforcements.js";
 import { appShellEventMethods } from "../src/ui/appShell/eventMethods.js";
 import { renderMapEditorView } from "../src/ui/views/mapEditorView.js";
 
 test.afterEach(() => {
   replaceCustomMaps([]);
 });
+
+function getExportedMapStage(exportedMap, stage) {
+  const bundle = JSON.parse(exportedMap.text);
+
+  return bundle.stages.find((candidate) => candidate.stage === stage);
+}
 
 test("terrain painting to blocked tiles removes buildings, units, and legacy spawns on that tile", () => {
   const mapData = createBlankMapDefinition({
@@ -96,11 +103,50 @@ test("map editor exports run stages, variant stage, and authored unit levels", (
 
   const exported = controller.exportMapEditorMap();
   const parsed = JSON.parse(exported.text);
+  const stage = getExportedMapStage(exported, 2);
 
-  assert.equal(parsed.id, "factory-lane-stage-2");
-  assert.equal(parsed.variantStage, 2);
-  assert.deepEqual(parsed.runStages, [2]);
-  assert.equal(parsed.units[0].level, 5);
+  assert.equal(parsed.format, "ash-run-map-bundle-v1");
+  assert.equal(parsed.id, "factory-lane");
+  assert.equal(stage.id, "factory-lane-stage-2");
+  assert.equal(stage.variantStage, 2);
+  assert.deepEqual(stage.runStages, [2]);
+  assert.equal(stage.units[0].level, 5);
+});
+
+test("map editor switches between authored bundle stages without losing stage-specific edits", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.updateMapEditorField("name", "Switch Yard");
+  controller.selectMapEditorTerrain(TERRAIN_KEYS.FOREST);
+  controller.applyMapEditorToolAt(2, 2);
+  controller.switchMapEditorStage(2);
+
+  let state = controller.getState();
+  assert.equal(state.mapEditor.activeMapStage, 2);
+  assert.equal(state.mapEditor.mapData.id, "switch-yard-stage-2");
+  assert.equal(state.mapEditor.mapData.tiles[2][2], TERRAIN_KEYS.FOREST);
+
+  controller.selectMapEditorTerrain(TERRAIN_KEYS.MOUNTAIN);
+  controller.applyMapEditorToolAt(3, 3);
+  controller.switchMapEditorStage(1);
+
+  state = controller.getState();
+  assert.equal(state.mapEditor.activeMapStage, 1);
+  assert.equal(state.mapEditor.mapData.id, "switch-yard-stage-1");
+  assert.equal(state.mapEditor.mapData.tiles[2][2], TERRAIN_KEYS.FOREST);
+  assert.equal(state.mapEditor.mapData.tiles[3][3], TERRAIN_KEYS.PLAIN);
+
+  controller.switchMapEditorStage(2);
+  state = controller.getState();
+  assert.equal(state.mapEditor.mapData.tiles[3][3], TERRAIN_KEYS.MOUNTAIN);
+
+  const exported = controller.exportMapEditorMap();
+  const stage1 = getExportedMapStage(exported, 1);
+  const stage2 = getExportedMapStage(exported, 2);
+
+  assert.equal(stage1.tiles[3][3], TERRAIN_KEYS.PLAIN);
+  assert.equal(stage2.tiles[3][3], TERRAIN_KEYS.MOUNTAIN);
 });
 
 test("map editor tracks edit history, supports undo, and restores confirmed history states", () => {
@@ -269,20 +315,23 @@ test("map editor controller can paint a map, resize it, place units, and export 
 
   const exported = controller.exportMapEditorMap();
   const parsed = JSON.parse(exported.text);
+  const stage = getExportedMapStage(exported, 1);
   const state = controller.getState();
 
   assert.equal(state.screen, SCREEN_IDS.MAP_EDITOR);
   assert.ok(exported);
   assert.equal(state.mapEditor.mapData.id, "factory-lane-stage-1");
-  assert.equal(exported.filename, "factory-lane-stage-1.json");
-  assert.equal(parsed.id, "factory-lane-stage-1");
+  assert.equal(exported.filename, "factory-lane.json");
+  assert.equal(parsed.format, "ash-run-map-bundle-v1");
+  assert.equal(parsed.id, "factory-lane");
   assert.equal(parsed.name, "Factory Lane");
-  assert.equal(parsed.variantStage, 1);
-  assert.deepEqual(parsed.runStages, [1]);
-  assert.equal(parsed.width, 20);
-  assert.equal(parsed.height, 14);
-  assert.equal(parsed.tiles[2][2], TERRAIN_KEYS.FOREST);
-  assert.deepEqual(parsed.buildings, [
+  assert.equal(stage.id, "factory-lane-stage-1");
+  assert.equal(stage.variantStage, 1);
+  assert.deepEqual(stage.runStages, [1]);
+  assert.equal(stage.width, 20);
+  assert.equal(stage.height, 14);
+  assert.equal(stage.tiles[2][2], TERRAIN_KEYS.FOREST);
+  assert.deepEqual(stage.buildings, [
     {
       id: "factory-lane-stage-1-player-command-1-1",
       type: BUILDING_KEYS.COMMAND,
@@ -291,8 +340,8 @@ test("map editor controller can paint a map, resize it, place units, and export 
       y: 1
     }
   ]);
-  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-stage-1-player-grunt-0-0"), true);
-  assert.equal(parsed.units.some((unit) => unit.id === "factory-lane-stage-1-enemy-breaker-5-5"), true);
+  assert.equal(stage.units.some((unit) => unit.id === "factory-lane-stage-1-player-grunt-0-0"), true);
+  assert.equal(stage.units.some((unit) => unit.id === "factory-lane-stage-1-enemy-breaker-5-5"), true);
 });
 
 test("saving a map editor map opens a file save flow, shows a toast, and registers it immediately", async () => {
@@ -311,12 +360,18 @@ test("saving a map editor map opens a file save flow, shows a toast, and registe
   const saved = await controller.saveMapEditorMap();
 
   assert.equal(saveCalls.length, 1);
-  assert.equal(saveCalls[0].filePath, "runtime-save/runtime-save-stage-2.json");
+  assert.equal(saveCalls[0].filePath, "runtime-save/runtime-save.json");
   assert.equal(saved?.mode, "saved");
-  assert.equal(saved?.mapData?.id, "runtime-save-stage-2");
+  assert.equal(saved?.mapBundle?.id, "runtime-save");
+  assert.deepEqual(saved?.mapStages.map((mapData) => mapData.id), [
+    "runtime-save-stage-1",
+    "runtime-save-stage-2"
+  ]);
+  assert.equal(saved?.mapData?.id, "runtime-save-stage-1");
+  assert.equal(getMapById("runtime-save-stage-1")?.name, "Runtime Save");
   assert.equal(getMapById("runtime-save-stage-2")?.name, "Runtime Save");
   assert.equal(controller.getState().toast?.title, "Map saved");
-  assert.match(controller.getState().toast?.message ?? "", /Runtime Save \(Stage 2\)/);
+  assert.match(controller.getState().toast?.message ?? "", /Runtime Save \(2 stages\)/);
 });
 
 test("imported maps also re-derive their map id from the map name", () => {
@@ -352,13 +407,15 @@ test("imported maps also re-derive their map id from the map name", () => {
 
   const exported = controller.exportMapEditorMap();
   const parsed = JSON.parse(exported.text);
+  const stage = getExportedMapStage(exported, 1);
 
   assert.equal(controller.getState().mapEditor.mapData.id, "spiral-ridge-stage-1");
-  assert.equal(parsed.id, "spiral-ridge-stage-1");
-  assert.equal(parsed.variantStage, 1);
-  assert.deepEqual(parsed.runStages, [1]);
-  assert.equal(parsed.buildings[0].id, "spiral-ridge-stage-1-neutral-sector-2-2");
-  assert.equal(parsed.units[0].id, "spiral-ridge-stage-1-player-grunt-1-1");
+  assert.equal(parsed.id, "spiral-ridge");
+  assert.equal(stage.id, "spiral-ridge-stage-1");
+  assert.equal(stage.variantStage, 1);
+  assert.deepEqual(stage.runStages, [1]);
+  assert.equal(stage.buildings[0].id, "spiral-ridge-stage-1-neutral-sector-2-2");
+  assert.equal(stage.units[0].id, "spiral-ridge-stage-1-player-grunt-1-1");
 });
 
 test("loading a map resets history to the imported state", () => {
@@ -398,10 +455,12 @@ test("imported legacy multi-stage maps collapse to the first available stage whe
 
   const exported = controller.exportMapEditorMap();
   const parsed = JSON.parse(exported.text);
+  const stage = getExportedMapStage(exported, 2);
 
-  assert.equal(parsed.variantStage, 2);
-  assert.deepEqual(parsed.runStages, [2]);
-  assert.equal(parsed.id, "legacy-variant-stage-2");
+  assert.equal(parsed.id, "legacy-variant");
+  assert.equal(stage.variantStage, 2);
+  assert.deepEqual(stage.runStages, [2]);
+  assert.equal(stage.id, "legacy-variant-stage-2");
 });
 
 test("map editor typing exits controller mode before applying the field update", () => {
@@ -769,17 +828,17 @@ test("selecting a map editor load dialog entry keeps its map group expanded", as
   assert.equal(state.loadDialogOpenGroupKey, "Factory Lane");
 });
 
-test("confirming a map editor load dialog selection imports the selected map and closes the dialog", async () => {
+test("confirming a map editor load dialog bundle selection imports the selected stage and siblings", async () => {
   const controller = new GameController({
     async listMapFiles() {
       return {
         rootPath: "D:/ash-run/ash-run/src/game/content/maps",
         entries: [
           {
-            relativePath: "crossfire-creek/crossfire-creek-stage-1.json",
-            id: "crossfire-creek-stage-1",
+            relativePath: "crossfire-creek/crossfire-creek.json?stage=2",
+            id: "crossfire-creek-stage-2",
             name: "Crossfire Creek",
-            variantStage: 1,
+            variantStage: 2,
             width: 10,
             height: 10,
             goal: { type: MAP_GOAL_TYPES.ROUT },
@@ -796,13 +855,25 @@ test("confirming a map editor load dialog selection imports the selected map and
     },
     async loadMapFile() {
       return {
+        metadata: {
+          relativePath: "crossfire-creek/crossfire-creek.json?stage=2",
+          variantStage: 2
+        },
         text: JSON.stringify({
-          id: "crossfire-creek-stage-1",
+          format: "ash-run-map-bundle-v1",
+          id: "crossfire-creek",
           name: "Crossfire Creek",
-          theme: "ash",
-          width: 10,
-          height: 10,
-          tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => TERRAIN_KEYS.PLAIN))
+          stages: [1, 2].map((stage) => ({
+            id: `crossfire-creek-stage-${stage}`,
+            name: "Crossfire Creek",
+            theme: "ash",
+            width: 10,
+            height: 10,
+            stage,
+            variantStage: stage,
+            runStages: [stage],
+            tiles: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => TERRAIN_KEYS.PLAIN))
+          }))
         })
       };
     }
@@ -816,6 +887,9 @@ test("confirming a map editor load dialog selection imports the selected map and
   assert.equal(result?.mode, "loaded");
   assert.equal(state.mapEditor.loadDialogOpen, false);
   assert.equal(state.mapEditor.mapData.name, "Crossfire Creek");
+  assert.equal(state.mapEditor.activeMapStage, 2);
+  assert.equal(state.mapEditor.mapData.id, "crossfire-creek-stage-2");
+  assert.deepEqual(Object.keys(state.mapEditor.mapStages).sort(), ["1", "2"]);
   assert.equal(state.mapEditor.historyEntries[0].label, "Map loaded");
   assert.equal(state.toast?.title, "Map loaded");
 });
@@ -1041,4 +1115,238 @@ test("map editor view exposes every building, every unit, size fields, and mirro
   assert.doesNotMatch(html, /data-action="map-editor-toggle-run-stage"/);
   assert.match(html, /data-mirror-mode="vertical"/);
   assert.doesNotMatch(html, /Player Spawn|Enemy Spawn/);
+});
+
+test("reinforcement brushes support overlap, mirror painting, selective erasing, and history", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.selectMapEditorUnitOwner(TURN_SIDES.ENEMY);
+  controller.selectMapEditorUnitType("grunt");
+  controller.applyMapEditorToolAt(2, 2);
+  controller.addMapEditorReinforcementWave();
+  controller.selectMapEditorReinforcementUnitType("bruiser");
+  controller.updateMapEditorField("selectedUnitLevel", "4");
+  controller.setMapEditorMirrorMode(MAP_EDITOR_MIRROR_MODES.VERTICAL);
+  controller.applyMapEditorToolAt(2, 2);
+
+  let state = controller.getState();
+  const waveId = state.mapEditor.selectedReinforcementWaveId;
+  const mirroredX = state.mapEditor.mapData.width - 3;
+  let wave = state.mapEditor.mapData.reinforcements.find((candidate) => candidate.id === waveId);
+
+  assert.equal(state.mapEditor.mapData.units.some((unit) => unit.x === 2 && unit.y === 2), true);
+  assert.deepEqual(
+    wave.units.map((unit) => ({ x: unit.x, y: unit.y, level: unit.level })),
+    [
+      { x: 2, y: 2, level: 4 },
+      { x: mirroredX, y: 2, level: 4 }
+    ]
+  );
+
+  controller.addMapEditorReinforcementWave();
+  controller.selectMapEditorReinforcementUnitType("runner");
+  controller.setMapEditorMirrorMode(MAP_EDITOR_MIRROR_MODES.OFF);
+  controller.applyMapEditorToolAt(2, 2);
+
+  state = controller.getState();
+  assert.equal(
+    state.mapEditor.mapData.reinforcements.filter(
+      (candidate) => candidate.units.some((unit) => unit.x === 2 && unit.y === 2)
+    ).length,
+    2
+  );
+
+  controller.setMapEditorTool(MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER);
+  controller.applyMapEditorToolAt(2, 2);
+  state = controller.getState();
+
+  assert.equal(
+    state.mapEditor.mapData.reinforcements.find(
+      (candidate) => candidate.id === state.mapEditor.selectedReinforcementWaveId
+    ).units.length,
+    0
+  );
+  assert.equal(
+    state.mapEditor.mapData.reinforcements.find((candidate) => candidate.id === waveId)
+      .units.some((unit) => unit.x === 2 && unit.y === 2),
+    true
+  );
+
+  assert.equal(controller.undoMapEditorHistory(), true);
+  assert.equal(
+    controller.getState().mapEditor.mapData.reinforcements.find(
+      (candidate) => candidate.id === controller.getState().mapEditor.selectedReinforcementWaveId
+    ).units.length,
+    1
+  );
+});
+
+test("trigger-tile brushes export, import, resize, and render selected-wave marker data", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.addMapEditorReinforcementWave();
+  controller.updateMapEditorField(
+    "reinforcementTriggerType",
+    REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED
+  );
+  controller.selectMapEditorReinforcementUnitType("grunt");
+  controller.applyMapEditorToolAt(4, 4);
+  controller.setMapEditorTool(MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER);
+  controller.setMapEditorMirrorMode(MAP_EDITOR_MIRROR_MODES.VERTICAL);
+  controller.applyMapEditorToolAt(3, 3);
+
+  const authoredState = controller.getState();
+  const selectedWaveId = authoredState.mapEditor.selectedReinforcementWaveId;
+  const snapshot = createMapEditorSnapshot(
+    authoredState.mapEditor.mapData,
+    null,
+    null,
+    MAP_EDITOR_MIRROR_MODES.OFF,
+    selectedWaveId
+  );
+  const exported = controller.exportMapEditorMap();
+  const parsed = JSON.parse(exported.text);
+  const stage = getExportedMapStage(exported, 1);
+
+  assert.equal(stage.reinforcements[0].trigger.tiles.length, 2);
+  assert.equal(snapshot.presentation.reinforcements.units[0].selected, true);
+  assert.equal(snapshot.presentation.reinforcements.triggerTiles.length, 2);
+  assert.ok(snapshot.presentation.reinforcements.triggerTiles.every((tile) => tile.selected));
+
+  const importedController = new GameController();
+  importedController.openMapEditor();
+  importedController.importMapEditorMap(parsed);
+  assert.deepEqual(
+    exportMapDefinition(importedController.getState().mapEditor.mapData).reinforcements,
+    stage.reinforcements
+  );
+
+  const resized = resizeMapDefinition(
+    createBlankMapDefinition({
+      id: "reinforcement-resize",
+      width: 10,
+      height: 10,
+      reinforcements: [
+        {
+          id: "resize-wave",
+          name: "Resize Wave",
+          maxActivations: 1,
+          trigger: {
+            type: REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED,
+            tiles: [{ x: 2, y: 2 }, { x: 8, y: 8 }]
+          },
+          units: [
+            { id: "keep-grunt", unitTypeId: "grunt", level: 1, x: 2, y: 2 },
+            { id: "drop-grunt", unitTypeId: "grunt", level: 1, x: 8, y: 8 }
+          ]
+        }
+      ]
+    }),
+    6,
+    6
+  );
+
+  assert.deepEqual(resized.reinforcements[0].trigger.tiles, [{ x: 2, y: 2 }]);
+  assert.deepEqual(
+    resized.reinforcements[0].units.map((unit) => unit.id),
+    ["keep-grunt"]
+  );
+});
+
+test("specific-unit reinforcement targets remap with map identity and remain invalid when erased", () => {
+  const controller = new GameController();
+
+  controller.openMapEditor();
+  controller.selectMapEditorUnitOwner(TURN_SIDES.ENEMY);
+  controller.selectMapEditorUnitType("grunt");
+  controller.applyMapEditorToolAt(4, 4);
+  controller.addMapEditorReinforcementWave();
+  controller.selectMapEditorReinforcementUnitType("runner");
+  controller.applyMapEditorToolAt(6, 4);
+  controller.updateMapEditorField(
+    "reinforcementTriggerType",
+    REINFORCEMENT_TRIGGER_TYPES.UNIT_KILLED
+  );
+  controller.setMapEditorSelectedTile({ x: 4, y: 4 });
+  controller.setMapEditorReinforcementTargetFromSelectedUnit();
+
+  const previousTarget = controller.getState().mapEditor.mapData.reinforcements[0]
+    .trigger.targetUnitId;
+
+  controller.updateMapEditorField("name", "Renamed Pursuit");
+
+  let state = controller.getState();
+  const target = state.mapEditor.mapData.reinforcements[0].trigger.targetUnitId;
+  assert.notEqual(target, previousTarget);
+  assert.equal(state.mapEditor.mapData.units.some((unit) => unit.id === target), true);
+
+  controller.setMapEditorTool(MAP_EDITOR_TOOL_IDS.UNIT_ERASER);
+  controller.applyMapEditorToolAt(4, 4);
+  state = controller.getState();
+
+  const validation = getMapEditorValidation(state.mapEditor.mapData);
+  assert.equal(state.mapEditor.mapData.reinforcements[0].trigger.targetUnitId, target);
+  assert.equal(validation.isValid, false);
+  assert.match(validation.errors.join(" "), /target a placed enemy unit/i);
+});
+
+test("blocked terrain removes invalid ground reinforcements but preserves aircraft", () => {
+  const mapData = createBlankMapDefinition({
+    id: "reinforcement-terrain",
+    reinforcements: [
+      {
+        id: "terrain-wave",
+        name: "Terrain Wave",
+        maxActivations: 1,
+        trigger: {
+          type: REINFORCEMENT_TRIGGER_TYPES.PLAYER_TURNS_COMPLETED,
+          every: 1
+        },
+        units: [
+          { id: "ground", unitTypeId: "grunt", level: 1, x: 2, y: 2 },
+          { id: "air", unitTypeId: "gunship", level: 1, x: 3, y: 2 }
+        ]
+      }
+    ]
+  });
+  const editorState = createDefaultMapEditorState(mapData);
+  editorState.selectedTool = MAP_EDITOR_TOOL_IDS.TERRAIN;
+  editorState.selectedTerrainId = TERRAIN_KEYS.WATER;
+
+  const groundResult = applyMapEditorTool(mapData, editorState, 2, 2);
+  const airResult = applyMapEditorTool(groundResult.mapData, editorState, 3, 2);
+
+  assert.equal(airResult.mapData.reinforcements[0].units.some((unit) => unit.id === "ground"), false);
+  assert.equal(airResult.mapData.reinforcements[0].units.some((unit) => unit.id === "air"), true);
+});
+
+test("invalid imported reinforcement definitions are rejected instead of silently discarded", () => {
+  const controller = new GameController();
+  controller.openMapEditor();
+
+  assert.throws(
+    () =>
+      controller.importMapEditorMap({
+        id: "invalid-reinforcement-import",
+        name: "Invalid Reinforcement Import",
+        theme: "ash",
+        width: 8,
+        height: 8,
+        reinforcements: [
+          {
+            id: "invalid-wave",
+            name: "Invalid Wave",
+            maxActivations: 1,
+            trigger: {
+              type: REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED,
+              tiles: []
+            },
+            units: []
+          }
+        ]
+      }),
+    /at least one reinforcement unit/i
+  );
 });

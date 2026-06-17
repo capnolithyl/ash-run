@@ -11,14 +11,24 @@ import {
 } from "./mapGoals.js";
 import { MAP_THEME_PALETTES, TERRAIN_LIBRARY } from "./terrain.js";
 import { UNIT_CATALOG } from "./unitCatalog.js";
+import {
+  getReinforcementValidationErrors,
+  isValidReinforcementUnitTile,
+  normalizeMapReinforcements,
+  REINFORCEMENT_TRIGGER_TYPES
+} from "./reinforcements.js";
 
 export const MAP_EDITOR_TOOL_IDS = {
   TERRAIN: "terrain",
   BUILDING: "building",
   UNIT: "unit",
+  REINFORCEMENT_UNIT: "reinforcement-unit",
+  REINFORCEMENT_TRIGGER: "reinforcement-trigger",
   TERRAIN_ERASER: "terrain-eraser",
   BUILDING_ERASER: "building-eraser",
-  UNIT_ERASER: "unit-eraser"
+  UNIT_ERASER: "unit-eraser",
+  REINFORCEMENT_UNIT_ERASER: "reinforcement-unit-eraser",
+  REINFORCEMENT_TRIGGER_ERASER: "reinforcement-trigger-eraser"
 };
 
 export const MAP_EDITOR_MIRROR_MODES = {
@@ -27,6 +37,8 @@ export const MAP_EDITOR_MIRROR_MODES = {
   HORIZONTAL: "horizontal",
   DIAGONAL: "diagonal"
 };
+
+export const MAP_BUNDLE_FORMAT = "ash-run-map-bundle-v1";
 
 const LAND_BLOCKED_TERRAIN = new Set([TERRAIN_KEYS.WATER, TERRAIN_KEYS.RIDGE]);
 const BUILDING_OWNERS = new Set([TURN_SIDES.PLAYER, TURN_SIDES.ENEMY, "neutral"]);
@@ -45,9 +57,13 @@ const MAP_EDITOR_CONTEXT_ERASER_IDS = {
   [MAP_EDITOR_TOOL_IDS.TERRAIN]: MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER,
   [MAP_EDITOR_TOOL_IDS.BUILDING]: MAP_EDITOR_TOOL_IDS.BUILDING_ERASER,
   [MAP_EDITOR_TOOL_IDS.UNIT]: MAP_EDITOR_TOOL_IDS.UNIT_ERASER,
+  [MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT]: MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER,
+  [MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER]: MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER,
   [MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER]: MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER,
   [MAP_EDITOR_TOOL_IDS.BUILDING_ERASER]: MAP_EDITOR_TOOL_IDS.BUILDING_ERASER,
   [MAP_EDITOR_TOOL_IDS.UNIT_ERASER]: MAP_EDITOR_TOOL_IDS.UNIT_ERASER,
+  [MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER]: MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER,
+  [MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER]: MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER,
 };
 
 function clamp(value, minimum, maximum) {
@@ -91,6 +107,42 @@ export function normalizeMapRunStages(runStages) {
 
 export function normalizeMapVariantStage(value) {
   return normalizeRunStage(value);
+}
+
+export function getMapDefinitionStage(mapInput = {}) {
+  return (
+    normalizeMapVariantStage(mapInput.stage)
+    ?? normalizeMapVariantStage(mapInput.variantStage)
+    ?? normalizeMapRunStages(mapInput.runStages)[0]
+    ?? null
+  );
+}
+
+function normalizeMapBundleId(value, fallback = "custom-map") {
+  return String(value ?? fallback)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-")
+    || fallback;
+}
+
+export function getMapDefinitionFamilyId(mapInput = {}) {
+  const preferred = mapInput.format === MAP_BUNDLE_FORMAT
+    ? mapInput.id
+    : String(mapInput.id ?? mapInput.name ?? "custom-map").replace(/-stage-\d+$/i, "");
+
+  return normalizeMapBundleId(preferred);
+}
+
+export function isMapBundleDefinition(mapInput) {
+  return Boolean(
+    mapInput &&
+    typeof mapInput === "object" &&
+    mapInput.format === MAP_BUNDLE_FORMAT &&
+    Array.isArray(mapInput.stages)
+  );
 }
 
 export function getMapEditorRunStageOptions() {
@@ -326,12 +378,13 @@ export function createBlankMapDefinition(overrides = {}) {
     tiles: normalizeTileGrid(overrides.tiles ?? createPlainTiles(width, height), width, height),
     buildings: [],
     units: [],
+    reinforcements: [],
     playerSpawns: [],
     enemySpawns: [],
     goal: getDefaultMapGoal()
   };
   const runStages = normalizeMapRunStages(overrides.runStages);
-  const variantStage = normalizeMapVariantStage(overrides.variantStage);
+  const variantStage = getMapDefinitionStage(overrides);
 
   if (typeof overrides.layout === "string" && overrides.layout.trim()) {
     mapData.layout = overrides.layout.trim();
@@ -342,11 +395,13 @@ export function createBlankMapDefinition(overrides = {}) {
   }
 
   if (variantStage) {
+    mapData.stage = variantStage;
     mapData.variantStage = variantStage;
   }
 
   mapData.buildings = normalizeBuildings(overrides.buildings, mapData);
   mapData.units = normalizePlacedUnits(getImportedUnits(overrides), mapData);
+  mapData.reinforcements = normalizeMapReinforcements(overrides.reinforcements, mapData);
   mapData.playerSpawns = normalizeSpawns(overrides.playerSpawns, mapData);
   mapData.enemySpawns = normalizeSpawns(
     overrides.enemySpawns,
@@ -370,12 +425,13 @@ export function normalizeMapDefinition(mapInput = {}) {
     tiles: normalizeTileGrid(mapInput.tiles, width, height),
     buildings: [],
     units: [],
+    reinforcements: [],
     playerSpawns: [],
     enemySpawns: [],
     goal: getDefaultMapGoal()
   };
   const runStages = normalizeMapRunStages(mapInput.runStages);
-  const variantStage = normalizeMapVariantStage(mapInput.variantStage);
+  const variantStage = getMapDefinitionStage(mapInput);
 
   if (typeof mapInput.layout === "string" && mapInput.layout.trim()) {
     mapData.layout = mapInput.layout.trim();
@@ -386,11 +442,13 @@ export function normalizeMapDefinition(mapInput = {}) {
   }
 
   if (variantStage) {
+    mapData.stage = variantStage;
     mapData.variantStage = variantStage;
   }
 
   mapData.buildings = normalizeBuildings(mapInput.buildings, mapData);
   mapData.units = normalizePlacedUnits(getImportedUnits(mapInput), mapData);
+  mapData.reinforcements = normalizeMapReinforcements(mapInput.reinforcements, mapData);
   mapData.playerSpawns = normalizeSpawns(mapInput.playerSpawns, mapData);
   mapData.enemySpawns = normalizeSpawns(
     mapInput.enemySpawns,
@@ -430,6 +488,7 @@ export function resizeMapDefinition(mapInput, width, height) {
 
   resizedMap.buildings = normalizeBuildings(normalized.buildings, resizedMap);
   resizedMap.units = normalizePlacedUnits(normalized.units, resizedMap);
+  resizedMap.reinforcements = normalizeMapReinforcements(normalized.reinforcements, resizedMap);
   resizedMap.playerSpawns = normalizeSpawns(normalized.playerSpawns, resizedMap);
   resizedMap.enemySpawns = normalizeSpawns(
     normalized.enemySpawns,
@@ -442,8 +501,15 @@ export function resizeMapDefinition(mapInput, width, height) {
 }
 
 export function createDefaultMapEditorState(mapData = createBlankMapDefinition()) {
+  const activeMapStage = getMapDefinitionStage(mapData) ?? 1;
+
   return {
     mapData,
+    activeMapStage,
+    mapStages: {
+      [activeMapStage]: structuredClone(mapData)
+    },
+    stageHistories: {},
     selectedTool: MAP_EDITOR_TOOL_IDS.TERRAIN,
     selectedTerrainId: TERRAIN_KEYS.PLAIN,
     selectedBuildingType: BUILDING_KEYS.COMMAND,
@@ -451,6 +517,7 @@ export function createDefaultMapEditorState(mapData = createBlankMapDefinition()
     selectedUnitTypeId: getDefaultUnitTypeId(),
     selectedUnitOwner: TURN_SIDES.PLAYER,
     selectedUnitLevel: MAP_EDITOR_DEFAULT_UNIT_LEVEL,
+    selectedReinforcementWaveId: mapData.reinforcements[0]?.id ?? null,
     lastSelectedTerrainId: null,
     lastSelectedBuilding: null,
     lastSelectedUnit: null,
@@ -513,6 +580,22 @@ export function getMapEditorTileDetails(mapData, tile) {
   const terrainId = mapData.tiles[tile.y][tile.x];
   const building = mapData.buildings.find((candidate) => candidate.x === tile.x && candidate.y === tile.y) ?? null;
   const unit = mapData.units.find((candidate) => candidate.x === tile.x && candidate.y === tile.y) ?? null;
+  const reinforcementUnits = mapData.reinforcements.flatMap((wave) =>
+    wave.units
+      .filter((candidate) => candidate.x === tile.x && candidate.y === tile.y)
+      .map((candidate) => ({
+        ...candidate,
+        waveId: wave.id,
+        waveName: wave.name
+      }))
+  );
+  const reinforcementTriggerWaveIds = mapData.reinforcements
+    .filter(
+      (wave) =>
+        wave.trigger.type === REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED &&
+        wave.trigger.tiles.some((candidate) => candidate.x === tile.x && candidate.y === tile.y)
+    )
+    .map((wave) => wave.id);
   const terrain = TERRAIN_LIBRARY[terrainId];
 
   return {
@@ -524,6 +607,8 @@ export function getMapEditorTileDetails(mapData, tile) {
     buildingMetadata: building ? getBuildingTypeMetadata(building.type) : null,
     unit,
     unitMetadata: unit ? UNIT_CATALOG[unit.unitTypeId] : null,
+    reinforcementUnits,
+    reinforcementTriggerWaveIds,
     hasPlayerSpawn: hasSpawnAt(mapData.playerSpawns, tile.x, tile.y),
     hasEnemySpawn: hasSpawnAt(mapData.enemySpawns, tile.x, tile.y)
   };
@@ -540,6 +625,99 @@ function removeUnitAt(mapData, x, y) {
 function removeSpawnsAt(mapData, x, y) {
   mapData.playerSpawns = mapData.playerSpawns.filter((spawn) => spawn.x !== x || spawn.y !== y);
   mapData.enemySpawns = mapData.enemySpawns.filter((spawn) => spawn.x !== x || spawn.y !== y);
+}
+
+function getSelectedReinforcementWave(mapData, editorState) {
+  return (
+    mapData.reinforcements.find(
+      (wave) => wave.id === editorState?.selectedReinforcementWaveId
+    ) ?? null
+  );
+}
+
+function removeReinforcementUnitsAt(mapData, x, y, waveId = null) {
+  let changed = false;
+
+  for (const wave of mapData.reinforcements) {
+    if (waveId && wave.id !== waveId) {
+      continue;
+    }
+
+    const previousLength = wave.units.length;
+    wave.units = wave.units.filter((unit) => unit.x !== x || unit.y !== y);
+    changed ||= wave.units.length !== previousLength;
+  }
+
+  return changed;
+}
+
+function removeInvalidReinforcementUnitsAt(mapData, x, y) {
+  let changed = false;
+
+  for (const wave of mapData.reinforcements) {
+    const previousLength = wave.units.length;
+    wave.units = wave.units.filter(
+      (unit) =>
+        unit.x !== x ||
+        unit.y !== y ||
+        isValidReinforcementUnitTile(mapData, unit.unitTypeId, x, y)
+    );
+    changed ||= wave.units.length !== previousLength;
+  }
+
+  return changed;
+}
+
+function removeReinforcementTriggerAt(mapData, x, y, waveId) {
+  const wave = mapData.reinforcements.find((candidate) => candidate.id === waveId);
+
+  if (!wave || wave.trigger.type !== REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED) {
+    return false;
+  }
+
+  const previousLength = wave.trigger.tiles.length;
+  wave.trigger.tiles = wave.trigger.tiles.filter((tile) => tile.x !== x || tile.y !== y);
+  return wave.trigger.tiles.length !== previousLength;
+}
+
+function setReinforcementUnitAt(mapData, editorState, x, y) {
+  const wave = getSelectedReinforcementWave(mapData, editorState);
+  const unitTypeId = editorState?.selectedUnitTypeId ?? getDefaultUnitTypeId();
+  const level = normalizeMapEditorUnitLevel(editorState?.selectedUnitLevel);
+
+  if (!wave || !isValidReinforcementUnitTile(mapData, unitTypeId, x, y)) {
+    return false;
+  }
+
+  const existing = wave.units.find((unit) => unit.x === x && unit.y === y);
+  if (existing?.unitTypeId === unitTypeId && existing.level === level) {
+    return false;
+  }
+
+  removeReinforcementUnitsAt(mapData, x, y, wave.id);
+  wave.units.push({
+    id: `${wave.id}-${unitTypeId}-${x}-${y}`,
+    unitTypeId,
+    level,
+    x,
+    y
+  });
+  return true;
+}
+
+function setReinforcementTriggerAt(mapData, editorState, x, y) {
+  const wave = getSelectedReinforcementWave(mapData, editorState);
+
+  if (!wave || wave.trigger.type !== REINFORCEMENT_TRIGGER_TYPES.TILE_CROSSED) {
+    return false;
+  }
+
+  if (wave.trigger.tiles.some((tile) => tile.x === x && tile.y === y)) {
+    return false;
+  }
+
+  wave.trigger.tiles.push({ x, y });
+  return true;
 }
 
 function setBuildingAt(mapData, buildingType, owner, x, y) {
@@ -603,8 +781,9 @@ function applyToolToSingleTile(nextMap, editorState, x, y, overrideToolId = null
 
       removeBuildingAt(nextMap, x, y);
       removeUnitAt(nextMap, x, y);
+      const removedReinforcementUnit = removeInvalidReinforcementUnitsAt(nextMap, x, y);
       removeSpawnsAt(nextMap, x, y);
-      changed ||= hadBuilding || hadUnit || hadSpawn;
+      changed ||= hadBuilding || hadUnit || removedReinforcementUnit || hadSpawn;
     }
 
     return changed;
@@ -631,6 +810,14 @@ function applyToolToSingleTile(nextMap, editorState, x, y, overrideToolId = null
     );
   }
 
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT) {
+    return setReinforcementUnitAt(nextMap, editorState, x, y);
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER) {
+    return setReinforcementTriggerAt(nextMap, editorState, x, y);
+  }
+
   if (toolId === MAP_EDITOR_TOOL_IDS.TERRAIN_ERASER) {
     const hadTerrain = nextMap.tiles[y][x] !== TERRAIN_KEYS.PLAIN;
     nextMap.tiles[y][x] = TERRAIN_KEYS.PLAIN;
@@ -647,6 +834,24 @@ function applyToolToSingleTile(nextMap, editorState, x, y, overrideToolId = null
     const hadUnit = nextMap.units.some((unit) => unit.x === x && unit.y === y);
     removeUnitAt(nextMap, x, y);
     return hadUnit;
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_UNIT_ERASER) {
+    return removeReinforcementUnitsAt(
+      nextMap,
+      x,
+      y,
+      editorState?.selectedReinforcementWaveId
+    );
+  }
+
+  if (toolId === MAP_EDITOR_TOOL_IDS.REINFORCEMENT_TRIGGER_ERASER) {
+    return removeReinforcementTriggerAt(
+      nextMap,
+      x,
+      y,
+      editorState?.selectedReinforcementWaveId
+    );
   }
 
   return false;
@@ -676,6 +881,7 @@ export function applyMapEditorTool(mapInput, editorState, x, y, options = {}) {
 
   nextMap.buildings = normalizeBuildings(nextMap.buildings, nextMap);
   nextMap.units = normalizePlacedUnits(nextMap.units, nextMap);
+  nextMap.reinforcements = normalizeMapReinforcements(nextMap.reinforcements, nextMap);
   nextMap.playerSpawns = normalizeSpawns(nextMap.playerSpawns, nextMap);
   nextMap.enemySpawns = normalizeSpawns(
     nextMap.enemySpawns,
@@ -716,6 +922,7 @@ export function getMapEditorValidation(mapInput) {
   }
 
   errors.push(...getMapGoalValidationErrors(mapData, mapData.goal));
+  errors.push(...getReinforcementValidationErrors(mapData, mapInput?.reinforcements));
 
   return {
     isValid: errors.length === 0,
@@ -739,11 +946,31 @@ export function exportMapDefinition(mapInput) {
     units: [...normalized.units].sort((left, right) =>
       `${left.y}:${left.x}:${left.id}`.localeCompare(`${right.y}:${right.x}:${right.id}`)
     ),
+    reinforcements: normalized.reinforcements.map((wave) => ({
+      ...wave,
+      trigger: {
+        ...wave.trigger,
+        ...(wave.trigger.tiles
+          ? {
+              tiles: [...wave.trigger.tiles].sort((left, right) =>
+                `${left.y}:${left.x}`.localeCompare(`${right.y}:${right.x}`)
+              )
+            }
+          : {})
+      },
+      units: [...wave.units].sort((left, right) =>
+        `${left.y}:${left.x}:${left.id}`.localeCompare(`${right.y}:${right.x}:${right.id}`)
+      )
+    })),
     goal: normalizeMapGoal(normalized.goal, normalized)
   };
 
   if (normalized.runStages?.length > 0) {
     exported.runStages = [...normalized.runStages];
+  }
+
+  if (normalized.stage) {
+    exported.stage = normalized.stage;
   }
 
   if (normalized.variantStage) {
@@ -766,7 +993,66 @@ export function exportMapDefinition(mapInput) {
     exported.layout = normalized.layout;
   }
 
+  if (exported.reinforcements.length === 0) {
+    delete exported.reinforcements;
+  }
+
   return exported;
+}
+
+function normalizeBundleStageMap(stageInput, bundleInput = {}, fallbackIndex = 0) {
+  const stage =
+    getMapDefinitionStage(stageInput)
+    ?? normalizeMapVariantStage(fallbackIndex + 1)
+    ?? 1;
+  const familyId = getMapDefinitionFamilyId(bundleInput);
+  const mapId = sanitizeEditableText(stageInput?.id, `${familyId}-stage-${stage}`);
+  const mapName = sanitizeEditableText(stageInput?.name, sanitizeEditableText(bundleInput?.name, "Custom Map"));
+  const mapTheme = isThemeKey(stageInput?.theme)
+    ? stageInput.theme
+    : (isThemeKey(bundleInput?.theme) ? bundleInput.theme : DEFAULT_THEME);
+
+  return exportMapDefinition({
+    ...stageInput,
+    id: mapId,
+    name: mapName,
+    theme: mapTheme,
+    stage,
+    variantStage: stage,
+    runStages: [stage]
+  });
+}
+
+export function expandMapBundleDefinitions(mapInput) {
+  if (!isMapBundleDefinition(mapInput)) {
+    return [exportMapDefinition(mapInput)];
+  }
+
+  const stageMaps = mapInput.stages
+    .map((stageInput, index) => normalizeBundleStageMap(stageInput, mapInput, index))
+    .sort((left, right) => (left.stage ?? 0) - (right.stage ?? 0));
+  const dedupedStageMaps = new Map();
+
+  for (const stageMap of stageMaps) {
+    dedupedStageMaps.set(stageMap.id, stageMap);
+  }
+
+  return [...dedupedStageMaps.values()];
+}
+
+export function exportMapBundleDefinition({ id, name, stages }) {
+  const familyId = normalizeMapBundleId(id ?? name);
+  const bundleName = sanitizeEditableText(name, "Custom Map");
+  const exportedStages = (stages ?? [])
+    .map((stageInput, index) => normalizeBundleStageMap(stageInput, { id: familyId, name: bundleName }, index))
+    .sort((left, right) => (left.stage ?? 0) - (right.stage ?? 0));
+
+  return {
+    format: MAP_BUNDLE_FORMAT,
+    id: familyId,
+    name: bundleName,
+    stages: exportedStages
+  };
 }
 
 function createEditorUnit(unitDefinition) {
@@ -787,7 +1073,13 @@ function createEditorUnit(unitDefinition) {
   };
 }
 
-export function createMapEditorSnapshot(mapInput, selectedTile = null, hoveredTile = null, mirrorMode = MAP_EDITOR_MIRROR_MODES.OFF) {
+export function createMapEditorSnapshot(
+  mapInput,
+  selectedTile = null,
+  hoveredTile = null,
+  mirrorMode = MAP_EDITOR_MIRROR_MODES.OFF,
+  selectedReinforcementWaveId = null
+) {
   const mapData = normalizeMapDefinition(mapInput);
   const mirroredTile = getMapEditorMirrorTile(mapData, hoveredTile, mirrorMode);
   const playerUnits = mapData.units
@@ -827,6 +1119,23 @@ export function createMapEditorSnapshot(mapInput, selectedTile = null, hoveredTi
           }
         : null,
       mirroredTile,
+      reinforcements: {
+        selectedWaveId: selectedReinforcementWaveId,
+        units: mapData.reinforcements.flatMap((wave) =>
+          wave.units.map((unit) => ({
+            ...unit,
+            waveId: wave.id,
+            selected: wave.id === selectedReinforcementWaveId
+          }))
+        ),
+        triggerTiles: mapData.reinforcements.flatMap((wave) =>
+          (wave.trigger.tiles ?? []).map((tile) => ({
+            ...tile,
+            waveId: wave.id,
+            selected: wave.id === selectedReinforcementWaveId
+          }))
+        )
+      },
       mission: {
         label: getMapGoalLabel(mapData.goal),
         status: getMapGoalSummary(mapData.goal, mapData),

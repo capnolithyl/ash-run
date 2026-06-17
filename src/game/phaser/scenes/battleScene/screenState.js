@@ -24,7 +24,8 @@ export function getBoardSnapshot(state, hoveredTile = null) {
       state.mapEditor.mapData,
       state.mapEditor.selectedTile,
       hoveredTile,
-      state.mapEditor.mirrorMode
+      state.mapEditor.mirrorMode,
+      state.mapEditor.selectedReinforcementWaveId
     );
   }
 

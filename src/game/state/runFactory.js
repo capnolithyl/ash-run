@@ -36,6 +36,7 @@ import {
   getEnemyStartingFunds
 } from "./enemyScaling.js";
 import { normalizeMissionState } from "../simulation/missionRules.js";
+import { normalizeReinforcementState } from "../simulation/reinforcementRules.js";
 import { applyRunCardDeploymentEffectsToUnit } from "../simulation/runCardEffects.js";
 
 function toSafeNumber(value) {
@@ -140,6 +141,7 @@ export function normalizeBattleState(battleState) {
   };
 
   normalizeMissionState(nextBattleState);
+  normalizeReinforcementState(nextBattleState);
 
   if (nextBattleState.mission?.type === MAP_GOAL_TYPES.SURVIVE) {
     nextBattleState.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE;

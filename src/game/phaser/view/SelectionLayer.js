@@ -197,6 +197,36 @@ function drawObjectiveMarker(graphics, layout, marker, colorOptions = {}) {
     .setDepth(CURSOR_DEPTH + 1);
 }
 
+function drawReinforcementMarker(graphics, layout, marker, enemyColor, index = 0) {
+  const center = getTileCenter(layout, marker);
+  const isSelected = marker.selected === true;
+  const radius = Math.max(8, layout.cellSize * (isSelected ? 0.17 : 0.13));
+  const offset = Math.min(index, 3) * Math.max(3, layout.cellSize * 0.055);
+  const markerX = center.x + offset;
+  const markerY = center.y - offset;
+  const color = isSelected ? enemyColor : 0x777180;
+  const label = marker.kind === "trigger"
+    ? "T"
+    : `${String(marker.unitTypeId ?? "?").charAt(0).toUpperCase()}${marker.level ?? 1}`;
+
+  graphics.fillStyle(0x12061f, isSelected ? 0.92 : 0.58);
+  graphics.fillCircle(markerX, markerY, radius + 3);
+  graphics.fillStyle(color, isSelected ? 0.96 : 0.5);
+  graphics.fillCircle(markerX, markerY, radius);
+  graphics.lineStyle(isSelected ? 3 : 1.5, isSelected ? 0xfff2d4 : 0xc1b8c9, isSelected ? 0.96 : 0.5);
+  graphics.strokeCircle(markerX, markerY, radius + 1);
+
+  return graphics.scene.add
+    .text(markerX, markerY, label, {
+      fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+      fontSize: `${Math.max(9, Math.floor(layout.cellSize * (isSelected ? 0.16 : 0.13)))}px`,
+      color: isSelected ? "#12061f" : "#e8dfea"
+    })
+    .setOrigin(0.5)
+    .setDepth(CURSOR_DEPTH + (isSelected ? 2 : 1))
+    .setAlpha(isSelected ? 1 : 0.72);
+}
+
 function getTutorialHighlightColor(tone, colorOptions = {}) {
   switch (tone) {
     case "ally":
@@ -557,6 +587,27 @@ export class SelectionLayer {
     for (const spawn of options.editorSpawns?.enemy ?? []) {
       markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, enemyColor, "E"));
     }
+
+    const reinforcementMarkers = [
+      ...(options.editorReinforcements?.units ?? []).map((unit) => ({
+        ...unit,
+        kind: "unit"
+      })),
+      ...(options.editorReinforcements?.triggerTiles ?? []).map((tile) => ({
+        ...tile,
+        kind: "trigger"
+      }))
+    ].sort((left, right) => Number(left.selected) - Number(right.selected));
+
+    const reinforcementMarkerCounts = new Map();
+    reinforcementMarkers.forEach((marker) => {
+      const key = `${marker.x},${marker.y}`;
+      const tileIndex = reinforcementMarkerCounts.get(key) ?? 0;
+      reinforcementMarkerCounts.set(key, tileIndex + 1);
+      markerLabels.push(
+        drawReinforcementMarker(this.cursorGraphics, layout, marker, enemyColor, tileIndex)
+      );
+    });
 
     for (const marker of presentation.mission?.markers ?? []) {
       markerLabels.push(

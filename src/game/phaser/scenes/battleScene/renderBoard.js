@@ -79,7 +79,8 @@ export const battleSceneRenderMethods = {
         editorSpawns: {
           player: snapshot.map.playerSpawns,
           enemy: snapshot.map.enemySpawns
-        }
+        },
+        editorReinforcements: snapshot.presentation?.reinforcements
       });
       this.buildingLayer.render(snapshot, layout, colorOptions);
       this.unitLayer.render(snapshot, layout, [], { colorOptions });

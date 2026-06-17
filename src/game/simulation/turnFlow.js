@@ -54,6 +54,10 @@ import {
   getUnitAt
 } from "./selectors.js";
 import { createUnitFromType } from "./unitFactory.js";
+import {
+  resolveEnemyTurnStartReinforcements,
+  resolveReinforcementTriggers
+} from "./reinforcementRules.js";
 
 const PRODUCTION_BUILDING_TYPES = ["barracks", "motor-pool", "airfield"];
 
@@ -153,6 +157,7 @@ export function startEnemyTurnActions(system) {
   }
 
   system.state.enemyTurn.started = true;
+  const reinforcementActivations = resolveEnemyTurnStartReinforcements(system.state);
   tickSideStatuses(system.state, TURN_SIDES.ENEMY);
   tickUnitDurations(system, TURN_SIDES.ENEMY);
   const incomeGain = collectIncome(system, TURN_SIDES.ENEMY);
@@ -164,7 +169,8 @@ export function startEnemyTurnActions(system) {
   system.updateVictoryState();
   return {
     changed: true,
-    incomeGain
+    incomeGain,
+    reinforcementActivations
   };
 }
 
@@ -869,5 +875,6 @@ export function performEnemyRecruitment(system) {
 }
 
 export function updateVictoryState(system) {
+  resolveReinforcementTriggers(system.state);
   return updateMissionVictory(system.state);
 }

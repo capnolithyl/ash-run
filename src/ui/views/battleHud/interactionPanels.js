@@ -176,7 +176,7 @@ export function renderActionPrompt(battleSnapshot) {
           }
           <button class="battle-command-prompt__action" data-action="wait-unit">Wait</button>
           ${
-            pendingAction.isSlipstream
+            pendingAction.isSlipstream || !pendingAction.canRedoMove
               ? ""
               : '<button class="battle-command-prompt__action battle-command-prompt__action--subtle" data-action="redo-move">Redo</button>'
           }
