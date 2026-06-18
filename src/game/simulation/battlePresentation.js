@@ -1,6 +1,7 @@
-import { BATTLE_MODES, TURN_SIDES } from "../core/constants.js";
+import { BATTLE_MODES, TERRAIN_KEYS, TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 import { getRunUpgradeById } from "../content/runUpgrades.js";
-import { describeBuilding } from "../content/buildings.js";
+import { getCommanderById } from "../content/commanders.js";
+import { describeBuilding, getBuildingArmorBonusForType } from "../content/buildings.js";
 import { DEFEND_OBJECTIVE_MAX_HP } from "../content/mapGoals.js";
 import { getArmorClassForUnit, getWeaponClassForUnit } from "../content/weaponClasses.js";
 import {
@@ -10,6 +11,7 @@ import {
   getDisplayedUnitLuck,
   getDisplayedUnitMovement,
   getDisplayedUnitRangeCap,
+  getPositionArmorMultiplier
 } from "./commanderEffects.js";
 import { getLevelProgress } from "./progression.js";
 import { canCaptureBuilding } from "./captureRules.js";
@@ -46,7 +48,22 @@ import {
   getUnitAt,
   getUnitAttackProfile
 } from "./selectors.js";
-import { isUnitZombified } from "./runCardEffects.js";
+import {
+  getRunCardArmorModifierSources,
+  getRunCardAttackModifierSources,
+  getRunCardMovementModifierSources,
+  getRunCardPositionArmorBonusSources,
+  getRunCardRangeModifierSources,
+  isUnitZombified
+} from "./runCardEffects.js";
+
+const RECON_UNIT_IDS = new Set(["runner"]);
+
+function formatRangeLabel(minimumRange, maximumRange) {
+  return minimumRange === maximumRange
+    ? `${maximumRange}`
+    : `${minimumRange}-${maximumRange}`;
+}
 
 function getLivingUnitsForSide(state, side) {
   return getLivingUnits(state, side).filter((unit) => !unit.transport?.carriedByUnitId);
@@ -150,6 +167,490 @@ function describeEditableUnit(unit) {
   };
 }
 
+function formatSignedNumber(value) {
+  const roundedValue = Math.round(Number(value) || 0);
+  return `${roundedValue >= 0 ? "+" : ""}${roundedValue}`;
+}
+
+function formatSignedPercent(value) {
+  const percent = Math.round((Number(value) || 0) * 100);
+  return `${percent >= 0 ? "+" : ""}${percent}%`;
+}
+
+function formatMultiplier(value) {
+  return `x${Number(value).toFixed(2).replace(/\.?0+$/, "")}`;
+}
+
+function createModifierSource(type, name, amount, detail = null) {
+  return {
+    type,
+    name,
+    amount,
+    detail
+  };
+}
+
+function formatFlatModifierSources(sources) {
+  return sources
+    .filter((source) => (Number(source.value) || 0) !== 0)
+    .map((source) =>
+      createModifierSource(source.type, source.name, formatSignedNumber(source.value), source.detail)
+    );
+}
+
+function getFlatSourceValue(source) {
+  const match = String(source?.amount ?? "").match(/^([+-])(\d+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return (match[1] === "-" ? -1 : 1) * Number(match[2]);
+}
+
+function addReconciliationSourceIfNeeded(sources, modifier) {
+  if (!sources.length) {
+    return sources;
+  }
+
+  const flatValues = sources.map(getFlatSourceValue);
+
+  if (flatValues.some((value) => value === null)) {
+    return sources;
+  }
+
+  const flatSum = flatValues.reduce((sum, value) => sum + value, 0);
+  const difference = modifier - flatSum;
+
+  if (difference === 0) {
+    return sources;
+  }
+
+  return [
+    ...sources,
+    createModifierSource("system", "Rounding/cap", formatSignedNumber(difference), "Final displayed modifier.")
+  ];
+}
+
+function getCommanderForUnit(state, unit) {
+  return getCommanderById(state?.[unit?.owner]?.commanderId);
+}
+
+function getSideEffects(state, side, type) {
+  return (state?.[side]?.effects ?? []).filter((effect) => effect.type === type);
+}
+
+function unitMatchesGroup(unit, group) {
+  switch (group) {
+    case "infantry":
+      return unit.family === UNIT_TAGS.INFANTRY;
+    case "recon":
+      return RECON_UNIT_IDS.has(unit.unitTypeId);
+    case "infantry-recon":
+      return unit.family === UNIT_TAGS.INFANTRY || RECON_UNIT_IDS.has(unit.unitTypeId);
+    default:
+      return false;
+  }
+}
+
+function getOwnedPropertyCount(state, side) {
+  return (state.map?.buildings ?? []).filter((building) => building.owner === side).length;
+}
+
+function isStandingOnOwnedProperty(state, unit) {
+  const building = getBuildingAt(state, unit.x, unit.y);
+  return Boolean(building && building.owner === unit.owner);
+}
+
+function isAircraft(unit) {
+  return unit?.family === UNIT_TAGS.AIR;
+}
+
+function getStatusSourceName(status, fallback) {
+  if (status?.sourceName) {
+    return status.sourceName;
+  }
+
+  if (status?.source === "nova-overload") {
+    return "Overload";
+  }
+
+  return fallback;
+}
+
+function getStatusSourceType(status, fallback = "status") {
+  return status?.sourceType ?? fallback;
+}
+
+function getCorruptedStatPenalty(unit, stat, baseValue) {
+  return (unit?.statuses ?? [])
+    .filter((status) => status.type === "corrupted" && status.stat === stat)
+    .reduce((sum) => sum + (Math.max(0, Math.ceil(baseValue * 0.5)) - baseValue), 0);
+}
+
+function getCommanderAttackSources(state, unit) {
+  const commander = getCommanderForUnit(state, unit);
+  const passive = commander?.passive;
+  const active = commander?.active;
+  const sources = [];
+
+  if (passive?.type === "viper-shock-doctrine") {
+    const value = unitMatchesGroup(unit, passive.group)
+      ? passive.attackPercent ?? 0
+      : passive.otherAttackPercent ?? 0;
+    sources.push(createModifierSource("commander-passive", passive.name, formatSignedPercent(value), passive.summary));
+  }
+
+  if (passive?.type === "rook-estate-claim" && isStandingOnOwnedProperty(state, unit)) {
+    sources.push(
+      createModifierSource(
+        "commander-passive",
+        passive.name,
+        formatSignedPercent(passive.attackPercent ?? 0),
+        passive.summary
+      )
+    );
+  }
+
+  if (passive?.type === "falcon-air-superiority" && isAircraft(unit)) {
+    sources.push(
+      createModifierSource(
+        "commander-passive",
+        passive.name,
+        formatSignedPercent(passive.attackPercent ?? 0),
+        passive.summary
+      )
+    );
+  }
+
+  if (
+    passive?.type === "nova-full-magazine" &&
+    unit.current.ammo === unit.stats.ammoMax &&
+    unit.stats.ammoMax > 0
+  ) {
+    sources.push(
+      createModifierSource(
+        "commander-passive",
+        passive.name,
+        formatSignedPercent(passive.attackPercent ?? 0),
+        passive.summary
+      )
+    );
+  }
+
+  if (getSideEffects(state, unit.owner, "rook-hostile-takeover").length > 0) {
+    const propertyCount = getOwnedPropertyCount(state, unit.owner);
+    const value = propertyCount * (active?.attackPercentPerProperty ?? 0);
+
+    if (value !== 0) {
+      sources.push(
+        createModifierSource(
+          "commander-active",
+          active?.name ?? "Hostile Takeover",
+          formatSignedPercent(value),
+          `${propertyCount} owned properties.`
+        )
+      );
+    }
+  }
+
+  return sources;
+}
+
+function getCommanderArmorSources(state, unit) {
+  const commander = getCommanderForUnit(state, unit);
+  const passive = commander?.passive;
+  const active = commander?.active;
+  const sources = [];
+
+  if (passive?.type === "falcon-air-superiority" && isAircraft(unit)) {
+    sources.push(
+      createModifierSource(
+        "commander-passive",
+        passive.name,
+        formatSignedPercent(passive.armorPercent ?? 0),
+        passive.summary
+      )
+    );
+  }
+
+  if (getSideEffects(state, unit.owner, "rook-hostile-takeover").length > 0) {
+    const propertyCount = getOwnedPropertyCount(state, unit.owner);
+    const value = propertyCount * (active?.armorPercentPerProperty ?? 0);
+
+    if (value !== 0) {
+      sources.push(
+        createModifierSource(
+          "commander-active",
+          active?.name ?? "Hostile Takeover",
+          formatSignedPercent(value),
+          `${propertyCount} owned properties.`
+        )
+      );
+    }
+  }
+
+  return sources;
+}
+
+function getAttackStatusSources(unit) {
+  const sources = [];
+
+  for (const status of unit.statuses ?? []) {
+    if (status.type === "attackPercent" && (Number(status.value) || 0) !== 0) {
+      sources.push(
+        createModifierSource(
+          getStatusSourceType(status),
+          getStatusSourceName(status, "Attack Status"),
+          formatSignedPercent(status.value),
+          status.sourceName ? null : "Temporary attack modifier."
+        )
+      );
+    }
+
+    if (status.type === "burn") {
+      sources.push(
+        createModifierSource(
+          getStatusSourceType(status),
+          getStatusSourceName(status, "Burn"),
+          formatMultiplier(0.5),
+          "Attack is halved while burning."
+        )
+      );
+    }
+
+    if (status.type === "corrupted" && status.stat === "attack") {
+      sources.push(
+        createModifierSource(
+          getStatusSourceType(status),
+          getStatusSourceName(status, "Corrupted"),
+          formatMultiplier(0.5),
+          "Attack is halved while corrupted."
+        )
+      );
+    }
+  }
+
+  return sources;
+}
+
+function getFlatStatusSources(unit, statusType, fallbackName) {
+  return (unit.statuses ?? [])
+    .filter((status) => status.type === statusType && (Number(status.value) || 0) !== 0)
+    .map((status) =>
+      createModifierSource(
+        getStatusSourceType(status),
+        getStatusSourceName(status, fallbackName),
+        formatSignedNumber(status.value),
+        status.sourceName ? null : `${fallbackName} modifier.`
+      )
+    );
+}
+
+function getPercentStatusSources(unit, statusType, fallbackName) {
+  return (unit.statuses ?? [])
+    .filter((status) => status.type === statusType && (Number(status.value) || 0) !== 0)
+    .map((status) =>
+      createModifierSource(
+        getStatusSourceType(status),
+        getStatusSourceName(status, fallbackName),
+        formatSignedPercent(status.value),
+        status.sourceName ? null : `${fallbackName} modifier.`
+      )
+    );
+}
+
+function getCorruptedFlatSources(unit, stat, baseValue, detail) {
+  const value = getCorruptedStatPenalty(unit, stat, baseValue);
+
+  if (value === 0) {
+    return [];
+  }
+
+  return [
+    createModifierSource("status", "Corrupted", formatSignedNumber(value), detail)
+  ];
+}
+
+function getPositionArmorRawSource(state, unit) {
+  if (unit.family === UNIT_TAGS.AIR) {
+    return null;
+  }
+
+  const building = getBuildingAt(state, unit.x, unit.y);
+  const buildingBonus = building ? getBuildingArmorBonusForType(building.type) : 0;
+
+  if (buildingBonus > 0) {
+    return {
+      rawBonus: buildingBonus,
+      source: createModifierSource(
+        "building",
+        describeBuilding(building).name,
+        formatSignedNumber(buildingBonus),
+        "Buildings override terrain armor."
+      )
+    };
+  }
+
+  const terrain = getTerrainAt(state, unit.x, unit.y);
+  const rawBonus = terrain?.armorBonus ?? 0;
+
+  if (rawBonus <= 0) {
+    return null;
+  }
+
+  return {
+    rawBonus,
+    source: createModifierSource("terrain", terrain.label, formatSignedNumber(rawBonus), "Current tile armor.")
+  };
+}
+
+function getPositionArmorSources(state, unit, positionArmorBonus) {
+  if (positionArmorBonus <= 0) {
+    return [];
+  }
+
+  const rawSource = getPositionArmorRawSource(state, unit);
+
+  if (!rawSource) {
+    return [];
+  }
+
+  const sources = [
+    rawSource.source,
+    ...formatFlatModifierSources(getRunCardPositionArmorBonusSources(state, unit, rawSource.rawBonus))
+  ];
+  const multiplier = getPositionArmorMultiplier(state, unit);
+
+  if (multiplier > 1) {
+    const commander = getCommanderForUnit(state, unit);
+    const hasFortress = getSideEffects(state, unit.owner, "knox-fortress-protocol").length > 0;
+
+    sources.push(
+      createModifierSource(
+        hasFortress ? "commander-active" : "commander-passive",
+        hasFortress ? commander?.active?.name ?? "Fortress Protocol" : commander?.passive?.name ?? "Shield Wall",
+        formatMultiplier(multiplier),
+        "Multiplies positional armor."
+      )
+    );
+  }
+
+  return sources;
+}
+
+function getMovementCapSources(unit, requestedMovement, totalMovement) {
+  const sources = [];
+  const requestedBudget = Math.max(0, Math.floor(requestedMovement ?? 0));
+  const currentStamina = Math.max(0, Math.floor(getEffectiveCurrentStamina(unit) ?? requestedBudget));
+  const hostagePenalty = unit?.temporary?.hostageCarrier ? 1 : 0;
+  const afterHostage = Math.max(0, requestedBudget - hostagePenalty);
+
+  if (hostagePenalty > 0 && requestedBudget > afterHostage) {
+    sources.push(createModifierSource("mission", "Hostage Carrier", formatSignedNumber(afterHostage - requestedBudget), "Carrying a hostage reduces movement."));
+  }
+
+  if (totalMovement < afterHostage) {
+    sources.push(
+      createModifierSource(
+        "resource",
+        "Current Stamina",
+        formatSignedNumber(totalMovement - afterHostage),
+        "Movement cannot exceed current stamina."
+      )
+    );
+  }
+
+  return sources;
+}
+
+function getElevationRangeSources(state, unit) {
+  if (unit.unitTypeId !== "longshot") {
+    return [];
+  }
+
+  if (state.map.tiles[unit.y]?.[unit.x] !== TERRAIN_KEYS.MOUNTAIN) {
+    return [];
+  }
+
+  return [
+    createModifierSource("terrain", "Mountain Elevation", formatSignedNumber(1), "Longshots gain range from mountains.")
+  ];
+}
+
+function createStatBreakdown(base, total, sources, options = {}) {
+  const safeBase = Math.max(0, Math.round(Number(base) || 0));
+  const safeTotal = Math.max(0, Math.round(Number(total) || 0));
+  const modifier = safeTotal - safeBase;
+  const baseLabel = options.baseLabel ?? `${safeBase}`;
+  const reconciledSources = addReconciliationSourceIfNeeded(sources, modifier);
+
+  return {
+    base: safeBase,
+    total: safeTotal,
+    modifier,
+    label: modifier === 0 ? baseLabel : `${baseLabel} (${formatSignedNumber(modifier)})`,
+    sources: reconciledSources
+  };
+}
+
+function buildStatBreakdowns(state, unit, positionArmorBonus) {
+  const displayedAttack = getDisplayedUnitAttack(state, unit);
+  const displayedArmor = getDisplayedUnitArmor(state, unit);
+  const displayedMovement = getDisplayedUnitMovement(state, unit);
+  const movementAllowance = getUnitMovementAllowance(unit, displayedMovement);
+  const displayedRangeCap = getDisplayedUnitRangeCap(state, unit);
+  const elevationRangeBonus = getElevationRangeBonus(state, unit);
+  const totalRangeCap = displayedRangeCap + elevationRangeBonus;
+
+  return {
+    attack: createStatBreakdown(
+      unit.stats.attack,
+      displayedAttack,
+      [
+        ...getCommanderAttackSources(state, unit),
+        ...getAttackStatusSources(unit),
+        ...formatFlatModifierSources(getRunCardAttackModifierSources(state, unit))
+      ]
+    ),
+    armor: createStatBreakdown(
+      unit.stats.armor,
+      displayedArmor + positionArmorBonus,
+      [
+        ...getCommanderArmorSources(state, unit),
+        ...getFlatStatusSources(unit, "shield", "Shield"),
+        ...getPercentStatusSources(unit, "armorPercent", "Armor Status"),
+        ...getCorruptedFlatSources(unit, "armor", unit.stats.armor, "Armor is halved while corrupted."),
+        ...formatFlatModifierSources(getRunCardArmorModifierSources(state, unit)),
+        ...getPositionArmorSources(state, unit, positionArmorBonus)
+      ]
+    ),
+    movement: createStatBreakdown(
+      unit.stats.movement,
+      movementAllowance,
+      [
+        ...getFlatStatusSources(unit, "mobility", "Mobility Status"),
+        ...getCorruptedFlatSources(unit, "movement", unit.stats.movement, "Movement is halved while corrupted."),
+        ...formatFlatModifierSources(getRunCardMovementModifierSources(state, unit)),
+        ...getMovementCapSources(unit, displayedMovement, movementAllowance)
+      ]
+    ),
+    range: createStatBreakdown(
+      unit.stats.maxRange,
+      totalRangeCap,
+      [
+        ...getFlatStatusSources(unit, "range", "Range Status"),
+        ...getCorruptedFlatSources(unit, "range", unit.stats.maxRange, "Range is halved while corrupted."),
+        ...formatFlatModifierSources(getRunCardRangeModifierSources(state, unit)),
+        ...getElevationRangeSources(state, unit)
+      ],
+      {
+        baseLabel: formatRangeLabel(unit.stats.minRange, unit.stats.maxRange)
+      }
+    )
+  };
+}
+
 export function describeUnit(state, unit) {
   if (!unit) {
     return null;
@@ -158,6 +659,7 @@ export function describeUnit(state, unit) {
   const experience = getLevelProgress(unit);
   const positionArmorBonus = getPositionArmorBonus(state, unit);
   const gearUpgrade = unit.gear?.slot ? getRunUpgradeById(unit.gear.slot) : null;
+  const statBreakdowns = buildStatBreakdowns(state, unit, positionArmorBonus);
 
   return {
     id: unit.id,
@@ -184,6 +686,7 @@ export function describeUnit(state, unit) {
     ammo: getEffectiveCurrentAmmo(unit),
     ammoMax: unit.stats.ammoMax,
     luck: getDisplayedUnitLuck(state, unit),
+    statBreakdowns,
     corruptedStat:
       (unit.statuses ?? []).find((status) => status.type === "corrupted")?.stat ?? null,
     isBurned: (unit.statuses ?? []).some((status) => status.type === "burn"),

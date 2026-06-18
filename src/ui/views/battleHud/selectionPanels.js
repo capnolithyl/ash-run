@@ -67,8 +67,48 @@ const CORRUPTED_ICON_URL = "./assets/img/icons/battle-hud/conditions/corrupted.p
 const SLOW_ICON_URL = "./assets/img/icons/battle-hud/conditions/slow.png";
 const BURN_ICON_URL = "./assets/img/icons/battle-hud/conditions/burn.png";
 
-function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed = false } = {}) {
+function sanitizeIdSegment(value) {
+  return String(value ?? "stat").replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
+function renderStatTooltip(label, breakdown, tooltipId) {
+  const sources = breakdown?.sources ?? [];
+
+  if (!sources.length || !tooltipId) {
+    return "";
+  }
+
+  return `
+    <div class="selection-stat-tooltip" id="${tooltipId}" role="tooltip">
+      <div class="selection-stat-tooltip__header">
+        <span>${label} modifier</span>
+        <strong>${breakdown.modifier === 0 ? "0" : `${breakdown.modifier > 0 ? "+" : ""}${breakdown.modifier}`}</strong>
+      </div>
+      <div class="selection-stat-tooltip__sources">
+        ${sources
+          .map(
+            (source) => `
+              <div class="selection-stat-tooltip__source" data-source-type="${source.type}">
+                <span class="selection-stat-tooltip__source-name">${source.name}</span>
+                <strong>${source.amount}</strong>
+                ${source.detail ? `<small>${source.detail}</small>` : ""}
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderStatCell(
+  iconName,
+  label,
+  value,
+  { isCorrupted = false, isSlowed = false, breakdown = null, tooltipId = "" } = {}
+) {
   const conditionLabels = [];
+  const hasTooltip = Boolean(tooltipId && (breakdown?.sources ?? []).length > 0);
 
   if (isCorrupted) {
     conditionLabels.push("corrupted");
@@ -94,28 +134,32 @@ function renderStatCell(iconName, label, value, { isCorrupted = false, isSlowed 
       : null;
 
   return `
-    <div
-      class="selection-stat${isCorrupted ? " selection-stat--corrupted" : ""}${isSlowed ? " selection-stat--slowed" : ""}"
-      aria-label="${ariaLabel}"
-    >
-      ${renderBattleHudStatBackground(iconName)}
-      ${
-        conditionIcon
-          ? `
-            <img
-              class="${conditionIcon.className}"
-              src="${conditionIcon.src}"
-              alt="${conditionIcon.alt}"
-              loading="lazy"
-              decoding="async"
-            />
-          `
-          : ""
-      }
-      <div class="selection-stat__content">
-        <span class="selection-stat__label">${label}</span>
-        <strong>${value}</strong>
+    <div class="selection-stat-wrap">
+      <div
+        class="selection-stat${isCorrupted ? " selection-stat--corrupted" : ""}${isSlowed ? " selection-stat--slowed" : ""}${hasTooltip ? " selection-stat--modified" : ""}"
+        aria-label="${ariaLabel}"
+        ${hasTooltip ? `tabindex="0" aria-describedby="${tooltipId}"` : ""}
+      >
+        ${renderBattleHudStatBackground(iconName)}
+        ${
+          conditionIcon
+            ? `
+              <img
+                class="${conditionIcon.className}"
+                src="${conditionIcon.src}"
+                alt="${conditionIcon.alt}"
+                loading="lazy"
+                decoding="async"
+              />
+            `
+            : ""
+        }
+        <div class="selection-stat__content">
+          <span class="selection-stat__label">${label}</span>
+          <strong>${value}</strong>
+        </div>
       </div>
+      ${renderStatTooltip(label, breakdown, tooltipId)}
     </div>
   `;
 }
@@ -274,17 +318,30 @@ function renderHealthBar(unit) {
 }
 
 function renderUnitStatGrid(unit) {
-  const armorLabel = unit.positionArmorBonus > 0
-    ? `${unit.armor} (+${unit.positionArmorBonus})`
-    : `${unit.armor}`;
+  const statBreakdowns = unit.statBreakdowns ?? {};
+  const unitId = sanitizeIdSegment(unit.id);
 
   return `
     <div class="selection-stat-grid">
-      ${renderStatCell("attack", "ATK", unit.attack, { isCorrupted: unit.corruptedStat === "attack" })}
-      ${renderStatCell("armor", "ARM", armorLabel, { isCorrupted: unit.corruptedStat === "armor" })}
-      ${renderStatCell("movement", "MOV", unit.movement, { isSlowed: unit.isSlowed })}
-      ${renderStatCell("range", "RNG", formatRangeLabel(unit.minRange, unit.maxRange), {
-        isCorrupted: unit.corruptedStat === "range"
+      ${renderStatCell("attack", "ATK", statBreakdowns.attack?.label ?? unit.attack, {
+        isCorrupted: unit.corruptedStat === "attack",
+        breakdown: statBreakdowns.attack,
+        tooltipId: `selection-stat-tooltip-${unitId}-attack`
+      })}
+      ${renderStatCell("armor", "ARM", statBreakdowns.armor?.label ?? `${unit.armor}`, {
+        isCorrupted: unit.corruptedStat === "armor",
+        breakdown: statBreakdowns.armor,
+        tooltipId: `selection-stat-tooltip-${unitId}-armor`
+      })}
+      ${renderStatCell("movement", "MOV", statBreakdowns.movement?.label ?? unit.movement, {
+        isSlowed: unit.isSlowed,
+        breakdown: statBreakdowns.movement,
+        tooltipId: `selection-stat-tooltip-${unitId}-movement`
+      })}
+      ${renderStatCell("range", "RNG", statBreakdowns.range?.label ?? formatRangeLabel(unit.minRange, unit.maxRange), {
+        isCorrupted: unit.corruptedStat === "range",
+        breakdown: statBreakdowns.range,
+        tooltipId: `selection-stat-tooltip-${unitId}-range`
       })}
       ${renderStatCell("ammo", "AMMO", `${unit.ammo}/${unit.ammoMax}`, {
         isCorrupted: unit.corruptedStat === "ammo"

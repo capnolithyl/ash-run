@@ -125,8 +125,12 @@ test("battle HUD shows terrain armor bonuses next to the armor stat", () => {
   battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
 
   const html = renderHudForBattleState(battleState);
+  const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
 
-  assert.match(html, /aria-label="ARM 6 \(\+2\)"/);
+  assert.match(selectedPanel, /aria-label="ARM 6 \(\+2\)"/);
+  assert.match(selectedPanel, /ARM modifier/);
+  assert.match(selectedPanel, /Forest/);
+  assert.equal(countMatches(selectedPanel, /data-source-type="terrain"/g), 1);
 });
 
 test("battle HUD shows building armor bonuses instead of stacking terrain under any building", () => {
@@ -148,9 +152,93 @@ test("battle HUD shows building armor bonuses instead of stacking terrain under 
   battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
 
   const html = renderHudForBattleState(battleState);
+  const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
 
-  assert.match(html, /aria-label="ARM 6 \(\+3\)"/);
-  assert.doesNotMatch(html, /aria-label="ARM 6 \(\+5\)"/);
+  assert.match(selectedPanel, /aria-label="ARM 6 \(\+3\)"/);
+  assert.match(selectedPanel, /ARM modifier/);
+  assert.match(selectedPanel, /Sector/);
+  assert.equal(countMatches(selectedPanel, /data-source-type="building"/g), 1);
+  assert.doesNotMatch(selectedPanel, /data-source-type="terrain"/);
+  assert.doesNotMatch(selectedPanel, /aria-label="ARM 6 \(\+5\)"/);
+});
+
+test("battle HUD lists Lone Wolf sources for isolated units and recalculates adjacency", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const allyUnit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 3, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit, allyUnit]
+  });
+  battleState.player.commanderId = "atlas";
+  battleState.enemy.commanderId = "atlas";
+  battleState.runCards = {
+    ownedCardIds: ["lone-wolf-1"]
+  };
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+
+  let html = renderHudForBattleState(battleState);
+  let selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+
+  assert.match(selectedPanel, new RegExp(`aria-label="ATK ${playerUnit.stats.attack}"`));
+  assert.doesNotMatch(selectedPanel, /\(\+3\)/);
+  assert.doesNotMatch(selectedPanel, /Lone Wolf I/);
+
+  allyUnit.x = 5;
+  allyUnit.y = 2;
+  html = renderHudForBattleState(battleState);
+  selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+
+  assert.match(selectedPanel, new RegExp(`aria-label="ATK ${playerUnit.stats.attack} \\(\\+3\\)"`));
+  assert.match(selectedPanel, /ATK modifier/);
+  assert.match(selectedPanel, /Lone Wolf I/);
+  assert.match(selectedPanel, /<strong>\+3<\/strong>/);
+
+  battleState.selection = { type: "unit", id: allyUnit.id, x: allyUnit.x, y: allyUnit.y };
+  html = renderHudForBattleState(battleState);
+  selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+
+  assert.match(selectedPanel, new RegExp(`aria-label="ATK ${allyUnit.stats.attack} \\(\\+3\\)"`));
+  assert.match(selectedPanel, /Lone Wolf I/);
+});
+
+test("battle HUD lists Rook Estate Claim only while standing on an owned building", () => {
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [playerUnit]
+  });
+  battleState.player.commanderId = "rook";
+  battleState.enemy.commanderId = "atlas";
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) => building.x !== playerUnit.x || building.y !== playerUnit.y
+  );
+  battleState.map.buildings.push({
+    id: "player-sector-claim",
+    type: BUILDING_KEYS.SECTOR,
+    owner: TURN_SIDES.PLAYER,
+    x: playerUnit.x,
+    y: playerUnit.y
+  });
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+
+  let html = renderHudForBattleState(battleState);
+  let selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+  const estateClaimAttackBonus = Math.round(playerUnit.stats.attack * 1.3) - playerUnit.stats.attack;
+
+  assert.match(
+    selectedPanel,
+    new RegExp(`aria-label="ATK ${playerUnit.stats.attack} \\(\\+${estateClaimAttackBonus}\\)"`)
+  );
+  assert.match(selectedPanel, /Estate Claim/);
+  assert.match(selectedPanel, /\+30%/);
+
+  playerUnit.x = 3;
+  playerUnit.y = 2;
+  battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
+  html = renderHudForBattleState(battleState);
+  selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+
+  assert.match(selectedPanel, new RegExp(`aria-label="ATK ${playerUnit.stats.attack}"`));
+  assert.doesNotMatch(selectedPanel, /Estate Claim/);
+  assert.doesNotMatch(selectedPanel, /\+30%/);
 });
 
 test("battle HUD replaces unload command menu with a cancellable unload prompt", () => {
@@ -287,7 +375,12 @@ test("battle HUD marks corrupted stats on the unit sidebar", () => {
   const html = renderHudForBattleState(battleState);
 
   assert.match(html, /selection-stat--corrupted/);
-  assert.match(html, /aria-label="ATK 37 corrupted"/);
+  assert.match(html, /aria-label="ATK 62 \(-25\) corrupted"/);
+  assert.match(html, /ATK modifier/);
+  assert.match(html, /Shock Doctrine/);
+  assert.match(html, /\+20%/);
+  assert.match(html, /Corrupted/);
+  assert.match(html, /x0\.5/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/conditions\/corrupted\.png/);
   assert.doesNotMatch(html, /LCK/);
 });
@@ -307,7 +400,12 @@ test("battle HUD marks slowed movement and burned units prominently", () => {
   const html = renderHudForBattleState(battleState);
 
   assert.match(html, /selection-stat--slowed/);
-  assert.match(html, /aria-label="MOV 3 slowed"/);
+  assert.match(html, /aria-label="MOV 4 \(-1\) slowed"/);
+  assert.match(html, /MOV modifier/);
+  assert.match(html, /Mobility Status/);
+  assert.match(html, /aria-label="ATK 62 \(-25\)"/);
+  assert.match(html, /Burn/);
+  assert.match(html, /x0\.5/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/conditions\/slow\.png/);
   assert.match(html, /selection-unit-heading__condition-icon/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/conditions\/burn\.png/);
@@ -490,7 +588,7 @@ test("battle HUD keeps enemy selections out of the selected-unit panel in debug 
 
   assert.match(selectedPanel, /Selected Unit/);
   assert.match(selectedPanel, /Grunt/);
-  assert.doesNotMatch(selectedPanel, /Runner/);
+  assert.doesNotMatch(selectedPanel, /<strong>Runner<\/strong>/);
   assert.match(targetPanel, /Target Intel/);
   assert.match(targetPanel, /Runner/);
 });
@@ -1857,7 +1955,8 @@ test("selected unit debug overrides use raw editable stats while the sidebar kee
   });
 
   assert.match(html, /data-debug-field="unit-attack" type="number" value="62"/);
-  assert.match(html, /aria-label="ATK 74"/);
+  assert.match(html, /aria-label="ATK 62 \(\+12\)"/);
+  assert.match(html, /Shock Doctrine/);
 });
 
 test("debug mode keeps enemy selections in target intel while debug overrides still follow the selection", () => {

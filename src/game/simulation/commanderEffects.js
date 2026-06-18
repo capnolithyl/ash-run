@@ -278,7 +278,10 @@ function applyStatusToSide(state, side, statusType, value, options = {}) {
       currentTurnOnly: options.currentTurnOnly ?? false,
       tickSide: options.tickSide ?? side,
       negative: options.negative ?? false,
-      stat: options.stat ?? null
+      stat: options.stat ?? null,
+      sourceName: options.sourceName ?? null,
+      sourceType: options.sourceType ?? null,
+      sourceId: options.sourceId ?? null
     });
   }
 }
@@ -296,7 +299,10 @@ function applyStatusToGroup(state, side, group, statusType, value, options = {})
       currentTurnOnly: options.currentTurnOnly ?? false,
       tickSide: options.tickSide ?? side,
       negative: options.negative ?? false,
-      stat: options.stat ?? null
+      stat: options.stat ?? null,
+      sourceName: options.sourceName ?? null,
+      sourceType: options.sourceType ?? null,
+      sourceId: options.sourceId ?? null
     });
   }
 }
@@ -308,7 +314,7 @@ function healSide(state, side, ratio) {
   }
 }
 
-function applyCorruptedToUnit(state, unit, sourceSide) {
+function applyCorruptedToUnit(state, unit, sourceSide, options = {}) {
   const rollSeed = state.seed;
   state.seed = (state.seed * 48271 + 1) % 2147483647;
   const roll = hashString(`${rollSeed}:${unit.id}`) % CORRUPTED_STATS.length;
@@ -318,7 +324,10 @@ function applyCorruptedToUnit(state, unit, sourceSide) {
     stat,
     turnsRemaining: 1,
     tickSide: sourceSide,
-    negative: true
+    negative: true,
+    sourceName: options.sourceName ?? null,
+    sourceType: options.sourceType ?? null,
+    sourceId: options.sourceId ?? null
   });
 }
 
@@ -594,7 +603,11 @@ function applyAtlasOverhaul(state, side, commander, notes) {
     }
   }
 
-  applyStatusToSide(state, side, "shield", commander.active.armor ?? 3);
+  applyStatusToSide(state, side, "shield", commander.active.armor ?? 3, {
+    sourceName: commander.active.name,
+    sourceType: "commander-active",
+    sourceId: commander.id
+  });
   notes.push(`${commander.name} overhauled the line and restored allied systems.`);
 
   return {
@@ -622,9 +635,18 @@ function applyViperBlitzSurge(state, side, commander, notes) {
     side,
     commander.active.attackGroup,
     "attackPercent",
-    commander.active.attackPercent ?? 0.3
+    commander.active.attackPercent ?? 0.3,
+    {
+      sourceName: commander.active.name,
+      sourceType: "commander-active",
+      sourceId: commander.id
+    }
   );
-  applyStatusToGroup(state, side, commander.active.movementGroup, "mobility", commander.active.movement ?? 2);
+  applyStatusToGroup(state, side, commander.active.movementGroup, "mobility", commander.active.movement ?? 2, {
+    sourceName: commander.active.name,
+    sourceType: "commander-active",
+    sourceId: commander.id
+  });
   notes.push(`${commander.name} pushed the fast wing forward.`);
 
   return {
@@ -669,13 +691,23 @@ function applyEchoDisruption(state, side, commander, notes) {
     opposingSide,
     "mobility",
     -(commander.active.movementPenalty ?? 1),
-    { tickSide: side, negative: true }
+    {
+      tickSide: side,
+      negative: true,
+      sourceName: commander.active.name,
+      sourceType: "commander-active",
+      sourceId: commander.id
+    }
   );
 
   const targets = [];
 
   for (const unit of getLivingUnits(state, opposingSide)) {
-    applyCorruptedToUnit(state, unit, side);
+    applyCorruptedToUnit(state, unit, side, {
+      sourceName: commander.active.name,
+      sourceType: "commander-active",
+      sourceId: commander.id
+    });
     const corruptedStatus = [...(unit.statuses ?? [])]
       .reverse()
       .find((status) => status.type === "corrupted");
@@ -702,7 +734,10 @@ function applyBlazeIgnition(state, side, commander, notes) {
     unit.statuses.push({
       type: "burn",
       tickDamageRatio: commander.active.damageRatio ?? 0.1,
-      negative: true
+      negative: true,
+      sourceName: commander.active.name,
+      sourceType: "commander-active",
+      sourceId: commander.id
     });
 
     targets.push(
@@ -793,7 +828,10 @@ function applyNovaOverload(state, side, commander, notes) {
         source: "nova-overload",
         value: ammoSpent * (commander.active.attackPercentPerAmmo ?? 0.1),
         primaryAttackWithoutAmmo: true,
-        currentTurnOnly: true
+        currentTurnOnly: true,
+        sourceName: commander.active.name,
+        sourceType: "commander-active",
+        sourceId: commander.id
       });
 
       targets.push(

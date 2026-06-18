@@ -101,6 +101,30 @@ function addIfActive(state, unit, cardId, key, family = null, condition = true) 
     : 0;
 }
 
+function createRunCardModifierSource(cardId, value, detail = null) {
+  const upgrade = getRunUpgradeById(cardId);
+
+  return {
+    type: "upgrade",
+    id: cardId,
+    name: upgrade?.name ?? cardId,
+    value,
+    detail: detail ?? upgrade?.summary ?? null
+  };
+}
+
+function addRunCardSourceIfActive(sources, state, unit, cardId, key, family = null, condition = true, detail = null) {
+  const value = addIfActive(state, unit, cardId, key, family, condition);
+
+  if (value !== 0) {
+    sources.push(createRunCardModifierSource(cardId, value, detail));
+  }
+}
+
+function sumModifierSources(sources) {
+  return sources.reduce((sum, source) => sum + (Number(source.value) || 0), 0);
+}
+
 function getActiveTierCardId(state, ids) {
   return ids.find((id) => hasCard(state, id)) ?? null;
 }
@@ -176,58 +200,84 @@ export function getRunCardAttackModifier(state, unit, { defender = null } = {}) 
     return 0;
   }
 
-  let modifier = 0;
+  return sumModifierSources(getRunCardAttackModifierSources(state, unit, { defender }));
+}
+
+export function getRunCardAttackModifierSources(state, unit, { defender = null } = {}) {
+  if (!isPlayerCardTarget(unit)) {
+    return [];
+  }
+
+  const sources = [];
   const adjacentAllyCount = getAdjacentAllies(state, unit).length;
 
-  modifier += addIfActive(state, unit, "combat-stims-1", "attack");
-  modifier += addIfActive(state, unit, "combat-stims-2", "attack");
-  modifier += addIfActive(state, unit, "combat-stims-3", "attack");
-  modifier += addIfActive(state, unit, "supply-mishap-1", "attack");
-  modifier += addIfActive(state, unit, "supply-mishap-2", "attack");
-  modifier += addIfActive(state, unit, "supply-mishap-3", "attack");
-  modifier += addIfActive(state, unit, "glass-army-1", "attack");
-  modifier += addIfActive(state, unit, "glass-army-2", "attack");
-  modifier += addIfActive(state, unit, "glass-army-3", "attack");
-  modifier += addIfActive(state, unit, "devils-ammo", "attack");
-  modifier += addIfActive(state, unit, "overconfidence", "damage");
+  addRunCardSourceIfActive(sources, state, unit, "combat-stims-1", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "combat-stims-2", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "combat-stims-3", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "supply-mishap-1", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "supply-mishap-2", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "supply-mishap-3", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "glass-army-1", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "glass-army-2", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "glass-army-3", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "devils-ammo", "attack");
+  addRunCardSourceIfActive(sources, state, unit, "overconfidence", "damage");
 
-  modifier += addIfActive(state, unit, "shock-troops-1", "attack", UNIT_TAGS.INFANTRY, isAtFullHealth(unit));
-  modifier += addIfActive(state, unit, "shock-troops-2", "attack", UNIT_TAGS.INFANTRY, isAtFullHealth(unit));
-  modifier += addIfActive(state, unit, "shock-troops-3", "attack", UNIT_TAGS.INFANTRY);
-  modifier += addIfActive(state, unit, "entrench-2", "attack", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
-  modifier += addIfActive(state, unit, "entrench-3", "attack", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
-  modifier += addIfActive(state, unit, "siege-package-3", "attack", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "heavy-payload-1", "attack", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "heavy-payload-2", "attack", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "heavy-payload-3", "attack", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "glass-cannons-1", "attack", UNIT_TAGS.AIR);
-  modifier += addIfActive(state, unit, "glass-cannons-2", "attack", UNIT_TAGS.AIR);
-  modifier += addIfActive(state, unit, "lone-wolf-1", "attack", null, adjacentAllyCount === 0);
-  modifier += addIfActive(state, unit, "lone-wolf-2", "attack", null, adjacentAllyCount === 0);
-  modifier += addIfActive(state, unit, "lone-wolf-3", "attack", null, adjacentAllyCount === 0);
-  modifier += hasCard(state, "battle-brothers-1") ? adjacentAllyCount * getValue("battle-brothers-1", "attackPerAlly") : 0;
-  modifier += hasCard(state, "battle-brothers-2") ? adjacentAllyCount * getValue("battle-brothers-2", "attackPerAlly") : 0;
-  modifier += hasCard(state, "battle-brothers-3") ? adjacentAllyCount * getValue("battle-brothers-3", "attackPerAlly") : 0;
+  addRunCardSourceIfActive(sources, state, unit, "shock-troops-1", "attack", UNIT_TAGS.INFANTRY, isAtFullHealth(unit));
+  addRunCardSourceIfActive(sources, state, unit, "shock-troops-2", "attack", UNIT_TAGS.INFANTRY, isAtFullHealth(unit));
+  addRunCardSourceIfActive(sources, state, unit, "shock-troops-3", "attack", UNIT_TAGS.INFANTRY);
+  addRunCardSourceIfActive(sources, state, unit, "entrench-2", "attack", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
+  addRunCardSourceIfActive(sources, state, unit, "entrench-3", "attack", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
+  addRunCardSourceIfActive(sources, state, unit, "siege-package-3", "attack", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "heavy-payload-1", "attack", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "heavy-payload-2", "attack", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "heavy-payload-3", "attack", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "glass-cannons-1", "attack", UNIT_TAGS.AIR);
+  addRunCardSourceIfActive(sources, state, unit, "glass-cannons-2", "attack", UNIT_TAGS.AIR);
+  addRunCardSourceIfActive(sources, state, unit, "lone-wolf-1", "attack", null, adjacentAllyCount === 0);
+  addRunCardSourceIfActive(sources, state, unit, "lone-wolf-2", "attack", null, adjacentAllyCount === 0);
+  addRunCardSourceIfActive(sources, state, unit, "lone-wolf-3", "attack", null, adjacentAllyCount === 0);
+
+  for (const cardId of ["battle-brothers-1", "battle-brothers-2", "battle-brothers-3"]) {
+    const value = hasCard(state, cardId)
+      ? adjacentAllyCount * getValue(cardId, "attackPerAlly")
+      : 0;
+
+    if (value !== 0) {
+      sources.push(createRunCardModifierSource(cardId, value, `${adjacentAllyCount} adjacent allies.`));
+    }
+  }
 
   for (const cardId of ["redline-1", "redline-2", "redline-3"]) {
-    modifier += addIfActive(
+    addRunCardSourceIfActive(
+      sources,
       state,
       unit,
       cardId,
       "attack",
       null,
-      isBelowHpRatio(unit, getValue(cardId, "hpRatioBelow"))
+      isBelowHpRatio(unit, getValue(cardId, "hpRatioBelow")),
+      `HP below ${Math.round(getValue(cardId, "hpRatioBelow") * 100)}%.`
     );
   }
 
   if (defender && unit.family === UNIT_TAGS.AIR) {
     for (const cardId of ["low-altitude-strike-1", "low-altitude-strike-2"]) {
       const targetFamilies = getRunUpgradeById(cardId)?.values?.targetFamilies ?? [];
-      modifier += addIfActive(state, unit, cardId, "attack", UNIT_TAGS.AIR, targetFamilies.includes(defender.family));
+      addRunCardSourceIfActive(
+        sources,
+        state,
+        unit,
+        cardId,
+        "attack",
+        UNIT_TAGS.AIR,
+        targetFamilies.includes(defender.family),
+        `Against ${defender.family} targets.`
+      );
     }
   }
 
-  return modifier;
+  return sources;
 }
 
 export function getRunCardArmorModifier(state, unit) {
@@ -235,29 +285,46 @@ export function getRunCardArmorModifier(state, unit) {
     return 0;
   }
 
-  let modifier = 0;
+  return sumModifierSources(getRunCardArmorModifierSources(state, unit));
+}
+
+export function getRunCardArmorModifierSources(state, unit) {
+  if (!isPlayerCardTarget(unit)) {
+    return [];
+  }
+
+  const sources = [];
   const adjacentAllyCount = getAdjacentAllies(state, unit).length;
 
-  modifier += addIfActive(state, unit, "passive-plating", "armor", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "armor-plating-1", "armor");
-  modifier += addIfActive(state, unit, "armor-plating-2", "armor");
-  modifier += addIfActive(state, unit, "armor-plating-3", "armor");
-  modifier += addIfActive(state, unit, "entrench-1", "armor", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
-  modifier += addIfActive(state, unit, "entrench-2", "armor", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
-  modifier += addIfActive(state, unit, "entrench-3", "armor", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
-  modifier += addIfActive(state, unit, "glass-cannons-1", "armor", UNIT_TAGS.AIR);
-  modifier += addIfActive(state, unit, "glass-cannons-2", "armor", UNIT_TAGS.AIR);
-  modifier += addIfActive(state, unit, "hold-the-line", "armor", null, adjacentAllyCount > 0);
-  modifier += hasCard(state, "battle-brothers-2") ? adjacentAllyCount * getValue("battle-brothers-2", "armorPerAlly") : 0;
-  modifier += hasCard(state, "battle-brothers-3") ? adjacentAllyCount * getValue("battle-brothers-3", "armorPerAlly") : 0;
-  modifier += addIfActive(state, unit, "glass-army-1", "armor");
-  modifier += addIfActive(state, unit, "glass-army-2", "armor");
-  modifier += addIfActive(state, unit, "glass-army-3", "armor");
-  modifier += addIfActive(state, unit, "iron-army-1", "armor");
-  modifier += addIfActive(state, unit, "iron-army-2", "armor");
-  modifier += addIfActive(state, unit, "iron-army-3", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "passive-plating", "armor", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "armor-plating-1", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "armor-plating-2", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "armor-plating-3", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "entrench-1", "armor", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
+  addRunCardSourceIfActive(sources, state, unit, "entrench-2", "armor", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
+  addRunCardSourceIfActive(sources, state, unit, "entrench-3", "armor", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
+  addRunCardSourceIfActive(sources, state, unit, "glass-cannons-1", "armor", UNIT_TAGS.AIR);
+  addRunCardSourceIfActive(sources, state, unit, "glass-cannons-2", "armor", UNIT_TAGS.AIR);
+  addRunCardSourceIfActive(sources, state, unit, "hold-the-line", "armor", null, adjacentAllyCount > 0);
 
-  return modifier;
+  for (const cardId of ["battle-brothers-2", "battle-brothers-3"]) {
+    const value = hasCard(state, cardId)
+      ? adjacentAllyCount * getValue(cardId, "armorPerAlly")
+      : 0;
+
+    if (value !== 0) {
+      sources.push(createRunCardModifierSource(cardId, value, `${adjacentAllyCount} adjacent allies.`));
+    }
+  }
+
+  addRunCardSourceIfActive(sources, state, unit, "glass-army-1", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "glass-army-2", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "glass-army-3", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "iron-army-1", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "iron-army-2", "armor");
+  addRunCardSourceIfActive(sources, state, unit, "iron-army-3", "armor");
+
+  return sources;
 }
 
 export function getRunCardMovementModifier(state, unit) {
@@ -265,35 +332,48 @@ export function getRunCardMovementModifier(state, unit) {
     return 0;
   }
 
-  let modifier = 0;
+  return sumModifierSources(getRunCardMovementModifierSources(state, unit));
+}
 
-  modifier += addIfActive(state, unit, "passive-drill", "movement", UNIT_TAGS.INFANTRY);
-  modifier += addIfActive(state, unit, "motorized-infantry-3", "movement", UNIT_TAGS.INFANTRY);
-  modifier += addIfActive(state, unit, "pack-mules-3", "movement", UNIT_TAGS.INFANTRY);
-  modifier += addIfActive(state, unit, "overclocked-engines-1", "movement", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "overclocked-engines-2", "movement", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "siege-package-1", "movement", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "siege-package-2", "movement", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "siege-package-3", "movement", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "afterburners-1", "movement", UNIT_TAGS.AIR);
-  modifier += addIfActive(state, unit, "afterburners-2", "movement", UNIT_TAGS.AIR);
-  modifier += addIfActive(state, unit, "iron-army-1", "movement");
-  modifier += addIfActive(state, unit, "iron-army-2", "movement");
-  modifier += addIfActive(state, unit, "glass-fuel-lines", "movement", UNIT_TAGS.VEHICLE);
-  modifier += unit?.runCardState?.bloodTrailMovementBonus ?? 0;
+export function getRunCardMovementModifierSources(state, unit) {
+  if (!isPlayerCardTarget(unit)) {
+    return [];
+  }
+
+  const sources = [];
+
+  addRunCardSourceIfActive(sources, state, unit, "passive-drill", "movement", UNIT_TAGS.INFANTRY);
+  addRunCardSourceIfActive(sources, state, unit, "motorized-infantry-3", "movement", UNIT_TAGS.INFANTRY);
+  addRunCardSourceIfActive(sources, state, unit, "pack-mules-3", "movement", UNIT_TAGS.INFANTRY);
+  addRunCardSourceIfActive(sources, state, unit, "overclocked-engines-1", "movement", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "overclocked-engines-2", "movement", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "siege-package-1", "movement", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "siege-package-2", "movement", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "siege-package-3", "movement", UNIT_TAGS.VEHICLE);
+  addRunCardSourceIfActive(sources, state, unit, "afterburners-1", "movement", UNIT_TAGS.AIR);
+  addRunCardSourceIfActive(sources, state, unit, "afterburners-2", "movement", UNIT_TAGS.AIR);
+  addRunCardSourceIfActive(sources, state, unit, "iron-army-1", "movement");
+  addRunCardSourceIfActive(sources, state, unit, "iron-army-2", "movement");
+  addRunCardSourceIfActive(sources, state, unit, "glass-fuel-lines", "movement", UNIT_TAGS.VEHICLE);
+
+  if ((unit?.runCardState?.bloodTrailMovementBonus ?? 0) !== 0) {
+    sources.push(createRunCardModifierSource("gear-blood-trail", unit.runCardState.bloodTrailMovementBonus));
+  }
 
   for (const cardId of ["redline-1", "redline-2", "redline-3"]) {
-    modifier += addIfActive(
+    addRunCardSourceIfActive(
+      sources,
       state,
       unit,
       cardId,
       "movement",
       null,
-      isBelowHpRatio(unit, getValue(cardId, "hpRatioBelow"))
+      isBelowHpRatio(unit, getValue(cardId, "hpRatioBelow")),
+      `HP below ${Math.round(getValue(cardId, "hpRatioBelow") * 100)}%.`
     );
   }
 
-  return modifier;
+  return sources;
 }
 
 export function getRunCardRangeModifier(state, unit) {
@@ -301,32 +381,64 @@ export function getRunCardRangeModifier(state, unit) {
     return 0;
   }
 
+  return sumModifierSources(getRunCardRangeModifierSources(state, unit));
+}
+
+export function getRunCardRangeModifierSources(state, unit) {
+  if (!isPlayerCardTarget(unit)) {
+    return [];
+  }
+
+  const sources = [];
   let modifier = 0;
 
-  modifier += addIfActive(state, unit, "entrench-3", "range", UNIT_TAGS.INFANTRY, isOnSector(state, unit));
-  modifier += addIfActive(state, unit, "siege-package-1", "range", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "siege-package-2", "range", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "siege-package-3", "range", UNIT_TAGS.VEHICLE);
-  modifier += addIfActive(state, unit, "everything-is-a-missile", "range");
+  for (const [cardId, family, condition] of [
+    ["entrench-3", UNIT_TAGS.INFANTRY, isOnSector(state, unit)],
+    ["siege-package-1", UNIT_TAGS.VEHICLE, true],
+    ["siege-package-2", UNIT_TAGS.VEHICLE, true],
+    ["siege-package-3", UNIT_TAGS.VEHICLE, true],
+    ["everything-is-a-missile", null, true]
+  ]) {
+    const value = addIfActive(state, unit, cardId, "range", family, condition);
+
+    if (value !== 0) {
+      sources.push(createRunCardModifierSource(cardId, value));
+      modifier += value;
+    }
+  }
 
   if (hasCard(state, "battle-brothers-3") && hasAdjacentAlly(state, unit)) {
     const minimumRange = getValue("battle-brothers-3", "minimumRangeWithAlly");
-    modifier += Math.max(0, minimumRange - (unit.stats.maxRange + modifier));
+    const value = Math.max(0, minimumRange - (unit.stats.maxRange + modifier));
+
+    if (value !== 0) {
+      sources.push(createRunCardModifierSource("battle-brothers-3", value, "Adjacent ally minimum range."));
+    }
   }
 
-  return modifier;
+  return sources;
 }
 
 export function getRunCardPositionArmorBonus(state, unit, rawBonus) {
+  return sumModifierSources(getRunCardPositionArmorBonusSources(state, unit, rawBonus));
+}
+
+export function getRunCardPositionArmorBonusSources(state, unit, rawBonus) {
   if (!isPlayerCardTarget(unit) || !unitHasGear(unit, "gear-pathfinder-2")) {
-    return 0;
+    return [];
   }
 
   if (getTerrainKeyAt(state, unit.x, unit.y) !== TERRAIN_KEYS.FOREST) {
-    return 0;
+    return [];
   }
 
-  return rawBonus * (getValue("gear-pathfinder-2", "forestArmorMultiplier", 1) - 1);
+  const value = rawBonus * (getValue("gear-pathfinder-2", "forestArmorMultiplier", 1) - 1);
+
+  if (value === 0) {
+    return [];
+  }
+
+  return [createRunCardModifierSource("gear-pathfinder-2", value, "Forest armor multiplier.")];
 }
 
 export function applyRunCardDeploymentEffectsToUnit(state, unit) {
