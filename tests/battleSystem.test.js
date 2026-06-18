@@ -243,7 +243,55 @@ test("units with empty primary ammo can still use weak secondary fire", () => {
   assert.ok(afterAttack.log.some((line) => line.includes("secondary fire")));
 });
 
-test("owned sectors heal ten percent of max HP and resupply units", () => {
+test("owned command posts and sectors no longer auto-service at turn start", () => {
+  const sectorUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
+    current: {
+      hp: 10,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const commandUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 1, {
+    current: {
+      hp: 20,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
+  const battleState = createTestBattleState({
+    playerUnits: [sectorUnit, commandUnit],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  const sector = battleState.map.buildings.find(
+    (building) => building.type === BUILDING_KEYS.SECTOR && building.owner === TURN_SIDES.PLAYER
+  );
+  const commandPost = battleState.map.buildings.find(
+    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
+  );
+  sectorUnit.x = sector.x;
+  sectorUnit.y = sector.y;
+  commandUnit.x = commandPost.x;
+  commandUnit.y = commandPost.y;
+
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.finalizeEnemyTurn().changed, true);
+
+  const afterTurn = system.getStateForSave();
+  const updatedSectorUnit = afterTurn.player.units.find((unit) => unit.id === sectorUnit.id);
+  const updatedCommandUnit = afterTurn.player.units.find((unit) => unit.id === commandUnit.id);
+
+  assert.equal(updatedSectorUnit.current.hp, 10);
+  assert.equal(updatedSectorUnit.current.ammo, 0);
+  assert.equal(updatedSectorUnit.current.stamina, 0);
+  assert.equal(updatedCommandUnit.current.hp, 20);
+  assert.equal(updatedCommandUnit.current.ammo, 0);
+  assert.equal(updatedCommandUnit.current.stamina, 0);
+});
+
+test("supply on a sector restores ten percent HP and twenty-five percent ammo and stamina", () => {
   const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
     current: {
       hp: 1,
@@ -251,30 +299,42 @@ test("owned sectors heal ten percent of max HP and resupply units", () => {
       stamina: 0
     }
   });
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
   const battleState = createTestBattleState({
     playerUnits: [unit],
-    enemyUnits: [enemy],
-    activeSide: TURN_SIDES.ENEMY
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4)]
   });
   const sector = battleState.map.buildings.find(
-    (building) => building.type === "sector" && building.owner === TURN_SIDES.PLAYER
+    (building) => building.type === BUILDING_KEYS.SECTOR && building.owner === TURN_SIDES.PLAYER
   );
   unit.x = sector.x;
   unit.y = sector.y;
+  battleState.pendingAction = {
+    type: "move",
+    unitId: unit.id,
+    mode: "menu",
+    fromX: unit.x,
+    fromY: unit.y,
+    fromStamina: unit.current.stamina,
+    toX: unit.x,
+    toY: unit.y
+  };
 
   const system = new BattleSystem(battleState);
 
-  assert.equal(system.finalizeEnemyTurn().changed, true);
+  assert.equal(system.canSupplyWithPendingUnit(), true);
+  assert.equal(system.useSupplyWithPendingUnit(), true);
 
-  const healedUnit = system.getStateForSave().player.units[0];
+  const suppliedUnit = system.getStateForSave().player.units[0];
 
-  assert.equal(healedUnit.current.hp, 1 + Math.ceil(unit.stats.maxHealth * 0.1));
-  assert.equal(healedUnit.current.ammo, healedUnit.stats.ammoMax);
-  assert.equal(healedUnit.current.stamina, healedUnit.stats.staminaMax);
+  assert.equal(suppliedUnit.current.hp, 1 + Math.ceil(unit.stats.maxHealth * 0.1));
+  assert.equal(suppliedUnit.current.ammo, Math.ceil(unit.stats.ammoMax * 0.25));
+  assert.equal(suppliedUnit.current.stamina, Math.ceil(unit.stats.staminaMax * 0.25));
+  assert.equal(suppliedUnit.hasMoved, true);
+  assert.equal(suppliedUnit.hasAttacked, true);
+  assert.ok(system.getStateForSave().log.some((line) => line.includes("used Supply at Sector Node")));
 });
 
-test("owned command posts resupply ammo and stamina without healing HP", () => {
+test("supply on a command post restores twenty-five percent HP and fifty percent ammo and stamina", () => {
   const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
     current: {
       hp: 5,
@@ -282,27 +342,35 @@ test("owned command posts resupply ammo and stamina without healing HP", () => {
       stamina: 0
     }
   });
-  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
   const battleState = createTestBattleState({
     playerUnits: [unit],
-    enemyUnits: [enemy],
-    activeSide: TURN_SIDES.ENEMY
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4)]
   });
   const commandPost = battleState.map.buildings.find(
     (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
   );
   unit.x = commandPost.x;
   unit.y = commandPost.y;
+  battleState.pendingAction = {
+    type: "move",
+    unitId: unit.id,
+    mode: "menu",
+    fromX: unit.x,
+    fromY: unit.y,
+    fromStamina: unit.current.stamina,
+    toX: unit.x,
+    toY: unit.y
+  };
 
   const system = new BattleSystem(battleState);
 
-  assert.equal(system.finalizeEnemyTurn().changed, true);
+  assert.equal(system.useSupplyWithPendingUnit(), true);
 
-  const servicedUnit = system.getStateForSave().player.units[0];
+  const suppliedUnit = system.getStateForSave().player.units[0];
 
-  assert.equal(servicedUnit.current.hp, 5);
-  assert.equal(servicedUnit.current.ammo, servicedUnit.stats.ammoMax);
-  assert.equal(servicedUnit.current.stamina, servicedUnit.stats.staminaMax);
+  assert.equal(suppliedUnit.current.hp, 5 + Math.ceil(unit.stats.maxHealth * 0.25));
+  assert.equal(suppliedUnit.current.ammo, Math.ceil(unit.stats.ammoMax * 0.5));
+  assert.equal(suppliedUnit.current.stamina, Math.ceil(unit.stats.staminaMax * 0.5));
 });
 
 test("atlas passively restores 10 percent max HP to each unit at the start of the turn", () => {
@@ -825,16 +893,16 @@ test("knox doubles positional armor for units that stay put and fortress protoco
   battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
   battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.FOREST;
 
-  assert.equal(getDefenderArmor(battleState, defender), 10);
+  assert.equal(getDefenderArmor(battleState, defender), 24);
   defender.movedThisTurn = true;
-  assert.equal(getDefenderArmor(battleState, defender), 8);
+  assert.equal(getDefenderArmor(battleState, defender), 15);
 
   const system = new BattleSystem(battleState);
 
   assert.equal(system.activatePower(), true);
 
   let updatedDefender = system.getStateForSave().player.units[0];
-  assert.equal(getDefenderArmor(system.getStateForSave(), updatedDefender), 10);
+  assert.equal(getDefenderArmor(system.getStateForSave(), updatedDefender), 24);
 
   assert.equal(system.endTurn(), true);
   assert.equal(system.startEnemyTurnActions().changed, true);
@@ -991,10 +1059,18 @@ test("graves execution window lets defenders strike first when attacked", () => 
   const makeState = () => {
     const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
     const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);
-    return createTestBattleState({
+    const battleState = createTestBattleState({
       playerUnits: [defender],
       enemyUnits: [attacker]
     });
+    battleState.map.tiles[defender.y][defender.x] = TERRAIN_KEYS.ROAD;
+    battleState.map.tiles[attacker.y][attacker.x] = TERRAIN_KEYS.ROAD;
+    battleState.map.buildings = battleState.map.buildings.filter(
+      (building) =>
+        (building.x !== defender.x || building.y !== defender.y) &&
+        (building.x !== attacker.x || building.y !== attacker.y)
+    );
+    return battleState;
   };
 
   const baselineState = makeState();
@@ -1248,7 +1324,7 @@ test("damage forecast matches actual damage with building and status armor", () 
   assert.equal(forecast.dealt.max, actualDamage);
 });
 
-test("buildings override terrain armor regardless of ownership, and command posts give plus four", () => {
+test("buildings override terrain armor regardless of ownership, and command posts give plus eighteen", () => {
   const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 1);
   const battleState = createTestBattleState({
     playerUnits: [defender],
@@ -1267,7 +1343,7 @@ test("buildings override terrain armor regardless of ownership, and command post
     y: defender.y
   });
 
-  assert.equal(getDefenderArmor(battleState, defender), defender.stats.armor + 4);
+  assert.equal(getDefenderArmor(battleState, defender), defender.stats.armor + 18);
 });
 
 test("combat can deal zero damage when defense fully absorbs the hit", () => {
@@ -1488,7 +1564,7 @@ test("carrier stays in data but is not recruitable from airfields", () => {
   assert.equal(system.recruitUnit("carrier"), false);
 });
 
-test("repair stations service vehicles once per owner and ignore infantry", () => {
+test("repair stations fully restore vehicles through supply and can be reused while owned", () => {
   const vehicle = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
     current: {
       hp: 5,
@@ -1507,9 +1583,8 @@ test("repair stations service vehicles once per owner and ignore infantry", () =
   const battleState = createTestBattleState({
     playerUnits: [vehicle, infantry],
     enemyUnits: [enemy],
-    activeSide: TURN_SIDES.ENEMY
+    activeSide: TURN_SIDES.PLAYER
   });
-  battleState.player.commanderId = "atlas";
   const repairStation = {
     id: "player-test-repair-station",
     type: BUILDING_KEYS.REPAIR_STATION,
@@ -1523,41 +1598,76 @@ test("repair stations service vehicles once per owner and ignore infantry", () =
   battleState.map.buildings.push(repairStation);
   vehicle.x = repairStation.x;
   vehicle.y = repairStation.y;
-  infantry.x = repairStation.x + 1;
-  infantry.y = repairStation.y;
+  battleState.pendingAction = {
+    type: "move",
+    unitId: vehicle.id,
+    mode: "menu",
+    fromX: vehicle.x,
+    fromY: vehicle.y,
+    fromStamina: vehicle.current.stamina,
+    toX: vehicle.x,
+    toY: vehicle.y
+  };
 
   const system = new BattleSystem(battleState);
 
-  assert.equal(system.finalizeEnemyTurn().changed, true);
+  assert.equal(system.canSupplyWithPendingUnit(), true);
+  assert.equal(system.useSupplyWithPendingUnit(), true);
 
   let afterService = system.getStateForSave();
   let servicedVehicle = afterService.player.units.find((unit) => unit.id === vehicle.id);
-  let ignoredInfantry = afterService.player.units.find((unit) => unit.id === infantry.id);
 
   assert.equal(servicedVehicle.current.hp, servicedVehicle.stats.maxHealth);
   assert.equal(servicedVehicle.current.ammo, servicedVehicle.stats.ammoMax);
   assert.equal(servicedVehicle.current.stamina, servicedVehicle.stats.staminaMax);
-  assert.equal(ignoredInfantry.current.ammo, 0);
-  assert.equal(afterService.map.buildings.find((building) => building.id === repairStation.id).lastServiceOwner, TURN_SIDES.PLAYER);
 
   servicedVehicle.current.hp = 4;
   servicedVehicle.current.ammo = 0;
   servicedVehicle.current.stamina = 0;
+  servicedVehicle.hasMoved = false;
+  servicedVehicle.hasAttacked = false;
+  servicedVehicle.movedThisTurn = false;
+  afterService.pendingAction = {
+    type: "move",
+    unitId: servicedVehicle.id,
+    mode: "menu",
+    fromX: servicedVehicle.x,
+    fromY: servicedVehicle.y,
+    fromStamina: servicedVehicle.current.stamina,
+    toX: servicedVehicle.x,
+    toY: servicedVehicle.y
+  };
 
   const secondSystem = new BattleSystem(afterService);
-  assert.equal(secondSystem.endTurn(), true);
-  assert.equal(secondSystem.startEnemyTurnActions().changed, true);
-  assert.equal(secondSystem.finalizeEnemyTurn().changed, true);
+  assert.equal(secondSystem.useSupplyWithPendingUnit(), true);
 
   afterService = secondSystem.getStateForSave();
   servicedVehicle = afterService.player.units.find((unit) => unit.id === vehicle.id);
 
-  assert.equal(servicedVehicle.current.hp, 4 + Math.ceil(servicedVehicle.stats.maxHealth * 0.1));
-  assert.equal(servicedVehicle.current.ammo, 0);
-  assert.equal(servicedVehicle.current.stamina, 0);
+  assert.equal(servicedVehicle.current.hp, servicedVehicle.stats.maxHealth);
+  assert.equal(servicedVehicle.current.ammo, servicedVehicle.stats.ammoMax);
+  assert.equal(servicedVehicle.current.stamina, servicedVehicle.stats.staminaMax);
+
+  infantry.x = repairStation.x;
+  infantry.y = repairStation.y;
+  afterService.pendingAction = {
+    type: "move",
+    unitId: infantry.id,
+    mode: "menu",
+    fromX: infantry.x,
+    fromY: infantry.y,
+    fromStamina: infantry.current.stamina,
+    toX: infantry.x,
+    toY: infantry.y
+  };
+
+  const infantrySystem = new BattleSystem(afterService);
+
+  assert.equal(infantrySystem.canSupplyWithPendingUnit(), false);
+  assert.equal(infantrySystem.useSupplyWithPendingUnit(), false);
 });
 
-test("hospitals restore infantry once per owner and do not service vehicles", () => {
+test("capturing a hospital does not restore immediately, but infantry can supply there on a later turn", () => {
   const playerInfantry = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1, {
     current: {
       hp: 3,
@@ -1583,8 +1693,6 @@ test("hospitals restore infantry once per owner and do not service vehicles", ()
     playerUnits: [playerInfantry, vehicle],
     enemyUnits: [enemyInfantry]
   });
-  battleState.player.commanderId = "atlas";
-  battleState.enemy.commanderId = "atlas";
   const hospital = battleState.map.buildings.find((building) => building.type === BUILDING_KEYS.HOSPITAL);
   hospital.owner = TURN_SIDES.ENEMY;
   playerInfantry.x = hospital.x;
@@ -1602,66 +1710,60 @@ test("hospitals restore infantry once per owner and do not service vehicles", ()
   let afterCapture = system.getStateForSave();
   let restoredPlayer = afterCapture.player.units.find((unit) => unit.id === playerInfantry.id);
 
-  assert.equal(restoredPlayer.current.hp, restoredPlayer.stats.maxHealth);
-  assert.equal(restoredPlayer.current.ammo, restoredPlayer.stats.ammoMax);
-  assert.equal(restoredPlayer.current.stamina, restoredPlayer.stats.staminaMax);
+  assert.equal(restoredPlayer.current.hp, 3);
+  assert.equal(restoredPlayer.current.ammo, 0);
+  assert.equal(restoredPlayer.current.stamina, 0);
   assert.ok(system.getSnapshot().presentation.spentUnitIds.includes(playerInfantry.id));
 
-  restoredPlayer.x = hospital.x + 1;
-  const enemyCaptor = afterCapture.enemy.units.find((unit) => unit.id === enemyInfantry.id);
-  enemyCaptor.x = hospital.x;
-  enemyCaptor.y = hospital.y;
+  restoredPlayer.hasMoved = false;
+  restoredPlayer.hasAttacked = false;
+  restoredPlayer.movedThisTurn = false;
   afterCapture.pendingAction = {
     type: "move",
-    unitId: enemyInfantry.id,
-    mode: "menu"
+    unitId: restoredPlayer.id,
+    mode: "menu",
+    fromX: restoredPlayer.x,
+    fromY: restoredPlayer.y,
+    fromStamina: restoredPlayer.current.stamina,
+    toX: restoredPlayer.x,
+    toY: restoredPlayer.y
   };
-  afterCapture.turn.activeSide = TURN_SIDES.ENEMY;
+  afterCapture.turn.activeSide = TURN_SIDES.PLAYER;
 
-  const enemyCaptureSystem = new BattleSystem(afterCapture);
-  assert.equal(enemyCaptureSystem.captureWithPendingUnit(), true);
+  const supplySystem = new BattleSystem(afterCapture);
+  assert.equal(supplySystem.canSupplyWithPendingUnit(), true);
+  assert.equal(supplySystem.useSupplyWithPendingUnit(), true);
 
-  const afterEnemyCapture = enemyCaptureSystem.getStateForSave();
-  const recapturePlayer = afterEnemyCapture.player.units.find((unit) => unit.id === playerInfantry.id);
-  recapturePlayer.current.hp = 5;
-  recapturePlayer.current.ammo = 0;
-  recapturePlayer.current.stamina = 0;
-  recapturePlayer.x = hospital.x;
-  recapturePlayer.y = hospital.y;
-  afterEnemyCapture.pendingAction = {
-    type: "move",
-    unitId: playerInfantry.id,
-    mode: "menu"
-  };
-  afterEnemyCapture.turn.activeSide = TURN_SIDES.PLAYER;
-
-  const recaptureSystem = new BattleSystem(afterEnemyCapture);
-  assert.equal(recaptureSystem.captureWithPendingUnit(), true);
-
-  const afterRecapture = recaptureSystem.getStateForSave();
-  restoredPlayer = afterRecapture.player.units.find((unit) => unit.id === playerInfantry.id);
-
+  const afterSupply = supplySystem.getStateForSave();
+  restoredPlayer = afterSupply.player.units.find((unit) => unit.id === playerInfantry.id);
   assert.equal(restoredPlayer.current.hp, restoredPlayer.stats.maxHealth);
   assert.equal(restoredPlayer.current.ammo, restoredPlayer.stats.ammoMax);
   assert.equal(restoredPlayer.current.stamina, restoredPlayer.stats.staminaMax);
 
+  vehicle.x = hospital.x;
+  vehicle.y = hospital.y;
   const vehicleState = createTestBattleState({
     playerUnits: [vehicle],
     enemyUnits: [enemyInfantry]
   });
   const vehicleHospital = vehicleState.map.buildings.find((building) => building.type === BUILDING_KEYS.HOSPITAL);
-  vehicleHospital.owner = TURN_SIDES.ENEMY;
-  vehicle.x = vehicleHospital.x;
-  vehicle.y = vehicleHospital.y;
+  vehicleHospital.owner = TURN_SIDES.PLAYER;
+  vehicleState.player.units[0].x = vehicleHospital.x;
+  vehicleState.player.units[0].y = vehicleHospital.y;
   vehicleState.pendingAction = {
     type: "move",
     unitId: vehicle.id,
-    mode: "menu"
+    mode: "menu",
+    fromX: vehicleHospital.x,
+    fromY: vehicleHospital.y,
+    fromStamina: vehicle.current.stamina,
+    toX: vehicleHospital.x,
+    toY: vehicleHospital.y
   };
 
   const vehicleSystem = new BattleSystem(vehicleState);
 
-  assert.equal(vehicleSystem.canCaptureWithPendingUnit(), false);
+  assert.equal(vehicleSystem.canSupplyWithPendingUnit(), false);
 });
 
 test("weapon armor multipliers apply only to base armor before terrain and building armor", () => {
@@ -1686,15 +1788,15 @@ test("weapon armor multipliers apply only to base armor before terrain and build
     y: bruiser.y
   });
 
-  assert.equal(getDefenderArmor(battleState, bruiser), bruiser.stats.armor + 3);
+  assert.equal(getDefenderArmor(battleState, bruiser), bruiser.stats.armor + 13);
   assert.equal(
     getDefenderArmor(battleState, bruiser, breaker, getUnitAttackProfile(breaker)),
-    31
+    41
   );
 
   const forecast = getAttackForecast(battleState, breaker, bruiser);
-  assert.equal(forecast.dealt.min, 43);
-  assert.equal(forecast.dealt.max, 43);
+  assert.equal(forecast.dealt.min, 33);
+  assert.equal(forecast.dealt.max, 33);
 
   const system = new BattleSystem(battleState);
   const startingHp = bruiser.current.hp;
@@ -1704,8 +1806,8 @@ test("weapon armor multipliers apply only to base armor before terrain and build
   const afterAttack = system.getStateForSave();
   const damagedBruiser = afterAttack.enemy.units[0];
 
-  assert.equal(startingHp - damagedBruiser.current.hp, 43);
-  assert.equal(getDefenderArmor(afterAttack, damagedBruiser), bruiser.stats.armor + 3);
+  assert.equal(startingHp - damagedBruiser.current.hp, 33);
+  assert.equal(getDefenderArmor(afterAttack, damagedBruiser), bruiser.stats.armor + 13);
 });
 
 test("runner transport rules reject non-infantry cargo", () => {
@@ -1831,6 +1933,13 @@ test("enemy units attack when player threat cannot be escaped", () => {
     enemyUnits: [enemy],
     activeSide: TURN_SIDES.ENEMY
   });
+  battleState.map.tiles[player.y][player.x] = TERRAIN_KEYS.ROAD;
+  battleState.map.tiles[enemy.y][enemy.x] = TERRAIN_KEYS.ROAD;
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) =>
+      (building.x !== player.x || building.y !== player.y) &&
+      (building.x !== enemy.x || building.y !== enemy.y)
+  );
   battleState.enemyTurn = {
     pendingAttack: null,
     pendingUnitIds: [enemy.id]
@@ -1845,11 +1954,13 @@ test("enemy units attack when player threat cannot be escaped", () => {
   assert.ok(afterStep.player.units[0].current.hp < player.current.hp);
 });
 
-test("wounded enemy units enter repair mode and move toward service buildings", () => {
+test("wounded enemy units move onto service buildings and use supply immediately", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const enemy = createPlacedUnit("runner", TURN_SIDES.ENEMY, 5, 3, {
     current: {
-      hp: 5
+      hp: 5,
+      ammo: 0,
+      stamina: 5
     }
   });
   const battleState = createTestBattleState({
@@ -1881,17 +1992,22 @@ test("wounded enemy units enter repair mode and move toward service buildings", 
   assert.equal(step.type, "move");
   assert.equal(updatedEnemy.x, 6);
   assert.equal(updatedEnemy.y, 3);
+  assert.ok(updatedEnemy.current.hp > enemy.current.hp);
+  assert.ok(updatedEnemy.current.ammo > enemy.current.ammo);
+  assert.ok(updatedEnemy.current.stamina > enemy.current.stamina);
   assert.equal(updatedEnemy.cooldowns.repairMode, 2);
   assert.equal(updatedEnemy.hasMoved, true);
   assert.equal(updatedEnemy.hasAttacked, true);
-  assert.ok(afterStep.log.some((line) => line.includes("entered repair mode")));
+  assert.ok(afterStep.log.some((line) => line.includes("used Supply at Sector Node")));
 });
 
-test("enemy units already on a service building stay there while repairing", () => {
+test("enemy units already on a service building can spend the turn supplying in place", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const enemy = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 4, 3, {
     current: {
-      hp: 8
+      hp: 8,
+      ammo: 0,
+      stamina: 0
     },
     cooldowns: {
       repairMode: 1
@@ -1925,9 +2041,63 @@ test("enemy units already on a service building stay there while repairing", () 
   assert.equal(step.type, "repair");
   assert.equal(updatedEnemy.x, 4);
   assert.equal(updatedEnemy.y, 3);
+  assert.ok(updatedEnemy.current.hp > enemy.current.hp);
+  assert.ok(updatedEnemy.current.ammo > enemy.current.ammo);
+  assert.ok(updatedEnemy.current.stamina > enemy.current.stamina);
   assert.equal(updatedEnemy.cooldowns.repairMode, 1);
   assert.equal(updatedEnemy.hasMoved, true);
   assert.equal(updatedEnemy.hasAttacked, true);
+});
+
+test("enemy units do not skip an obvious attack just because supply is available", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 3, {
+    current: {
+      hp: 7
+    }
+  });
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 3, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 5
+    }
+  });
+  Object.assign(player.stats, {
+    attack: 0,
+    armor: 0,
+    luck: 0,
+    maxHealth: 20
+  });
+  player.current.hp = 7;
+  Object.assign(enemy.stats, { attack: 200, luck: 0 });
+  const battleState = createTestBattleState({
+    id: "enemy-attack-over-supply",
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  battleState.map.buildings = [
+    {
+      id: "enemy-command-supply",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.ENEMY,
+      x: enemy.x,
+      y: enemy.y
+    }
+  ];
+  battleState.enemyTurn = {
+    pendingAttack: null,
+    pendingUnitIds: [enemy.id]
+  };
+
+  const system = new BattleSystem(battleState);
+  const step = system.processEnemyTurnStep();
+
+  assert.equal(step.type, "attack");
+  assert.equal(
+    system.getStateForSave().player.units.some((unit) => unit.id === player.id),
+    false
+  );
 });
 
 test("enemy units advance into staging range when no attack is available", () => {
@@ -1976,6 +2146,15 @@ test("enemy units choose a favorable target when one is available", () => {
     enemyUnits: [enemy],
     activeSide: TURN_SIDES.ENEMY
   });
+  battleState.map.tiles[runner.y][runner.x] = TERRAIN_KEYS.ROAD;
+  battleState.map.tiles[enemy.y][enemy.x] = TERRAIN_KEYS.ROAD;
+  battleState.map.tiles[bruiser.y][bruiser.x] = TERRAIN_KEYS.ROAD;
+  battleState.map.buildings = battleState.map.buildings.filter(
+    (building) =>
+      (building.x !== runner.x || building.y !== runner.y) &&
+      (building.x !== bruiser.x || building.y !== bruiser.y) &&
+      (building.x !== enemy.x || building.y !== enemy.y)
+  );
   battleState.enemyTurn = {
     pendingAttack: null,
     pendingUnitIds: [enemy.id]
@@ -2238,7 +2417,7 @@ test("enemy start actions wait for the controller to release the turn banner", (
   assert.equal(afterStartActions.enemy.funds, startResult.incomeGain.nextFunds);
   assert.equal(afterStartActions.enemy.units[0].hasMoved, false);
   assert.equal(afterStartActions.enemy.units[0].hasAttacked, false);
-  assert.equal(afterStartActions.enemy.units[0].current.stamina, enemy.stats.staminaMax);
+  assert.equal(afterStartActions.enemy.units[0].current.stamina, 1);
   assert.deepEqual(afterStartActions.enemyTurn.pendingUnitIds, [enemy.id]);
   assert.equal(afterStartActions.log.some((line) => line.startsWith("Enemy deployed ")), false);
 });
@@ -3034,12 +3213,14 @@ test("enemy runners extract threatened infantry instead of leaving them exposed"
   const afterMove = system.getStateForSave();
   const updatedRunner = afterMove.enemy.units.find((unit) => unit.id === runner.id);
   const updatedPassenger = afterMove.enemy.units.find((unit) => unit.id === passenger.id);
+  const initialRunnerDistance = Math.abs(runner.x - player.x) + Math.abs(runner.y - player.y);
+  const extractedRunnerDistance = Math.abs(updatedRunner.x - player.x) + Math.abs(updatedRunner.y - player.y);
 
   assert.equal(step.type, "move");
   assert.equal(updatedRunner.transport.carryingUnitId, passenger.id);
   assert.equal(updatedPassenger.transport.carriedByUnitId, runner.id);
-  assert.deepEqual({ x: updatedRunner.x, y: updatedRunner.y }, { x: 3, y: 1 });
-  assert.deepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: 3, y: 1 });
+  assert.ok(extractedRunnerDistance > initialRunnerDistance);
+  assert.deepEqual({ x: updatedPassenger.x, y: updatedPassenger.y }, { x: updatedRunner.x, y: updatedRunner.y });
 });
 
 test("rout missions give zero-start sides one full turn before defeat checks arm", () => {

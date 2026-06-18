@@ -208,6 +208,10 @@ export function renderOptionFields(options = {}, displayContext = {}) {
       <input type="checkbox" ${options.showGrid ? "checked" : ""} data-option="showGrid" />
     </label>
     <label class="option-row option-row--toggle">
+      <span>Battlefield Name Tooltips</span>
+      <input type="checkbox" ${options.battlefieldNameTooltips !== false ? "checked" : ""} data-option="battlefieldNameTooltips" />
+    </label>
+    <label class="option-row option-row--toggle">
       <span>Allow Screen Shake</span>
       <input type="checkbox" ${options.screenShake ? "checked" : ""} data-option="screenShake" />
     </label>

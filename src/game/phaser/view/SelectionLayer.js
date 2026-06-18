@@ -1,5 +1,8 @@
 import Phaser from "phaser";
-import { buildForecastTooltipLabel } from "./selectionTooltip.js";
+import {
+  buildBattlefieldNameTooltip,
+  buildForecastTooltipLabel
+} from "./selectionTooltip.js";
 import {
   createMovementPathTransitionState,
   getMovementPathAnimationDurationMs,
@@ -12,6 +15,25 @@ const SELECTION_DEPTH = 24;
 const CURSOR_DEPTH = 34;
 const TOOLTIP_BACKGROUND_DEPTH = 62;
 const TOOLTIP_LABEL_DEPTH = 63;
+
+function getCameraVisibleWorldBounds(scene) {
+  const camera = scene.cameras.main;
+  const viewportWidth = camera.width || scene.scale.width;
+  const viewportHeight = camera.height || scene.scale.height;
+  const originX = viewportWidth * camera.originX;
+  const originY = viewportHeight * camera.originY;
+
+  return {
+    left: camera.scrollX + originX - originX / camera.zoom,
+    right: camera.scrollX + originX + (viewportWidth - originX) / camera.zoom,
+    top: camera.scrollY + originY - originY / camera.zoom,
+    bottom: camera.scrollY + originY + (viewportHeight - originY) / camera.zoom
+  };
+}
+
+function toCssHex(color) {
+  return `#${color.toString(16).padStart(6, "0")}`;
+}
 
 function drawCornerMarkers(graphics, x, y, size, color, alpha = 1) {
   const inset = Math.max(3, Math.floor(size * 0.08));
@@ -349,8 +371,18 @@ export class SelectionLayer {
         lineSpacing: 4
       })
       .setVisible(false);
+    this.tooltipSecondaryLabel = scene.add
+      .text(0, 0, "", {
+        fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+        fontSize: "13px",
+        color: "#d9ccdc",
+        align: "left",
+        lineSpacing: 2
+      })
+      .setVisible(false);
     this.tooltipBackground.setDepth(TOOLTIP_BACKGROUND_DEPTH);
     this.tooltipLabel.setDepth(TOOLTIP_LABEL_DEPTH);
+    this.tooltipSecondaryLabel.setDepth(TOOLTIP_LABEL_DEPTH);
     this.markerLabels = [];
     this.movementPathState = null;
     this.movementPathLayout = null;
@@ -364,6 +396,7 @@ export class SelectionLayer {
     this.markerLabels = [];
     this.tooltipBackground.setVisible(false);
     this.tooltipLabel.setVisible(false);
+    this.tooltipSecondaryLabel.setVisible(false);
   }
 
   resetMovementPath() {
@@ -427,6 +460,105 @@ export class SelectionLayer {
       this.movementPathLayout,
       this.movementPathState.displayPath,
       this.movementPathColor
+    );
+  }
+
+  getTooltipPosition(layout, hoveredTile, width, height) {
+    const margin = Math.max(8, Math.floor(layout.cellSize * 0.16));
+    const worldMargin = margin / this.scene.cameras.main.zoom;
+    const bounds = getCameraVisibleWorldBounds(this.scene);
+    const tileCenter = getTileCenter(layout, hoveredTile);
+    const preferredX = tileCenter.x - width / 2;
+    const preferredY =
+      layout.originY + hoveredTile.y * layout.cellSize - height - margin * 0.4;
+    const fallbackY =
+      layout.originY + (hoveredTile.y + 1) * layout.cellSize + margin * 0.3;
+    const y = preferredY >= bounds.top + worldMargin ? preferredY : fallbackY;
+
+    return {
+      x: Phaser.Math.Clamp(
+        preferredX,
+        bounds.left + worldMargin,
+        bounds.right - width - worldMargin
+      ),
+      y: Phaser.Math.Clamp(
+        y,
+        bounds.top + worldMargin,
+        bounds.bottom - height - worldMargin
+      )
+    };
+  }
+
+  showForecastTooltip(layout, hoveredTile, hoveredAttackForecast, color) {
+    const label = buildForecastTooltipLabel(hoveredAttackForecast);
+    const margin = Math.max(10, Math.floor(layout.cellSize * 0.2));
+    const width = Math.max(150, Math.floor(layout.cellSize * 3.2));
+    const x = Phaser.Math.Clamp(
+      layout.originX + hoveredTile.x * layout.cellSize + layout.cellSize + margin,
+      margin,
+      this.scene.scale.width - width - margin
+    );
+    const y = Phaser.Math.Clamp(
+      layout.originY + hoveredTile.y * layout.cellSize - margin * 0.5,
+      margin,
+      this.scene.scale.height - 72 - margin
+    );
+
+    this.tooltipBackground.setStrokeStyle(2, color, 0.95);
+    this.tooltipLabel
+      .setText(label)
+      .setColor("#fff2d4")
+      .setPosition(x + 10, y + 10)
+      .setVisible(true);
+    this.tooltipSecondaryLabel.setVisible(false);
+    const bounds = this.tooltipLabel.getBounds();
+    this.tooltipBackground
+      .setPosition(bounds.centerX, bounds.centerY)
+      .setSize(bounds.width + 20, bounds.height + 18)
+      .setVisible(true);
+  }
+
+  showNameTooltip(snapshot, layout, hoveredTile, colorOptions = {}) {
+    const tooltip = buildBattlefieldNameTooltip(snapshot, hoveredTile);
+
+    if (!tooltip) {
+      return;
+    }
+
+    const primaryColor = getOwnerColor(tooltip.primary.owner, colorOptions);
+    const secondaryColor = tooltip.secondary
+      ? getOwnerColor(tooltip.secondary.owner, colorOptions)
+      : primaryColor;
+    const paddingX = 10;
+    const paddingY = 6;
+    const gap = tooltip.secondary ? 2 : 0;
+
+    this.tooltipLabel
+      .setText(tooltip.primary.label)
+      .setColor(toCssHex(primaryColor))
+      .setVisible(true);
+    this.tooltipSecondaryLabel
+      .setText(tooltip.secondary?.label ?? "")
+      .setColor(toCssHex(secondaryColor))
+      .setVisible(Boolean(tooltip.secondary));
+
+    const primaryWidth = this.tooltipLabel.width;
+    const secondaryWidth = tooltip.secondary ? this.tooltipSecondaryLabel.width : 0;
+    const primaryHeight = this.tooltipLabel.height;
+    const secondaryHeight = tooltip.secondary ? this.tooltipSecondaryLabel.height : 0;
+    const width = Math.max(primaryWidth, secondaryWidth) + paddingX * 2;
+    const height = primaryHeight + secondaryHeight + gap + paddingY * 2;
+    const position = this.getTooltipPosition(layout, hoveredTile, width, height);
+
+    this.tooltipBackground
+      .setStrokeStyle(2, primaryColor, 0.95)
+      .setPosition(position.x + width / 2, position.y + height / 2)
+      .setSize(width, height)
+      .setVisible(true);
+    this.tooltipLabel.setPosition(position.x + paddingX, position.y + paddingY);
+    this.tooltipSecondaryLabel.setPosition(
+      position.x + paddingX,
+      position.y + paddingY + primaryHeight + gap
     );
   }
 
@@ -652,26 +784,9 @@ export class SelectionLayer {
     }
 
     if (hoveredAttackForecast) {
-      const label = buildForecastTooltipLabel(hoveredAttackForecast);
-      const margin = Math.max(10, Math.floor(layout.cellSize * 0.2));
-      const width = Math.max(150, Math.floor(layout.cellSize * 3.2));
-      const x = Phaser.Math.Clamp(
-        layout.originX + hoveredTile.x * layout.cellSize + layout.cellSize + margin,
-        margin,
-        this.scene.scale.width - width - margin
-      );
-      const y = Phaser.Math.Clamp(
-        layout.originY + hoveredTile.y * layout.cellSize - margin * 0.5,
-        margin,
-        this.scene.scale.height - 72 - margin
-      );
-
-      this.tooltipLabel.setText(label).setPosition(x + 10, y + 10).setVisible(true);
-      const bounds = this.tooltipLabel.getBounds();
-      this.tooltipBackground
-        .setPosition(bounds.centerX, bounds.centerY)
-        .setSize(bounds.width + 20, bounds.height + 18)
-        .setVisible(true);
+      this.showForecastTooltip(layout, hoveredTile, hoveredAttackForecast, enemyColor);
+    } else if (hoveredTile && options.showNameTooltips === true) {
+      this.showNameTooltip(snapshot, layout, hoveredTile, colorOptions);
     }
 
     this.markerLabels = markerLabels;

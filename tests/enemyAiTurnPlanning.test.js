@@ -211,6 +211,51 @@ test("repair and capture plans retain archetype priorities", () => {
   assert.equal(capturePlan.action.buildingId, "neutral-capture-sector");
 });
 
+test("enemy planner prefers an obvious attack over repairing on a service building", () => {
+  const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 5, 3);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 3, {
+    current: {
+      hp: 5,
+      ammo: 0,
+      stamina: 5
+    }
+  });
+
+  Object.assign(player.stats, {
+    attack: 0,
+    armor: 0,
+    luck: 0,
+    maxHealth: 20
+  });
+  player.current.hp = 7;
+  Object.assign(enemy.stats, {
+    attack: 200,
+    luck: 0
+  });
+
+  const state = createTestBattleState({
+    width: 10,
+    height: 7,
+    playerUnits: [player],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  state.map.buildings = [
+    {
+      id: "enemy-command-supply",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.ENEMY,
+      x: enemy.x,
+      y: enemy.y
+    }
+  ];
+
+  const plan = planEnemyTurn(state, [enemy.id]);
+
+  assert.equal(plan.action.type, "attack");
+  assert.equal(plan.action.targetId, player.id);
+});
+
 test("an immediate enemy HQ capture overrides the rest of the turn plan", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 8, 5);
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 3);

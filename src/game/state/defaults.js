@@ -12,6 +12,7 @@ export function createDefaultOptions() {
   return {
     showGrid: true,
     screenShake: true,
+    battlefieldNameTooltips: true,
     combatCutsceneAnimations: true,
     masterVolume: 0.4,
     muted: false,

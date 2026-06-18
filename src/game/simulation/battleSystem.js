@@ -35,6 +35,9 @@ export class BattleSystem {
     if (this.state.enemyTurn && !("pendingSlipstream" in this.state.enemyTurn)) {
       this.state.enemyTurn.pendingSlipstream = null;
     }
+    if (this.state.enemyTurn && !("pendingReinforcementDeployments" in this.state.enemyTurn)) {
+      this.state.enemyTurn.pendingReinforcementDeployments = [];
+    }
     if (this.state.enemyTurn && !("started" in this.state.enemyTurn)) {
       this.state.enemyTurn.started = true;
     }
@@ -194,6 +197,10 @@ export class BattleSystem {
     return playerActions.canCaptureWithPendingUnit(this);
   }
 
+  canSupplyWithPendingUnit() {
+    return playerActions.canSupplyWithPendingUnit(this);
+  }
+
   beginPendingAttack() {
     return playerActions.beginPendingAttack(this);
   }
@@ -240,6 +247,10 @@ export class BattleSystem {
 
   captureWithPendingUnit() {
     return playerActions.captureWithPendingUnit(this);
+  }
+
+  useSupplyWithPendingUnit() {
+    return playerActions.useSupplyWithPendingUnit(this);
   }
 
   redoPendingMove() {
@@ -308,6 +319,18 @@ export class BattleSystem {
 
   performEnemyEndTurnRecruitment() {
     return turnFlow.performEnemyEndTurnRecruitment(this);
+  }
+
+  prepareEnemyEndTurnReinforcements() {
+    return turnFlow.prepareEnemyEndTurnReinforcements(this);
+  }
+
+  hasPendingEnemyTurnReinforcements() {
+    return turnFlow.hasPendingEnemyTurnReinforcements(this);
+  }
+
+  processNextEnemyTurnReinforcement() {
+    return turnFlow.processNextEnemyTurnReinforcement(this);
   }
 
   shouldEnemyUsePower() {

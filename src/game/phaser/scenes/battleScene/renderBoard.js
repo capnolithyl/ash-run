@@ -80,7 +80,8 @@ export const battleSceneRenderMethods = {
           player: snapshot.map.playerSpawns,
           enemy: snapshot.map.enemySpawns
         },
-        editorReinforcements: snapshot.presentation?.reinforcements
+        editorReinforcements: snapshot.presentation?.reinforcements,
+        showNameTooltips: false
       });
       this.buildingLayer.render(snapshot, layout, colorOptions);
       this.unitLayer.render(snapshot, layout, [], { colorOptions });
@@ -183,7 +184,9 @@ export const battleSceneRenderMethods = {
       {
         colorOptions,
         enemyMovementPaths,
-        tutorialHighlights: snapshot.presentation?.tutorial?.battlefieldHighlights ?? []
+        tutorialHighlights: snapshot.presentation?.tutorial?.battlefieldHighlights ?? [],
+        showNameTooltips:
+          this.latestState.metaState.options.battlefieldNameTooltips !== false
       }
     );
     this.buildingLayer.render(snapshot, layout, colorOptions);

@@ -1,9 +1,253 @@
 import { expect, test } from "@playwright/test";
 
+test.setTimeout(60_000);
+
 async function gotoTitle(page) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".screen--title")).toBeVisible({ timeout: 45_000 });
 }
+
+async function getTitleLayoutSnapshot(page) {
+  return page.evaluate(() =>
+    Array.from(
+      document.querySelectorAll(
+        ".title-menu__item, .title-menu__button, .title-showcase__logo",
+      ),
+    ).map((element) => ({
+      className: element.className,
+      left: element.offsetLeft,
+      top: element.offsetTop,
+      width: element.offsetWidth,
+      height: element.offsetHeight,
+    })),
+  );
+}
+
+async function getCommanderSelectLayoutSnapshot(page) {
+  return page.evaluate(() => {
+    const screen = document.querySelector('[data-screen-id="commander-select"]');
+    const selectors = [
+      ".commander-select-panel",
+      ".slot-card",
+      ".commander-slider",
+      '[data-role="commander-slider"]',
+      '[data-role="commander-slider-track"]',
+      ".commander-card",
+      ".commander-card__art",
+      ".commander-card__info-image",
+      ".panel-footer",
+    ];
+
+    return Array.from(screen?.querySelectorAll(selectors.join(",")) ?? []).map(
+      (element, index) => ({
+        index,
+        className: element.className,
+        commanderId: element.dataset?.commanderId ?? "",
+        copyIndex: element.dataset?.copyIndex ?? "",
+        slotId: element.dataset?.slotId ?? "",
+        left: element.offsetLeft,
+        top: element.offsetTop,
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+      }),
+    );
+  });
+}
+
+async function getCommanderSelectGeometrySnapshot(page) {
+  return page.evaluate(() => {
+    const screen = document.querySelector('[data-screen-id="commander-select"]');
+    const track = document.querySelector('[data-role="commander-slider-track"]');
+    const selectors = [
+      ".commander-select-panel",
+      ".slot-card",
+      ".commander-slider",
+      '[data-role="commander-slider"]',
+      '[data-role="commander-slider-track"]',
+      ".commander-card",
+      ".commander-card__art",
+      ".commander-card__info-image",
+      ".panel-footer",
+    ];
+
+    return {
+      trackTransform: track?.style.transform ?? "",
+      boxes: Array.from(screen?.querySelectorAll(selectors.join(",")) ?? []).map(
+        (element, index) => {
+          const box = element.getBoundingClientRect();
+
+          return {
+            index,
+            commanderId: element.dataset?.commanderId ?? "",
+            copyIndex: element.dataset?.copyIndex ?? "",
+            slotId: element.dataset?.slotId ?? "",
+            left: Math.round(box.left * 100) / 100,
+            top: Math.round(box.top * 100) / 100,
+            width: Math.round(box.width * 100) / 100,
+            height: Math.round(box.height * 100) / 100,
+          };
+        },
+      ),
+    };
+  });
+}
+
+async function getVisibleCommanderDetailOverlays(page) {
+  return page.evaluate(() =>
+    Array.from(
+      document.querySelectorAll(
+        '[data-screen-id="commander-select"] .commander-card__hover-overlay',
+      ),
+    )
+      .filter((overlay) => Number.parseFloat(getComputedStyle(overlay).opacity) > 0.05)
+      .map((overlay) => overlay.closest("[data-commander-id]")?.dataset.commanderId ?? "unknown"),
+  );
+}
+
+async function expectCommanderSelectHoverStable(page, selector, { overlayCommanderId = null } = {}) {
+  const target = page.locator(selector);
+  const box = await target.boundingBox();
+  expect(box).not.toBeNull();
+
+  const before = await getCommanderSelectGeometrySnapshot(page);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(360);
+  const after = await getCommanderSelectGeometrySnapshot(page);
+
+  const hoverState = await target.evaluate((element) => {
+    const styles = getComputedStyle(element);
+
+    return {
+      transform: styles.transform,
+      visibleOverlays: Array.from(
+        document.querySelectorAll(
+          '[data-screen-id="commander-select"] .commander-card__hover-overlay',
+        ),
+      ).filter((overlay) => Number.parseFloat(getComputedStyle(overlay).opacity) > 0.05).length,
+    };
+  });
+
+  expect(hoverState.transform).toBe("none");
+  expect(after).toEqual(before);
+
+  if (overlayCommanderId) {
+    expect(await getVisibleCommanderDetailOverlays(page)).toContain(overlayCommanderId);
+    return;
+  }
+
+  expect(hoverState.visibleOverlays).toBe(0);
+}
+
+async function expectCommanderSelectClickStable(page, selector) {
+  await page.mouse.move(1, 1);
+  await page.waitForTimeout(220);
+
+  const before = await getCommanderSelectGeometrySnapshot(page);
+  await page.locator(selector).click({ force: true });
+  await page.waitForTimeout(160);
+  const after = await getCommanderSelectGeometrySnapshot(page);
+
+  expect(after).toEqual(before);
+}
+
+test("title screen appears with startup assets already settled", async ({ page }) => {
+  await gotoTitle(page);
+
+  const preloadState = await page.evaluate(() => {
+    const images = Array.from(document.querySelectorAll(".screen--title img"));
+    const buttonImages = Array.from(document.querySelectorAll(".title-button__image"));
+
+    return {
+      fontStatus: document.fonts?.status ?? "unsupported",
+      incompleteImages: images
+        .filter((image) => !image.complete || image.naturalWidth === 0)
+        .map((image) => image.getAttribute("src")),
+      buttonsWithoutLoadedArt: buttonImages
+        .filter((image) => !image.closest("button")?.classList.contains("title-button--image-loaded"))
+        .map((image) => image.getAttribute("src")),
+    };
+  });
+
+  expect(preloadState.fontStatus).toBe("loaded");
+  expect(preloadState.incompleteImages).toEqual([]);
+  expect(preloadState.buttonsWithoutLoadedArt).toEqual([]);
+
+  const before = await getTitleLayoutSnapshot(page);
+  await page.waitForTimeout(250);
+  const after = await getTitleLayoutSnapshot(page);
+
+  expect(after).toEqual(before);
+});
+
+test("commander select opens with cached art and stable layout", async ({ page }) => {
+  await gotoTitle(page);
+
+  await page.locator('[data-action="open-new-run"]').click({ force: true });
+  await expect(page.locator('[data-screen-id="commander-select"]')).toBeVisible();
+  await page.mouse.move(1, 1);
+
+  const preloadState = await page.evaluate(() => {
+    const screen = document.querySelector('[data-screen-id="commander-select"]');
+    const images = Array.from(screen?.querySelectorAll(".commander-card__info-image") ?? []);
+
+    return {
+      fontStatus: document.fonts?.status ?? "unsupported",
+      incompleteImages: images
+        .filter((image) => !image.complete || image.naturalWidth === 0)
+        .map((image) => image.getAttribute("src")),
+    };
+  });
+
+  expect(preloadState.fontStatus).toBe("loaded");
+  expect(preloadState.incompleteImages).toEqual([]);
+
+  const before = await getCommanderSelectLayoutSnapshot(page);
+  await page.waitForTimeout(350);
+  const after = await getCommanderSelectLayoutSnapshot(page);
+
+  expect(after).toEqual(before);
+
+  await expectCommanderSelectHoverStable(page, '[data-action="select-slot"][data-slot-id="slot-1"]');
+  await expectCommanderSelectHoverStable(
+    page,
+    '[data-action="select-commander"][data-commander-id="atlas"][data-copy-index="1"]',
+    { overlayCommanderId: "atlas" },
+  );
+  await page.mouse.move(1, 1);
+  await page.waitForTimeout(220);
+  expect(await getVisibleCommanderDetailOverlays(page)).toEqual([]);
+
+  const viperCard = page.locator(
+    '[data-action="select-commander"][data-commander-id="viper"][data-copy-index="1"]',
+  );
+  const viperBox = await viperCard.boundingBox();
+  expect(viperBox).not.toBeNull();
+  await page.mouse.move(viperBox.x + viperBox.width / 2, viperBox.y + viperBox.height / 2);
+  await page.waitForTimeout(60);
+  expect(await getVisibleCommanderDetailOverlays(page)).toEqual([]);
+  await page.mouse.move(1, 1);
+  await page.waitForTimeout(220);
+
+  await expectCommanderSelectHoverStable(page, '[data-action="commander-slider-next"]');
+  await expectCommanderSelectHoverStable(page, '[data-action="open-run-loadout"]');
+  await expectCommanderSelectHoverStable(page, '[data-action="back-to-title"]');
+  await expectCommanderSelectClickStable(page, '[data-action="select-slot"][data-slot-id="slot-2"]');
+  await expectCommanderSelectClickStable(
+    page,
+    '[data-action="select-commander"][data-commander-id="viper"][data-copy-index="1"]',
+  );
+
+  const sliderBox = await page.locator('[data-role="commander-slider"]').boundingBox();
+  expect(sliderBox).not.toBeNull();
+
+  await page.mouse.move(sliderBox.x + sliderBox.width * 0.72, sliderBox.y + sliderBox.height / 2);
+  await page.evaluate(() => {
+    document.querySelector('[data-action="commander-slider-next"]')?.click();
+  });
+  await page.waitForTimeout(120);
+
+  expect(await getVisibleCommanderDetailOverlays(page)).toEqual([]);
+});
 
 test("new run flow reaches battle from the live app", async ({ page }) => {
   await gotoTitle(page);

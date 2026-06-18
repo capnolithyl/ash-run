@@ -110,8 +110,21 @@ export const appShellScreenRouterMethods = {
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderTitleView(state);
+        this.syncLoadedTitleButtonImages();
         this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
+    }
+  },
+
+  syncLoadedTitleButtonImages() {
+    const titleButtonImages = this.root.querySelectorAll(".title-button__image");
+
+    for (const image of titleButtonImages) {
+      if (!image.complete || image.naturalWidth === 0) {
+        continue;
+      }
+
+      image.closest("button")?.classList.add("title-button--image-loaded");
     }
   },
 

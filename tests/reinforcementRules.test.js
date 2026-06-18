@@ -11,7 +11,7 @@ import {
 import { replaceCustomMaps } from "../src/game/content/maps.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import {
-  resolveEnemyTurnStartReinforcements,
+  prepareEnemyTurnEndReinforcements,
   resolveReinforcementTriggers
 } from "../src/game/simulation/reinforcementRules.js";
 import {
@@ -175,28 +175,71 @@ test("casualty waves repeat on their interval, share triggers, and stop at their
   assert.equal(resolveReinforcementTriggers(system.state).length, 0);
 });
 
-test("turn waves deploy before the enemy queue and their units can act immediately", () => {
+test("turn waves queue at enemy-turn end and deploy one unit at a time without joining the action queue", () => {
   const state = configureState(
     createTestBattleState({
       playerUnits: [createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1)],
       enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 5)]
     }),
-    [createWave({ id: "turn-wave", maxActivations: 2 })]
+    [
+      createWave({
+        id: "turn-wave",
+        maxActivations: 2,
+        units: [
+          { id: "turn-wave-grunt", unitTypeId: "grunt", level: 3, x: 6, y: 4 },
+          { id: "turn-wave-runner", unitTypeId: "runner", level: 2, x: 6, y: 3 }
+        ]
+      })
+    ]
   );
   const system = new BattleSystem(state);
 
   assert.equal(system.endTurn(), true);
   const result = system.startEnemyTurnActions();
-  const saved = system.getStateForSave();
-  const reinforcement = saved.enemy.units.find((unit) =>
+  let saved = system.getStateForSave();
+
+  assert.equal(result.reinforcementActivations.length, 0);
+  assert.equal(
+    saved.enemy.units.some((unit) =>
+      unit.id.startsWith("turn-wave-activation-1-")
+    ),
+    false
+  );
+  assert.equal(saved.reinforcementState.activationsByWaveId["turn-wave"], 0);
+
+  system.state.enemyTurn.pendingUnitIds = [];
+  const queued = system.prepareEnemyEndTurnReinforcements();
+
+  assert.equal(queued.changed, true);
+  assert.equal(queued.deployments.length, 2);
+  assert.equal(system.hasPendingEnemyTurnReinforcements(), true);
+  assert.equal(system.getStateForSave().enemy.units.length, 1);
+
+  const firstResult = system.processNextEnemyTurnReinforcement();
+  saved = system.getStateForSave();
+  const firstReinforcement = saved.enemy.units.find((unit) =>
     unit.id.startsWith("turn-wave-activation-1-")
   );
 
-  assert.equal(result.reinforcementActivations.length, 1);
-  assert.ok(reinforcement);
-  assert.equal(reinforcement.hasMoved, false);
-  assert.equal(reinforcement.hasAttacked, false);
-  assert.ok(saved.enemyTurn.pendingUnitIds.includes(reinforcement.id));
+  assert.equal(firstResult.changed, true);
+  assert.equal(firstResult.done, false);
+  assert.ok(firstReinforcement);
+  assert.equal(firstReinforcement.hasMoved, false);
+  assert.equal(firstReinforcement.hasAttacked, false);
+  assert.equal(saved.enemyTurn.pendingUnitIds.includes(firstReinforcement.id), false);
+  assert.equal(saved.selection.id, firstReinforcement.id);
+  assert.equal(system.getSnapshot().presentation.spentUnitIds.includes(firstReinforcement.id), false);
+
+  const secondResult = system.processNextEnemyTurnReinforcement();
+  saved = system.getStateForSave();
+
+  assert.equal(secondResult.changed, true);
+  assert.equal(secondResult.done, true);
+  assert.equal(system.hasPendingEnemyTurnReinforcements(), false);
+  assert.equal(
+    saved.enemy.units.filter((unit) => unit.id.startsWith("turn-wave-activation-1-")).length,
+    2
+  );
 });
 
 test("waves triggered during an active enemy phase wait until the next enemy phase", () => {
@@ -250,15 +293,11 @@ test("authored reinforcement IDs and level-generated stats survive save/load det
   const first = new BattleSystem(createState());
   const second = new BattleSystem(createState());
 
-  resolveEnemyTurnStartReinforcements(first.state);
-  resolveEnemyTurnStartReinforcements(second.state);
+  const firstActivations = prepareEnemyTurnEndReinforcements(first.state);
+  const secondActivations = prepareEnemyTurnEndReinforcements(second.state);
 
-  const firstUnit = first.state.enemy.units.find((unit) =>
-    unit.id.startsWith("deterministic-wave-activation-1-")
-  );
-  const secondUnit = second.state.enemy.units.find((unit) =>
-    unit.id.startsWith("deterministic-wave-activation-1-")
-  );
+  const firstUnit = firstActivations[0].queuedDeployments[0].unit;
+  const secondUnit = secondActivations[0].queuedDeployments[0].unit;
 
   assert.equal(firstUnit.id, secondUnit.id);
   assert.equal(firstUnit.level, 3);
@@ -266,12 +305,12 @@ test("authored reinforcement IDs and level-generated stats survive save/load det
 
   const restored = new BattleSystem(first.getStateForSave());
   restored.state.turn.number = 3;
-  const activations = resolveEnemyTurnStartReinforcements(restored.state);
+  const activations = prepareEnemyTurnEndReinforcements(restored.state);
 
   assert.equal(activations.length, 1);
   assert.ok(
-    restored.state.enemy.units.some((unit) =>
-      unit.id.startsWith("deterministic-wave-activation-2-")
+    activations[0].queuedDeployments.some((deployment) =>
+      deployment.unitId.startsWith("deterministic-wave-activation-2-")
     )
   );
   assert.equal(restored.state.reinforcementState.activationsByWaveId["deterministic-wave"], 2);
@@ -414,7 +453,7 @@ test("reinforcements fan out across valid terrain and warn when no tile is open"
   );
   state.map.tiles[3][5] = TERRAIN_KEYS.WATER;
   state.turn.number = 2;
-  const activation = resolveEnemyTurnStartReinforcements(state)[0];
+  const activation = prepareEnemyTurnEndReinforcements(state)[0];
 
   assert.deepEqual(
     { x: activation.deployments[0].x, y: activation.deployments[0].y },
@@ -448,7 +487,7 @@ test("reinforcements fan out across valid terrain and warn when no tile is open"
     ]
   );
   blockedState.turn.number = 2;
-  const blockedActivation = resolveEnemyTurnStartReinforcements(blockedState)[0];
+  const blockedActivation = prepareEnemyTurnEndReinforcements(blockedState)[0];
 
   assert.equal(blockedActivation.deployments.length, 0);
   assert.equal(blockedActivation.skippedUnitCount, 1);

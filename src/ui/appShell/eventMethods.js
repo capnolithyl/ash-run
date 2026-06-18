@@ -425,6 +425,9 @@ export const appShellEventMethods = {
       case "capture-building":
         await this.controller.captureWithSelectedUnit();
         break;
+      case "use-supply":
+        await this.controller.useSelectedSupply();
+        break;
       case "rescue-hostage":
         await this.controller.rescueHostageWithSelectedUnit();
         break;

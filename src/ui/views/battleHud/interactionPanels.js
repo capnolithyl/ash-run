@@ -155,6 +155,11 @@ export function renderActionPrompt(battleSnapshot) {
               : ""
           }
           ${
+            pendingAction.canSupply
+              ? '<button class="battle-command-prompt__action" data-action="use-supply">Supply</button>'
+              : ""
+          }
+          ${
             pendingAction.canUseMedpack
               ? '<button class="battle-command-prompt__action" data-action="use-medpack">Medpack</button>'
               : ""

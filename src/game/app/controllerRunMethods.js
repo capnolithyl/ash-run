@@ -1,7 +1,10 @@
 import {
   BATTLE_ENEMY_MOVE_STEP_PAUSE_MS,
-  BATTLE_POST_COMBAT_PAUSE_MS,
   BATTLE_FUNDS_GAIN_ANIMATION_MS,
+  BATTLE_POST_COMBAT_PAUSE_MS,
+  BATTLE_REINFORCEMENT_NOTICE_MS,
+  BATTLE_REINFORCEMENT_NOTICE_TO_SPAWN_MS,
+  BATTLE_REINFORCEMENT_SPAWN_STAGGER_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
   TURN_SIDES
 } from "../core/constants.js";
@@ -155,6 +158,58 @@ function maybeSyncCombatCutscene(controller, previousSnapshot, nextSnapshot) {
       controller.emit();
     }
   }, nextCutscene.durationMs);
+}
+
+async function waitForBattleUnpaused(controller) {
+  while (controller.state.battleUi.pauseMenuOpen) {
+    await delay(100);
+  }
+}
+
+async function playEnemyTurnReinforcements(controller) {
+  const reinforcementPlan = controller.battleSystem?.prepareEnemyEndTurnReinforcements?.();
+  const deployments = reinforcementPlan?.deployments ?? [];
+
+  if (!reinforcementPlan?.changed) {
+    return false;
+  }
+
+  if (deployments.length === 0) {
+    controller.syncBattleState();
+    return true;
+  }
+
+  const noticeId = controller.showBattleNotice({
+    title: "Reinforcements Arrive",
+    message: "Enemy units entering the battlefield.",
+    tone: "warning",
+    placement: "bottom",
+    durationMs: BATTLE_REINFORCEMENT_NOTICE_MS,
+    persistent: true
+  });
+
+  try {
+    await delay(BATTLE_REINFORCEMENT_NOTICE_TO_SPAWN_MS);
+
+    while (controller.battleSystem?.hasPendingEnemyTurnReinforcements?.()) {
+      await waitForBattleUnpaused(controller);
+
+      const result = controller.battleSystem.processNextEnemyTurnReinforcement();
+
+      if (!result.changed) {
+        break;
+      }
+
+      controller.syncBattleState({ allowEnemyFocusDuringEnemyTurn: true });
+      await delay(BATTLE_REINFORCEMENT_SPAWN_STAGGER_MS);
+    }
+  } finally {
+    if (noticeId) {
+      controller.clearBattleNotice?.(noticeId);
+    }
+  }
+
+  return true;
 }
 
 export const controllerRunMethods = {
@@ -456,9 +511,7 @@ export const controllerRunMethods = {
       await delay(BATTLE_TURN_BANNER_SETTLE_MS);
     }
 
-    while (this.state.battleUi.pauseMenuOpen) {
-      await delay(100);
-    }
+    await waitForBattleUnpaused(this);
 
     const enemyStart = this.battleSystem?.startEnemyTurnActions();
 
@@ -523,9 +576,7 @@ export const controllerRunMethods = {
         break;
       }
 
-      while (this.state.battleUi.pauseMenuOpen) {
-        await delay(100);
-      }
+      await waitForBattleUnpaused(this);
 
       const previousSnapshot = this.state.battleSnapshot;
       let step;
@@ -574,9 +625,7 @@ export const controllerRunMethods = {
       }
     }
 
-    while (this.state.battleUi.pauseMenuOpen) {
-      await delay(100);
-    }
+    await waitForBattleUnpaused(this);
 
     const recruitment = enemyTurnForcePassed
       ? null
@@ -585,6 +634,15 @@ export const controllerRunMethods = {
     if (recruitment?.changed) {
       this.syncBattleState();
       await delay(760);
+    }
+
+    if (!enemyTurnForcePassed && !this.state.battleSnapshot?.victory) {
+      try {
+        await playEnemyTurnReinforcements(this);
+      } catch {
+        forcePassEnemyTurn(this, "error");
+        this.syncBattleState();
+      }
     }
 
     const playerStart = this.battleSystem?.finalizeEnemyTurn();

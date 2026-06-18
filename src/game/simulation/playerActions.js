@@ -6,6 +6,7 @@ export {
   beginPendingUnload,
   cancelPendingAttack,
   canCaptureWithPendingUnit,
+  canSupplyWithPendingUnit,
   captureWithPendingUnit,
   dropOffHostageWithPendingUnit,
   enterTransportWithPendingUnit,
@@ -14,6 +15,7 @@ export {
   unloadTransportWithPendingUnit,
   useExtinguishAbilityWithPendingUnit,
   useMedpackWithPendingUnit,
+  useSupplyWithPendingUnit,
   useSupportAbilityWithPendingUnit,
   waitWithPendingUnit
 } from "./playerActions/pendingActionFlow.js";

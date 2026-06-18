@@ -1,5 +1,6 @@
 import { BUILDING_KEYS, ENEMY_AI_ARCHETYPES, TURN_SIDES, UNIT_TAGS } from "../../core/constants.js";
 import { MAP_GOAL_TYPES } from "../../content/mapGoals.js";
+import { getBuildingSupplyPreview } from "../battleServicing.js";
 import { canCaptureBuilding } from "../captureRules.js";
 import { getMovementModifier } from "../commanderEffects.js";
 import { getPositionArmorBonus } from "../combatResolver.js";
@@ -26,30 +27,30 @@ import {
   takeRandomInt
 } from "./shared.js";
 
-function canRepairUnitAtBuilding(unit, building) {
-  if (!unit || !building || building.owner !== unit.owner) {
-    return false;
-  }
-
-  if (building.type === BUILDING_KEYS.SECTOR) {
-    return true;
-  }
-
-  return (
-    building.type === BUILDING_KEYS.REPAIR_STATION &&
-    unit.family === UNIT_TAGS.VEHICLE &&
-    building.lastServiceOwner !== unit.owner
-  );
+function canRepairUnitAtBuilding(state, unit, building) {
+  return getBuildingSupplyPreview(state, unit, building).changed;
 }
 
 function wantsRepairMode(state, unit) {
-  if (!unit || unit.transport?.carriedByUnitId || unit.current.hp >= unit.stats.maxHealth) {
+  if (!unit || unit.transport?.carriedByUnitId || !unitNeedsService(state, unit)) {
     return false;
   }
 
+  const profile = getEnemyAiProfile(state);
   const healthRatio = unit.stats.maxHealth > 0 ? unit.current.hp / unit.stats.maxHealth : 1;
+  const missingAmmoRatio =
+    unit.stats.ammoMax > 0 ? (unit.stats.ammoMax - unit.current.ammo) / unit.stats.ammoMax : 0;
+  const missingStaminaRatio =
+    unit.stats.staminaMax > 0
+      ? (unit.stats.staminaMax - unit.current.stamina) / unit.stats.staminaMax
+      : 0;
 
-  return healthRatio <= getEnemyAiProfile(state).repairHealthRatio || (unit.cooldowns?.repairMode ?? 0) > 0;
+  return (
+    healthRatio <= profile.repairHealthRatio ||
+    missingAmmoRatio >= 0.5 ||
+    missingStaminaRatio >= 0.5 ||
+    (unit.cooldowns?.repairMode ?? 0) > 0
+  );
 }
 
 function getBuildingCapturePriority(building) {
@@ -310,21 +311,24 @@ export function getRepairPlans(state, unit, reachableTiles) {
 
   const currentBuilding = getBuildingAt(state, unit.x, unit.y);
 
-  if (canRepairUnitAtBuilding(unit, currentBuilding)) {
+  if (canRepairUnitAtBuilding(state, unit, currentBuilding)) {
+    const preview = getBuildingSupplyPreview(state, unit, currentBuilding);
     return [
       {
         building: currentBuilding,
         tile: { x: unit.x, y: unit.y },
         canRepairAfterMove: true,
         isCurrentTile: true,
-        score: 999
+        needScore: preview.needScore,
+        score: 999 + preview.needScore
       }
     ];
   }
 
   return state.map.buildings
-    .filter((building) => canRepairUnitAtBuilding(unit, building))
+    .filter((building) => canRepairUnitAtBuilding(state, unit, building))
     .map((building) => {
+      const preview = getBuildingSupplyPreview(state, unit, building);
       const occupant = getUnitAt(state, building.x, building.y);
       const directTile =
         (!occupant || occupant.id === unit.id) &&
@@ -356,9 +360,18 @@ export function getRepairPlans(state, unit, reachableTiles) {
         tile: bestApproachTile,
         canRepairAfterMove: Boolean(directTile),
         isCurrentTile: false,
+        needScore: preview.needScore,
         score:
+          preview.needScore +
           (directTile ? 150 : 0) +
-          (building.type === BUILDING_KEYS.REPAIR_STATION ? 18 : 0) +
+          (
+            building.type === BUILDING_KEYS.REPAIR_STATION ||
+            building.type === BUILDING_KEYS.HOSPITAL
+              ? 18
+              : building.type === BUILDING_KEYS.COMMAND
+                ? 10
+                : 0
+          ) +
           distanceImprovement * 12 -
           distanceFromBuilding * 3
       };

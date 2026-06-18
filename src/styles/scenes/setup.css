@@ -223,6 +223,109 @@
 [data-screen-id="commander-select"] .commander-card__hover-overlay {
   padding: 0.78rem;
   gap: 0.52rem;
+  transform: none;
+  transition: opacity 180ms ease;
+}
+
+[data-screen-id="commander-select"] .commander-card__info-image {
+  transition:
+    filter 180ms ease,
+    opacity 180ms ease;
+}
+
+[data-screen-id="commander-select"] .slot-card,
+[data-screen-id="commander-select"] .commander-card,
+[data-screen-id="commander-select"] .ghost-button,
+[data-screen-id="commander-select"] .menu-button {
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+[data-screen-id="commander-select"] .slot-card:hover,
+[data-screen-id="commander-select"] .commander-card:hover,
+[data-screen-id="commander-select"] .ghost-button:hover,
+[data-screen-id="commander-select"] .menu-button:hover,
+#ui-root[data-input-mode="controller"]
+  [data-screen-id="commander-select"]
+  .slot-card.is-controller-focused,
+#ui-root[data-input-mode="controller"]
+  [data-screen-id="commander-select"]
+  .commander-card.is-controller-focused,
+#ui-root[data-input-mode="controller"]
+  [data-screen-id="commander-select"]
+  .ghost-button.is-controller-focused,
+#ui-root[data-input-mode="controller"]
+  [data-screen-id="commander-select"]
+  .menu-button.is-controller-focused {
+  transform: none;
+}
+
+[data-screen-id="commander-select"] .slot-card:hover {
+  border-color: rgba(255, 138, 61, 0.56);
+  box-shadow:
+    inset 0 0 28px rgba(255, 255, 255, 0.02),
+    0 0 18px rgba(255, 138, 61, 0.08);
+}
+
+[data-screen-id="commander-select"] .slot-card--active:hover {
+  border-color: rgba(255, 79, 216, 0.7);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 79, 216, 0.24),
+    0 0 24px rgba(255, 79, 216, 0.13);
+}
+
+[data-screen-id="commander-select"] .commander-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 66%, rgba(255, 255, 255, 0.16));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, rgba(255, 255, 255, 0.06)),
+    0 0 24px color-mix(in srgb, var(--accent) 20%, transparent),
+    0 16px 34px rgba(4, 0, 12, 0.28);
+}
+
+[data-screen-id="commander-select"] .commander-card--selected:hover {
+  box-shadow:
+    0 0 0 1px rgba(255, 79, 216, 0.35),
+    0 0 28px rgba(255, 79, 216, 0.22),
+    0 18px 42px rgba(4, 0, 12, 0.36);
+}
+
+[data-screen-id="commander-select"] .ghost-button:hover {
+  border-color: rgba(255, 138, 61, 0.5);
+  box-shadow: 0 0 18px rgba(255, 79, 216, 0.1);
+}
+
+[data-screen-id="commander-select"] .commander-slider__control:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 10px 24px rgba(4, 0, 12, 0.22);
+}
+
+[data-screen-id="commander-select"] .menu-button:hover {
+  border-color: rgba(255, 138, 61, 0.58);
+  box-shadow: 0 0 18px rgba(255, 79, 216, 0.12);
+}
+
+[data-screen-id="commander-select"] .commander-card:hover .commander-card__info-image,
+[data-screen-id="commander-select"]
+  .commander-card:focus-visible
+  .commander-card__info-image {
+  opacity: 0.9;
+  filter: blur(8px) brightness(0.48) saturate(0.86)
+    drop-shadow(0 0.8rem 1.4rem rgba(0, 0, 0, 0.26));
+  transform: none;
+}
+
+[data-screen-id="commander-select"]
+  .commander-card:hover
+  .commander-card__hover-overlay,
+[data-screen-id="commander-select"]
+  .commander-card:focus-visible
+  .commander-card__hover-overlay {
+  opacity: 1;
+  transform: none;
+  transition-delay: 120ms;
 }
 
 @media (min-width: 1560px) {
@@ -572,6 +675,7 @@
 .commander-card__art {
   position: relative;
   display: grid;
+  aspect-ratio: 1023 / 1537;
   min-height: 0;
   padding: 0.18rem;
   border-radius: 0.95rem;
@@ -760,7 +864,6 @@
   filter: grayscale(0.18) brightness(0.82);
 }
 
-.commander-card:hover .commander-card__info-image,
 .commander-card:focus-visible .commander-card__info-image {
   opacity: 0.9;
   filter: blur(8px) brightness(0.48) saturate(0.86)
@@ -768,10 +871,8 @@
   transform: scale(1.03);
 }
 
-.commander-card:hover .commander-card__hover-overlay,
 .commander-card:focus-visible .commander-card__hover-overlay {
   opacity: 1;
-  pointer-events: auto;
   transform: translateY(0);
 }
 

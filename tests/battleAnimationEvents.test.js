@@ -16,6 +16,7 @@ import {
   TURN_SIDES
 } from "../src/game/core/constants.js";
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
+import { REINFORCEMENT_TRIGGER_TYPES } from "../src/game/content/reinforcements.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { getXpThreshold } from "../src/game/simulation/progression.js";
 import {
@@ -98,6 +99,49 @@ test("battle animation events emit a deploy event when a carried unit unloads", 
   assert.ok(deployEvent);
   assert.equal(deployEvent.fromUnload, true);
   assert.equal(deployEvent.carrierId, runner.id);
+});
+
+test("battle animation events emit a deploy event when a queued reinforcement arrives", () => {
+  const state = createTestBattleState({
+    playerUnits: [createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 5)],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  state.turn.number = 2;
+  state.enemyTurn = {
+    started: true,
+    pendingAttack: null,
+    pendingSlipstream: null,
+    pendingUnitIds: [],
+    pendingReinforcementDeployments: [],
+    forcePassed: false
+  };
+  state.map.reinforcements = [
+    {
+      id: "animation-wave",
+      name: "Animation Wave",
+      maxActivations: 1,
+      trigger: {
+        type: REINFORCEMENT_TRIGGER_TYPES.PLAYER_TURNS_COMPLETED,
+        every: 1
+      },
+      units: [{ id: "animation-wave-grunt", unitTypeId: "grunt", level: 2, x: 6, y: 4 }]
+    }
+  ];
+  const system = new BattleSystem(state);
+  const queued = system.prepareEnemyEndTurnReinforcements();
+  const before = system.getSnapshot();
+  const result = system.processNextEnemyTurnReinforcement();
+  const after = system.getSnapshot();
+  const deployEvent = deriveBattleAnimationEvents(before, after).find(
+    (event) => event.type === "deploy" && event.unitId === result.deployment.unitId
+  );
+
+  assert.equal(queued.deployments.length, 1);
+  assert.ok(deployEvent);
+  assert.equal(deployEvent.owner, TURN_SIDES.ENEMY);
+  assert.equal(deployEvent.x, 6);
+  assert.equal(deployEvent.y, 4);
 });
 
 test("lethal attacks delay destroy events until the attack window finishes", () => {

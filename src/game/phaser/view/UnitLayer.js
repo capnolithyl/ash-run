@@ -1,5 +1,9 @@
 import Phaser from "phaser";
-import { BATTLE_ATTACK_IMPACT_DELAY_MS, BATTLE_MOVE_SEGMENT_DURATION_MS } from "../../core/constants.js";
+import {
+  BATTLE_ATTACK_IMPACT_DELAY_MS,
+  BATTLE_MOVE_SEGMENT_DURATION_MS,
+  BATTLE_REINFORCEMENT_SPAWN_FLASH_MS
+} from "../../core/constants.js";
 import { getGearBadgeLabel } from "../../content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../assets.js";
 import { getClampedBattlefieldEffectMultiplier } from "../unitSpritePresentation.js";
@@ -1102,6 +1106,19 @@ export class UnitLayer {
       duration: 460,
       ease: "Back.Out"
     });
+    entity.glow.setAlpha(0.48);
+    entity.aura.setAlpha(0.56);
+    this.trackEffectTween(entity, this.scene.tweens.add({
+      targets: [entity.glow, entity.aura],
+      scale: 1.72,
+      alpha: { from: 0.56, to: 0.18 },
+      duration: BATTLE_REINFORCEMENT_SPAWN_FLASH_MS,
+      yoyo: true,
+      ease: "Sine.InOut",
+      onComplete: () => {
+        this.resetEntityEffects(entity);
+      }
+    }));
   }
 
   animateDisplayedHp(entity, duration = 220, ease = "Sine.Out") {

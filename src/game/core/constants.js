@@ -23,6 +23,10 @@ export const BATTLE_FUNDS_GAIN_ANIMATION_MS = 900;
 export const BATTLE_NOTICE_DISPLAY_MS = 2100;
 export const BATTLE_POWER_OVERLAY_DISPLAY_MS = 1700;
 export const APP_TOAST_DISPLAY_MS = 2400;
+export const BATTLE_REINFORCEMENT_NOTICE_MS = 1400;
+export const BATTLE_REINFORCEMENT_NOTICE_TO_SPAWN_MS = 420;
+export const BATTLE_REINFORCEMENT_SPAWN_STAGGER_MS = 560;
+export const BATTLE_REINFORCEMENT_SPAWN_FLASH_MS = 320;
 // Movement timing is shared between Phaser tweens and the enemy turn queue.
 export const BATTLE_MOVE_SEGMENT_DURATION_MS = 230;
 export const BATTLE_MOVE_SETTLE_MS = 70;

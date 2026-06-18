@@ -19,6 +19,7 @@ test("display options default to fullscreen with a desktop preset fallback", () 
 
   assert.equal(metaState.options.displayMode, DISPLAY_MODES.FULLSCREEN);
   assert.equal(metaState.options.windowResolution, DEFAULT_WINDOW_RESOLUTION);
+  assert.equal(metaState.options.battlefieldNameTooltips, true);
 });
 
 test("display option normalization repairs unsupported saved values", () => {
@@ -31,6 +32,7 @@ test("display option normalization repairs unsupported saved values", () => {
     {
       showGrid: true,
       screenShake: true,
+      battlefieldNameTooltips: true,
       combatCutsceneAnimations: true,
       masterVolume: 0.2,
       muted: false,
@@ -56,6 +58,7 @@ test("unit color options repair invalid and duplicate saved values", () => {
     {
       showGrid: true,
       screenShake: true,
+      battlefieldNameTooltips: true,
       combatCutsceneAnimations: true,
       masterVolume: 0.4,
       muted: false,
@@ -73,6 +76,20 @@ test("unit color options repair invalid and duplicate saved values", () => {
 
   assert.equal(duplicate.playerColor, "blue");
   assert.equal(duplicate.enemyColor, "purple");
+});
+
+test("battlefield name tooltip option can be persisted off", () => {
+  const options = normalizeMetaOptions({
+    battlefieldNameTooltips: false
+  });
+  const html = renderOptionFields(options);
+
+  assert.equal(options.battlefieldNameTooltips, false);
+  assert.match(html, /data-option="battlefieldNameTooltips"/);
+  assert.doesNotMatch(
+    html,
+    /<input type="checkbox" checked data-option="battlefieldNameTooltips"/
+  );
 });
 
 test("incomplete saved palettes keep their accent selection", () => {
@@ -129,6 +146,8 @@ test("options view renders display mode and resolution controls", () => {
   assert.match(html, /data-action="apply-display-settings"/);
   assert.match(html, /data-option="playerColor"/);
   assert.match(html, /data-option="enemyColor"/);
+  assert.match(html, /data-option="battlefieldNameTooltips"/);
+  assert.match(html, /<input type="checkbox" checked data-option="battlefieldNameTooltips"/);
   assert.match(html, /name="playerColor"[\s\S]*value="purple"[\s\S]*checked/);
   assert.match(html, /name="enemyColor"[\s\S]*value="blue"[\s\S]*checked/);
   assert.match(html, /value="green"[\s\S]*disabled/);

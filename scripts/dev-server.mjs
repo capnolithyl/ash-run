@@ -1,4 +1,5 @@
 import { createServer } from "vite";
+import { generateAssetPreloadManifest } from "./generate-asset-preload-manifest.mjs";
 import { generateBuildingSpriteManifest } from "./generate-building-sprite-manifest.mjs";
 import { generateMapManifest } from "./generate-map-manifest.shared.mjs";
 import { generateTerrainSpriteManifest } from "./generate-terrain-sprite-manifest.mjs";
@@ -7,6 +8,7 @@ import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifes
 const root = process.cwd();
 const port = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
 
+await generateAssetPreloadManifest({ root });
 await generateBuildingSpriteManifest({ root });
 await generateMapManifest({ root });
 await generateTerrainSpriteManifest({ root });

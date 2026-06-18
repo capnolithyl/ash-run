@@ -127,7 +127,7 @@ test("battle HUD shows terrain armor bonuses next to the armor stat", () => {
   const html = renderHudForBattleState(battleState);
   const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
 
-  assert.match(selectedPanel, /aria-label="ARM 6 \(\+2\)"/);
+  assert.match(selectedPanel, /aria-label="ARM 6 \(\+9\)"/);
   assert.match(selectedPanel, /ARM modifier/);
   assert.match(selectedPanel, /Forest/);
   assert.equal(countMatches(selectedPanel, /data-source-type="terrain"/g), 1);
@@ -154,12 +154,12 @@ test("battle HUD shows building armor bonuses instead of stacking terrain under 
   const html = renderHudForBattleState(battleState);
   const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
 
-  assert.match(selectedPanel, /aria-label="ARM 6 \(\+3\)"/);
+  assert.match(selectedPanel, /aria-label="ARM 6 \(\+13\)"/);
   assert.match(selectedPanel, /ARM modifier/);
   assert.match(selectedPanel, /Sector/);
   assert.equal(countMatches(selectedPanel, /data-source-type="building"/g), 1);
   assert.doesNotMatch(selectedPanel, /data-source-type="terrain"/);
-  assert.doesNotMatch(selectedPanel, /aria-label="ARM 6 \(\+5\)"/);
+  assert.doesNotMatch(selectedPanel, /aria-label="ARM 6 \(\+9\)"/);
 });
 
 test("battle HUD lists Lone Wolf sources for isolated units and recalculates adjacency", () => {
@@ -435,7 +435,7 @@ test("battle HUD shows building ownership in the selection sidebar", () => {
   const html = renderHudForBattleState(battleState);
 
   assert.match(html, /Owner: Enemy/);
-  assert.match(html, /Armor bonus: \+4/);
+  assert.match(html, /Armor bonus: \+18/);
   assert.doesNotMatch(html, /Income:/);
   assert.doesNotMatch(html, /<strong>Forest<\/strong>/);
 });
@@ -623,10 +623,51 @@ test("battle HUD renders transient battle notices", () => {
   });
 
   assert.match(html, /battle-notice--warning/);
+  assert.match(html, /battle-notice--top/);
+  assert.doesNotMatch(html, /battle-notice--held/);
   assert.match(html, /--notice-duration:2100ms/);
   assert.match(html, /--notice-delay:-\d+ms/);
   assert.match(html, /Unit Limit Reached/);
   assert.match(html, /6\/6 units are already deployed/);
+});
+
+test("battle HUD renders bottom reinforcement notices with custom duration", () => {
+  const battleState = createTestBattleState();
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 0,
+      targetMapCount: 10
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      playerFocus: null,
+      enemyFocus: null,
+      notice: {
+        tone: "warning",
+        title: "Reinforcements Arrive",
+        message: "Enemy units entering the battlefield.",
+        placement: "bottom",
+        persistent: true,
+        createdAt: Date.now() - 200,
+        durationMs: 1400
+      },
+      hoveredTile: null
+    },
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /battle-notice--warning/);
+  assert.match(html, /battle-notice--bottom/);
+  assert.match(html, /battle-notice--held/);
+  assert.match(html, /battle-notice--held-ready/);
+  assert.match(html, /--notice-duration:1400ms/);
+  assert.match(html, /Reinforcements Arrive/);
 });
 
 test("battle HUD renders commander power activation overlays", () => {
@@ -1431,7 +1472,7 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
   assert.match(html, /assets\/img\/icons\/battle-hud\/armor\/infantry\.png/);
   assert.match(
     html,
-    /<strong>Infantry Armor<\/strong>[\s\S]*?<span>Gear<\/span>[\s\S]*?<strong>None<\/strong>[\s\S]*?<span>Terrain<\/span>[\s\S]*?<strong>Plain<\/strong>[\s\S]*?Armor bonus: \+1/
+    /<strong>Infantry Armor<\/strong>[\s\S]*?<span>Gear<\/span>[\s\S]*?<strong>None<\/strong>[\s\S]*?<span>Terrain<\/span>[\s\S]*?<strong>Plain<\/strong>[\s\S]*?Armor bonus: \+5/
   );
   assert.doesNotMatch(html, /Weapon Profile/);
   assert.doesNotMatch(html, /Armor Profile/);
@@ -1625,6 +1666,127 @@ test("medics with field medpacks show separate heal and medpack actions", () => 
 
   assert.match(html, /data-action="use-support">Heal<\/button>/);
   assert.match(html, /data-action="use-medpack">Medpack<\/button>/);
+});
+
+test("battle HUD shows Supply on an owned service building when the unit can benefit", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    current: {
+      hp: 25,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [unit],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  const commandPost = battleState.map.buildings.find(
+    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
+  );
+  unit.x = commandPost.x;
+  unit.y = commandPost.y;
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  battleState.pendingAction = {
+    type: "move",
+    unitId: unit.id,
+    mode: "menu",
+    fromX: unit.x,
+    fromY: unit.y,
+    fromStamina: unit.current.stamina,
+    toX: unit.x,
+    toY: unit.y
+  };
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /data-action="use-supply">Supply<\/button>/);
+});
+
+test("battle HUD hides Supply for unowned buildings, ineligible families, and fully restored units", () => {
+  const fullUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [fullUnit],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  const playerSector = battleState.map.buildings.find(
+    (building) => building.type === BUILDING_KEYS.SECTOR && building.owner === TURN_SIDES.PLAYER
+  );
+  fullUnit.x = playerSector.x;
+  fullUnit.y = playerSector.y;
+  battleState.selection = { type: "unit", id: fullUnit.id, x: fullUnit.x, y: fullUnit.y };
+  battleState.pendingAction = {
+    type: "move",
+    unitId: fullUnit.id,
+    mode: "menu",
+    fromX: fullUnit.x,
+    fromY: fullUnit.y,
+    fromStamina: fullUnit.current.stamina,
+    toX: fullUnit.x,
+    toY: fullUnit.y
+  };
+
+  let html = renderHudForBattleState(battleState);
+  assert.doesNotMatch(html, /data-action="use-supply"/);
+
+  const damagedUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+    current: {
+      hp: 40,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const neutralState = createTestBattleState({
+    playerUnits: [damagedUnit],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  const neutralHospital = neutralState.map.buildings.find((building) => building.type === BUILDING_KEYS.HOSPITAL);
+  neutralHospital.owner = "neutral";
+  damagedUnit.x = neutralHospital.x;
+  damagedUnit.y = neutralHospital.y;
+  neutralState.selection = { type: "unit", id: damagedUnit.id, x: damagedUnit.x, y: damagedUnit.y };
+  neutralState.pendingAction = {
+    type: "move",
+    unitId: damagedUnit.id,
+    mode: "menu",
+    fromX: damagedUnit.x,
+    fromY: damagedUnit.y,
+    fromStamina: damagedUnit.current.stamina,
+    toX: damagedUnit.x,
+    toY: damagedUnit.y
+  };
+
+  html = renderHudForBattleState(neutralState);
+  assert.doesNotMatch(html, /data-action="use-supply"/);
+
+  const vehicle = createPlacedUnit("runner", TURN_SIDES.PLAYER, 2, 2, {
+    current: {
+      hp: 40,
+      ammo: 0,
+      stamina: 0
+    }
+  });
+  const ineligibleState = createTestBattleState({
+    playerUnits: [vehicle],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  const hospital = ineligibleState.map.buildings.find((building) => building.type === BUILDING_KEYS.HOSPITAL);
+  hospital.owner = TURN_SIDES.PLAYER;
+  vehicle.x = hospital.x;
+  vehicle.y = hospital.y;
+  ineligibleState.selection = { type: "unit", id: vehicle.id, x: vehicle.x, y: vehicle.y };
+  ineligibleState.pendingAction = {
+    type: "move",
+    unitId: vehicle.id,
+    mode: "menu",
+    fromX: vehicle.x,
+    fromY: vehicle.y,
+    fromStamina: vehicle.current.stamina,
+    toX: vehicle.x,
+    toY: vehicle.y
+  };
+
+  html = renderHudForBattleState(ineligibleState);
+  assert.doesNotMatch(html, /data-action="use-supply"/);
 });
 
 test("battle HUD replaces the mission footer label with the live goal and progress", () => {

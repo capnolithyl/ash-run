@@ -1,19 +1,6 @@
-import { BUILDING_KEYS, TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
+import { describeBuilding, getBuildingServiceProfile } from "../content/buildings.js";
 import { appendLog } from "./battleLog.js";
-import { canReceiveService, resupplyUnitIfAllowed } from "./commanderEffects.js";
-import { getBuildingAt, getLivingUnits } from "./selectors.js";
-
-export function hasBuildingBeenUsedByOwner(building, owner) {
-  return building?.lastServiceOwner === owner;
-}
-
-export function markBuildingServiceUsed(building, owner) {
-  building.lastServiceOwner = owner;
-}
-
-export function resetBuildingServiceUse(building) {
-  building.lastServiceOwner = null;
-}
+import { canReceiveService, canResupplyUnit, resupplyUnitIfAllowed } from "./commanderEffects.js";
 
 export function restoreUnitServiceResources(
   state,
@@ -44,74 +31,105 @@ export function restoreUnitServiceResources(
   };
 }
 
-export function serviceUnitsOnSectors(state, side) {
-  let servicedUnits = 0;
-  let commandResupplies = 0;
-  let repairedVehicles = 0;
+function getPartialRestoreAmount(current, maximum, ratio) {
+  if (!ratio || maximum <= 0 || current >= maximum) {
+    return 0;
+  }
 
-  for (const unit of getLivingUnits(state, side)) {
-    if (unit.transport?.carriedByUnitId || !canReceiveService(state, unit)) {
-      continue;
-    }
+  return Math.min(maximum - current, Math.ceil(maximum * ratio));
+}
 
-    const building = getBuildingAt(state, unit.x, unit.y);
+export function getBuildingSupplyPreview(state, unit, building) {
+  const serviceProfile = getBuildingServiceProfile(building?.type);
+  const canResupply = canResupplyUnit(state, unit);
+  const valid =
+    Boolean(unit) &&
+    Boolean(building) &&
+    Boolean(serviceProfile) &&
+    building.owner === unit.owner &&
+    !unit.transport?.carriedByUnitId &&
+    canReceiveService(state, unit) &&
+    (!serviceProfile.unitFamily || unit.family === serviceProfile.unitFamily);
 
-    if (!building || building.owner !== side) {
-      continue;
-    }
+  if (!valid) {
+    return {
+      valid: false,
+      changed: false,
+      building,
+      serviceProfile,
+      hpRecovered: 0,
+      ammoRecovered: 0,
+      staminaRecovered: 0,
+      needScore: 0
+    };
+  }
 
-    if (building.type === BUILDING_KEYS.SECTOR) {
-      const healAmount = Math.max(1, Math.ceil(unit.stats.maxHealth * 0.1));
-      const result = restoreUnitServiceResources(state, unit, { healAmount });
+  const hpRecovered = getPartialRestoreAmount(
+    unit.current.hp,
+    unit.stats.maxHealth,
+    serviceProfile.hpRatio ?? 0
+  );
+  const ammoRecovered = canResupply
+    ? getPartialRestoreAmount(unit.current.ammo, unit.stats.ammoMax, serviceProfile.ammoRatio ?? 0)
+    : 0;
+  const staminaRecovered = canResupply
+    ? getPartialRestoreAmount(
+        unit.current.stamina,
+        unit.stats.staminaMax,
+        serviceProfile.staminaRatio ?? 0
+      )
+    : 0;
+  const changed = hpRecovered > 0 || ammoRecovered > 0 || staminaRecovered > 0;
 
-      if (result.changed) {
-        servicedUnits += 1;
-      }
-    }
+  return {
+    valid: true,
+    changed,
+    building,
+    serviceProfile,
+    hpRecovered,
+    ammoRecovered,
+    staminaRecovered,
+    needScore: hpRecovered * 2 + ammoRecovered * 3 + staminaRecovered * 2
+  };
+}
 
-    if (building.type === BUILDING_KEYS.COMMAND) {
-      const result = restoreUnitServiceResources(state, unit, { healAmount: 0 });
+export function applyBuildingSupply(
+  state,
+  unit,
+  building,
+  { spendAction = true, log = true } = {}
+) {
+  const preview = getBuildingSupplyPreview(state, unit, building);
 
-      if (result.changed) {
-        commandResupplies += 1;
-      }
-    }
+  if (!preview.changed) {
+    return preview;
+  }
 
+  unit.current.hp = Math.min(unit.stats.maxHealth, unit.current.hp + preview.hpRecovered);
+
+  if (preview.ammoRecovered > 0 || preview.staminaRecovered > 0) {
     if (
-      building.type === BUILDING_KEYS.REPAIR_STATION &&
-      !hasBuildingBeenUsedByOwner(building, side) &&
-      unit.family === UNIT_TAGS.VEHICLE
+      preview.ammoRecovered === Math.max(0, unit.stats.ammoMax - unit.current.ammo) &&
+      preview.staminaRecovered === Math.max(0, unit.stats.staminaMax - unit.current.stamina)
     ) {
-      restoreUnitServiceResources(state, unit, { healToFull: true });
-      markBuildingServiceUsed(building, side);
-      repairedVehicles += 1;
+      resupplyUnitIfAllowed(state, unit);
+    } else {
+      unit.current.ammo = Math.min(unit.stats.ammoMax, unit.current.ammo + preview.ammoRecovered);
+      unit.current.stamina = Math.min(unit.stats.staminaMax, unit.current.stamina + preview.staminaRecovered);
     }
   }
 
-  if (servicedUnits > 0) {
-    appendLog(
-      state,
-      `${side === TURN_SIDES.PLAYER ? "Allied" : "Enemy"} sector nodes serviced ${servicedUnits} unit${
-        servicedUnits === 1 ? "" : "s"
-      }.`
-    );
+  if (spendAction) {
+    unit.hasMoved = true;
+    unit.hasAttacked = true;
   }
 
-  if (commandResupplies > 0) {
-    appendLog(
-      state,
-      `${side === TURN_SIDES.PLAYER ? "Allied" : "Enemy"} command posts rearmed ${commandResupplies} unit${
-        commandResupplies === 1 ? "" : "s"
-      }.`
-    );
+  if (log) {
+    appendLog(state, `${unit.name} used Supply at ${describeBuilding(building).name}.`);
   }
 
-  if (repairedVehicles > 0) {
-    appendLog(
-      state,
-      `${side === TURN_SIDES.PLAYER ? "Allied" : "Enemy"} repair stations restored ${repairedVehicles} vehicle${
-        repairedVehicles === 1 ? "" : "s"
-      }.`
-    );
-  }
+  return {
+    ...preview,
+    changed: true
+  };
 }

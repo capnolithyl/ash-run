@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { build } from "esbuild";
+import { generateAssetPreloadManifest } from "./generate-asset-preload-manifest.mjs";
 import { generateBuildingSpriteManifest } from "./generate-building-sprite-manifest.mjs";
 import { generateMapManifest } from "./generate-map-manifest.shared.mjs";
 import { generateTerrainSpriteManifest } from "./generate-terrain-sprite-manifest.mjs";
@@ -16,6 +17,7 @@ const assetsRoot = path.join(distRoot, "assets");
  */
 await fs.rm(distRoot, { recursive: true, force: true });
 await fs.mkdir(assetsRoot, { recursive: true });
+await generateAssetPreloadManifest({ root });
 await generateBuildingSpriteManifest({ root });
 await generateMapManifest({ root });
 await generateTerrainSpriteManifest({ root });
@@ -31,6 +33,10 @@ await build({
   minify: false,
   platform: "browser",
   sourcemap: true,
+  define: {
+    "import.meta.env.DEV": "false",
+    "import.meta.env.PROD": "true"
+  },
   loader: {
     ".ani": "file",
     ".css": "css",
@@ -63,5 +69,13 @@ await fs.cp(path.resolve(root, "assets/audio"), path.join(assetsRoot, "audio"), 
 });
 
 await fs.cp(path.resolve(root, "assets/img"), path.join(assetsRoot, "img"), {
+  recursive: true
+});
+
+await fs.cp(path.resolve(root, "assets/fonts"), path.join(assetsRoot, "fonts"), {
+  recursive: true
+});
+
+await fs.cp(path.resolve(root, "assets/cursor"), path.join(assetsRoot, "cursor"), {
   recursive: true
 });

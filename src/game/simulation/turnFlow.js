@@ -6,10 +6,9 @@ import {
 } from "../core/constants.js";
 import { getBuildingIncomeForSide } from "../core/economy.js";
 import { randomInt } from "../core/random.js";
-import { describeBuilding } from "../content/buildings.js";
 import { getCommanderById } from "../content/commanders.js";
 import { appendLog } from "./battleLog.js";
-import { serviceUnitsOnSectors } from "./battleServicing.js";
+import { applyBuildingSupply } from "./battleServicing.js";
 import { findUnitById } from "./battleUnits.js";
 import { captureBuildingForUnit } from "./captureRules.js";
 import {
@@ -55,7 +54,8 @@ import {
 } from "./selectors.js";
 import { createUnitFromType } from "./unitFactory.js";
 import {
-  resolveEnemyTurnStartReinforcements,
+  deployPreparedReinforcement,
+  prepareEnemyTurnEndReinforcements,
   resolveReinforcementTriggers
 } from "./reinforcementRules.js";
 
@@ -137,6 +137,7 @@ export function endTurn(system) {
       pendingAttack: null,
       pendingSlipstream: null,
       pendingUnitIds: [],
+      pendingReinforcementDeployments: [],
       forcePassed: false
     };
     applyMissionTurnEnd(system.state, TURN_SIDES.PLAYER);
@@ -157,12 +158,10 @@ export function startEnemyTurnActions(system) {
   }
 
   system.state.enemyTurn.started = true;
-  const reinforcementActivations = resolveEnemyTurnStartReinforcements(system.state);
   tickSideStatuses(system.state, TURN_SIDES.ENEMY);
   tickUnitDurations(system, TURN_SIDES.ENEMY);
   const incomeGain = collectIncome(system, TURN_SIDES.ENEMY);
   resetActions(system, TURN_SIDES.ENEMY);
-  serviceUnitsOnSectors(system.state, TURN_SIDES.ENEMY);
   system.state.enemyTurn.pendingUnitIds = getActionableUnitsForSide(system.state, TURN_SIDES.ENEMY)
     .filter((unit) => !unit.hasMoved && !unit.hasAttacked && !unit.transport?.carriedByUnitId)
     .map((unit) => unit.id);
@@ -170,7 +169,7 @@ export function startEnemyTurnActions(system) {
   return {
     changed: true,
     incomeGain,
-    reinforcementActivations
+    reinforcementActivations: []
   };
 }
 
@@ -193,6 +192,7 @@ export function forcePassEnemyTurn(system, reason = "safety") {
   system.state.enemyTurn.pendingAttack = null;
   system.state.enemyTurn.pendingSlipstream = null;
   system.state.enemyTurn.pendingUnitIds = [];
+  system.state.enemyTurn.pendingReinforcementDeployments = [];
   system.state.enemyTurn.forcePassed = true;
   system.clearSelection();
   appendLog(system.state, "Enemy command stalled. Enemy passed the turn.");
@@ -325,19 +325,18 @@ function resolveEnemyCapturePlan(system, unit, capturePlan, movementBudget) {
 
 function resolveEnemyRepairPlan(system, unit, repairPlan, movementBudget) {
   const movement = moveEnemyUnit(system, unit, repairPlan.tile, movementBudget);
+  const supplyResult = applyBuildingSupply(system.state, unit, repairPlan.building, {
+    spendAction: true,
+    log: true
+  });
 
-  if (!movement.moved) {
-    unit.hasMoved = true;
+  if (!supplyResult.changed) {
+    return null;
   }
 
-  unit.hasAttacked = true;
   unit.cooldowns.repairMode = Math.max(
     unit.cooldowns.repairMode ?? 0,
     repairPlan.canRepairAfterMove ? (movement.moved ? 2 : 1) : 2
-  );
-  appendLog(
-    system.state,
-    `${unit.name} entered repair mode near ${describeBuilding(repairPlan.building).name}.`
   );
 
   return {
@@ -580,10 +579,6 @@ export function processEnemyTurnStep(system) {
       }
     }
 
-    if (repairPlan) {
-      return resolveEnemyRepairPlan(system, unit, repairPlan, movementBudget);
-    }
-
     if (isGrunt && capturePlan) {
       const result = resolveEnemyCapturePlan(system, unit, capturePlan, movementBudget);
 
@@ -603,6 +598,10 @@ export function processEnemyTurnStep(system) {
         type: "attack",
         unitId
       };
+    }
+
+    if (repairPlan) {
+      return resolveEnemyRepairPlan(system, unit, repairPlan, movementBudget);
     }
 
     if (isSecondaryCapturer && capturePlan) {
@@ -723,6 +722,67 @@ export function performEnemyEndTurnRecruitment(system) {
   };
 }
 
+export function prepareEnemyEndTurnReinforcements(system) {
+  if (!system.state.enemyTurn || !isEnemyTurnActive(system) || system.state.victory) {
+    return {
+      changed: false,
+      activations: [],
+      deployments: []
+    };
+  }
+
+  const activations = prepareEnemyTurnEndReinforcements(system.state);
+  const pendingDeployments = activations.flatMap((activation) =>
+    activation.queuedDeployments ?? []
+  );
+
+  system.state.enemyTurn.pendingReinforcementDeployments = pendingDeployments;
+
+  return {
+    changed: activations.length > 0,
+    activations: activations.map((activation) => ({
+      waveId: activation.waveId,
+      activationNumber: activation.activationNumber,
+      deployments: activation.deployments,
+      skippedUnitCount: activation.skippedUnitCount
+    })),
+    deployments: pendingDeployments.map((deployment) => ({
+      unitId: deployment.unitId,
+      unitTypeId: deployment.unitTypeId,
+      waveId: deployment.waveId,
+      activationNumber: deployment.activationNumber,
+      x: deployment.x,
+      y: deployment.y
+    }))
+  };
+}
+
+export function hasPendingEnemyTurnReinforcements(system) {
+  return Boolean(system.state.enemyTurn?.pendingReinforcementDeployments?.length);
+}
+
+export function processNextEnemyTurnReinforcement(system) {
+  if (!system.state.enemyTurn || !isEnemyTurnActive(system) || system.state.victory) {
+    return {
+      changed: false,
+      done: true,
+      deployment: null
+    };
+  }
+
+  const queue = system.state.enemyTurn.pendingReinforcementDeployments ?? [];
+  const preparedDeployment = queue.shift();
+  system.state.enemyTurn.pendingReinforcementDeployments = queue;
+
+  const deployment = deployPreparedReinforcement(system.state, preparedDeployment);
+
+  return {
+    changed: Boolean(deployment),
+    done: queue.length === 0,
+    deployment
+  };
+}
+
 export function shouldEnemyUsePower(system) {
   if (!system.state.enemyTurn || !isEnemyTurnActive(system) || system.state.victory) {
     return false;
@@ -774,7 +834,6 @@ export function finalizeEnemyTurn(system) {
   const runCardNotes = applyRunCardTurnStartEffects(system.state, TURN_SIDES.PLAYER);
   runCardNotes.forEach((note) => appendLog(system.state, note));
   removeDeadUnits(system.state);
-  serviceUnitsOnSectors(system.state, TURN_SIDES.PLAYER);
   system.clearSelection();
   system.updateVictoryState();
   return {

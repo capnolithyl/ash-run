@@ -4,6 +4,10 @@ import { findUnitById } from "../battleUnits.js";
 import { canCaptureBuilding, captureBuildingForUnit } from "../captureRules.js";
 import { getAttackableUnitIds } from "../combatResolver.js";
 import {
+  applyBuildingSupply,
+  getBuildingSupplyPreview
+} from "../battleServicing.js";
+import {
   canUnitDropOffHostage,
   canUnitRescueHostage,
   performDropOff,
@@ -31,6 +35,19 @@ export function canCaptureWithPendingUnit(system) {
   const building = unit ? getBuildingAt(system.state, unit.x, unit.y) : null;
 
   return canCaptureBuilding(unit, building);
+}
+
+export function canSupplyWithPendingUnit(system) {
+  const pendingAction = system.state.pendingAction;
+
+  if (!pendingAction || (pendingAction.mode ?? "menu") !== "menu") {
+    return false;
+  }
+
+  const unit = findUnitById(system.state, pendingAction.unitId);
+  const building = unit ? getBuildingAt(system.state, unit.x, unit.y) : null;
+
+  return getBuildingSupplyPreview(system.state, unit, building).changed;
 }
 
 export function beginPendingAttack(system) {
@@ -284,6 +301,24 @@ export function captureWithPendingUnit(system) {
     y: building.y
   };
   system.updateVictoryState();
+  return true;
+}
+
+export function useSupplyWithPendingUnit(system) {
+  if (!canSupplyWithPendingUnit(system)) {
+    return false;
+  }
+
+  const unit = findUnitById(system.state, system.state.pendingAction.unitId);
+  const building = getBuildingAt(system.state, unit.x, unit.y);
+  const result = applyBuildingSupply(system.state, unit, building);
+
+  if (!result.changed) {
+    return false;
+  }
+
+  system.clearPendingAction();
+  system.clearSelection();
   return true;
 }
 

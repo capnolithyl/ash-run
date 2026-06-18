@@ -244,6 +244,22 @@
   animation-delay: var(--notice-delay, 0ms);
 }
 
+.battle-notice--bottom {
+  top: auto;
+  bottom: calc(var(--battle-desktop-bottom, 6.7rem) + 0.85rem);
+}
+
+.battle-notice--held {
+  animation: battle-notice-held-in 180ms ease forwards;
+  animation-delay: 0ms;
+}
+
+.battle-notice--held-ready {
+  opacity: 1;
+  transform: translateX(-50%);
+  animation: none;
+}
+
 .battle-notice strong {
   font-size: 0.98rem;
   letter-spacing: 0;

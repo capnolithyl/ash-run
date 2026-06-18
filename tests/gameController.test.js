@@ -9,6 +9,9 @@ import {
   BATTLE_COMBAT_CUTSCENE_OUTRO_HOLD_MS,
   BATTLE_COMBAT_CUTSCENE_STEP_WINDOW_MS,
   BATTLE_MODES,
+  BATTLE_REINFORCEMENT_NOTICE_MS,
+  BATTLE_REINFORCEMENT_NOTICE_TO_SPAWN_MS,
+  BATTLE_REINFORCEMENT_SPAWN_STAGGER_MS,
   ENEMY_AI_ARCHETYPES,
   SCREEN_IDS,
   TURN_SIDES
@@ -989,6 +992,137 @@ test("enemy turn sequence waits for the configured pause after movement steps", 
   }
 
   assert.ok(timeoutDelays.includes(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS));
+});
+
+test("enemy turn sequence announces and staggers queued reinforcements before finalizing", async () => {
+  const controller = new GameController();
+  const timeoutDelays = [];
+  const notices = [];
+  const focusSyncs = [];
+  const events = [];
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  const pendingReinforcementIds = ["arrival-one", "arrival-two"];
+  let lastSpawnedUnitId = null;
+  let finalized = false;
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.runState = { id: "run-reinforcement-delay" };
+  controller.state.battleSnapshot = null;
+  controller.showBattleNotice = (notice) => {
+    notices.push(notice);
+    events.push("notice");
+    return "notice-1";
+  };
+  controller.clearBattleNotice = (noticeId) => {
+    events.push(`clear:${noticeId}`);
+    return true;
+  };
+  controller.battleSystem = {
+    startEnemyTurnActions() {
+      return { changed: false };
+    },
+    getStateForSave() {
+      return { mode: BATTLE_MODES.RUN, victory: null };
+    },
+    shouldEnemyUsePower() {
+      return false;
+    },
+    getLastPowerResult() {
+      return null;
+    },
+    hasPendingEnemyTurn() {
+      return false;
+    },
+    performEnemyEndTurnRecruitment() {
+      return { changed: false, deployments: [] };
+    },
+    prepareEnemyEndTurnReinforcements() {
+      return {
+        changed: true,
+        deployments: [
+          { unitId: "arrival-one", unitTypeId: "grunt", x: 6, y: 4 },
+          { unitId: "arrival-two", unitTypeId: "runner", x: 6, y: 3 }
+        ]
+      };
+    },
+    hasPendingEnemyTurnReinforcements() {
+      return pendingReinforcementIds.length > 0;
+    },
+    processNextEnemyTurnReinforcement() {
+      const unitId = pendingReinforcementIds.shift();
+      lastSpawnedUnitId = unitId ?? null;
+      events.push(`spawn:${unitId}`);
+      return {
+        changed: Boolean(unitId),
+        done: pendingReinforcementIds.length === 0,
+        deployment: unitId ? { unitId } : null
+      };
+    },
+    finalizeEnemyTurn() {
+      events.push("finalize");
+      finalized = pendingReinforcementIds.length === 0;
+      return { changed: false, incomeGain: null };
+    }
+  };
+  controller.syncBattleState = (options = {}) => {
+    if (options.allowEnemyFocusDuringEnemyTurn) {
+      focusSyncs.push(options);
+      events.push(`focus:${lastSpawnedUnitId}`);
+    }
+
+    controller.state.battleSnapshot = {
+      id: "battle-reinforcement-delay",
+      map: { id: "reinforcement-delay-map", buildings: [], tiles: [] },
+      turn: { activeSide: TURN_SIDES.ENEMY },
+      player: { funds: 0, units: [] },
+      enemy: { funds: 0, units: [] },
+      selection: { type: null, id: null, x: null, y: null },
+      levelUpQueue: [],
+      victory: null
+    };
+  };
+  controller.persistCurrentRun = async () => {};
+
+  global.setTimeout = (callback, delayMs) => {
+    timeoutDelays.push(delayMs);
+    events.push(`delay:${delayMs}`);
+    queueMicrotask(callback);
+    return timeoutDelays.length;
+  };
+  global.clearTimeout = () => {};
+
+  try {
+    await controller.runEnemyTurnSequence();
+  } finally {
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
+  }
+
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].title, "Reinforcements Arrive");
+  assert.equal(notices[0].placement, "bottom");
+  assert.equal(notices[0].persistent, true);
+  assert.equal(notices[0].durationMs, BATTLE_REINFORCEMENT_NOTICE_MS);
+  assert.ok(timeoutDelays.includes(BATTLE_REINFORCEMENT_NOTICE_TO_SPAWN_MS));
+  assert.equal(
+    timeoutDelays.filter((delayMs) => delayMs === BATTLE_REINFORCEMENT_SPAWN_STAGGER_MS).length,
+    2
+  );
+  assert.equal(focusSyncs.length, 2);
+  assert.equal(finalized, true);
+  assert.deepEqual(events, [
+    "notice",
+    `delay:${BATTLE_REINFORCEMENT_NOTICE_TO_SPAWN_MS}`,
+    "spawn:arrival-one",
+    "focus:arrival-one",
+    `delay:${BATTLE_REINFORCEMENT_SPAWN_STAGGER_MS}`,
+    "spawn:arrival-two",
+    "focus:arrival-two",
+    `delay:${BATTLE_REINFORCEMENT_SPAWN_STAGGER_MS}`,
+    "clear:notice-1",
+    "finalize"
+  ]);
 });
 
 test("sandbox commander overrides update both battle sides without saving a run", async () => {

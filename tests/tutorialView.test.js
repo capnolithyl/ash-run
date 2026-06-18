@@ -25,6 +25,9 @@ test("title screen links to the tutorial", () => {
   assert.match(html, /Tutorial/);
   assert.match(html, /data-action="open-progression"/);
   assert.match(html, /data-action="open-options"[\s\S]*aria-label="Options"/);
+  assert.match(html, /title-button--has-image title-button--image-loaded/);
+  assert.match(html, /src=".\/assets\/img\/ui\/buttons\/new-run\.png"[\s\S]*width="866"[\s\S]*height="288"/);
+  assert.match(html, /src=".\/assets\/img\/ui\/buttons\/settings\.png"[\s\S]*width="500"[\s\S]*height="500"/);
   assert.match(html, /Quit Game/);
 });
 

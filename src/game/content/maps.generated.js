@@ -1,746 +1,862 @@
 export const GENERATED_MAP_MODULES = {
-  "./maps/cauldron/cauldron-stage-1.json": {
-    "id": "cauldron-stage-1",
-    "name": "Cauldron",
-    "theme": "ash",
-    "width": 15,
-    "height": 12,
-    "tiles": [
-      [
-        "mountain",
-        "mountain",
-        "mountain",
-        "mountain",
-        "forest",
-        "forest",
-        "water",
-        "water",
-        "water",
-        "forest",
-        "forest",
-        "mountain",
-        "mountain",
-        "mountain",
-        "mountain"
-      ],
-      [
-        "mountain",
-        "forest",
-        "forest",
-        "forest",
-        "forest",
-        "plain",
-        "ridge",
-        "water",
-        "ridge",
-        "plain",
-        "forest",
-        "forest",
-        "forest",
-        "forest",
-        "mountain"
-      ],
-      [
-        "mountain",
-        "forest",
-        "forest",
-        "plain",
-        "ridge",
-        "mountain",
-        "mountain",
-        "road",
-        "mountain",
-        "mountain",
-        "ridge",
-        "plain",
-        "forest",
-        "forest",
-        "mountain"
-      ],
-      [
-        "water",
-        "water",
-        "road",
-        "ridge",
-        "mountain",
-        "mountain",
-        "mountain",
-        "road",
-        "mountain",
-        "mountain",
-        "mountain",
-        "ridge",
-        "road",
-        "water",
-        "water"
-      ],
-      [
-        "water",
-        "plain",
-        "road",
-        "mountain",
-        "mountain",
-        "mountain",
-        "plain",
-        "plain",
-        "plain",
-        "mountain",
-        "mountain",
-        "mountain",
-        "road",
-        "plain",
-        "water"
-      ],
-      [
-        "forest",
-        "forest",
-        "road",
-        "mountain",
-        "water",
-        "water",
-        "plain",
-        "road",
-        "plain",
-        "water",
-        "water",
-        "mountain",
-        "road",
-        "forest",
-        "forest"
-      ],
-      [
-        "forest",
-        "forest",
-        "road",
-        "road",
-        "road",
-        "plain",
-        "road",
-        "road",
-        "road",
-        "plain",
-        "road",
-        "road",
-        "road",
-        "forest",
-        "forest"
-      ],
-      [
-        "water",
-        "plain",
-        "road",
-        "mountain",
-        "mountain",
-        "mountain",
-        "plain",
-        "road",
-        "plain",
-        "mountain",
-        "mountain",
-        "mountain",
-        "road",
-        "plain",
-        "water"
-      ],
-      [
-        "water",
-        "water",
-        "road",
-        "ridge",
-        "mountain",
-        "mountain",
-        "mountain",
-        "plain",
-        "mountain",
-        "mountain",
-        "mountain",
-        "ridge",
-        "road",
-        "water",
-        "water"
-      ],
-      [
-        "mountain",
-        "forest",
-        "forest",
-        "plain",
-        "ridge",
-        "mountain",
-        "mountain",
-        "road",
-        "mountain",
-        "mountain",
-        "ridge",
-        "plain",
-        "forest",
-        "forest",
-        "mountain"
-      ],
-      [
-        "mountain",
-        "forest",
-        "forest",
-        "forest",
-        "forest",
-        "plain",
-        "ridge",
-        "water",
-        "ridge",
-        "plain",
-        "forest",
-        "forest",
-        "forest",
-        "forest",
-        "mountain"
-      ],
-      [
-        "mountain",
-        "mountain",
-        "mountain",
-        "mountain",
-        "forest",
-        "forest",
-        "water",
-        "water",
-        "water",
-        "forest",
-        "forest",
-        "mountain",
-        "mountain",
-        "mountain",
-        "mountain"
-      ]
-    ],
-    "buildings": [
-      {
-        "id": "cauldron-stage-1-player-command-7-6",
-        "type": "command",
-        "owner": "player",
-        "x": 7,
-        "y": 6
-      }
-    ],
-    "units": [
-      {
-        "id": "cauldron-stage-1-enemy-runner-1-1",
-        "unitTypeId": "runner",
-        "owner": "enemy",
-        "level": 1,
-        "x": 1,
-        "y": 1
-      },
-      {
-        "id": "cauldron-stage-1-enemy-runner-13-1",
-        "unitTypeId": "runner",
-        "owner": "enemy",
-        "level": 1,
-        "x": 13,
-        "y": 1
-      },
-      {
-        "id": "cauldron-stage-1-enemy-runner-1-10",
-        "unitTypeId": "runner",
-        "owner": "enemy",
-        "level": 1,
-        "x": 1,
-        "y": 10
-      },
-      {
-        "id": "cauldron-stage-1-enemy-runner-13-10",
-        "unitTypeId": "runner",
-        "owner": "enemy",
-        "level": 1,
-        "x": 13,
-        "y": 10
-      },
-      {
-        "id": "cauldron-stage-1-enemy-breaker-11-2",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 11,
-        "y": 2
-      },
-      {
-        "id": "cauldron-stage-1-enemy-breaker-3-2",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 3,
-        "y": 2
-      },
-      {
-        "id": "cauldron-stage-1-enemy-grunt-1-4",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 1,
-        "y": 4
-      },
-      {
-        "id": "cauldron-stage-1-enemy-grunt-13-4",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 13,
-        "y": 4
-      },
-      {
-        "id": "cauldron-stage-1-enemy-grunt-1-7",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 1,
-        "y": 7
-      },
-      {
-        "id": "cauldron-stage-1-enemy-grunt-13-7",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 13,
-        "y": 7
-      },
-      {
-        "id": "cauldron-stage-1-enemy-breaker-11-9",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 11,
-        "y": 9
-      },
-      {
-        "id": "cauldron-stage-1-enemy-breaker-3-9",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 3,
-        "y": 9
-      }
-    ],
-    "goal": {
-      "type": "survive",
-      "turnLimit": 7
-    },
-    "runStages": [
-      1
-    ],
-    "variantStage": 1
-  },
-  "./maps/crossfire-creek/crossfire-creek.json": {
+  "./maps/cauldron/cauldron.json": {
     "format": "ash-run-map-bundle-v1",
-    "id": "crossfire-creek",
-    "name": "Crossfire Creek",
+    "id": "cauldron",
+    "name": "Cauldron",
     "stages": [
       {
-        "id": "crossfire-creek-stage-1",
-        "name": "Crossfire Creek",
+        "id": "cauldron-stage-1",
+        "name": "Cauldron",
         "theme": "ash",
-        "width": 10,
-        "height": 10,
+        "width": 15,
+        "height": 12,
         "tiles": [
           [
-            "plain",
             "mountain",
             "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
             "mountain",
             "mountain",
-            "plain"
-          ],
-          [
-            "plain",
             "forest",
-            "forest",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "forest",
-            "forest",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "plain",
-            "plain",
-            "water",
-            "water",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "ridge",
             "forest",
             "water",
             "water",
+            "water",
             "forest",
-            "ridge",
-            "plain",
-            "plain"
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
           ],
           [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
             "road",
             "road",
+            "water",
             "road",
             "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "plain"
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
           ],
           [
-            "plain",
-            "plain",
-            "ridge",
+            "mountain",
+            "forest",
+            "forest",
             "forest",
             "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
             "road",
             "forest",
-            "ridge",
-            "plain",
-            "plain"
+            "forest",
+            "forest",
+            "mountain"
           ],
           [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
             "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
             "forest",
-            "plain",
-            "plain",
+            "forest",
+            "road",
+            "mountain",
             "water",
             "water",
             "plain",
+            "road",
             "plain",
-            "plain",
-            "plain"
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
           ],
           [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
             "plain",
-            "forest",
-            "forest",
+            "road",
+            "road",
+            "road",
             "plain",
-            "ridge",
-            "ridge",
-            "plain",
+            "road",
+            "road",
+            "road",
             "forest",
-            "forest",
-            "plain"
+            "forest"
           ],
           [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
             "plain",
             "mountain",
             "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
             "mountain",
-            "mountain",
-            "plain"
+            "road",
+            "plain",
+            "water"
           ],
           [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
             "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
           ]
         ],
         "buildings": [
           {
-            "id": "crossfire-creek-stage-1-neutral-repair-station-6-1",
-            "type": "repair-station",
-            "owner": "neutral",
-            "x": 6,
-            "y": 1
-          },
-          {
-            "id": "crossfire-creek-stage-1-player-command-0-3",
+            "id": "cauldron-stage-1-player-command-7-6",
             "type": "command",
             "owner": "player",
-            "x": 0,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-1-enemy-sector-8-3",
-            "type": "sector",
-            "owner": "enemy",
-            "x": 8,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-1-player-sector-1-5",
-            "type": "sector",
-            "owner": "player",
-            "x": 1,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-1-enemy-command-9-5",
-            "type": "command",
-            "owner": "enemy",
-            "x": 9,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-1-neutral-hospital-3-7",
-            "type": "hospital",
-            "owner": "neutral",
-            "x": 3,
-            "y": 7
+            "x": 7,
+            "y": 6
           }
         ],
         "units": [
           {
-            "id": "crossfire-creek-stage-1-enemy-breaker-8-2",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 8,
-            "y": 2
-          },
-          {
-            "id": "crossfire-creek-stage-1-enemy-runner-9-4",
-            "unitTypeId": "runner",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
-            "y": 4
-          },
-          {
-            "id": "crossfire-creek-stage-1-enemy-grunt-8-6",
+            "id": "cauldron-stage-1-enemy-grunt-1-4",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 2,
-            "x": 8,
-            "y": 6
-          }
-        ],
-        "goal": {
-          "type": "rout"
-        },
-        "runStages": [
-          1
-        ],
-        "variantStage": 1,
-        "stage": 1
-      },
-      {
-        "id": "crossfire-creek-stage-2",
-        "name": "Crossfire Creek",
-        "theme": "ash",
-        "width": 10,
-        "height": 10,
-        "tiles": [
-          [
-            "plain",
-            "mountain",
-            "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "mountain",
-            "mountain",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "forest",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "forest",
-            "forest",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "plain",
-            "plain",
-            "water",
-            "water",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "ridge",
-            "forest",
-            "water",
-            "water",
-            "forest",
-            "ridge",
-            "plain",
-            "plain"
-          ],
-          [
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "ridge",
-            "forest",
-            "road",
-            "road",
-            "forest",
-            "ridge",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "plain",
-            "plain",
-            "water",
-            "water",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "forest",
-            "plain",
-            "ridge",
-            "ridge",
-            "plain",
-            "forest",
-            "forest",
-            "plain"
-          ],
-          [
-            "plain",
-            "mountain",
-            "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "mountain",
-            "mountain",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ]
-        ],
-        "buildings": [
-          {
-            "id": "crossfire-creek-stage-2-neutral-repair-station-6-1",
-            "type": "repair-station",
-            "owner": "neutral",
-            "x": 6,
-            "y": 1
-          },
-          {
-            "id": "crossfire-creek-stage-2-player-command-0-3",
-            "type": "command",
-            "owner": "player",
-            "x": 0,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-2-enemy-sector-8-3",
-            "type": "sector",
-            "owner": "enemy",
-            "x": 8,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-2-player-sector-1-5",
-            "type": "sector",
-            "owner": "player",
+            "level": 1,
             "x": 1,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-2-enemy-command-9-5",
-            "type": "command",
-            "owner": "enemy",
-            "x": 9,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-2-neutral-hospital-3-7",
-            "type": "hospital",
-            "owner": "neutral",
-            "x": 3,
-            "y": 7
-          }
-        ],
-        "units": [
-          {
-            "id": "crossfire-creek-stage-2-enemy-breaker-8-2",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 8,
-            "y": 2
-          },
-          {
-            "id": "crossfire-creek-stage-2-enemy-runner-9-4",
-            "unitTypeId": "runner",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
             "y": 4
           },
           {
-            "id": "crossfire-creek-stage-2-enemy-grunt-8-6",
+            "id": "cauldron-stage-1-enemy-breaker-13-6",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 13,
+            "y": 6
+          },
+          {
+            "id": "cauldron-stage-1-enemy-grunt-1-7",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 2,
-            "x": 8,
-            "y": 6
+            "level": 1,
+            "x": 1,
+            "y": 7
           }
         ],
         "reinforcements": [
           {
             "id": "wave-1",
-            "name": "Wave 1",
+            "name": "Infantry Spawns",
+            "maxActivations": 11,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          1
+        ],
+        "stage": 1,
+        "variantStage": 1
+      },
+      {
+        "id": "cauldron-stage-2",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-2-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-2-enemy-grunt-1-4",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-2-enemy-grunt-13-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 5
+          },
+          {
+            "id": "cauldron-stage-2-enemy-breaker-13-6",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 13,
+            "y": 6
+          },
+          {
+            "id": "cauldron-stage-2-enemy-grunt-1-7",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 12,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 8,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          2
+        ],
+        "stage": 2,
+        "variantStage": 2
+      },
+      {
+        "id": "cauldron-stage-3",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-3-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-3-enemy-grunt-1-4",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-3-enemy-grunt-13-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 5
+          },
+          {
+            "id": "cauldron-stage-3-enemy-breaker-13-6",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 13,
+            "y": 6
+          },
+          {
+            "id": "cauldron-stage-3-enemy-grunt-1-7",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
             "maxActivations": 1,
             "trigger": {
               "type": "player-turns-completed",
@@ -748,1291 +864,2931 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-1-grunt-9-1",
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
                 "unitTypeId": "grunt",
                 "level": 2,
-                "x": 9,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 5
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
                 "y": 1
               },
               {
-                "id": "wave-1-longshot-7-4",
-                "unitTypeId": "longshot",
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
                 "level": 2,
-                "x": 7,
-                "y": 4
-              },
-              {
-                "id": "wave-1-breaker-9-7",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 9,
-                "y": 7
+                "x": 13,
+                "y": 10
               }
             ]
           }
         ],
         "goal": {
-          "type": "rout"
-        },
-        "runStages": [
-          2
-        ],
-        "variantStage": 2,
-        "stage": 2
-      },
-      {
-        "id": "crossfire-creek-stage-3",
-        "name": "Crossfire Creek",
-        "theme": "ash",
-        "width": 10,
-        "height": 10,
-        "tiles": [
-          [
-            "plain",
-            "mountain",
-            "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "mountain",
-            "mountain",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "forest",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "forest",
-            "forest",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "plain",
-            "plain",
-            "water",
-            "water",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "ridge",
-            "forest",
-            "water",
-            "water",
-            "forest",
-            "ridge",
-            "plain",
-            "plain"
-          ],
-          [
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "ridge",
-            "forest",
-            "road",
-            "road",
-            "forest",
-            "ridge",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "plain",
-            "plain",
-            "water",
-            "water",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "forest",
-            "plain",
-            "ridge",
-            "ridge",
-            "plain",
-            "forest",
-            "forest",
-            "plain"
-          ],
-          [
-            "plain",
-            "mountain",
-            "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "mountain",
-            "mountain",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ]
-        ],
-        "buildings": [
-          {
-            "id": "crossfire-creek-stage-3-neutral-repair-station-6-1",
-            "type": "repair-station",
-            "owner": "neutral",
-            "x": 6,
-            "y": 1
-          },
-          {
-            "id": "crossfire-creek-stage-3-player-command-0-3",
-            "type": "command",
-            "owner": "player",
-            "x": 0,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-3-enemy-sector-8-3",
-            "type": "sector",
-            "owner": "enemy",
-            "x": 8,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-3-player-sector-1-5",
-            "type": "sector",
-            "owner": "player",
-            "x": 1,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-3-enemy-command-9-5",
-            "type": "command",
-            "owner": "enemy",
-            "x": 9,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-3-neutral-hospital-3-7",
-            "type": "hospital",
-            "owner": "neutral",
-            "x": 3,
-            "y": 7
-          }
-        ],
-        "units": [
-          {
-            "id": "crossfire-creek-stage-3-enemy-breaker-9-1",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 1
-          },
-          {
-            "id": "crossfire-creek-stage-3-enemy-longshot-8-2",
-            "unitTypeId": "longshot",
-            "owner": "enemy",
-            "level": 2,
-            "x": 8,
-            "y": 2
-          },
-          {
-            "id": "crossfire-creek-stage-3-enemy-bruiser-9-4",
-            "unitTypeId": "bruiser",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
-            "y": 4
-          },
-          {
-            "id": "crossfire-creek-stage-3-enemy-mechanic-8-6",
-            "unitTypeId": "mechanic",
-            "owner": "enemy",
-            "level": 3,
-            "x": 8,
-            "y": 6
-          },
-          {
-            "id": "crossfire-creek-stage-3-enemy-breaker-9-7",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 7
-          }
-        ],
-        "goal": {
-          "type": "rout"
+          "type": "survive",
+          "turnLimit": 7
         },
         "runStages": [
           3
         ],
-        "variantStage": 3,
-        "stage": 3
+        "stage": 3,
+        "variantStage": 3
       },
       {
-        "id": "crossfire-creek-stage-10",
-        "name": "Crossfire Creek",
+        "id": "cauldron-stage-4",
+        "name": "Cauldron",
         "theme": "ash",
-        "width": 10,
-        "height": 10,
+        "width": 15,
+        "height": 12,
         "tiles": [
           [
-            "plain",
             "mountain",
             "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
             "mountain",
             "mountain",
-            "plain"
-          ],
-          [
-            "plain",
             "forest",
-            "forest",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "forest",
-            "forest",
-            "plain"
-          ],
-          [
-            "plain",
-            "forest",
-            "plain",
-            "plain",
-            "water",
-            "water",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
-          ],
-          [
-            "plain",
-            "plain",
-            "ridge",
             "forest",
             "water",
             "water",
+            "water",
             "forest",
-            "ridge",
-            "plain",
-            "plain"
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
           ],
           [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
             "road",
             "road",
+            "water",
             "road",
             "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "road",
-            "plain"
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
           ],
           [
-            "plain",
-            "plain",
-            "ridge",
+            "mountain",
+            "forest",
+            "forest",
             "forest",
             "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
             "road",
             "forest",
-            "ridge",
-            "plain",
-            "plain"
+            "forest",
+            "forest",
+            "mountain"
           ],
           [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
             "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
             "forest",
-            "plain",
-            "plain",
+            "forest",
+            "road",
+            "mountain",
             "water",
             "water",
             "plain",
+            "road",
             "plain",
-            "plain",
-            "plain"
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
           ],
           [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
             "plain",
-            "forest",
-            "forest",
+            "road",
+            "road",
+            "road",
             "plain",
-            "ridge",
-            "ridge",
-            "plain",
+            "road",
+            "road",
+            "road",
             "forest",
-            "forest",
-            "plain"
+            "forest"
           ],
           [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
             "plain",
             "mountain",
             "mountain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
             "mountain",
-            "mountain",
-            "plain"
+            "road",
+            "plain",
+            "water"
           ],
           [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
             "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain",
-            "plain"
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
           ]
         ],
         "buildings": [
           {
-            "id": "crossfire-creek-stage-10-neutral-repair-station-6-1",
-            "type": "repair-station",
-            "owner": "neutral",
-            "x": 6,
-            "y": 1
-          },
-          {
-            "id": "crossfire-creek-stage-10-player-command-0-3",
+            "id": "cauldron-stage-4-player-command-7-6",
             "type": "command",
             "owner": "player",
-            "x": 0,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-10-enemy-sector-8-3",
-            "type": "sector",
-            "owner": "enemy",
-            "x": 8,
-            "y": 3
-          },
-          {
-            "id": "crossfire-creek-stage-10-player-sector-1-5",
-            "type": "sector",
-            "owner": "player",
-            "x": 1,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-10-enemy-command-9-5",
-            "type": "command",
-            "owner": "enemy",
-            "x": 9,
-            "y": 5
-          },
-          {
-            "id": "crossfire-creek-stage-10-neutral-hospital-3-7",
-            "type": "hospital",
-            "owner": "neutral",
-            "x": 3,
-            "y": 7
+            "x": 7,
+            "y": 6
           }
         ],
         "units": [
           {
-            "id": "crossfire-creek-stage-10-enemy-breaker-7-1",
-            "unitTypeId": "breaker",
+            "id": "cauldron-stage-4-enemy-grunt-1-4",
+            "unitTypeId": "grunt",
             "owner": "enemy",
             "level": 1,
-            "x": 7,
-            "y": 1
-          },
-          {
-            "id": "crossfire-creek-stage-10-enemy-skyguard-9-1",
-            "unitTypeId": "skyguard",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
-            "y": 1
-          },
-          {
-            "id": "crossfire-creek-stage-10-enemy-runner-6-2",
-            "unitTypeId": "runner",
-            "owner": "enemy",
-            "level": 1,
-            "x": 6,
-            "y": 2
-          },
-          {
-            "id": "crossfire-creek-stage-10-enemy-siege-gun-8-2",
-            "unitTypeId": "siege-gun",
-            "owner": "enemy",
-            "level": 1,
-            "x": 8,
-            "y": 2
-          },
-          {
-            "id": "crossfire-creek-stage-10-enemy-juggernaut-9-4",
-            "unitTypeId": "juggernaut",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
+            "x": 1,
             "y": 4
           },
           {
-            "id": "crossfire-creek-stage-10-enemy-siege-gun-6-6",
-            "unitTypeId": "siege-gun",
+            "id": "cauldron-stage-4-enemy-grunt-13-5",
+            "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 1,
-            "x": 6,
-            "y": 6
+            "level": 2,
+            "x": 13,
+            "y": 5
           },
           {
-            "id": "crossfire-creek-stage-10-enemy-gunship-8-6",
-            "unitTypeId": "gunship",
-            "owner": "enemy",
-            "level": 1,
-            "x": 8,
-            "y": 6
-          },
-          {
-            "id": "crossfire-creek-stage-10-enemy-breaker-7-7",
+            "id": "cauldron-stage-4-enemy-breaker-13-6",
             "unitTypeId": "breaker",
             "owner": "enemy",
             "level": 1,
-            "x": 7,
-            "y": 7
+            "x": 13,
+            "y": 6
           },
           {
-            "id": "crossfire-creek-stage-10-enemy-runner-9-7",
-            "unitTypeId": "runner",
+            "id": "cauldron-stage-4-enemy-grunt-1-7",
+            "unitTypeId": "grunt",
             "owner": "enemy",
             "level": 1,
-            "x": 9,
+            "x": 1,
             "y": 7
           }
         ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 2,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 3
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
+                "y": 1
+              },
+              {
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 13,
+                "y": 10
+              }
+            ]
+          }
+        ],
         "goal": {
-          "type": "rout"
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          4
+        ],
+        "stage": 4,
+        "variantStage": 4
+      },
+      {
+        "id": "cauldron-stage-5",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-5-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-5-enemy-longshot-13-1",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-5-enemy-bruiser-1-10",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 2,
+            "x": 1,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-5-enemy-grunt-1-4",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-5-enemy-grunt-13-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 5
+          },
+          {
+            "id": "cauldron-stage-5-enemy-breaker-13-6",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 13,
+            "y": 6
+          },
+          {
+            "id": "cauldron-stage-5-enemy-grunt-1-7",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 2,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 3
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
+                "y": 1
+              },
+              {
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 13,
+                "y": 10
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          5
+        ],
+        "stage": 5,
+        "variantStage": 5
+      },
+      {
+        "id": "cauldron-stage-6",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-6-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-6-enemy-longshot-13-1",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-6-enemy-bruiser-1-10",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 2,
+            "x": 1,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-6-enemy-grunt-1-4",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-6-enemy-grunt-13-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 5
+          },
+          {
+            "id": "cauldron-stage-6-enemy-breaker-13-6",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 13,
+            "y": 6
+          },
+          {
+            "id": "cauldron-stage-6-enemy-grunt-1-7",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 2,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 3
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
+                "y": 1
+              },
+              {
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 13,
+                "y": 10
+              }
+            ]
+          },
+          {
+            "id": "wave-4",
+            "name": "Siege Gun",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "unit-killed",
+              "targetUnitId": "cauldron-stage-6-enemy-longshot-13-1"
+            },
+            "units": [
+              {
+                "id": "wave-4-longshot-1-7",
+                "unitTypeId": "longshot",
+                "level": 2,
+                "x": 1,
+                "y": 7
+              },
+              {
+                "id": "wave-4-siege-gun-2-9",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 2,
+                "y": 9
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          6
+        ],
+        "stage": 6,
+        "variantStage": 6
+      },
+      {
+        "id": "cauldron-stage-7",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-7-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-7-enemy-longshot-13-1",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-7-enemy-bruiser-1-10",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 2,
+            "x": 1,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-7-enemy-grunt-1-4",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-7-enemy-grunt-13-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 2,
+            "x": 13,
+            "y": 5
+          },
+          {
+            "id": "cauldron-stage-7-enemy-breaker-13-6",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 13,
+            "y": 6
+          },
+          {
+            "id": "cauldron-stage-7-enemy-grunt-1-7",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 1,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 2,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 3
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
+                "y": 1
+              },
+              {
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 13,
+                "y": 10
+              }
+            ]
+          },
+          {
+            "id": "wave-4",
+            "name": "Siege Gun",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "unit-killed",
+              "targetUnitId": "cauldron-stage-7-enemy-longshot-13-1"
+            },
+            "units": [
+              {
+                "id": "wave-4-longshot-1-7",
+                "unitTypeId": "longshot",
+                "level": 2,
+                "x": 1,
+                "y": 7
+              },
+              {
+                "id": "wave-4-siege-gun-2-9",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 2,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "id": "wave-5",
+            "name": "Kill Counter",
+            "maxActivations": 15,
+            "trigger": {
+              "type": "enemy-casualties",
+              "every": 5
+            },
+            "units": [
+              {
+                "id": "wave-5-longshot-12-1",
+                "unitTypeId": "longshot",
+                "level": 5,
+                "x": 12,
+                "y": 1
+              },
+              {
+                "id": "wave-5-siege-gun-3-1",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 3,
+                "y": 1
+              },
+              {
+                "id": "wave-5-breaker-3-10",
+                "unitTypeId": "breaker",
+                "level": 4,
+                "x": 3,
+                "y": 10
+              },
+              {
+                "id": "wave-5-medic-12-2",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 12,
+                "y": 2
+              },
+              {
+                "id": "wave-5-medic-1-9",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 1,
+                "y": 9
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          7
+        ],
+        "stage": 7,
+        "variantStage": 7
+      },
+      {
+        "id": "cauldron-stage-8",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-8-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-8-enemy-grunt-1-1",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-8-enemy-breaker-13-1",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-8-enemy-breaker-1-10",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-8-enemy-grunt-13-10",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-8-enemy-runner-1-4",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-8-enemy-siege-gun-13-4",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-8-enemy-bruiser-1-7",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 7
+          },
+          {
+            "id": "cauldron-stage-8-enemy-skyguard-13-7",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 2,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 3
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
+                "y": 1
+              },
+              {
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 13,
+                "y": 10
+              }
+            ]
+          },
+          {
+            "id": "wave-4",
+            "name": "Siege Gun",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "unit-killed",
+              "targetUnitId": "cauldron-stage-8-enemy-siege-gun-13-4"
+            },
+            "units": [
+              {
+                "id": "wave-4-longshot-1-7",
+                "unitTypeId": "longshot",
+                "level": 2,
+                "x": 1,
+                "y": 7
+              },
+              {
+                "id": "wave-4-siege-gun-2-9",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 2,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "id": "wave-5",
+            "name": "Kill Counter",
+            "maxActivations": 15,
+            "trigger": {
+              "type": "enemy-casualties",
+              "every": 5
+            },
+            "units": [
+              {
+                "id": "wave-5-longshot-12-1",
+                "unitTypeId": "longshot",
+                "level": 5,
+                "x": 12,
+                "y": 1
+              },
+              {
+                "id": "wave-5-siege-gun-3-1",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 3,
+                "y": 1
+              },
+              {
+                "id": "wave-5-breaker-3-10",
+                "unitTypeId": "breaker",
+                "level": 4,
+                "x": 3,
+                "y": 10
+              },
+              {
+                "id": "wave-5-medic-12-2",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 12,
+                "y": 2
+              },
+              {
+                "id": "wave-5-medic-1-9",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 1,
+                "y": 9
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          8
+        ],
+        "stage": 8,
+        "variantStage": 8
+      },
+      {
+        "id": "cauldron-stage-9",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-9-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-9-enemy-grunt-1-1",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-9-enemy-breaker-13-1",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-9-enemy-breaker-1-10",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-9-enemy-grunt-13-10",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-9-enemy-runner-1-4",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-9-enemy-siege-gun-13-4",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-9-enemy-bruiser-1-7",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 7
+          },
+          {
+            "id": "cauldron-stage-9-enemy-skyguard-13-7",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 2,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 3
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
+                "y": 1
+              },
+              {
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 13,
+                "y": 10
+              }
+            ]
+          },
+          {
+            "id": "wave-4",
+            "name": "Siege Gun",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "unit-killed",
+              "targetUnitId": "cauldron-stage-9-enemy-siege-gun-13-4"
+            },
+            "units": [
+              {
+                "id": "wave-4-longshot-1-7",
+                "unitTypeId": "longshot",
+                "level": 2,
+                "x": 1,
+                "y": 7
+              },
+              {
+                "id": "wave-4-siege-gun-2-9",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 2,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "id": "wave-5",
+            "name": "Kill Counter",
+            "maxActivations": 15,
+            "trigger": {
+              "type": "enemy-casualties",
+              "every": 5
+            },
+            "units": [
+              {
+                "id": "wave-5-longshot-12-1",
+                "unitTypeId": "longshot",
+                "level": 5,
+                "x": 12,
+                "y": 1
+              },
+              {
+                "id": "wave-5-siege-gun-3-1",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 3,
+                "y": 1
+              },
+              {
+                "id": "wave-5-breaker-3-10",
+                "unitTypeId": "breaker",
+                "level": 4,
+                "x": 3,
+                "y": 10
+              },
+              {
+                "id": "wave-5-medic-12-2",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 12,
+                "y": 2
+              },
+              {
+                "id": "wave-5-medic-1-9",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 1,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "id": "wave-6",
+            "name": "Gunship Boss",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 6
+            },
+            "units": [
+              {
+                "id": "wave-6-gunship-7-0",
+                "unitTypeId": "gunship",
+                "level": 5,
+                "x": 7,
+                "y": 0
+              },
+              {
+                "id": "wave-6-gunship-7-11",
+                "unitTypeId": "gunship",
+                "level": 5,
+                "x": 7,
+                "y": 11
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
+        },
+        "runStages": [
+          9
+        ],
+        "stage": 9,
+        "variantStage": 9
+      },
+      {
+        "id": "cauldron-stage-10",
+        "name": "Cauldron",
+        "theme": "ash",
+        "width": 15,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "plain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "water",
+            "water",
+            "plain",
+            "road",
+            "plain",
+            "water",
+            "water",
+            "mountain",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "forest",
+            "forest"
+          ],
+          [
+            "water",
+            "plain",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "road",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "plain",
+            "water"
+          ],
+          [
+            "water",
+            "water",
+            "road",
+            "road",
+            "mountain",
+            "mountain",
+            "mountain",
+            "plain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "road",
+            "road",
+            "water",
+            "water"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "mountain",
+            "mountain",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "road",
+            "road",
+            "water",
+            "road",
+            "road",
+            "forest",
+            "forest",
+            "forest",
+            "forest",
+            "mountain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "water",
+            "water",
+            "water",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cauldron-stage-10-player-command-7-6",
+            "type": "command",
+            "owner": "player",
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cauldron-stage-10-enemy-grunt-1-1",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-10-enemy-breaker-13-1",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 1
+          },
+          {
+            "id": "cauldron-stage-10-enemy-breaker-1-10",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-10-enemy-grunt-13-10",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 10
+          },
+          {
+            "id": "cauldron-stage-10-enemy-runner-1-4",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-10-enemy-siege-gun-13-4",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 4
+          },
+          {
+            "id": "cauldron-stage-10-enemy-juggernaut-14-6",
+            "unitTypeId": "juggernaut",
+            "owner": "enemy",
+            "level": 5,
+            "x": 14,
+            "y": 6
+          },
+          {
+            "id": "cauldron-stage-10-enemy-bruiser-1-7",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 5,
+            "x": 1,
+            "y": 7
+          },
+          {
+            "id": "cauldron-stage-10-enemy-skyguard-13-7",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 5,
+            "x": 13,
+            "y": 7
+          }
+        ],
+        "reinforcements": [
+          {
+            "id": "wave-1",
+            "name": "Infantry Spawns",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 2
+            },
+            "units": [
+              {
+                "id": "wave-1-breaker-0-5",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 0,
+                "y": 5
+              },
+              {
+                "id": "wave-1-grunt-14-5",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 14,
+                "y": 5
+              }
+            ]
+          },
+          {
+            "id": "wave-2",
+            "name": "More Infantry",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 1
+            },
+            "units": [
+              {
+                "id": "wave-2-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 0,
+                "y": 6
+              }
+            ]
+          },
+          {
+            "id": "wave-3",
+            "name": "Runner Boss",
+            "maxActivations": 2,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 3
+            },
+            "units": [
+              {
+                "id": "wave-3-runner-1-1",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 1,
+                "y": 1
+              },
+              {
+                "id": "wave-3-runner-13-10",
+                "unitTypeId": "runner",
+                "level": 2,
+                "x": 13,
+                "y": 10
+              }
+            ]
+          },
+          {
+            "id": "wave-4",
+            "name": "Siege Gun",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "unit-killed",
+              "targetUnitId": "cauldron-stage-10-enemy-siege-gun-13-4"
+            },
+            "units": [
+              {
+                "id": "wave-4-longshot-1-7",
+                "unitTypeId": "longshot",
+                "level": 2,
+                "x": 1,
+                "y": 7
+              },
+              {
+                "id": "wave-4-siege-gun-2-9",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 2,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "id": "wave-5",
+            "name": "Kill Counter",
+            "maxActivations": 15,
+            "trigger": {
+              "type": "enemy-casualties",
+              "every": 5
+            },
+            "units": [
+              {
+                "id": "wave-5-longshot-12-1",
+                "unitTypeId": "longshot",
+                "level": 5,
+                "x": 12,
+                "y": 1
+              },
+              {
+                "id": "wave-5-siege-gun-3-1",
+                "unitTypeId": "siege-gun",
+                "level": 3,
+                "x": 3,
+                "y": 1
+              },
+              {
+                "id": "wave-5-breaker-3-10",
+                "unitTypeId": "breaker",
+                "level": 4,
+                "x": 3,
+                "y": 10
+              },
+              {
+                "id": "wave-5-medic-12-2",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 12,
+                "y": 2
+              },
+              {
+                "id": "wave-5-medic-1-9",
+                "unitTypeId": "medic",
+                "level": 5,
+                "x": 1,
+                "y": 9
+              }
+            ]
+          },
+          {
+            "id": "wave-6",
+            "name": "Gunship Boss",
+            "maxActivations": 1,
+            "trigger": {
+              "type": "player-turns-completed",
+              "every": 6
+            },
+            "units": [
+              {
+                "id": "wave-6-gunship-7-0",
+                "unitTypeId": "gunship",
+                "level": 5,
+                "x": 7,
+                "y": 0
+              },
+              {
+                "id": "wave-6-gunship-7-11",
+                "unitTypeId": "gunship",
+                "level": 5,
+                "x": 7,
+                "y": 11
+              }
+            ]
+          }
+        ],
+        "goal": {
+          "type": "survive",
+          "turnLimit": 7
         },
         "runStages": [
           10
         ],
-        "variantStage": 10,
-        "stage": 10
+        "stage": 10,
+        "variantStage": 10
       }
     ]
-  },
-  "./maps/pinecut-pass/pinecut-pass-stage-1.json": {
-    "id": "pinecut-pass-stage-1",
-    "name": "Pinecut Pass",
-    "theme": "ash",
-    "width": 18,
-    "height": 7,
-    "tiles": [
-      [
-        "forest",
-        "forest",
-        "ridge",
-        "mountain",
-        "forest",
-        "forest",
-        "mountain",
-        "mountain",
-        "forest",
-        "forest",
-        "mountain",
-        "mountain",
-        "forest",
-        "forest",
-        "mountain",
-        "ridge",
-        "forest",
-        "forest"
-      ],
-      [
-        "forest",
-        "forest",
-        "mountain",
-        "water",
-        "water",
-        "water",
-        "mountain",
-        "mountain",
-        "mountain",
-        "road",
-        "mountain",
-        "mountain",
-        "water",
-        "water",
-        "water",
-        "mountain",
-        "forest",
-        "forest"
-      ],
-      [
-        "plain",
-        "plain",
-        "water",
-        "water",
-        "mountain",
-        "mountain",
-        "plain",
-        "plain",
-        "plain",
-        "road",
-        "water",
-        "water",
-        "mountain",
-        "mountain",
-        "water",
-        "mountain",
-        "plain",
-        "plain"
-      ],
-      [
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road"
-      ],
-      [
-        "plain",
-        "plain",
-        "water",
-        "water",
-        "plain",
-        "plain",
-        "forest",
-        "plain",
-        "road",
-        "forest",
-        "water",
-        "mountain",
-        "mountain",
-        "forest",
-        "water",
-        "mountain",
-        "plain",
-        "plain"
-      ],
-      [
-        "forest",
-        "forest",
-        "mountain",
-        "water",
-        "water",
-        "mountain",
-        "forest",
-        "mountain",
-        "road",
-        "forest",
-        "water",
-        "mountain",
-        "water",
-        "water",
-        "water",
-        "mountain",
-        "forest",
-        "forest"
-      ],
-      [
-        "forest",
-        "forest",
-        "ridge",
-        "mountain",
-        "forest",
-        "forest",
-        "ridge",
-        "mountain",
-        "forest",
-        "mountain",
-        "forest",
-        "mountain",
-        "mountain",
-        "forest",
-        "mountain",
-        "ridge",
-        "forest",
-        "forest"
-      ]
-    ],
-    "buildings": [
-      {
-        "id": "pinecut-pass-stage-1-player-command-0-2",
-        "type": "command",
-        "owner": "player",
-        "x": 0,
-        "y": 2
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-repair-station-16-2",
-        "type": "repair-station",
-        "owner": "enemy",
-        "x": 16,
-        "y": 2
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-sector-17-2",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 17,
-        "y": 2
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-sector-7-2",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 7,
-        "y": 2
-      },
-      {
-        "id": "pinecut-pass-stage-1-neutral-sector-1-4",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 1,
-        "y": 4
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-command-17-4",
-        "type": "command",
-        "owner": "enemy",
-        "x": 17,
-        "y": 4
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-sector-4-4",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 4,
-        "y": 4
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-hospital-7-4",
-        "type": "hospital",
-        "owner": "enemy",
-        "x": 7,
-        "y": 4
-      }
-    ],
-    "units": [
-      {
-        "id": "pinecut-pass-stage-1-enemy-runner-9-1",
-        "unitTypeId": "runner",
-        "owner": "enemy",
-        "level": 1,
-        "x": 9,
-        "y": 1
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-breaker-6-2",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 6,
-        "y": 2
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-longshot-17-3",
-        "unitTypeId": "longshot",
-        "owner": "enemy",
-        "level": 1,
-        "x": 17,
-        "y": 3
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-grunt-16-4",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 16,
-        "y": 4
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-breaker-5-4",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 5,
-        "y": 4
-      },
-      {
-        "id": "pinecut-pass-stage-1-enemy-mechanic-8-4",
-        "unitTypeId": "mechanic",
-        "owner": "enemy",
-        "level": 1,
-        "x": 8,
-        "y": 4
-      }
-    ],
-    "goal": {
-      "type": "rescue",
-      "target": {
-        "x": 17,
-        "y": 4
-      }
-    },
-    "runStages": [
-      1
-    ],
-    "variantStage": 1
-  },
-  "./maps/stone-citadel/stone-citadel-stage-1.json": {
-    "id": "stone-citadel-stage-1",
-    "name": "Stone Citadel",
-    "theme": "ash",
-    "width": 20,
-    "height": 14,
-    "tiles": [
-      [
-        "mountain",
-        "mountain",
-        "forest",
-        "road",
-        "forest",
-        "forest",
-        "mountain",
-        "water",
-        "water",
-        "mountain",
-        "forest",
-        "forest",
-        "plain",
-        "mountain",
-        "forest",
-        "mountain",
-        "forest",
-        "water",
-        "forest",
-        "forest"
-      ],
-      [
-        "mountain",
-        "water",
-        "plain",
-        "road",
-        "road",
-        "forest",
-        "mountain",
-        "mountain",
-        "water",
-        "mountain",
-        "forest",
-        "road",
-        "road",
-        "mountain",
-        "forest",
-        "water",
-        "ridge",
-        "mountain",
-        "forest",
-        "mountain"
-      ],
-      [
-        "plain",
-        "forest",
-        "forest",
-        "road",
-        "water",
-        "water",
-        "mountain",
-        "mountain",
-        "water",
-        "water",
-        "water",
-        "road",
-        "forest",
-        "plain",
-        "water",
-        "water",
-        "ridge",
-        "mountain",
-        "mountain",
-        "mountain"
-      ],
-      [
-        "forest",
-        "mountain",
-        "road",
-        "road",
-        "mountain",
-        "water",
-        "mountain",
-        "mountain",
-        "road",
-        "mountain",
-        "water",
-        "mountain",
-        "mountain",
-        "mountain",
-        "water",
-        "ridge",
-        "mountain",
-        "forest",
-        "forest",
-        "mountain"
-      ],
-      [
-        "plain",
-        "forest",
-        "road",
-        "forest",
-        "mountain",
-        "water",
-        "water",
-        "plain",
-        "road",
-        "road",
-        "water",
-        "water",
-        "plain",
-        "forest",
-        "water",
-        "mountain",
-        "forest",
-        "mountain",
-        "mountain",
-        "mountain"
-      ],
-      [
-        "plain",
-        "forest",
-        "road",
-        "mountain",
-        "plain",
-        "forest",
-        "water",
-        "plain",
-        "plain",
-        "road",
-        "forest",
-        "water",
-        "water",
-        "water",
-        "water",
-        "mountain",
-        "road",
-        "road",
-        "road",
-        "mountain"
-      ],
-      [
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "road",
-        "plain",
-        "road",
-        "mountain"
-      ],
-      [
-        "plain",
-        "forest",
-        "road",
-        "forest",
-        "plain",
-        "forest",
-        "water",
-        "plain",
-        "plain",
-        "road",
-        "forest",
-        "water",
-        "plain",
-        "plain",
-        "water",
-        "mountain",
-        "road",
-        "road",
-        "road",
-        "mountain"
-      ],
-      [
-        "plain",
-        "forest",
-        "road",
-        "forest",
-        "mountain",
-        "water",
-        "water",
-        "forest",
-        "road",
-        "road",
-        "water",
-        "water",
-        "plain",
-        "forest",
-        "water",
-        "mountain",
-        "forest",
-        "mountain",
-        "mountain",
-        "mountain"
-      ],
-      [
-        "forest",
-        "mountain",
-        "road",
-        "road",
-        "mountain",
-        "water",
-        "mountain",
-        "mountain",
-        "road",
-        "forest",
-        "water",
-        "mountain",
-        "mountain",
-        "mountain",
-        "water",
-        "ridge",
-        "mountain",
-        "forest",
-        "forest",
-        "mountain"
-      ],
-      [
-        "plain",
-        "forest",
-        "forest",
-        "road",
-        "water",
-        "water",
-        "mountain",
-        "mountain",
-        "forest",
-        "water",
-        "water",
-        "road",
-        "forest",
-        "plain",
-        "water",
-        "water",
-        "ridge",
-        "mountain",
-        "mountain",
-        "mountain"
-      ],
-      [
-        "mountain",
-        "water",
-        "plain",
-        "road",
-        "road",
-        "forest",
-        "mountain",
-        "ridge",
-        "water",
-        "water",
-        "forest",
-        "road",
-        "road",
-        "mountain",
-        "forest",
-        "plain",
-        "ridge",
-        "mountain",
-        "forest",
-        "mountain"
-      ],
-      [
-        "mountain",
-        "mountain",
-        "forest",
-        "mountain",
-        "forest",
-        "forest",
-        "mountain",
-        "water",
-        "water",
-        "mountain",
-        "forest",
-        "forest",
-        "plain",
-        "mountain",
-        "forest",
-        "mountain",
-        "forest",
-        "plain",
-        "forest",
-        "forest"
-      ],
-      [
-        "mountain",
-        "mountain",
-        "forest",
-        "mountain",
-        "forest",
-        "forest",
-        "mountain",
-        "water",
-        "water",
-        "mountain",
-        "forest",
-        "forest",
-        "plain",
-        "mountain",
-        "forest",
-        "plain",
-        "forest",
-        "plain",
-        "forest",
-        "forest"
-      ]
-    ],
-    "buildings": [
-      {
-        "id": "stone-citadel-stage-1-enemy-sector-12-0",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 12,
-        "y": 0
-      },
-      {
-        "id": "stone-citadel-stage-1-neutral-sector-2-1",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 2,
-        "y": 1
-      },
-      {
-        "id": "stone-citadel-stage-1-neutral-sector-4-11",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 4,
-        "y": 11
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-sector-12-12",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 12,
-        "y": 12
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-sector-17-13",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 17,
-        "y": 13
-      },
-      {
-        "id": "stone-citadel-stage-1-neutral-sector-8-3",
-        "type": "sector",
-        "owner": "neutral",
-        "x": 8,
-        "y": 3
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-sector-12-4",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 12,
-        "y": 4
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-sector-7-5",
-        "type": "sector",
-        "owner": "enemy",
-        "x": 7,
-        "y": 5
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-command-17-6",
-        "type": "command",
-        "owner": "enemy",
-        "x": 17,
-        "y": 6
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-hospital-0-7",
-        "type": "hospital",
-        "owner": "enemy",
-        "x": 0,
-        "y": 7
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-repair-station-16-7",
-        "type": "repair-station",
-        "owner": "enemy",
-        "x": 16,
-        "y": 7
-      },
-      {
-        "id": "stone-citadel-stage-1-player-command-8-7",
-        "type": "command",
-        "owner": "player",
-        "x": 8,
-        "y": 7
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-hospital-12-8",
-        "type": "hospital",
-        "owner": "enemy",
-        "x": 12,
-        "y": 8
-      }
-    ],
-    "units": [
-      {
-        "id": "stone-citadel-stage-1-enemy-bruiser-3-0",
-        "unitTypeId": "bruiser",
-        "owner": "enemy",
-        "level": 1,
-        "x": 3,
-        "y": 0
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-mechanic-4-1",
-        "unitTypeId": "mechanic",
-        "owner": "enemy",
-        "level": 1,
-        "x": 4,
-        "y": 1
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-runner-2-11",
-        "unitTypeId": "runner",
-        "owner": "enemy",
-        "level": 1,
-        "x": 2,
-        "y": 11
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-runner-0-4",
-        "unitTypeId": "runner",
-        "owner": "enemy",
-        "level": 1,
-        "x": 0,
-        "y": 4
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-grunt-16-5",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 16,
-        "y": 5
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-breaker-18-5",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 18,
-        "y": 5
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-breaker-2-5",
-        "unitTypeId": "breaker",
-        "owner": "enemy",
-        "level": 1,
-        "x": 2,
-        "y": 5
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-longshot-16-7",
-        "unitTypeId": "longshot",
-        "owner": "enemy",
-        "level": 1,
-        "x": 16,
-        "y": 7
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-grunt-18-7",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 18,
-        "y": 7
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-grunt-2-7",
-        "unitTypeId": "grunt",
-        "owner": "enemy",
-        "level": 1,
-        "x": 2,
-        "y": 7
-      },
-      {
-        "id": "stone-citadel-stage-1-enemy-mechanic-0-8",
-        "unitTypeId": "mechanic",
-        "owner": "enemy",
-        "level": 1,
-        "x": 0,
-        "y": 8
-      }
-    ],
-    "goal": {
-      "type": "hq-capture"
-    },
-    "runStages": [
-      1
-    ],
-    "variantStage": 1
   }
 };

@@ -48,8 +48,10 @@ export function renderCommanderCardBody(commander, unlocked) {
       <img
         class="commander-card__info-image"
         src="${infoImageUrl}"
+        width="1023"
+        height="1537"
         alt="${commander.name} commander info card"
-        loading="lazy"
+        loading="eager"
         decoding="async"
       />
       <div class="commander-card__hover-overlay">

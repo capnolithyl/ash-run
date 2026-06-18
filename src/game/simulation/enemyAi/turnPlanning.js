@@ -5,6 +5,10 @@ import {
 import { findUnitById } from "../battleUnits.js";
 import { captureBuildingForUnit } from "../captureRules.js";
 import {
+  applyBuildingSupply,
+  getBuildingSupplyPreview
+} from "../battleServicing.js";
+import {
   getMovementModifier,
   shouldDefenderPreemptCombat,
   shouldPreventCombatDamage
@@ -89,6 +93,14 @@ function compareNodes(left, right) {
 
 function getMovementBudget(state, unit) {
   return unit.stats.movement + getMovementModifier(state, unit);
+}
+
+function getRepairNeedEstimate(unit) {
+  const missingHp = Math.max(0, unit.stats.maxHealth - unit.current.hp);
+  const missingAmmo = Math.max(0, unit.stats.ammoMax - unit.current.ammo);
+  const missingStamina = Math.max(0, unit.stats.staminaMax - unit.current.stamina);
+
+  return missingHp * 4 + missingAmmo * 6 + missingStamina * 3;
 }
 
 function shouldLeaveUnitToExistingBehavior(state, unit, reachableTiles) {
@@ -178,7 +190,7 @@ function buildCaptureActions(state, unit, reachableTiles) {
 
 function buildRepairActions(state, unit, reachableTiles) {
   const profile = getEnemyAiProfile(state);
-  const missingHp = Math.max(0, unit.stats.maxHealth - unit.current.hp);
+  const repairNeedEstimate = getRepairNeedEstimate(unit);
 
   return getRepairPlans(state, unit, reachableTiles).map((plan) => ({
     type: "repair",
@@ -187,7 +199,8 @@ function buildRepairActions(state, unit, reachableTiles) {
     tile: { x: plan.tile.x, y: plan.tile.y },
     canRepairAfterMove: plan.canRepairAfterMove,
     estimate:
-      missingHp * 4 +
+      repairNeedEstimate +
+      plan.needScore +
       profile.safetyWeight * 18 +
       (plan.canRepairAfterMove ? 24 : 8) +
       Math.min(24, plan.score * 0.12)
@@ -202,8 +215,15 @@ function getUnitActionCandidates(state, unit) {
     return [];
   }
 
+  const attackActions = buildAttackActions(state, unit, reachableTiles);
   const captureActions = buildCaptureActions(state, unit, reachableTiles);
   const repairActions = buildRepairActions(state, unit, reachableTiles);
+  const currentFavorableAttack = attackActions.find(
+    (action) =>
+      action.tile.x === unit.x &&
+      action.tile.y === unit.y &&
+      (action.projectedKill || action.isFavorable || action.isEffective)
+  );
   const currentCapture = captureActions.find(
     (action) =>
       action.canCaptureAfterMove &&
@@ -235,8 +255,14 @@ function getUnitActionCandidates(state, unit) {
     }
   }
 
+  if (currentFavorableAttack) {
+    return [...attackActions, ...captureActions]
+      .sort(compareActions)
+      .slice(0, ENEMY_TURN_PLANNER_ACTIONS_PER_UNIT);
+  }
+
   return [
-    ...buildAttackActions(state, unit, reachableTiles),
+    ...attackActions,
     ...captureActions,
     ...repairActions
   ]
@@ -481,21 +507,19 @@ function projectRepair(state, action) {
   }
 
   const profile = getEnemyAiProfile(state);
-  const missingHp = Math.max(0, unit.stats.maxHealth - unit.current.hp);
+  const repairNeedEstimate = getRepairNeedEstimate(unit);
   const moved = projectMovement(state, unit, action.tile);
+  const preview = getBuildingSupplyPreview(state, unit, building);
 
-  if (!moved) {
-    unit.hasMoved = true;
-  }
-
-  unit.hasAttacked = true;
+  applyBuildingSupply(state, unit, building, { spendAction: true, log: false });
   unit.cooldowns.repairMode = Math.max(
     unit.cooldowns.repairMode ?? 0,
     action.canRepairAfterMove ? (moved ? 2 : 1) : 2
   );
 
   return (
-    missingHp * (2.5 + profile.safetyWeight) +
+    repairNeedEstimate * (1 + profile.safetyWeight * 0.12) +
+    preview.needScore * 0.8 +
     (action.canRepairAfterMove ? 22 : 8) +
     getStrategicObjectiveScore(state, unit, action.tile) * 0.025
   );

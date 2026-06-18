@@ -1,0 +1,276 @@
+{
+  "format": "ash-run-map-bundle-v1",
+  "id": "pinecut-pass",
+  "name": "Pinecut Pass",
+  "stages": [
+    {
+      "id": "pinecut-pass-stage-1",
+      "name": "Pinecut Pass",
+      "theme": "ash",
+      "width": 18,
+      "height": 7,
+      "tiles": [
+        [
+          "forest",
+          "forest",
+          "ridge",
+          "mountain",
+          "forest",
+          "forest",
+          "mountain",
+          "mountain",
+          "forest",
+          "forest",
+          "mountain",
+          "mountain",
+          "forest",
+          "forest",
+          "mountain",
+          "ridge",
+          "forest",
+          "forest"
+        ],
+        [
+          "forest",
+          "forest",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "mountain",
+          "mountain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "mountain",
+          "forest",
+          "forest"
+        ],
+        [
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "water",
+          "water",
+          "mountain",
+          "mountain",
+          "water",
+          "mountain",
+          "plain",
+          "plain"
+        ],
+        [
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "forest",
+          "plain",
+          "road",
+          "forest",
+          "water",
+          "mountain",
+          "mountain",
+          "forest",
+          "water",
+          "mountain",
+          "plain",
+          "plain"
+        ],
+        [
+          "forest",
+          "forest",
+          "mountain",
+          "water",
+          "water",
+          "mountain",
+          "forest",
+          "mountain",
+          "road",
+          "forest",
+          "water",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "mountain",
+          "forest",
+          "forest"
+        ],
+        [
+          "forest",
+          "forest",
+          "ridge",
+          "mountain",
+          "forest",
+          "forest",
+          "ridge",
+          "mountain",
+          "forest",
+          "mountain",
+          "forest",
+          "mountain",
+          "mountain",
+          "forest",
+          "mountain",
+          "ridge",
+          "forest",
+          "forest"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "pinecut-pass-stage-1-player-command-0-2",
+          "type": "command",
+          "owner": "player",
+          "x": 0,
+          "y": 2
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-repair-station-16-2",
+          "type": "repair-station",
+          "owner": "enemy",
+          "x": 16,
+          "y": 2
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-sector-17-2",
+          "type": "sector",
+          "owner": "enemy",
+          "x": 17,
+          "y": 2
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-sector-7-2",
+          "type": "sector",
+          "owner": "enemy",
+          "x": 7,
+          "y": 2
+        },
+        {
+          "id": "pinecut-pass-stage-1-neutral-sector-1-4",
+          "type": "sector",
+          "owner": "neutral",
+          "x": 1,
+          "y": 4
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-command-17-4",
+          "type": "command",
+          "owner": "enemy",
+          "x": 17,
+          "y": 4
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-sector-4-4",
+          "type": "sector",
+          "owner": "enemy",
+          "x": 4,
+          "y": 4
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-hospital-7-4",
+          "type": "hospital",
+          "owner": "enemy",
+          "x": 7,
+          "y": 4
+        }
+      ],
+      "units": [
+        {
+          "id": "pinecut-pass-stage-1-enemy-runner-9-1",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 1,
+          "x": 9,
+          "y": 1
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-breaker-6-2",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 6,
+          "y": 2
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-longshot-17-3",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 1,
+          "x": 17,
+          "y": 3
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-grunt-16-4",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 16,
+          "y": 4
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-breaker-5-4",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 5,
+          "y": 4
+        },
+        {
+          "id": "pinecut-pass-stage-1-enemy-mechanic-8-4",
+          "unitTypeId": "mechanic",
+          "owner": "enemy",
+          "level": 1,
+          "x": 8,
+          "y": 4
+        }
+      ],
+      "goal": {
+        "type": "rescue",
+        "target": {
+          "x": 17,
+          "y": 4
+        }
+      },
+      "runStages": [
+        1
+      ],
+      "stage": 1,
+      "variantStage": 1
+    }
+  ]
+}

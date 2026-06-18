@@ -164,11 +164,13 @@ export const appShellCommanderSliderMethods = {
     const useInstantPositioning =
       !animate || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     metrics.track.classList.toggle("commander-slider__track--instant", useInstantPositioning);
+    metrics.track.classList.toggle("commander-slider__track--moving", !useInstantPositioning);
     metrics.track.style.transform = `translate3d(${-trackIndex * metrics.step}px, 0, 0)`;
 
     if (useInstantPositioning) {
       void metrics.track.getBoundingClientRect();
       metrics.track.classList.remove("commander-slider__track--instant");
+      metrics.track.classList.remove("commander-slider__track--moving");
       this.getCommanderSliderState(metrics.id).transitioning = false;
     }
   },
@@ -186,6 +188,8 @@ export const appShellCommanderSliderMethods = {
     if (!track || event.propertyName !== "transform") {
       return;
     }
+
+    track.classList.remove("commander-slider__track--moving");
 
     const metrics = this.getCommanderSliderMetrics(this.getCommanderSliderId(track));
     const sliderState = this.getCommanderSliderState(metrics?.id);

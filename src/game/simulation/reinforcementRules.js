@@ -114,11 +114,22 @@ function createReinforcementUnit(state, wave, authoredUnit, activationNumber, un
   return unit;
 }
 
-function deployReinforcementWave(state, wave, options = {}) {
+function describeDeployment(deployment) {
+  return {
+    unitId: deployment.unitId,
+    unitTypeId: deployment.unitTypeId,
+    waveId: deployment.waveId,
+    activationNumber: deployment.activationNumber,
+    x: deployment.x,
+    y: deployment.y
+  };
+}
+
+function createReinforcementActivation(state, wave, options = {}) {
   const reinforcementState = normalizeReinforcementState(state);
   const previousCount = reinforcementState.activationsByWaveId[wave.id] ?? 0;
   const activationNumber = previousCount + 1;
-  const occupiedTiles = getOccupiedBattleTiles(state);
+  const occupiedTiles = options.occupiedTiles ?? getOccupiedBattleTiles(state);
   const deployments = [];
   const skippedUnits = [];
 
@@ -149,16 +160,23 @@ function deployReinforcementWave(state, wave, options = {}) {
     unit.hasMoved = !options.allowImmediateEnemyActions;
     unit.hasAttacked = !options.allowImmediateEnemyActions;
     occupiedTiles.add(`${unit.x},${unit.y}`);
-    state.enemy.units.push(unit);
-    reinforcementState.knownEnemyUnitIds.push(unit.id);
-    deployments.push({
+
+    const deployment = {
+      unit,
       unitId: unit.id,
       unitTypeId: unit.unitTypeId,
       waveId: wave.id,
       activationNumber,
       x: unit.x,
       y: unit.y
-    });
+    };
+
+    if (options.deployImmediately !== false) {
+      state.enemy.units.push(unit);
+      reinforcementState.knownEnemyUnitIds.push(unit.id);
+    }
+
+    deployments.push(deployment);
   }
 
   appendLog(
@@ -176,9 +194,24 @@ function deployReinforcementWave(state, wave, options = {}) {
   return {
     waveId: wave.id,
     activationNumber,
-    deployments,
+    deployments: deployments.map(describeDeployment),
+    queuedDeployments: options.deployImmediately === false ? deployments : [],
     skippedUnitCount: skippedUnits.length
   };
+}
+
+function deployReinforcementWave(state, wave, options = {}) {
+  return createReinforcementActivation(state, wave, {
+    ...options,
+    deployImmediately: true
+  });
+}
+
+function prepareQueuedReinforcementWave(state, wave, options = {}) {
+  return createReinforcementActivation(state, wave, {
+    ...options,
+    deployImmediately: false
+  });
 }
 
 function isWaveAvailable(state, wave) {
@@ -223,7 +256,7 @@ function getWaveActivationCountForContext(state, wave, context) {
         state.reinforcementState.enemyCasualties
       );
     case REINFORCEMENT_TRIGGER_TYPES.PLAYER_TURNS_COMPLETED:
-      return context.type === "enemy-turn-start"
+      return context.type === "enemy-turn-end"
         ? getIntervalActivationCount(state, wave, Math.max(0, state.turn.number - 1))
         : 0;
     default:
@@ -250,6 +283,53 @@ export function resolveReinforcementTriggers(state, context = { type: "state" })
   }
 
   return activations;
+}
+
+export function prepareEnemyTurnEndReinforcements(state) {
+  normalizeReinforcementState(state);
+  synchronizeReinforcementCasualties(state);
+
+  const activations = [];
+  const occupiedTiles = getOccupiedBattleTiles(state);
+
+  for (const wave of state.map.reinforcements) {
+    const activationCount = getWaveActivationCountForContext(state, wave, {
+      type: "enemy-turn-end"
+    });
+
+    for (let index = 0; index < activationCount; index += 1) {
+      activations.push(
+        prepareQueuedReinforcementWave(state, wave, {
+          allowImmediateEnemyActions: true,
+          occupiedTiles
+        })
+      );
+    }
+  }
+
+  return activations;
+}
+
+export function deployPreparedReinforcement(state, preparedDeployment) {
+  if (!preparedDeployment?.unit) {
+    return null;
+  }
+
+  const reinforcementState = normalizeReinforcementState(state);
+  const unit = structuredClone(preparedDeployment.unit);
+
+  unit.x = preparedDeployment.x;
+  unit.y = preparedDeployment.y;
+  unit.hasMoved = false;
+  unit.hasAttacked = false;
+  state.enemy.units.push(unit);
+
+  if (!reinforcementState.knownEnemyUnitIds.includes(unit.id)) {
+    reinforcementState.knownEnemyUnitIds.push(unit.id);
+  }
+
+  state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  return describeDeployment(preparedDeployment);
 }
 
 export function resolveReinforcementTileCrossing(state, path) {

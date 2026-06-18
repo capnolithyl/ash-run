@@ -1,5 +1,11 @@
 import { formatTurnCount } from "../formatters.js";
 
+const TITLE_BUTTON_IMAGE_DIMENSIONS = {
+  settings: { width: 500, height: 500 }
+};
+
+const DEFAULT_TITLE_BUTTON_IMAGE_DIMENSIONS = { width: 866, height: 288 };
+
 function renderTitleIcon(iconName) {
   switch (iconName) {
     case "continue":
@@ -565,24 +571,31 @@ function renderTitleButton({
   const imageUrl = resolvedImageSlug
     ? `./assets/img/ui/buttons/${resolvedImageSlug}.png`
     : null;
+  const imageDimensions = TITLE_BUTTON_IMAGE_DIMENSIONS[resolvedImageSlug] ??
+    DEFAULT_TITLE_BUTTON_IMAGE_DIMENSIONS;
   const imageMarkup = imageUrl
     ? `
       <img
         class="title-button__image"
         src="${imageUrl}"
+        width="${imageDimensions.width}"
+        height="${imageDimensions.height}"
         alt=""
         aria-hidden="true"
         loading="eager"
         decoding="async"
         onload="this.closest('button')?.classList.add('title-button--image-loaded')"
-        onerror="this.remove()"
+        onerror="const button=this.closest('button'); button?.classList.remove('title-button--image-loaded'); this.remove()"
       />
     `
+    : "";
+  const imageClasses = imageMarkup
+    ? "title-button--has-image title-button--image-loaded"
     : "";
 
   return `
     <button
-      class="menu-button ${className} ${imageMarkup ? "title-button--has-image" : ""}"
+      class="menu-button ${className} ${imageClasses}"
       data-action="${action}"
       aria-label="${ariaLabel}"
       ${disabled ? "disabled" : ""}

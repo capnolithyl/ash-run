@@ -31,6 +31,10 @@ test("commander select renders carousel controls and a reachable deployment acti
   assert.match(html, /data-role="start-run-button"/);
   assert.match(html, /Next: Squad Builder/);
   assert.match(html, /commander-card__info-image/);
+  assert.match(html, /width="1023"/);
+  assert.match(html, /height="1537"/);
+  assert.match(html, /loading="eager"/);
+  assert.doesNotMatch(html, /loading="lazy"/);
   assert.match(html, /assets\/img\/commanders\/atlas\/Atlas%20-%20Info\.png/);
   assert.match(html, /assets\/img\/commanders\/sables\/Sables%20-%20Info\.png/);
   assert.match(html, /aria-label="Previous commander"/);

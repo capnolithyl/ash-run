@@ -10,6 +10,8 @@ import { describeRunCardsForState } from "../../../game/simulation/runCardEffect
 import { renderOptionFields } from "../optionFieldsView.js";
 import { renderDebugControls } from "./interactionPanels.js";
 
+const BATTLE_NOTICE_HELD_IN_MS = 180;
+
 function renderIntelBreakdown(runState) {
   const intelLedger = runState?.intelLedger;
 
@@ -231,13 +233,22 @@ export function renderBattleNotice(notice) {
     return "";
   }
 
+  const isPersistent = notice.persistent === true;
   const durationMs = Math.max(1, Number(notice.durationMs) || BATTLE_NOTICE_DISPLAY_MS);
-  const createdAt = Number(notice.createdAt) || Date.now();
-  const elapsedMs = Math.max(0, Math.min(durationMs - 1, Date.now() - createdAt));
+  const now = Date.now();
+  const createdAt = Number(notice.createdAt) || now;
+  const persistentElapsedMs = Math.max(0, now - createdAt);
+  const elapsedMs = isPersistent
+    ? 0
+    : Math.max(0, Math.min(durationMs - 1, persistentElapsedMs));
   const noticeStyle = `--notice-duration:${durationMs}ms;--notice-delay:-${elapsedMs}ms;`;
+  const placement = notice.placement === "bottom" ? "bottom" : "top";
+  const holdClass = isPersistent
+    ? ` battle-notice--held${persistentElapsedMs >= BATTLE_NOTICE_HELD_IN_MS ? " battle-notice--held-ready" : ""}`
+    : "";
 
   return `
-    <div class="battle-notice battle-notice--${notice.tone ?? "info"}" style="${noticeStyle}" role="status" aria-live="polite">
+    <div class="battle-notice battle-notice--${notice.tone ?? "info"} battle-notice--${placement}${holdClass}" style="${noticeStyle}" role="status" aria-live="polite">
       <strong>${notice.title}</strong>
       <span>${notice.message}</span>
     </div>

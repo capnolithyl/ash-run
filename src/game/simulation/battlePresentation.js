@@ -15,6 +15,7 @@ import {
 } from "./commanderEffects.js";
 import { getLevelProgress } from "./progression.js";
 import { canCaptureBuilding } from "./captureRules.js";
+import { getBuildingSupplyPreview } from "./battleServicing.js";
 import {
   getAttackForecast,
   getAttackRangeCap,
@@ -895,6 +896,10 @@ function createPendingActionView(state) {
     validUnloadTiles.length > 0;
   const canRescue = !isSlipstream && canAct && canUnitRescueHostage(state, unit);
   const canDropOff = !isSlipstream && canAct && canUnitDropOffHostage(state, unit);
+  const supplyPreview =
+    !isSlipstream && canAct
+      ? getBuildingSupplyPreview(state, unit, building)
+      : { changed: false };
 
   return {
     ...pendingAction,
@@ -903,6 +908,7 @@ function createPendingActionView(state) {
     canCapture: !isSlipstream && canAct && canCaptureBuilding(unit, building),
     canFire: !isSlipstream && canAct && attackableUnitIds.length > 0,
     canSupport: supportTargets.length > 0,
+    canSupply: supplyPreview.changed,
     supportActionLabel: unit.unitTypeId === "medic" ? "Heal" : "Support",
     supportCooldown: unit.cooldowns?.support ?? 0,
     canRescue,

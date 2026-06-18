@@ -1,54 +1,116 @@
 import { BUILDING_RECRUITMENT } from "./unitCatalog.js";
-import { BUILDING_INCOME, BUILDING_KEYS } from "../core/constants.js";
+import {
+  BUILDING_INCOME,
+  BUILDING_KEYS,
+  UNIT_TAGS,
+} from "../core/constants.js";
+
+export const BUILDING_SERVICE_PROFILES = {
+  [BUILDING_KEYS.COMMAND]: {
+    hpRatio: 0.25,
+    ammoRatio: 0.5,
+    staminaRatio: 0.5,
+    unitFamily: null,
+  },
+  [BUILDING_KEYS.SECTOR]: {
+    hpRatio: 0.1,
+    ammoRatio: 0.25,
+    staminaRatio: 0.25,
+    unitFamily: null,
+  },
+  [BUILDING_KEYS.REPAIR_STATION]: {
+    hpRatio: 1,
+    ammoRatio: 1,
+    staminaRatio: 1,
+    unitFamily: UNIT_TAGS.VEHICLE,
+  },
+  [BUILDING_KEYS.HOSPITAL]: {
+    hpRatio: 1,
+    ammoRatio: 1,
+    staminaRatio: 1,
+    unitFamily: UNIT_TAGS.INFANTRY,
+  },
+};
+
+function formatServicePercent(ratio) {
+  return `${Math.round(ratio * 100)}%`;
+}
+
+function buildServiceSummary(profile, { familyLabel = null } = {}) {
+  if (!profile) {
+    return null;
+  }
+
+  const hpLabel = formatServicePercent(profile.hpRatio);
+  const ammoLabel = formatServicePercent(profile.ammoRatio);
+  const staminaLabel = formatServicePercent(profile.staminaRatio);
+  const familyPrefix = familyLabel ? `${familyLabel} ` : "";
+
+  return `Owned ${familyPrefix}service site. Use Supply here to restore ${hpLabel} HP, ${ammoLabel} ammo, and ${staminaLabel} stamina.`;
+}
 
 const BUILDING_LIBRARY = {
   [BUILDING_KEYS.COMMAND]: {
     name: "Command Post",
     shortLabel: "HQ",
-    summary: "Primary headquarters. Grants extra income and restores ammo and stamina each turn.",
-    canRecruit: false
+    summary: buildServiceSummary(
+      BUILDING_SERVICE_PROFILES[BUILDING_KEYS.COMMAND],
+    ),
+    canRecruit: false,
   },
   [BUILDING_KEYS.BARRACKS]: {
     name: "Barracks",
     shortLabel: "INF",
     summary: "Deploys infantry units.",
-    canRecruit: true
+    canRecruit: true,
   },
   [BUILDING_KEYS.MOTOR_POOL]: {
     name: "Motor Pool",
     shortLabel: "ARM",
     summary: "Deploys vehicle units.",
-    canRecruit: true
+    canRecruit: true,
   },
   [BUILDING_KEYS.AIRFIELD]: {
     name: "Airfield",
     shortLabel: "AIR",
     summary: "Deploys air units.",
-    canRecruit: true
+    canRecruit: true,
   },
   [BUILDING_KEYS.SECTOR]: {
     name: "Sector Node",
     shortLabel: "SEC",
-    summary: "Income site that slowly heals and resupplies units while held.",
-    canRecruit: false
+    summary: buildServiceSummary(
+      BUILDING_SERVICE_PROFILES[BUILDING_KEYS.SECTOR],
+    ),
+    canRecruit: false,
   },
   [BUILDING_KEYS.HOSPITAL]: {
     name: "Hospital",
     shortLabel: "MED",
-    summary: "One-time instant infantry restoration on capture. Resets when lost.",
-    canRecruit: false
+    summary: buildServiceSummary(
+      BUILDING_SERVICE_PROFILES[BUILDING_KEYS.HOSPITAL],
+      {
+        familyLabel: "infantry",
+      },
+    ),
+    canRecruit: false,
   },
   [BUILDING_KEYS.REPAIR_STATION]: {
     name: "Repair Station",
     shortLabel: "REP",
-    summary: "One-time vehicle restoration while held. Resets when captured by the enemy.",
-    canRecruit: false
-  }
+    summary: buildServiceSummary(
+      BUILDING_SERVICE_PROFILES[BUILDING_KEYS.REPAIR_STATION],
+      {
+        familyLabel: "vehicle",
+      },
+    ),
+    canRecruit: false,
+  },
 };
 
 export function getBuildingArmorBonusForType(buildingType) {
   if (buildingType === BUILDING_KEYS.COMMAND) {
-    return 4;
+    return 18;
   }
 
   if (
@@ -59,7 +121,7 @@ export function getBuildingArmorBonusForType(buildingType) {
     buildingType === BUILDING_KEYS.HOSPITAL ||
     buildingType === BUILDING_KEYS.REPAIR_STATION
   ) {
-    return 3;
+    return 13;
   }
 
   return 0;
@@ -75,6 +137,7 @@ function titleCaseOwner(owner) {
 
 export function getBuildingTypeMetadata(buildingTypeId) {
   const definition = BUILDING_LIBRARY[buildingTypeId];
+  const serviceProfile = BUILDING_SERVICE_PROFILES[buildingTypeId] ?? null;
 
   if (!definition) {
     return {
@@ -83,17 +146,24 @@ export function getBuildingTypeMetadata(buildingTypeId) {
       shortLabel: buildingTypeId.slice(0, 3).toUpperCase(),
       summary: "Unknown structure.",
       canRecruit: false,
+      serviceProfile,
       income: 0,
-      recruitmentFamilies: []
+      recruitmentFamilies: [],
     };
   }
 
   return {
     id: buildingTypeId,
     ...definition,
+    serviceProfile: serviceProfile ? { ...serviceProfile } : null,
     income: BUILDING_INCOME[buildingTypeId] ?? 0,
-    recruitmentFamilies: [...(BUILDING_RECRUITMENT[buildingTypeId] ?? [])]
+    recruitmentFamilies: [...(BUILDING_RECRUITMENT[buildingTypeId] ?? [])],
   };
+}
+
+export function getBuildingServiceProfile(buildingTypeId) {
+  const profile = BUILDING_SERVICE_PROFILES[buildingTypeId] ?? null;
+  return profile ? { ...profile } : null;
 }
 
 export function describeBuilding(building) {
@@ -105,6 +175,6 @@ export function describeBuilding(building) {
     ownerLabel: titleCaseOwner(building.owner),
     type: building.type,
     armorBonus: getBuildingArmorBonusForType(building.type),
-    ...metadata
+    ...metadata,
   };
 }

@@ -36,6 +36,15 @@ import {
 
 const BATTLE_CHROME_GLOW_CYCLE_MS = 4200;
 const BATTLE_CHROME_SWEEP_CYCLE_MS = 6800;
+const BATTLE_FOOTER_BUTTON_IMAGE_DIMENSIONS = {
+  "end-turn": { width: 612, height: 408 },
+  next: { width: 612, height: 408 },
+  pause: { width: 612, height: 408 }
+};
+const DEFAULT_BATTLE_FOOTER_BUTTON_IMAGE_DIMENSIONS = {
+  width: 866,
+  height: 288
+};
 
 function getCommanderTurnState(activeSide, side) {
   if (!activeSide) {
@@ -88,10 +97,12 @@ function renderBattleFooterImageButton({
   disabled = false
 }) {
   const imageUrl = `./assets/img/ui/buttons/${imageSlug}.png`;
+  const imageDimensions = BATTLE_FOOTER_BUTTON_IMAGE_DIMENSIONS[imageSlug] ??
+    DEFAULT_BATTLE_FOOTER_BUTTON_IMAGE_DIMENSIONS;
 
   return `
     <button
-      class="menu-button battle-footer-button ${className} title-button--has-image"
+      class="menu-button battle-footer-button ${className} title-button--has-image title-button--image-loaded"
       data-action="${action}"
       aria-label="${label}"
       ${disabled ? "disabled" : ""}
@@ -99,12 +110,14 @@ function renderBattleFooterImageButton({
       <img
         class="title-button__image"
         src="${imageUrl}"
+        width="${imageDimensions.width}"
+        height="${imageDimensions.height}"
         alt=""
         aria-hidden="true"
         loading="eager"
         decoding="async"
         onload="this.closest('button')?.classList.add('title-button--image-loaded')"
-        onerror="this.remove()"
+        onerror="const button=this.closest('button'); button?.classList.remove('title-button--image-loaded'); this.remove()"
       />
     </button>
   `;

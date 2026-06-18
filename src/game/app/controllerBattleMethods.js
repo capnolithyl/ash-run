@@ -79,18 +79,28 @@ export const controllerBattleMethods = {
     );
   },
 
-  showBattleNotice({ title, message, tone = "info" }) {
+  showBattleNotice({
+    title,
+    message,
+    tone = "info",
+    durationMs = BATTLE_NOTICE_DISPLAY_MS,
+    placement = "top",
+    persistent = false
+  }) {
     if (this.state.screen !== SCREEN_IDS.BATTLE) {
-      return;
+      return null;
     }
 
+    const displayMs = Math.max(1, Number(durationMs) || BATTLE_NOTICE_DISPLAY_MS);
     const notice = {
       id: `notice-${++this.battleNoticeSequence}`,
       title,
       message,
       tone,
+      placement,
+      persistent: persistent === true,
       createdAt: Date.now(),
-      durationMs: BATTLE_NOTICE_DISPLAY_MS
+      durationMs: displayMs
     };
 
     this.state.battleUi.notice = notice;
@@ -98,16 +108,40 @@ export const controllerBattleMethods = {
 
     if (this.battleNoticeTimer) {
       clearTimeout(this.battleNoticeTimer);
+      this.battleNoticeTimer = null;
     }
 
-    this.battleNoticeTimer = setTimeout(() => {
-      this.battleNoticeTimer = null;
+    if (!notice.persistent) {
+      this.battleNoticeTimer = setTimeout(() => {
+        this.battleNoticeTimer = null;
 
-      if (this.state.battleUi.notice?.id === notice.id) {
-        this.state.battleUi.notice = null;
-        this.emit();
-      }
-    }, BATTLE_NOTICE_DISPLAY_MS);
+        if (this.state.battleUi.notice?.id === notice.id) {
+          this.state.battleUi.notice = null;
+          this.emit();
+        }
+      }, displayMs);
+    }
+
+    return notice.id;
+  },
+
+  clearBattleNotice(noticeId = null) {
+    if (noticeId && this.state.battleUi.notice?.id !== noticeId) {
+      return false;
+    }
+
+    if (!this.state.battleUi.notice) {
+      return false;
+    }
+
+    if (this.battleNoticeTimer) {
+      clearTimeout(this.battleNoticeTimer);
+      this.battleNoticeTimer = null;
+    }
+
+    this.state.battleUi.notice = null;
+    this.emit();
+    return true;
   },
 
   async playPowerOverlay(side) {
@@ -351,6 +385,18 @@ export const controllerBattleMethods = {
         }
       }
 
+      await this.persistCurrentRun();
+    }
+  },
+
+  async useSelectedSupply() {
+    if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    const changed = this.battleSystem.useSupplyWithPendingUnit();
+
+    if (changed) {
       await this.persistCurrentRun();
     }
   },
