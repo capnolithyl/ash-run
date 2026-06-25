@@ -23,6 +23,12 @@ function formatWeaponLabel(weaponClass) {
     .join(" ");
 }
 
+function formatFrameSequence(frameSequence = []) {
+  return Array.isArray(frameSequence) && frameSequence.length > 0
+    ? frameSequence.join(",")
+    : "";
+}
+
 function getIdleAnimationConfig(unit, side, colorOptions = {}) {
   const spriteDefinition = getUnitSpriteDefinition(
     unit.unitTypeId,
@@ -74,6 +80,10 @@ function getAttackSheetConfig(unit, side, cutscene, colorOptions = {}) {
   const attackPlayback = getAttackAnimationPlayback(side, attackAnimation, 0);
   const attackRange = attackPlayback?.range ?? null;
   const attackFrameCount = getAnimationRangeFrameCount(attackRange);
+  const explicitFrameSequence =
+    attackAnimation?.frameSequences?.[attackPlayback?.rangeName] ??
+    attackAnimation?.frameSequences?.default ??
+    null;
   const step = cutscene.steps.find((candidate) => candidate.attackerSide === side) ?? null;
   const windowMs = step?.windowMs ?? 960;
   const loopCount = Math.max(1, step?.loopCount ?? 1);
@@ -86,6 +96,8 @@ function getAttackSheetConfig(unit, side, cutscene, colorOptions = {}) {
       frameHeight: spriteDefinition?.frameHeight ?? null,
       frameCount: attackFrameCount,
       frameStart: attackRange.start,
+      frameSequence: attackPlayback.frameSequence,
+      hasExplicitFrameSequence: Array.isArray(explicitFrameSequence) && explicitFrameSequence.length > 0,
       durationMs: Math.max(120, Math.round(windowMs / loopCount)),
       iterations: loopCount,
       flipX: attackPlayback.flipX === true
@@ -97,23 +109,42 @@ function getAttackSheetConfig(unit, side, cutscene, colorOptions = {}) {
 
 function getIdleLayerConfig(unit, side, cutscene, colorOptions = {}) {
   const idleAnimationConfig = getIdleAnimationConfig(unit, side, colorOptions);
-
-  if (idleAnimationConfig.mode !== "text") {
-    return idleAnimationConfig;
-  }
-
   const attackSheetConfig = getAttackSheetConfig(
     unit,
     side,
     cutscene,
     colorOptions
   );
+  const attackHoldFrame = attackSheetConfig?.hasExplicitFrameSequence && Array.isArray(attackSheetConfig?.frameSequence)
+    ? attackSheetConfig.frameSequence[0]
+    : null;
+
+  if (attackHoldFrame === "blank") {
+    return {
+      mode: "blank"
+    };
+  }
+
+  if (Number.isInteger(attackHoldFrame)) {
+    return {
+      ...attackSheetConfig,
+      frameCount: 1,
+      frameStart: attackHoldFrame,
+      frameSequence: null,
+      iterations: 1
+    };
+  }
+
+  if (idleAnimationConfig.mode !== "text") {
+    return idleAnimationConfig;
+  }
 
   if (attackSheetConfig) {
     return {
       ...attackSheetConfig,
       frameCount: 1,
       frameStart: attackSheetConfig.frameStart,
+      frameSequence: null,
       flipX: getOwnerIdleFlipX(side),
       iterations: 1
     };
@@ -146,6 +177,8 @@ function renderSpriteLayer(layerConfig, side, layerType) {
     .join(" ");
 
   if (layerConfig.mode === "sheet") {
+    const serializedFrameSequence = formatFrameSequence(layerConfig.frameSequence);
+
     return `
       <div class="${layerClasses}">
         <div
@@ -171,6 +204,7 @@ function renderSpriteLayer(layerConfig, side, layerType) {
               data-frame-height="${layerConfig.frameHeight ?? ""}"
               data-frame-count="${layerConfig.frameCount}"
               data-frame-start="${layerConfig.frameStart}"
+              ${serializedFrameSequence ? `data-frame-sequence="${serializedFrameSequence}"` : ""}
               data-loop-count="${layerConfig.iterations ?? 1}"
               data-sheet-duration-ms="${layerConfig.durationMs ?? 0}"
             />
@@ -192,6 +226,12 @@ function renderSpriteLayer(layerConfig, side, layerType) {
           style="transform:scaleX(${layerConfig.flipX ? -1 : 1});"
         />
       </div>
+    `;
+  }
+
+  if (layerConfig.mode === "blank") {
+    return `
+      <div class="${layerClasses} combat-cutscene__sprite-layer--blank" aria-hidden="true"></div>
     `;
   }
 

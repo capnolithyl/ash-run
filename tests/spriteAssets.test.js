@@ -25,9 +25,23 @@ import {
   GENERATED_UNIT_SPRITE_ANIMATIONS,
   GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY
 } from "../src/game/phaser/generated/unitSpriteAnimations.js";
+import {
+  ASSET_PRELOAD_MANIFEST
+} from "../src/game/phaser/generated/assetPreloadManifest.js";
 
 function resolveSpritePath(url) {
   return path.resolve(process.cwd(), url.replace(/^\.\//, ""));
+}
+
+function assertRuntimeSpriteAssetRegistered(url) {
+  assert.ok(
+    SPRITE_ASSETS.some((asset) => asset.url === url),
+    `missing runtime sprite asset: ${url}`
+  );
+  assert.ok(
+    ASSET_PRELOAD_MANIFEST.some((entry) => entry.url === url),
+    `missing preload asset: ${url}`
+  );
 }
 
 function collectSpriteFiles(root) {
@@ -410,8 +424,12 @@ test("unit animation manifest supports color-specific omissions and mirrored att
   assert.equal(enemyGruntDefinition.idle.key, "spritesheet:units:blue:grunt:idle");
   assert.equal(enemyGruntDefinition.idle.frameCount, 2);
   assert.equal(playerBreakerDefinition.idle.key, "spritesheet:units:purple:breaker:idle");
+  assert.equal(playerBreakerDefinition.walk.key, "spritesheet:units:purple:breaker:walk");
+  assert.equal(playerBreakerDefinition.walk.movementStyle, "teleport");
+  assert.deepEqual(playerBreakerDefinition.walk.ranges.default, { start: 0, end: 7 });
   assert.deepEqual(playerBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyBreakerDefinition.idle.key, "spritesheet:units:blue:breaker:idle");
+  assert.equal(enemyBreakerDefinition.walk, null);
   assert.deepEqual(enemyBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyBruiserDefinition.idle.key, "spritesheet:units:blue:bruiser:sheet");
   assert.equal(enemyBruiserDefinition.walk.key, enemyBruiserDefinition.idle.key);
@@ -506,6 +524,31 @@ test("gunship, runner, and skyguard sheets use the expected frame geometry", () 
   assert.equal(gunshipWalkAsset.frameWidth, 192);
   assert.equal(gunshipWalkAsset.frameHeight, 192);
   assert.equal(enemyGunshipDefinition.walk, null);
+
+  const playerRunnerDefinition = getUnitSpriteDefinition("runner", "player");
+  const enemyRunnerDefinition = getUnitSpriteDefinition("runner", "enemy");
+  const playerSkyguardDefinition = getUnitSpriteDefinition("skyguard", "player");
+  const enemySkyguardDefinition = getUnitSpriteDefinition("skyguard", "enemy");
+
+  assert.equal(playerRunnerDefinition.walk.key, "spritesheet:units:purple:runner:walk");
+  assert.deepEqual(playerRunnerDefinition.walk.ranges.right, { start: 0, end: 3 });
+  assert.deepEqual(playerRunnerDefinition.walk.ranges.down, { start: 4, end: 4 });
+  assert.deepEqual(playerRunnerDefinition.walk.ranges.up, { start: 5, end: 5 });
+  assert.equal(playerRunnerDefinition.walk.frameWidth, 192);
+  assert.equal(playerRunnerDefinition.walk.frameHeight, 192);
+  assert.equal(playerRunnerDefinition.walk.sheetColumns, 2);
+  assert.equal(playerRunnerDefinition.walk.sheetRows, 3);
+  assert.equal(enemyRunnerDefinition.walk, null);
+
+  assert.equal(playerSkyguardDefinition.walk.key, "spritesheet:units:purple:skyguard:walk");
+  assert.deepEqual(playerSkyguardDefinition.walk.ranges.right, { start: 0, end: 5 });
+  assert.deepEqual(playerSkyguardDefinition.walk.ranges.down, { start: 6, end: 6 });
+  assert.deepEqual(playerSkyguardDefinition.walk.ranges.up, { start: 7, end: 7 });
+  assert.equal(playerSkyguardDefinition.walk.frameWidth, 192);
+  assert.equal(playerSkyguardDefinition.walk.frameHeight, 192);
+  assert.equal(playerSkyguardDefinition.walk.sheetColumns, 3);
+  assert.equal(playerSkyguardDefinition.walk.sheetRows, 3);
+  assert.equal(enemySkyguardDefinition.walk, null);
 });
 
 test("juggernaut, longshot, and medic sheets use the expected owner coverage and metadata", () => {
@@ -530,15 +573,135 @@ test("juggernaut, longshot, and medic sheets use the expected owner coverage and
 
   const playerMedicDefinition = getUnitSpriteDefinition("medic", "player");
   const enemyMedicDefinition = getUnitSpriteDefinition("medic", "enemy");
+  const playerJuggernautDefinition = getUnitSpriteDefinition("juggernaut", "player");
+  const enemyJuggernautDefinition = getUnitSpriteDefinition("juggernaut", "enemy");
+  const playerLongshotDefinition = getUnitSpriteDefinition("longshot", "player");
+  const enemyLongshotDefinition = getUnitSpriteDefinition("longshot", "enemy");
 
+  assert.deepEqual(playerJuggernautDefinition.walk.ranges.right, { start: 0, end: 2 });
+  assert.deepEqual(playerJuggernautDefinition.walk.ranges.down, { start: 3, end: 3 });
+  assert.deepEqual(playerJuggernautDefinition.walk.ranges.up, { start: 4, end: 4 });
+  assert.equal(playerJuggernautDefinition.walk.frameWidth, 192);
+  assert.equal(playerJuggernautDefinition.walk.frameHeight, 192);
+  assert.equal(playerJuggernautDefinition.walk.sheetColumns, 2);
+  assert.equal(playerJuggernautDefinition.walk.sheetRows, 3);
+  assert.equal(enemyJuggernautDefinition.walk, null);
+  assert.equal(playerLongshotDefinition.walk.movementStyle, "teleport");
+  assert.deepEqual(playerLongshotDefinition.walk.ranges.default, { start: 0, end: 7 });
+  assert.equal(playerLongshotDefinition.walk.sheetColumns, 3);
+  assert.equal(playerLongshotDefinition.walk.sheetRows, 3);
+  assert.equal(enemyLongshotDefinition.walk, null);
   assert.equal(playerMedicDefinition.type, "spritesheet");
   assert.deepEqual(playerMedicDefinition.idle.ranges.default, { start: 0, end: 1 });
+  assert.equal(playerMedicDefinition.walk.movementStyle, "teleport");
+  assert.deepEqual(playerMedicDefinition.walk.ranges.default, { start: 0, end: 7 });
+  assert.equal(playerMedicDefinition.walk.sheetColumns, 3);
+  assert.equal(playerMedicDefinition.walk.sheetRows, 3);
   assert.deepEqual(playerMedicDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.medic.purple.frameWidth, 102);
   assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.medic.purple.frameHeight, 128);
   assert.equal(enemyMedicDefinition.type, "image");
   assert.equal(enemyMedicDefinition.idle, null);
   assert.equal(enemyMedicDefinition.attack, null);
+});
+
+test("new purple full sheets expose row-major ranges and preserve blue fallbacks", () => {
+  const mechanicDefinition = getUnitSpriteDefinition("mechanic", "player");
+  const payloadDefinition = getUnitSpriteDefinition("payload", "player");
+  const interceptorDefinition = getUnitSpriteDefinition("interceptor", "player");
+  const siegeGunDefinition = getUnitSpriteDefinition("siege-gun", "player");
+
+  assert.equal(mechanicDefinition.type, "spritesheet");
+  assert.equal(mechanicDefinition.idle.key, "spritesheet:units:purple:mechanic:sheet");
+  assert.equal(mechanicDefinition.walk.key, mechanicDefinition.idle.key);
+  assert.equal(mechanicDefinition.attack.key, mechanicDefinition.idle.key);
+  assert.deepEqual(mechanicDefinition.idle.ranges.default, { start: 0, end: 1 });
+  assert.deepEqual(mechanicDefinition.attack.ranges.right, { start: 2, end: 5 });
+  assert.equal(mechanicDefinition.walk.movementStyle, "teleport");
+  assert.deepEqual(mechanicDefinition.walk.ranges.default, { start: 6, end: 13 });
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.mechanic.purple.frameWidth, 153);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.mechanic.purple.frameHeight, 192);
+  assert.equal(mechanicDefinition.idle.sheetColumns, 4);
+  assert.equal(mechanicDefinition.idle.sheetRows, 4);
+
+  assert.equal(payloadDefinition.type, "spritesheet");
+  assert.equal(payloadDefinition.key, payloadDefinition.idle.key);
+  assert.equal(payloadDefinition.frameCount, 1);
+  assert.equal(payloadDefinition.idle.key, "spritesheet:units:purple:payload:sheet");
+  assert.deepEqual(payloadDefinition.idle.ranges.default, { start: 0, end: 0 });
+  assert.deepEqual(payloadDefinition.walk.ranges.right, { start: 0, end: 0 });
+  assert.deepEqual(payloadDefinition.walk.ranges.up, { start: 1, end: 1 });
+  assert.deepEqual(payloadDefinition.walk.ranges.down, { start: 2, end: 2 });
+  assert.deepEqual(payloadDefinition.attack.ranges.right, { start: 3, end: 8 });
+  assert.deepEqual(payloadDefinition.attack.frameSequences.right, [
+    "blank",
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    "blank",
+  ]);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.payload.purple.frameWidth, 192);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.payload.purple.frameHeight, 192);
+  assert.equal(payloadDefinition.idle.sheetColumns, 3);
+  assert.equal(payloadDefinition.idle.sheetRows, 3);
+
+  assert.equal(interceptorDefinition.type, "spritesheet");
+  assert.equal(interceptorDefinition.idle.key, "spritesheet:units:purple:interceptor:sheet");
+  assert.deepEqual(interceptorDefinition.idle.ranges.default, { start: 0, end: 0 });
+  assert.deepEqual(interceptorDefinition.walk.ranges.right, { start: 0, end: 0 });
+  assert.deepEqual(interceptorDefinition.walk.ranges.up, { start: 1, end: 1 });
+  assert.deepEqual(interceptorDefinition.walk.ranges.down, { start: 2, end: 2 });
+  assert.deepEqual(interceptorDefinition.attack.ranges.right, { start: 3, end: 6 });
+  assert.deepEqual(interceptorDefinition.attack.frameSequences.right, [3, 4, 5, 6, 3]);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.interceptor.purple.frameWidth, 993);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.interceptor.purple.frameHeight, 783);
+  assert.equal(interceptorDefinition.idle.sheetColumns, 2);
+  assert.equal(interceptorDefinition.idle.sheetRows, 4);
+
+  assert.equal(siegeGunDefinition.type, "spritesheet");
+  assert.equal(siegeGunDefinition.key, siegeGunDefinition.idle.key);
+  assert.equal(siegeGunDefinition.frameCount, 1);
+  assert.equal(siegeGunDefinition.idle.key, "spritesheet:units:purple:siege-gun:sheet");
+  assert.deepEqual(siegeGunDefinition.idle.ranges.default, { start: 0, end: 0 });
+  assert.deepEqual(siegeGunDefinition.walk.ranges.right, { start: 0, end: 0 });
+  assert.deepEqual(siegeGunDefinition.walk.ranges.down, { start: 9, end: 9 });
+  assert.deepEqual(siegeGunDefinition.walk.ranges.up, { start: 10, end: 10 });
+  assert.deepEqual(siegeGunDefinition.attack.ranges.right, { start: 1, end: 8 });
+  assert.equal(siegeGunDefinition.attack.cutsceneLoopCount, 1);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS["siege-gun"].purple.frameWidth, 192);
+  assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS["siege-gun"].purple.frameHeight, 192);
+  assert.equal(siegeGunDefinition.idle.sheetColumns, 3);
+  assert.equal(siegeGunDefinition.idle.sheetRows, 4);
+
+  for (const unitTypeId of ["mechanic", "payload", "interceptor", "siege-gun"]) {
+    const enemyDefinition = getUnitSpriteDefinition(unitTypeId, "enemy");
+
+    assert.equal(enemyDefinition.type, "image");
+    assert.equal(enemyDefinition.idle, null);
+    assert.equal(enemyDefinition.walk, null);
+    assert.equal(enemyDefinition.attack, null);
+  }
+});
+
+test("new purple animation sheets are registered for runtime loading and preloading", () => {
+  for (const url of [
+    "./assets/sprites/units/purple/breaker/breaker-move.png",
+    "./assets/sprites/units/purple/grunt/grunt-move.png",
+    "./assets/sprites/units/purple/interceptor/interceptor-full.png",
+    "./assets/sprites/units/purple/juggernaut/juggernaut-move.png",
+    "./assets/sprites/units/purple/longshot/longshot-move.png",
+    "./assets/sprites/units/purple/mechanic/mechanic-full.png",
+    "./assets/sprites/units/purple/medic/medic-move.png",
+    "./assets/sprites/units/purple/payload/payload-full.png",
+    "./assets/sprites/units/purple/runner/runner-move.png",
+    "./assets/sprites/units/purple/siege-gun/siege-gun-full.png",
+    "./assets/sprites/units/purple/skyguard/skyguard-move.png",
+  ]) {
+    assertRuntimeSpriteAssetRegistered(url);
+  }
 });
 
 test("unit color availability and sprite fallback follow complete palette coverage", () => {

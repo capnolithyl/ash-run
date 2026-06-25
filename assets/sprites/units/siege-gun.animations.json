@@ -1,48 +1,45 @@
 {
-  "frameWidth": 128,
-  "frameHeight": 128,
+  "file": "siege-gun-full.png",
+  "frameWidth": 192,
+  "frameHeight": 192,
   "animations": {
     "idle": {
-      "file": "runner-idle.png",
       "frameRate": 5,
       "ranges": {
         "default": {
           "start": 0,
-          "end": 3
+          "end": 0
         }
       }
     },
     "walk": {
-      "file": "runner-move.png",
-      "frameWidth": 192,
-      "frameHeight": 192,
-      "frameRate": 8,
+      "frameRate": 5,
       "ranges": {
         "default": {
           "start": 0,
-          "end": 3
+          "end": 0
         },
         "right": {
           "start": 0,
-          "end": 3
+          "end": 0
         },
         "down": {
-          "start": 4,
-          "end": 4
+          "start": 9,
+          "end": 9
         },
         "up": {
-          "start": 5,
-          "end": 5
+          "start": 10,
+          "end": 10
         }
       }
     },
     "attack": {
-      "file": "runner-attack.png",
-      "frameRate": 5,
+      "frameRate": 8,
+      "cutsceneLoopCount": 1,
       "ranges": {
         "right": {
-          "start": 0,
-          "end": 2
+          "start": 1,
+          "end": 8
         }
       }
     }

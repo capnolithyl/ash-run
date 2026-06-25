@@ -12,6 +12,30 @@
         }
       }
     },
+    "walk": {
+      "file": "skyguard-move.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "frameRate": 8,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 5
+        },
+        "right": {
+          "start": 0,
+          "end": 5
+        },
+        "down": {
+          "start": 6,
+          "end": 6
+        },
+        "up": {
+          "start": 7,
+          "end": 7
+        }
+      }
+    },
     "attack": {
       "file": "skyguard-attack.png",
       "frameRate": 5,

@@ -1199,6 +1199,10 @@
   opacity: 0;
 }
 
+.combat-cutscene__lane--attacking .combat-cutscene__sprite-layer {
+  transition: none;
+}
+
 .combat-cutscene__lane--attacking .combat-cutscene__sprite-layer--idle {
   opacity: 0;
 }

@@ -1,9 +1,9 @@
 {
-  "frameWidth": 128,
-  "frameHeight": 160,
+  "file": "mechanic-full.png",
+  "frameWidth": 153,
+  "frameHeight": 192,
   "animations": {
     "idle": {
-      "file": "longshot-idle.png",
       "frameRate": 5,
       "ranges": {
         "default": {
@@ -13,24 +13,21 @@
       }
     },
     "walk": {
-      "file": "longshot-move.png",
       "frameRate": 12,
       "movementStyle": "teleport",
       "ranges": {
         "default": {
-          "start": 0,
-          "end": 7
+          "start": 6,
+          "end": 13
         }
       }
     },
     "attack": {
-      "file": "longshot-attack.png",
       "frameRate": 5,
-      "cutsceneLoopCount": 1,
       "ranges": {
         "right": {
-          "start": 0,
-          "end": 8
+          "start": 2,
+          "end": 5
         }
       }
     }

@@ -2,7 +2,8 @@ import Phaser from "phaser";
 import {
   BATTLE_ATTACK_IMPACT_DELAY_MS,
   BATTLE_MOVE_SEGMENT_DURATION_MS,
-  BATTLE_REINFORCEMENT_SPAWN_FLASH_MS
+  BATTLE_REINFORCEMENT_SPAWN_FLASH_MS,
+  UNIT_TAGS
 } from "../../core/constants.js";
 import { getGearBadgeLabel } from "../../content/runUpgrades.js";
 import { getUnitSpriteDefinition } from "../assets.js";
@@ -10,6 +11,7 @@ import { getClampedBattlefieldEffectMultiplier } from "../unitSpritePresentation
 import { ensureGrayscaleTexture } from "./grayscaleTexture.js";
 import { getOwnerColor } from "./ownerPalette.js";
 import {
+  BLANK_ANIMATION_FRAME,
   getAnimationRange,
   getAnimationRangeFrameIndices,
   getAnimationRangeFrameCount,
@@ -88,6 +90,19 @@ const HEALTH_WEDGE_COLOR_STOPS = [
   { ratio: 1, color: 0x5dff38 }
 ];
 const UNIT_GROUND_SHADOW_ALPHA = 0.24;
+const AIR_HOVER_MIN_OFFSET_PX = 1;
+const AIR_HOVER_MAX_OFFSET_PX = 2;
+const AIR_HOVER_ANGLE_DEGREES = 1.2;
+const AIR_HOVER_BASE_DURATION_MS = 1450;
+const AIR_HOVER_DURATION_VARIANCE_MS = 360;
+const AIR_HOVER_DELAY_VARIANCE_MS = 420;
+
+function getStableUnitHash(unitId = "") {
+  return Array.from(String(unitId)).reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    17,
+  );
+}
 
 function blendHexColors(startColor, endColor, weight) {
   const clampedWeight = Math.max(0, Math.min(1, weight));
@@ -135,6 +150,7 @@ export class UnitLayer {
       this.stopMoveTween(entity);
       this.stopDestroyTimer(entity);
       this.stopAnimationTimer(entity);
+      this.stopAirHover(entity);
       for (const tween of entity.effectTweens) {
         tween.stop();
       }
@@ -250,10 +266,14 @@ export class UnitLayer {
       visualDisplayHeight: visual.displayHeight,
       visualBaseScaleX: visual.scaleX,
       visualBaseScaleY: visual.scaleY,
+      visualBaseX: visual.x,
+      visualBaseY: visual.y,
+      visualBaseAngle: visual.angle ?? 0,
       fallbackLabel,
       textureKey: visualSpec?.key ?? null,
       moveTween: null,
       movementPhaseTimer: null,
+      airHoverTween: null,
       activeMovementPlayback: null,
       movementAnimationMode: null,
       movementFlipX,
@@ -335,6 +355,54 @@ export class UnitLayer {
 
     entity.animationTimer.remove(false);
     entity.animationTimer = null;
+  }
+
+  stopAirHover(entity) {
+    if (!entity?.airHoverTween) {
+      return;
+    }
+
+    entity.airHoverTween.stop();
+    entity.airHoverTween = null;
+    entity.visual?.setPosition?.(entity.visualBaseX ?? 0, entity.visualBaseY ?? 0);
+    entity.visual?.setAngle?.(entity.visualBaseAngle ?? 0);
+  }
+
+  startAirHover(entity) {
+    if (!entity?.visual || entity.airHoverTween) {
+      return;
+    }
+
+    const unitHash = getStableUnitHash(entity.unitId);
+    const hoverOffset = Phaser.Math.Clamp(
+      Math.round((this.cellSize ?? 64) * 0.026),
+      AIR_HOVER_MIN_OFFSET_PX,
+      AIR_HOVER_MAX_OFFSET_PX,
+    );
+    const hoverAngle =
+      (unitHash % 2 === 0 ? 1 : -1) * AIR_HOVER_ANGLE_DEGREES;
+
+    entity.visual.setPosition(entity.visualBaseX ?? 0, entity.visualBaseY ?? 0);
+    entity.visual.setAngle(entity.visualBaseAngle ?? 0);
+    entity.airHoverTween = this.scene.tweens.add({
+      targets: entity.visual,
+      y: (entity.visualBaseY ?? 0) - hoverOffset,
+      angle: (entity.visualBaseAngle ?? 0) + hoverAngle,
+      duration: AIR_HOVER_BASE_DURATION_MS + (unitHash % AIR_HOVER_DURATION_VARIANCE_MS),
+      delay: unitHash % AIR_HOVER_DELAY_VARIANCE_MS,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.InOut"
+    });
+  }
+
+  syncAirHover(entity, unit) {
+    if (unit?.family === UNIT_TAGS.AIR) {
+      this.startAirHover(entity);
+      return;
+    }
+
+    this.stopAirHover(entity);
   }
 
   runAfterMoveCallbacks(entity) {
@@ -881,6 +949,7 @@ export class UnitLayer {
   }
 
   setVisualTexture(entity, textureKey, frame, flipX = getOwnerIdleFlipX(entity.owner)) {
+    entity.visual.setVisible?.(true);
     entity.visual.setTexture?.(textureKey, frame);
     if (
       Number.isFinite(entity.visualDisplayWidth) &&
@@ -894,6 +963,51 @@ export class UnitLayer {
       entity.visualBaseScaleY = entity.visual.scaleY;
     }
     entity.visual.setFlipX?.(flipX);
+  }
+
+  setVisualFrameToken(entity, animationSpec, frameToken, flipX = false) {
+    if (frameToken === BLANK_ANIMATION_FRAME) {
+      entity.visual.stop?.();
+      entity.visual.setVisible?.(false);
+      return;
+    }
+
+    this.setVisualTexture(entity, animationSpec.key, frameToken, flipX);
+  }
+
+  playAttackFrameSequence(entity, attackAnimation, attackPlayback) {
+    const frameSequence = attackPlayback?.frameSequence ?? [];
+    const frameDurationMs = Math.max(
+      1,
+      Math.round(1000 / Math.max(1, attackAnimation?.frameRate ?? 1)),
+    );
+    let frameIndex = 0;
+
+    const playNextFrame = () => {
+      const frameToken = frameSequence[frameIndex] ?? attackPlayback.startFrame;
+      this.setVisualFrameToken(
+        entity,
+        attackAnimation,
+        frameToken,
+        attackPlayback.flipX ?? false,
+      );
+      frameIndex += 1;
+
+      entity.animationTimer = this.scene.time.delayedCall(frameDurationMs, () => {
+        if (frameIndex < frameSequence.length) {
+          playNextFrame();
+          return;
+        }
+
+        entity.animationTimer = null;
+        entity.deferSpentStyle = false;
+        entity.visual.setVisible?.(true);
+        this.playIdleAnimation(entity);
+      });
+    };
+
+    entity.visual.stop?.();
+    playNextFrame();
   }
 
   playIdleAnimation(entity, { forceColor = false } = {}) {
@@ -936,6 +1050,22 @@ export class UnitLayer {
     }
 
     entity.visual.stop?.();
+    const idleRange = getAnimationRange(displayedIdleAnimation, "default");
+
+    if (
+      displayedIdleAnimation?.key &&
+      idleRange &&
+      getAnimationRangeFrameCount(idleRange) > 0
+    ) {
+      this.setVisualTexture(
+        entity,
+        displayedIdleAnimation.key,
+        idleRange.start,
+        getOwnerIdleFlipX(entity.owner),
+      );
+      return;
+    }
+
     if (entity.visualSpec?.fallbackKey) {
       const fallbackTextureKey =
         useSpentStyle
@@ -1021,6 +1151,7 @@ export class UnitLayer {
     this.stopMoveTween(entity);
     this.stopDestroyTimer(entity);
     this.stopAnimationTimer(entity);
+    this.stopAirHover(entity);
 
     this.stopEffectTweens(entity);
 
@@ -1204,13 +1335,25 @@ export class UnitLayer {
     const attackAnimation = entity.visualSpec?.attack;
     const attackPlayback = getAttackAnimationPlayback(entity.owner, attackAnimation, directionX);
     const attackRange = attackPlayback?.range ?? null;
-    const attackAnimationKey = ensureUnitAnimation(
-      this.scene,
-      attackAnimation,
-      attackPlayback?.rangeName ?? "default",
-      0
+    const attackFrameSequence = attackPlayback?.frameSequence ?? null;
+    const hasExplicitAttackFrameSequence =
+      Array.isArray(attackAnimation?.frameSequences?.[attackPlayback?.rangeName]) ||
+      Array.isArray(attackAnimation?.frameSequences?.default);
+    const attackAnimationKey = hasExplicitAttackFrameSequence
+      ? null
+      : ensureUnitAnimation(
+          this.scene,
+          attackAnimation,
+          attackPlayback?.rangeName ?? "default",
+          0,
+        );
+    const hasAttackAnimation = Boolean(
+      attackRange &&
+      (
+        attackAnimationKey ||
+        (hasExplicitAttackFrameSequence && attackFrameSequence?.length > 0)
+      ),
     );
-    const hasAttackAnimation = Boolean(attackAnimationKey && attackRange);
 
     const offsetX = Math.sign(directionX) * Math.max(5, (this.cellSize ?? 40) * 0.12);
     const offsetY = Math.sign(directionY) * Math.max(5, (this.cellSize ?? 40) * 0.12);
@@ -1253,21 +1396,25 @@ export class UnitLayer {
     }));
 
     if (hasAttackAnimation) {
-      this.setVisualTexture(
-        entity,
-        attackAnimation.key,
-        attackPlayback.startFrame,
-        attackPlayback.flipX ?? false
-      );
-      entity.visual.play?.(attackAnimationKey);
-      entity.animationTimer = this.scene.time.delayedCall(
-        attackPlayback.durationMs,
-        () => {
-          entity.animationTimer = null;
-          entity.deferSpentStyle = false;
-          this.playIdleAnimation(entity);
-        }
-      );
+      if (hasExplicitAttackFrameSequence) {
+        this.playAttackFrameSequence(entity, attackAnimation, attackPlayback);
+      } else {
+        this.setVisualTexture(
+          entity,
+          attackAnimation.key,
+          attackPlayback.startFrame,
+          attackPlayback.flipX ?? false
+        );
+        entity.visual.play?.(attackAnimationKey);
+        entity.animationTimer = this.scene.time.delayedCall(
+          attackPlayback.durationMs,
+          () => {
+            entity.animationTimer = null;
+            entity.deferSpentStyle = false;
+            this.playIdleAnimation(entity);
+          }
+        );
+      }
     } else if (entity.isSpent || entity.deferSpentStyle) {
       this.playIdleAnimation(entity, { forceColor: true });
       entity.animationTimer = this.scene.time.delayedCall(180, () => {
@@ -1510,6 +1657,7 @@ export class UnitLayer {
       entity.fallbackColor = color;
       entity.glow.setFillStyle(color, 0.13);
       entity.aura.setFillStyle(color, 0.18);
+      this.syncAirHover(entity, unit);
       if (
         visualSpec &&
         entity.textureKey !== visualSpec.key

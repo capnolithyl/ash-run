@@ -966,6 +966,65 @@ test("battle HUD combat cutscene reads bruiser idle and attack clips from the fu
   );
 });
 
+test("battle HUD combat cutscene exposes explicit attack frame sequences", () => {
+  const renderCutsceneAttack = (attackerTypeId, defenderTypeId) => {
+    const attacker = createPlacedUnit(attackerTypeId, TURN_SIDES.PLAYER, 1, 1);
+    const defender = createPlacedUnit(defenderTypeId, TURN_SIDES.ENEMY, 2, 1);
+    const system = new BattleSystem(
+      createTestBattleState({
+        playerUnits: [attacker],
+        enemyUnits: [defender]
+      })
+    );
+
+    const before = system.getSnapshot();
+    assert.equal(system.attackTarget(attacker.id, defender.id), true);
+    const after = system.getSnapshot();
+    const cutscene = deriveBattleCombatCutscene(before, after);
+
+    return renderBattleHudView({
+      battleSnapshot: after,
+      battleUi: {
+        combatCutscene: {
+          id: `cutscene-${attackerTypeId}`,
+          startedAt: Date.now(),
+          ...cutscene
+        }
+      },
+      metaState: {
+        options: {
+          combatCutsceneAnimations: true
+        }
+      },
+      debugMode: false,
+      runStatus: null,
+      banner: ""
+    });
+  };
+  const payloadHtml = renderCutsceneAttack("payload", "runner");
+  const interceptorHtml = renderCutsceneAttack("interceptor", "gunship");
+
+  assert.match(payloadHtml, /assets\/sprites\/units\/purple\/payload\/payload-full\.png/);
+  assert.match(
+    payloadHtml,
+    /data-cutscene-sprite="player"[\s\S]*?combat-cutscene__sprite-layer--idle combat-cutscene__sprite-layer--blank/,
+  );
+  assert.doesNotMatch(payloadHtml, /data-cutscene-sheet="player:idle"/);
+  assert.match(
+    payloadHtml,
+    /data-cutscene-sheet="player:attack"[\s\S]*?data-frame-sequence="blank,3,4,5,6,7,8,blank"/,
+  );
+  assert.match(interceptorHtml, /assets\/sprites\/units\/purple\/interceptor\/interceptor-full\.png/);
+  assert.match(
+    interceptorHtml,
+    /data-cutscene-sheet="player:idle"[\s\S]*?data-frame-start="3"/,
+  );
+  assert.match(
+    interceptorHtml,
+    /data-cutscene-sheet="player:attack"[\s\S]*?data-frame-sequence="3,4,5,6,3"/,
+  );
+});
+
 test("battle HUD keeps the combat cutscene overlay hidden until movement lead-in finishes", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
   const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);

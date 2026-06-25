@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  BLANK_ANIMATION_FRAME,
   getAnimationRange,
   getAnimationRangeFrameCount,
   getAttackAnimationPlayback,
@@ -55,6 +56,7 @@ test("attack playback helper resolves the clip and duration for directional atta
     rangeName: "right",
     range: { start: 0, end: 2 },
     startFrame: 0,
+    frameSequence: [0, 1, 2],
     flipX: false,
     durationMs: 600,
   });
@@ -62,6 +64,7 @@ test("attack playback helper resolves the clip and duration for directional atta
     rangeName: "left",
     range: { start: 3, end: 5 },
     startFrame: 3,
+    frameSequence: [3, 4, 5],
     flipX: false,
     durationMs: 600,
   });
@@ -80,6 +83,7 @@ test("attack playback helper mirrors a single directional attack clip when neede
     rangeName: "right",
     range: { start: 0, end: 2 },
     startFrame: 0,
+    frameSequence: [0, 1, 2],
     flipX: false,
     durationMs: 600,
   });
@@ -87,6 +91,7 @@ test("attack playback helper mirrors a single directional attack clip when neede
     rangeName: "right",
     range: { start: 0, end: 2 },
     startFrame: 0,
+    frameSequence: [0, 1, 2],
     flipX: true,
     durationMs: 600,
   });
@@ -94,8 +99,57 @@ test("attack playback helper mirrors a single directional attack clip when neede
     rangeName: "right",
     range: { start: 0, end: 2 },
     startFrame: 0,
+    frameSequence: [0, 1, 2],
     flipX: true,
     durationMs: 600,
+  });
+});
+
+test("attack playback helper uses explicit frame sequences and preserves mirrored source clips", () => {
+  const payloadAttackAnimation = {
+    key: "spritesheet:units:purple:payload:sheet",
+    frameRate: 8,
+    ranges: {
+      right: { start: 3, end: 8 },
+    },
+    frameSequences: {
+      right: [BLANK_ANIMATION_FRAME, 3, 4, 5, 6, 7, 8, BLANK_ANIMATION_FRAME],
+    },
+  };
+  const interceptorAttackAnimation = {
+    key: "spritesheet:units:purple:interceptor:sheet",
+    frameRate: 8,
+    ranges: {
+      right: { start: 3, end: 6 },
+    },
+    frameSequences: {
+      right: [3, 4, 5, 6, 3],
+    },
+  };
+
+  assert.deepEqual(getAttackAnimationPlayback("player", payloadAttackAnimation, 1), {
+    rangeName: "right",
+    range: { start: 3, end: 8 },
+    startFrame: 3,
+    frameSequence: [BLANK_ANIMATION_FRAME, 3, 4, 5, 6, 7, 8, BLANK_ANIMATION_FRAME],
+    flipX: false,
+    durationMs: 1000,
+  });
+  assert.deepEqual(getAttackAnimationPlayback("player", payloadAttackAnimation, -1), {
+    rangeName: "right",
+    range: { start: 3, end: 8 },
+    startFrame: 3,
+    frameSequence: [BLANK_ANIMATION_FRAME, 3, 4, 5, 6, 7, 8, BLANK_ANIMATION_FRAME],
+    flipX: true,
+    durationMs: 1000,
+  });
+  assert.deepEqual(getAttackAnimationPlayback("enemy", interceptorAttackAnimation, 0), {
+    rangeName: "right",
+    range: { start: 3, end: 6 },
+    startFrame: 3,
+    frameSequence: [3, 4, 5, 6, 3],
+    flipX: true,
+    durationMs: 625,
   });
 });
 
@@ -234,6 +288,43 @@ test("walk playback uses the shared gunship clip except for south movement", () 
   });
 });
 
+test("walk playback uses air horizontal idle frames and cardinal direction holds", () => {
+  const walkAnimation = {
+    key: "spritesheet:units:purple:payload:sheet",
+    ranges: {
+      default: { start: 0, end: 0 },
+      right: { start: 0, end: 0 },
+      up: { start: 1, end: 1 },
+      down: { start: 2, end: 2 },
+    },
+  };
+
+  assert.deepEqual(getWalkAnimationPlayback("player", walkAnimation, 1, 0), {
+    rangeName: "right",
+    range: { start: 0, end: 0 },
+    startFrame: 0,
+    flipX: false,
+  });
+  assert.deepEqual(getWalkAnimationPlayback("player", walkAnimation, -1, 0), {
+    rangeName: "right",
+    range: { start: 0, end: 0 },
+    startFrame: 0,
+    flipX: true,
+  });
+  assert.deepEqual(getWalkAnimationPlayback("player", walkAnimation, 0, -1), {
+    rangeName: "up",
+    range: { start: 1, end: 1 },
+    startFrame: 1,
+    flipX: false,
+  });
+  assert.deepEqual(getWalkAnimationPlayback("player", walkAnimation, 0, 1), {
+    rangeName: "down",
+    range: { start: 2, end: 2 },
+    startFrame: 2,
+    flipX: false,
+  });
+});
+
 test("gunship movement playback exposes one-shot intro and outro around a looping cruise", () => {
   const visualSpec = {
     walk: {
@@ -273,6 +364,60 @@ test("gunship movement playback exposes one-shot intro and outro around a loopin
       durationMs: 167,
     },
   });
+});
+
+test("infantry teleport movement playback supports the new 8 and 10 frame sheets", () => {
+  const eightFramePlayback = getUnitMovementPlayback(
+    {
+      walk: {
+        key: "spritesheet:units:purple:breaker:walk",
+        frameRate: 12,
+        movementStyle: "teleport",
+        ranges: {
+          default: { start: 0, end: 7 },
+        },
+      },
+    },
+    3,
+  );
+  const mechanicPlayback = getUnitMovementPlayback(
+    {
+      walk: {
+        key: "spritesheet:units:purple:mechanic:sheet",
+        frameRate: 12,
+        movementStyle: "teleport",
+        ranges: {
+          default: { start: 6, end: 13 },
+        },
+      },
+    },
+    2,
+  );
+  const gruntPlayback = getUnitMovementPlayback(
+    {
+      walk: {
+        key: "spritesheet:units:purple:grunt:walk",
+        frameRate: 12,
+        movementStyle: "teleport",
+        ranges: {
+          default: { start: 0, end: 9 },
+        },
+      },
+    },
+    4,
+  );
+
+  assert.equal(eightFramePlayback.style, "teleport");
+  assert.deepEqual(eightFramePlayback.forwardFrameIndices, [0, 1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(eightFramePlayback.reverseFrameIndices, [7, 6, 5, 4, 3, 2, 1, 0]);
+  assert.equal(eightFramePlayback.totalDurationMs, 1333);
+  assert.equal(eightFramePlayback.splitProgress, 0.5);
+  assert.deepEqual(mechanicPlayback.forwardFrameIndices, [6, 7, 8, 9, 10, 11, 12, 13]);
+  assert.deepEqual(mechanicPlayback.reverseFrameIndices, [13, 12, 11, 10, 9, 8, 7, 6]);
+  assert.equal(mechanicPlayback.totalDurationMs, 1333);
+  assert.deepEqual(gruntPlayback.forwardFrameIndices, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(gruntPlayback.reverseFrameIndices, [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
+  assert.equal(gruntPlayback.totalDurationMs, 1667);
 });
 
 test("ordinary path and teleport movement playback retain their existing timing", () => {

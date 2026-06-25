@@ -1,5 +1,7 @@
 import { getBattleMoveDuration } from "../../core/constants.js";
 
+export const BLANK_ANIMATION_FRAME = "blank";
+
 export function getAnimationRangeFrameCount(range = null) {
   if (!range) {
     return 0;
@@ -17,6 +19,19 @@ export function getAnimationRangeFrameIndices(range = null, { reverse = false } 
 
   const frames = Array.from({ length: frameCount }, (_, index) => range.start + index);
   return reverse ? frames.reverse() : frames;
+}
+
+export function getAnimationFrameSequence(animationSpec, rangeName = "default", range = null) {
+  const explicitSequence =
+    animationSpec?.frameSequences?.[rangeName] ??
+    animationSpec?.frameSequences?.default ??
+    null;
+
+  if (Array.isArray(explicitSequence) && explicitSequence.length > 0) {
+    return [...explicitSequence];
+  }
+
+  return getAnimationRangeFrameIndices(range ?? getAnimationRange(animationSpec, rangeName));
 }
 
 export function getAnimationPlaybackDurationMs(frameCount = 0, frameRate = 1) {
@@ -156,13 +171,16 @@ export function getAttackAnimationPlayback(owner, attackAnimation, directionX = 
     return null;
   }
 
+  const frameSequence = getAnimationFrameSequence(attackAnimation, rangeName, range);
+
   return {
     rangeName,
     range,
     startFrame: range.start,
+    frameSequence,
     flipX,
     durationMs: getAnimationPlaybackDurationMs(
-      getAnimationRangeFrameCount(range),
+      frameSequence.length,
       attackAnimation.frameRate,
     ),
   };

@@ -1,0 +1,50 @@
+{
+  "file": "payload-full.png",
+  "frameWidth": 192,
+  "frameHeight": 192,
+  "animations": {
+    "idle": {
+      "frameRate": 5,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 0
+        }
+      }
+    },
+    "walk": {
+      "frameRate": 5,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 0
+        },
+        "right": {
+          "start": 0,
+          "end": 0
+        },
+        "up": {
+          "start": 1,
+          "end": 1
+        },
+        "down": {
+          "start": 2,
+          "end": 2
+        }
+      }
+    },
+    "attack": {
+      "frameRate": 8,
+      "cutsceneLoopCount": 1,
+      "ranges": {
+        "right": {
+          "start": 3,
+          "end": 8
+        }
+      },
+      "frameSequences": {
+        "right": ["blank", 3, 4, 5, 6, 7, 8, "blank"]
+      }
+    }
+  }
+}

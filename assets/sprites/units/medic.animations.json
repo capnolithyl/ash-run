@@ -12,6 +12,17 @@
         }
       }
     },
+    "walk": {
+      "file": "medic-move.png",
+      "frameRate": 12,
+      "movementStyle": "teleport",
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 7
+        }
+      }
+    },
     "attack": {
       "file": "medic-attack.png",
       "frameRate": 5,

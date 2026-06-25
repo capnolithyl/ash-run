@@ -19,7 +19,6 @@ import { deriveBattleAnimationEvents } from "./battleAnimationEvents.js";
 import { getMovementModifier } from "../../simulation/commanderEffects.js";
 import { getMovementPath } from "../../simulation/selectors.js";
 import {
-  getAnimationRangeFrameCount,
   getAttackAnimationPlayback,
   getUnitMovementPlayback
 } from "./unitAnimationHelpers.js";
@@ -64,17 +63,12 @@ function getCutsceneLoopCount(unit, side, stepWindowMs, colorOptions = {}) {
   );
   const attackAnimation = spriteDefinition?.attack ?? null;
   const attackPlayback = getAttackAnimationPlayback(side, attackAnimation, 0);
-  const attackRange = attackPlayback?.range ?? null;
-  const attackFrameCount = getAnimationRangeFrameCount(attackRange);
 
-  if (!attackAnimation || !attackRange || attackFrameCount <= 0) {
+  if (!attackAnimation || !attackPlayback?.durationMs) {
     return 1;
   }
 
-  const baseLoopDurationMs = Math.max(
-    1,
-    Math.round((attackFrameCount / Math.max(1, attackAnimation.frameRate ?? 1)) * 1000)
-  );
+  const baseLoopDurationMs = Math.max(1, attackPlayback.durationMs);
 
   return baseLoopDurationMs * BATTLE_COMBAT_CUTSCENE_LOOP_MIN < stepWindowMs * 0.6
     ? BATTLE_COMBAT_CUTSCENE_LOOP_MAX

@@ -191,6 +191,24 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
             }
           }
         },
+        "walk": {
+          "key": "spritesheet:units:purple:breaker:walk",
+          "url": "./assets/sprites/units/purple/breaker/breaker-move.png",
+          "frameRate": 12,
+          "frameCount": 8,
+          "sheetWidth": 306,
+          "sheetHeight": 384,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:breaker:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 7
+            }
+          },
+          "movementStyle": "teleport"
+        },
         "attack": {
           "key": "spritesheet:units:purple:breaker:attack",
           "url": "./assets/sprites/units/purple/breaker/breaker-attack.png",
@@ -277,16 +295,16 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "key": "spritesheet:units:purple:longshot:walk",
           "url": "./assets/sprites/units/purple/longshot/longshot-move.png",
           "frameRate": 12,
-          "frameCount": 12,
-          "sheetWidth": 512,
+          "frameCount": 8,
+          "sheetWidth": 384,
           "sheetHeight": 480,
-          "sheetColumns": 4,
+          "sheetColumns": 3,
           "sheetRows": 3,
           "animationKeyBase": "animation:units:purple:longshot:walk",
           "ranges": {
             "default": {
               "start": 0,
-              "end": 11
+              "end": 7
             }
           },
           "movementStyle": "teleport"
@@ -375,6 +393,24 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
             }
           }
         },
+        "walk": {
+          "key": "spritesheet:units:purple:medic:walk",
+          "url": "./assets/sprites/units/purple/medic/medic-move.png",
+          "frameRate": 12,
+          "frameCount": 8,
+          "sheetWidth": 306,
+          "sheetHeight": 384,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:medic:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 7
+            }
+          },
+          "movementStyle": "teleport"
+        },
         "attack": {
           "key": "spritesheet:units:purple:medic:attack",
           "url": "./assets/sprites/units/purple/medic/medic-attack.png",
@@ -389,6 +425,66 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
             "right": {
               "start": 0,
               "end": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "mechanic": {
+    "purple": {
+      "frameWidth": 153,
+      "frameHeight": 192,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:purple:mechanic:sheet",
+          "url": "./assets/sprites/units/purple/mechanic/mechanic-full.png",
+          "frameRate": 5,
+          "frameCount": 2,
+          "sheetWidth": 612,
+          "sheetHeight": 768,
+          "sheetColumns": 4,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:mechanic:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 1
+            }
+          }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:mechanic:sheet",
+          "url": "./assets/sprites/units/purple/mechanic/mechanic-full.png",
+          "frameRate": 12,
+          "frameCount": 14,
+          "sheetWidth": 612,
+          "sheetHeight": 768,
+          "sheetColumns": 4,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:mechanic:walk",
+          "ranges": {
+            "default": {
+              "start": 6,
+              "end": 13
+            }
+          },
+          "movementStyle": "teleport"
+        },
+        "attack": {
+          "key": "spritesheet:units:purple:mechanic:sheet",
+          "url": "./assets/sprites/units/purple/mechanic/mechanic-full.png",
+          "frameRate": 5,
+          "frameCount": 6,
+          "sheetWidth": 612,
+          "sheetHeight": 768,
+          "sheetColumns": 4,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:mechanic:attack",
+          "ranges": {
+            "right": {
+              "start": 2,
+              "end": 5
             }
           }
         }
@@ -416,6 +512,37 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
               "end": 3
             }
           }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:runner:walk",
+          "url": "./assets/sprites/units/purple/runner/runner-move.png",
+          "frameRate": 8,
+          "frameCount": 6,
+          "sheetWidth": 384,
+          "sheetHeight": 576,
+          "sheetColumns": 2,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:runner:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 3
+            },
+            "right": {
+              "start": 0,
+              "end": 3
+            },
+            "down": {
+              "start": 4,
+              "end": 4
+            },
+            "up": {
+              "start": 5,
+              "end": 5
+            }
+          },
+          "frameWidth": 192,
+          "frameHeight": 192
         },
         "attack": {
           "key": "spritesheet:units:purple:runner:attack",
@@ -633,6 +760,37 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
             }
           }
         },
+        "walk": {
+          "key": "spritesheet:units:purple:juggernaut:walk",
+          "url": "./assets/sprites/units/purple/juggernaut/juggernaut-move.png",
+          "frameRate": 8,
+          "frameCount": 5,
+          "sheetWidth": 384,
+          "sheetHeight": 576,
+          "sheetColumns": 2,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:juggernaut:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 2
+            },
+            "right": {
+              "start": 0,
+              "end": 2
+            },
+            "down": {
+              "start": 3,
+              "end": 3
+            },
+            "up": {
+              "start": 4,
+              "end": 4
+            }
+          },
+          "frameWidth": 192,
+          "frameHeight": 192
+        },
         "attack": {
           "key": "spritesheet:units:purple:juggernaut:attack",
           "url": "./assets/sprites/units/purple/juggernaut/juggernaut-attack.png",
@@ -693,6 +851,78 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
       }
     }
   },
+  "siege-gun": {
+    "purple": {
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:purple:siege-gun:sheet",
+          "url": "./assets/sprites/units/purple/siege-gun/siege-gun-full.png",
+          "frameRate": 5,
+          "frameCount": 1,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:siege-gun:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:siege-gun:sheet",
+          "url": "./assets/sprites/units/purple/siege-gun/siege-gun-full.png",
+          "frameRate": 5,
+          "frameCount": 11,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:siege-gun:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 0
+            },
+            "right": {
+              "start": 0,
+              "end": 0
+            },
+            "down": {
+              "start": 9,
+              "end": 9
+            },
+            "up": {
+              "start": 10,
+              "end": 10
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:purple:siege-gun:sheet",
+          "url": "./assets/sprites/units/purple/siege-gun/siege-gun-full.png",
+          "frameRate": 8,
+          "frameCount": 9,
+          "sheetWidth": 576,
+          "sheetHeight": 768,
+          "sheetColumns": 3,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:siege-gun:attack",
+          "ranges": {
+            "right": {
+              "start": 1,
+              "end": 8
+            }
+          },
+          "cutsceneLoopCount": 1
+        }
+      }
+    }
+  },
   "skyguard": {
     "purple": {
       "frameWidth": 128,
@@ -714,6 +944,37 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
               "end": 5
             }
           }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:skyguard:walk",
+          "url": "./assets/sprites/units/purple/skyguard/skyguard-move.png",
+          "frameRate": 8,
+          "frameCount": 8,
+          "sheetWidth": 576,
+          "sheetHeight": 576,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:skyguard:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 5
+            },
+            "right": {
+              "start": 0,
+              "end": 5
+            },
+            "down": {
+              "start": 6,
+              "end": 6
+            },
+            "up": {
+              "start": 7,
+              "end": 7
+            }
+          },
+          "frameWidth": 192,
+          "frameHeight": 192
         },
         "attack": {
           "key": "spritesheet:units:purple:skyguard:attack",
@@ -893,6 +1154,170 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
               "start": 0,
               "end": 2
             }
+          }
+        }
+      }
+    }
+  },
+  "payload": {
+    "purple": {
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:purple:payload:sheet",
+          "url": "./assets/sprites/units/purple/payload/payload-full.png",
+          "frameRate": 5,
+          "frameCount": 1,
+          "sheetWidth": 576,
+          "sheetHeight": 576,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:payload:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:payload:sheet",
+          "url": "./assets/sprites/units/purple/payload/payload-full.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 576,
+          "sheetHeight": 576,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:payload:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 0
+            },
+            "right": {
+              "start": 0,
+              "end": 0
+            },
+            "up": {
+              "start": 1,
+              "end": 1
+            },
+            "down": {
+              "start": 2,
+              "end": 2
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:purple:payload:sheet",
+          "url": "./assets/sprites/units/purple/payload/payload-full.png",
+          "frameRate": 8,
+          "frameCount": 9,
+          "sheetWidth": 576,
+          "sheetHeight": 576,
+          "sheetColumns": 3,
+          "sheetRows": 3,
+          "animationKeyBase": "animation:units:purple:payload:attack",
+          "ranges": {
+            "right": {
+              "start": 3,
+              "end": 8
+            }
+          },
+          "frameSequences": {
+            "right": [
+              "blank",
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              "blank"
+            ]
+          },
+          "cutsceneLoopCount": 1
+        }
+      }
+    }
+  },
+  "interceptor": {
+    "purple": {
+      "frameWidth": 993,
+      "frameHeight": 783,
+      "animations": {
+        "idle": {
+          "key": "spritesheet:units:purple:interceptor:sheet",
+          "url": "./assets/sprites/units/purple/interceptor/interceptor-full.png",
+          "frameRate": 5,
+          "frameCount": 1,
+          "sheetWidth": 1986,
+          "sheetHeight": 3132,
+          "sheetColumns": 2,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:interceptor:idle",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 0
+            }
+          }
+        },
+        "walk": {
+          "key": "spritesheet:units:purple:interceptor:sheet",
+          "url": "./assets/sprites/units/purple/interceptor/interceptor-full.png",
+          "frameRate": 5,
+          "frameCount": 3,
+          "sheetWidth": 1986,
+          "sheetHeight": 3132,
+          "sheetColumns": 2,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:interceptor:walk",
+          "ranges": {
+            "default": {
+              "start": 0,
+              "end": 0
+            },
+            "right": {
+              "start": 0,
+              "end": 0
+            },
+            "up": {
+              "start": 1,
+              "end": 1
+            },
+            "down": {
+              "start": 2,
+              "end": 2
+            }
+          }
+        },
+        "attack": {
+          "key": "spritesheet:units:purple:interceptor:sheet",
+          "url": "./assets/sprites/units/purple/interceptor/interceptor-full.png",
+          "frameRate": 8,
+          "frameCount": 7,
+          "sheetWidth": 1986,
+          "sheetHeight": 3132,
+          "sheetColumns": 2,
+          "sheetRows": 4,
+          "animationKeyBase": "animation:units:purple:interceptor:attack",
+          "ranges": {
+            "right": {
+              "start": 3,
+              "end": 6
+            }
+          },
+          "frameSequences": {
+            "right": [
+              3,
+              4,
+              5,
+              6,
+              3
+            ]
           }
         }
       }

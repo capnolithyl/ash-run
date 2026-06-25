@@ -15,6 +15,34 @@ function formatCombatCutsceneWeaponLabel(weaponClass) {
     .join(" ");
 }
 
+function parseCombatCutsceneFrameSequence(rawSequence = "") {
+  if (!rawSequence) {
+    return [];
+  }
+
+  return rawSequence
+    .split(",")
+    .map((frameToken) => frameToken.trim())
+    .filter(Boolean)
+    .map((frameToken) => {
+      if (frameToken === "blank") {
+        return "blank";
+      }
+
+      return Math.max(0, Math.round(Number(frameToken) || 0));
+    });
+}
+
+function getCombatCutsceneFrameSequence(image, frameStart, frameCount) {
+  const explicitSequence = parseCombatCutsceneFrameSequence(image?.dataset.frameSequence ?? "");
+
+  if (explicitSequence.length > 0) {
+    return explicitSequence;
+  }
+
+  return Array.from({ length: frameCount }, (_, index) => frameStart + index);
+}
+
 export const appShellCombatCutsceneMethods = {
   stopCombatCutscenePlayback() {
     if (!this.combatCutscenePlayback) {
@@ -142,7 +170,9 @@ export const appShellCombatCutsceneMethods = {
         image.style.setProperty("--sheet-columns", `${columns}`);
         image.style.setProperty("--sheet-rows", `${rows}`);
 
-        const pendingFrameIndex = Number(image.dataset.pendingFrameIndex);
+        const pendingFrameValue = image.dataset.pendingFrameIndex;
+        const pendingFrameIndex =
+          pendingFrameValue === "blank" ? "blank" : Number(pendingFrameValue);
         const frameStart = Number(image.dataset.frameStart ?? 0);
         this.setCombatCutsceneSheetFrame(
           image,
@@ -164,8 +194,17 @@ export const appShellCombatCutsceneMethods = {
       return;
     }
 
+    if (frameIndex === "blank") {
+      image.dataset.pendingFrameIndex = "blank";
+      image.style.opacity = "0";
+      image.style.visibility = "hidden";
+      return;
+    }
+
     const normalizedFrameIndex = Math.max(0, Math.round(Number(frameIndex) || 0));
     image.dataset.pendingFrameIndex = `${normalizedFrameIndex}`;
+    image.style.opacity = "";
+    image.style.visibility = "";
     const columns = Number(image.dataset.sheetColumns);
     const rows = Number(image.dataset.sheetRows);
 
@@ -248,7 +287,15 @@ export const appShellCombatCutsceneMethods = {
       .forEach((lane) => lane.classList.remove("combat-cutscene__lane--attacking"));
     for (const side of ["player", "enemy"]) {
       const attackSheet = overlay.querySelector(`[data-cutscene-sheet="${side}:attack"]`);
-      this.setCombatCutsceneSheetFrame(attackSheet, Number(attackSheet?.dataset.frameStart ?? 0));
+      const frameSequence = getCombatCutsceneFrameSequence(
+        attackSheet,
+        Number(attackSheet?.dataset.frameStart ?? 0),
+        Math.max(1, Number(attackSheet?.dataset.frameCount ?? 1)),
+      );
+      this.setCombatCutsceneSheetFrame(
+        attackSheet,
+        frameSequence[frameSequence.length - 1] ?? Number(attackSheet?.dataset.frameStart ?? 0),
+      );
     }
   },
 
@@ -287,25 +334,30 @@ export const appShellCombatCutsceneMethods = {
     const frameStart = Number(image.dataset.frameStart ?? 0);
     const frameCount = Math.max(1, Number(image.dataset.frameCount ?? 1));
     const loopCount = Math.max(1, Number(step.loopCount ?? image.dataset.loopCount ?? 1));
-    const totalFrames = Math.max(1, frameCount * loopCount);
+    const frameSequence = getCombatCutsceneFrameSequence(image, frameStart, frameCount);
+    const playbackFrames = Array.from({ length: loopCount }).flatMap(() => frameSequence);
+    const totalFrames = Math.max(1, playbackFrames.length);
     const frameDurationMs = Math.max(80, Math.floor(step.windowMs / totalFrames));
 
-    this.setCombatCutsceneSheetFrame(image, frameStart);
+    this.setCombatCutsceneSheetFrame(image, playbackFrames[0] ?? frameStart);
 
     for (let frameIndex = 1; frameIndex < totalFrames; frameIndex += 1) {
       const timer = window.setTimeout(() => {
         this.setCombatCutsceneSheetFrame(
           image,
-          frameStart + (frameIndex % frameCount)
+          playbackFrames[frameIndex] ?? frameStart
         );
       }, frameIndex * frameDurationMs);
       this.combatCutscenePlayback?.timers.push(timer);
     }
 
-    const resetTimer = window.setTimeout(() => {
-      this.setCombatCutsceneSheetFrame(image, frameStart);
+    const holdTimer = window.setTimeout(() => {
+      this.setCombatCutsceneSheetFrame(
+        image,
+        playbackFrames[playbackFrames.length - 1] ?? frameStart,
+      );
     }, step.windowMs);
-    this.combatCutscenePlayback?.timers.push(resetTimer);
+    this.combatCutscenePlayback?.timers.push(holdTimer);
   },
 
   playCombatCutsceneImpact(overlay, cutscene, stepIndex, options = {}) {

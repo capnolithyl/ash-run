@@ -984,6 +984,11 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 3831
   },
   {
+    "url": "./assets/sprites/units/purple/breaker/breaker-move.png",
+    "kind": "image",
+    "byteSize": 12459
+  },
+  {
     "url": "./assets/sprites/units/purple/bruiser.svg",
     "kind": "image",
     "byteSize": 5095
@@ -1016,7 +1021,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./assets/sprites/units/purple/grunt/grunt-move.png",
     "kind": "image",
-    "byteSize": 13977
+    "byteSize": 13983
   },
   {
     "url": "./assets/sprites/units/purple/gunship.svg",
@@ -1044,6 +1049,11 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 606
   },
   {
+    "url": "./assets/sprites/units/purple/interceptor/interceptor-full.png",
+    "kind": "image",
+    "byteSize": 166566
+  },
+  {
     "url": "./assets/sprites/units/purple/juggernaut.svg",
     "kind": "image",
     "byteSize": 733
@@ -1057,6 +1067,11 @@ export const ASSET_PRELOAD_MANIFEST = [
     "url": "./assets/sprites/units/purple/juggernaut/juggernaut-idle.png",
     "kind": "image",
     "byteSize": 5358
+  },
+  {
+    "url": "./assets/sprites/units/purple/juggernaut/juggernaut-move.png",
+    "kind": "image",
+    "byteSize": 12429
   },
   {
     "url": "./assets/sprites/units/purple/longshot.svg",
@@ -1076,12 +1091,17 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./assets/sprites/units/purple/longshot/longshot-move.png",
     "kind": "image",
-    "byteSize": 19014
+    "byteSize": 14976
   },
   {
     "url": "./assets/sprites/units/purple/mechanic.svg",
     "kind": "image",
     "byteSize": 1280
+  },
+  {
+    "url": "./assets/sprites/units/purple/mechanic/mechanic-full.png",
+    "kind": "image",
+    "byteSize": 29562
   },
   {
     "url": "./assets/sprites/units/purple/medic.svg",
@@ -1099,9 +1119,19 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 3612
   },
   {
+    "url": "./assets/sprites/units/purple/medic/medic-move.png",
+    "kind": "image",
+    "byteSize": 11955
+  },
+  {
     "url": "./assets/sprites/units/purple/payload.svg",
     "kind": "image",
     "byteSize": 665
+  },
+  {
+    "url": "./assets/sprites/units/purple/payload/payload-full.png",
+    "kind": "image",
+    "byteSize": 19062
   },
   {
     "url": "./assets/sprites/units/purple/runner.svg",
@@ -1119,9 +1149,19 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 8736
   },
   {
+    "url": "./assets/sprites/units/purple/runner/runner-move.png",
+    "kind": "image",
+    "byteSize": 16251
+  },
+  {
     "url": "./assets/sprites/units/purple/siege-gun.svg",
     "kind": "image",
     "byteSize": 668
+  },
+  {
+    "url": "./assets/sprites/units/purple/siege-gun/siege-gun-full.png",
+    "kind": "image",
+    "byteSize": 30210
   },
   {
     "url": "./assets/sprites/units/purple/skyguard.svg",
@@ -1137,6 +1177,11 @@ export const ASSET_PRELOAD_MANIFEST = [
     "url": "./assets/sprites/units/purple/skyguard/skyguard-idle.png",
     "kind": "image",
     "byteSize": 13671
+  },
+  {
+    "url": "./assets/sprites/units/purple/skyguard/skyguard-move.png",
+    "kind": "image",
+    "byteSize": 22374
   },
   {
     "url": "./src/dev/uiHarnessFixtures.js",
@@ -1369,7 +1414,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/generated/unitSpriteAnimations.js",
     "kind": "script",
-    "byteSize": 24292,
+    "byteSize": 36042,
     "environment": "development"
   },
   {
@@ -1435,7 +1480,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/view/battleCombatCutscene.js",
     "kind": "script",
-    "byteSize": 12049,
+    "byteSize": 11816,
     "environment": "development"
   },
   {
@@ -1507,13 +1552,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/view/unitAnimationHelpers.js",
     "kind": "script",
-    "byteSize": 7140,
+    "byteSize": 7717,
     "environment": "development"
   },
   {
     "url": "./src/game/phaser/view/UnitLayer.js",
     "kind": "script",
-    "byteSize": 47762,
+    "byteSize": 52153,
     "environment": "development"
   },
   {
@@ -1795,7 +1840,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/battle/overlays-and-debug.css",
     "kind": "style",
-    "byteSize": 44297,
+    "byteSize": 44387,
     "environment": "development"
   },
   {
@@ -1891,7 +1936,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/combatCutscene.js",
     "kind": "script",
-    "byteSize": 13050,
+    "byteSize": 14645,
     "environment": "development"
   },
   {
@@ -1945,7 +1990,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/battleHud/combatCutsceneOverlay.js",
     "kind": "script",
-    "byteSize": 12391,
+    "byteSize": 13692,
     "environment": "development"
   },
   {
@@ -2046,4 +2091,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 92674523;
+export const ASSET_PRELOAD_TOTAL_BYTES = 93010830;

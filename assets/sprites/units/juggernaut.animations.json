@@ -12,6 +12,30 @@
         }
       }
     },
+    "walk": {
+      "file": "juggernaut-move.png",
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "frameRate": 8,
+      "ranges": {
+        "default": {
+          "start": 0,
+          "end": 2
+        },
+        "right": {
+          "start": 0,
+          "end": 2
+        },
+        "down": {
+          "start": 3,
+          "end": 3
+        },
+        "up": {
+          "start": 4,
+          "end": 4
+        }
+      }
+    },
     "attack": {
       "file": "juggernaut-attack.png",
       "frameRate": 5,

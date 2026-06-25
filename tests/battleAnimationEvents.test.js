@@ -226,7 +226,7 @@ test("battle animation events show a dead enemy initiator before the lethal play
 });
 
 test("battle animation events show graves preemptive defender strike before the enemy attack", () => {
-  const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 2, 2);
   const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);
   const battleState = createTestBattleState({
     playerUnits: [defender],
@@ -458,9 +458,9 @@ test("player longshot move events use teleport timing while preserving the path"
     { x: 2, y: 1 },
     { x: 3, y: 1 }
   ]);
-  assert.equal(moveEvent.durationMs, 2000);
-  assert.equal(moveEvent.endDelayMs, 2000 + BATTLE_MOVE_SETTLE_MS);
-  assert.equal(getBattleSnapshotTransitionDurationMs(before, after), 2000);
+  assert.equal(moveEvent.durationMs, 1333);
+  assert.equal(moveEvent.endDelayMs, 1333 + BATTLE_MOVE_SETTLE_MS);
+  assert.equal(getBattleSnapshotTransitionDurationMs(before, after), 1333);
 });
 
 test("enemy grunt movement keeps segment-based timing without teleport sheets", () => {
@@ -583,7 +583,7 @@ test("battle combat cutscene payload keeps player-left mapping, split terrain id
 });
 
 test("battle combat cutscene payload keeps graves preemptive counter order", () => {
-  const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  const defender = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 2, 2);
   const attacker = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 3, 2);
   const battleState = createTestBattleState({
     playerUnits: [defender],
