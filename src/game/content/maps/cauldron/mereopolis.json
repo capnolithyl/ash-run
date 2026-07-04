@@ -1,0 +1,4575 @@
+{
+  "format": "ash-run-map-bundle-v1",
+  "id": "mereopolis",
+  "name": "Mereopolis",
+  "stages": [
+    {
+      "id": "mereopolis-stage-1",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-1-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-1-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-1-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-1-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-1-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-1-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-1-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-1-enemy-grunt-3-0",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-grunt-2-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-breaker-3-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-breaker-4-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-medic-2-2",
+          "unitTypeId": "medic",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-longshot-3-2",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-breaker-4-3",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-1-enemy-runner-3-4",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 5
+      },
+      "runStages": [
+        1
+      ],
+      "stage": 1,
+      "variantStage": 1
+    },
+    {
+      "id": "mereopolis-stage-2",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-2-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-2-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-2-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-2-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-2-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-2-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-2-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-2-enemy-grunt-3-0",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-grunt-2-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-breaker-3-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-breaker-4-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-medic-2-2",
+          "unitTypeId": "medic",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-longshot-3-2",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-breaker-4-3",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-2-enemy-runner-3-4",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-breaker-3-0",
+              "unitTypeId": "breaker",
+              "level": 1,
+              "x": 3,
+              "y": 0
+            },
+            {
+              "id": "wave-1-grunt-3-3",
+              "unitTypeId": "grunt",
+              "level": 1,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-grunt-2-1",
+              "unitTypeId": "grunt",
+              "level": 2,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-2-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 1,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-2-breaker-2-2",
+              "unitTypeId": "breaker",
+              "level": 2,
+              "x": 2,
+              "y": 2
+            },
+            {
+              "id": "wave-2-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 1,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 6
+      },
+      "runStages": [
+        2
+      ],
+      "stage": 2,
+      "variantStage": 2
+    },
+    {
+      "id": "mereopolis-stage-3",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-3-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-3-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-3-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-3-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-3-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-3-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-3-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-3-enemy-grunt-3-0",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-grunt-2-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-breaker-3-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-breaker-4-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-medic-2-2",
+          "unitTypeId": "medic",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-longshot-3-2",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-breaker-4-3",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-3-enemy-runner-3-4",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-breaker-3-0",
+              "unitTypeId": "breaker",
+              "level": 1,
+              "x": 3,
+              "y": 0
+            },
+            {
+              "id": "wave-1-grunt-3-3",
+              "unitTypeId": "grunt",
+              "level": 1,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-grunt-2-1",
+              "unitTypeId": "grunt",
+              "level": 2,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-2-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 1,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-2-breaker-2-2",
+              "unitTypeId": "breaker",
+              "level": 2,
+              "x": 2,
+              "y": 2
+            },
+            {
+              "id": "wave-2-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 1,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 6
+      },
+      "runStages": [
+        3
+      ],
+      "stage": 3,
+      "variantStage": 3
+    },
+    {
+      "id": "mereopolis-stage-4",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-4-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-4-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-4-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-4-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-4-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-4-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-4-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-4-enemy-grunt-3-0",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-grunt-2-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-breaker-3-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-breaker-4-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-medic-2-2",
+          "unitTypeId": "medic",
+          "owner": "enemy",
+          "level": 1,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-longshot-3-2",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-breaker-4-3",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 1,
+          "x": 4,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-4-enemy-runner-3-4",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 1,
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-breaker-3-0",
+              "unitTypeId": "breaker",
+              "level": 1,
+              "x": 3,
+              "y": 0
+            },
+            {
+              "id": "wave-1-grunt-3-3",
+              "unitTypeId": "grunt",
+              "level": 1,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-grunt-2-1",
+              "unitTypeId": "grunt",
+              "level": 2,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-2-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 1,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-2-breaker-2-2",
+              "unitTypeId": "breaker",
+              "level": 2,
+              "x": 2,
+              "y": 2
+            },
+            {
+              "id": "wave-2-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 1,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-3",
+          "name": "Wave 3",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-4-enemy-bruiser-4-0"
+          },
+          "units": [
+            {
+              "id": "wave-3-breaker-4-0",
+              "unitTypeId": "breaker",
+              "level": 2,
+              "x": 4,
+              "y": 0
+            },
+            {
+              "id": "wave-3-juggernaut-3-3",
+              "unitTypeId": "juggernaut",
+              "level": 2,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 6
+      },
+      "runStages": [
+        4
+      ],
+      "stage": 4,
+      "variantStage": 4
+    },
+    {
+      "id": "mereopolis-stage-5",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-5-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-5-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-5-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-5-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-5-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-5-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-5-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-5-enemy-gunship-1-0",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 2,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-breaker-3-0",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 3,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-breaker-2-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 2,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-grunt-3-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 3,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-grunt-2-2",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 2,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-breaker-3-2",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 2,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 3,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-juggernaut-3-4",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 2,
+          "x": 3,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-5-enemy-runner-4-4",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 2,
+          "x": 4,
+          "y": 4
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-grunt-3-1",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-1-breaker-3-2",
+              "unitTypeId": "breaker",
+              "level": 3,
+              "x": 3,
+              "y": 2
+            },
+            {
+              "id": "wave-1-runner-3-3",
+              "unitTypeId": "runner",
+              "level": 3,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-grunt-2-0",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 2,
+              "y": 0
+            },
+            {
+              "id": "wave-2-breaker-4-3",
+              "unitTypeId": "breaker",
+              "level": 3,
+              "x": 4,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-3",
+          "name": "Wave 3",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-5-enemy-gunship-1-0"
+          },
+          "units": [
+            {
+              "id": "wave-3-grunt-1-0",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 1,
+              "y": 0
+            },
+            {
+              "id": "wave-3-carrier-1-1",
+              "unitTypeId": "carrier",
+              "level": 3,
+              "x": 1,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "wave-4",
+          "name": "Wave 4",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-5-enemy-juggernaut-3-4"
+          },
+          "units": [
+            {
+              "id": "wave-4-grunt-4-1",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 4,
+              "y": 1
+            },
+            {
+              "id": "wave-4-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 5,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 7
+      },
+      "runStages": [
+        5
+      ],
+      "stage": 5,
+      "variantStage": 5
+    },
+    {
+      "id": "mereopolis-stage-6",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-6-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-6-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-6-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-6-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-6-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-6-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-6-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-6-enemy-gunship-1-0",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 2,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-breaker-3-0",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 3,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 3,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-breaker-2-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 2,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-grunt-3-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 3,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-grunt-2-2",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 2,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-breaker-3-2",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 2,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 3,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-juggernaut-3-4",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 2,
+          "x": 3,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-6-enemy-runner-4-4",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 2,
+          "x": 4,
+          "y": 4
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-grunt-3-1",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-1-breaker-3-2",
+              "unitTypeId": "breaker",
+              "level": 3,
+              "x": 3,
+              "y": 2
+            },
+            {
+              "id": "wave-1-runner-3-3",
+              "unitTypeId": "runner",
+              "level": 3,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-grunt-2-0",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 2,
+              "y": 0
+            },
+            {
+              "id": "wave-2-breaker-4-3",
+              "unitTypeId": "breaker",
+              "level": 3,
+              "x": 4,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-3",
+          "name": "Wave 3",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-6-enemy-gunship-1-0"
+          },
+          "units": [
+            {
+              "id": "wave-3-grunt-1-0",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 1,
+              "y": 0
+            },
+            {
+              "id": "wave-3-carrier-1-1",
+              "unitTypeId": "carrier",
+              "level": 3,
+              "x": 1,
+              "y": 1
+            }
+          ]
+        },
+        {
+          "id": "wave-4",
+          "name": "Wave 4",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-6-enemy-juggernaut-3-4"
+          },
+          "units": [
+            {
+              "id": "wave-4-grunt-4-1",
+              "unitTypeId": "grunt",
+              "level": 3,
+              "x": 4,
+              "y": 1
+            },
+            {
+              "id": "wave-4-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 5,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-5",
+          "name": "Wave 5",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-5-grunt-2-1",
+              "unitTypeId": "grunt",
+              "level": 5,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-5-breaker-3-2",
+              "unitTypeId": "breaker",
+              "level": 5,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 7
+      },
+      "runStages": [
+        6
+      ],
+      "stage": 6,
+      "variantStage": 6
+    },
+    {
+      "id": "mereopolis-stage-7",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-7-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-7-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-7-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-7-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-7-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-7-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-7-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-7-enemy-gunship-1-0",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 5,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-7-enemy-juggernaut-3-0",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 5,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-7-enemy-grunt-2-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 5,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-7-enemy-grunt-3-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 6,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-7-enemy-gunship-1-2",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 5,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-7-enemy-breaker-2-2",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 5,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-7-enemy-grunt-3-2",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 5,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-7-enemy-runner-3-3",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 5,
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-grunt-3-1",
+              "unitTypeId": "grunt",
+              "level": 7,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-1-breaker-2-2",
+              "unitTypeId": "breaker",
+              "level": 7,
+              "x": 2,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-longshot-2-1",
+              "unitTypeId": "longshot",
+              "level": 6,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-2-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 6,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-3",
+          "name": "Wave 3",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-7-enemy-juggernaut-3-0"
+          },
+          "units": [
+            {
+              "id": "wave-3-juggernaut-3-0",
+              "unitTypeId": "juggernaut",
+              "level": 7,
+              "x": 3,
+              "y": 0
+            },
+            {
+              "id": "wave-3-grunt-3-3",
+              "unitTypeId": "grunt",
+              "level": 7,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-4",
+          "name": "Wave 4",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-4-grunt-2-1",
+              "unitTypeId": "grunt",
+              "level": 7,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-4-medic-2-2",
+              "unitTypeId": "medic",
+              "level": 7,
+              "x": 2,
+              "y": 2
+            },
+            {
+              "id": "wave-4-breaker-3-2",
+              "unitTypeId": "breaker",
+              "level": 7,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 7
+      },
+      "runStages": [
+        7
+      ],
+      "stage": 7,
+      "variantStage": 7
+    },
+    {
+      "id": "mereopolis-stage-8",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-8-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-8-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-8-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-8-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-8-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-8-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-8-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-8-enemy-gunship-1-0",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 5,
+          "x": 1,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-8-enemy-juggernaut-3-0",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 5,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-8-enemy-grunt-2-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 5,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-8-enemy-grunt-3-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 6,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-8-enemy-gunship-1-2",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 5,
+          "x": 1,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-8-enemy-breaker-2-2",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 5,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-8-enemy-grunt-3-2",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 5,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-8-enemy-runner-3-3",
+          "unitTypeId": "runner",
+          "owner": "enemy",
+          "level": 5,
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-grunt-3-1",
+              "unitTypeId": "grunt",
+              "level": 7,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-1-breaker-2-2",
+              "unitTypeId": "breaker",
+              "level": 7,
+              "x": 2,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-longshot-2-1",
+              "unitTypeId": "longshot",
+              "level": 6,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-2-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 6,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-3",
+          "name": "Wave 3",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-8-enemy-juggernaut-3-0"
+          },
+          "units": [
+            {
+              "id": "wave-3-juggernaut-3-0",
+              "unitTypeId": "juggernaut",
+              "level": 7,
+              "x": 3,
+              "y": 0
+            },
+            {
+              "id": "wave-3-grunt-3-3",
+              "unitTypeId": "grunt",
+              "level": 7,
+              "x": 3,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-4",
+          "name": "Wave 4",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-4-grunt-2-1",
+              "unitTypeId": "grunt",
+              "level": 7,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-4-medic-2-2",
+              "unitTypeId": "medic",
+              "level": 7,
+              "x": 2,
+              "y": 2
+            },
+            {
+              "id": "wave-4-breaker-3-2",
+              "unitTypeId": "breaker",
+              "level": 7,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-5",
+          "name": "Wave 5: Boss Grunt",
+          "maxActivations": 2,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 2
+          },
+          "units": [
+            {
+              "id": "wave-5-medic-3-1",
+              "unitTypeId": "medic",
+              "level": 9,
+              "x": 3,
+              "y": 1
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 7
+      },
+      "runStages": [
+        8
+      ],
+      "stage": 8,
+      "variantStage": 8
+    },
+    {
+      "id": "mereopolis-stage-9",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-9-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-9-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-9-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-9-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-9-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-9-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-9-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-9-enemy-breaker-3-0",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 8,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-juggernaut-5-0",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 8,
+          "x": 5,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-gunship-1-1",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 8,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-breaker-2-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 8,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-grunt-3-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-longshot-5-1",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 8,
+          "x": 5,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-grunt-2-2",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 8,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-breaker-3-2",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-longshot-5-3",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 8,
+          "x": 5,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-bruiser-3-4",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-9-enemy-juggernaut-3-5",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 5
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-longshot-2-1",
+              "unitTypeId": "longshot",
+              "level": 8,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-1-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 8,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-1-medic-2-2",
+              "unitTypeId": "medic",
+              "level": 8,
+              "x": 2,
+              "y": 2
+            },
+            {
+              "id": "wave-1-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 8,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 9,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-2-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 9,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-3",
+          "name": "Wave 3",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-9-enemy-gunship-1-1"
+          },
+          "units": [
+            {
+              "id": "wave-3-interceptor-2-0",
+              "unitTypeId": "interceptor",
+              "level": 9,
+              "x": 2,
+              "y": 0
+            },
+            {
+              "id": "wave-3-payload-1-2",
+              "unitTypeId": "payload",
+              "level": 7,
+              "x": 1,
+              "y": 2
+            },
+            {
+              "id": "wave-3-carrier-2-3",
+              "unitTypeId": "carrier",
+              "level": 7,
+              "x": 2,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-4",
+          "name": "Wave 4",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-4-grunt-3-1",
+              "unitTypeId": "grunt",
+              "level": 9,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-4-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 9,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-5",
+          "name": "Wave 5: Boss Breaker",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-5-breaker-3-2",
+              "unitTypeId": "breaker",
+              "level": 10,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 8
+      },
+      "runStages": [
+        9
+      ],
+      "stage": 9,
+      "variantStage": 9
+    },
+    {
+      "id": "mereopolis-stage-10",
+      "name": "Mereopolis",
+      "theme": "ash",
+      "width": 18,
+      "height": 10,
+      "tiles": [
+        [
+          "plain",
+          "mountain",
+          "mountain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "mountain",
+          "mountain",
+          "mountain",
+          "mountain",
+          "water",
+          "water",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "mountain",
+          "mountain",
+          "water",
+          "plain",
+          "plain",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "mountain",
+          "road",
+          "plain",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "water",
+          "road"
+        ],
+        [
+          "plain",
+          "plain",
+          "plain",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "road",
+          "plain",
+          "water",
+          "water",
+          "road",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "road",
+          "road",
+          "road",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "road",
+          "water",
+          "plain",
+          "plain",
+          "plain",
+          "plain",
+          "road"
+        ],
+        [
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "forest",
+          "water",
+          "water",
+          "water",
+          "water",
+          "water",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road",
+          "road"
+        ]
+      ],
+      "buildings": [
+        {
+          "id": "mereopolis-stage-10-player-barracks-13-3",
+          "type": "barracks",
+          "owner": "player",
+          "x": 13,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-10-player-repair-station-12-4",
+          "type": "repair-station",
+          "owner": "player",
+          "x": 12,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-10-player-airfield-14-4",
+          "type": "airfield",
+          "owner": "player",
+          "x": 14,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-10-player-hospital-12-5",
+          "type": "hospital",
+          "owner": "player",
+          "x": 12,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-10-player-motor-pool-13-5",
+          "type": "motor-pool",
+          "owner": "player",
+          "x": 13,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-10-player-sector-14-5",
+          "type": "sector",
+          "owner": "player",
+          "x": 14,
+          "y": 5
+        },
+        {
+          "id": "mereopolis-stage-10-player-command-13-6",
+          "type": "command",
+          "owner": "player",
+          "x": 13,
+          "y": 6
+        }
+      ],
+      "units": [
+        {
+          "id": "mereopolis-stage-10-enemy-breaker-3-0",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-bruiser-4-0",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 8,
+          "x": 4,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-juggernaut-5-0",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 8,
+          "x": 5,
+          "y": 0
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-gunship-1-1",
+          "unitTypeId": "gunship",
+          "owner": "enemy",
+          "level": 8,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-breaker-2-1",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 8,
+          "x": 2,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-grunt-3-1",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-longshot-5-1",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 8,
+          "x": 5,
+          "y": 1
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-grunt-2-2",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 8,
+          "x": 2,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-breaker-3-2",
+          "unitTypeId": "breaker",
+          "owner": "enemy",
+          "level": 9,
+          "x": 3,
+          "y": 2
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-grunt-3-3",
+          "unitTypeId": "grunt",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-longshot-5-3",
+          "unitTypeId": "longshot",
+          "owner": "enemy",
+          "level": 8,
+          "x": 5,
+          "y": 3
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-bruiser-3-4",
+          "unitTypeId": "bruiser",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 4
+        },
+        {
+          "id": "mereopolis-stage-10-enemy-juggernaut-3-5",
+          "unitTypeId": "juggernaut",
+          "owner": "enemy",
+          "level": 8,
+          "x": 3,
+          "y": 5
+        }
+      ],
+      "reinforcements": [
+        {
+          "id": "wave-1",
+          "name": "Wave 1",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-1-longshot-2-1",
+              "unitTypeId": "longshot",
+              "level": 8,
+              "x": 2,
+              "y": 1
+            },
+            {
+              "id": "wave-1-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 8,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-1-medic-2-2",
+              "unitTypeId": "medic",
+              "level": 8,
+              "x": 2,
+              "y": 2
+            },
+            {
+              "id": "wave-1-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 8,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-2",
+          "name": "Wave 2",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-2-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 9,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-2-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 9,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-3",
+          "name": "Wave 3",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "unit-killed",
+            "targetUnitId": "mereopolis-stage-10-enemy-gunship-1-1"
+          },
+          "units": [
+            {
+              "id": "wave-3-interceptor-2-0",
+              "unitTypeId": "interceptor",
+              "level": 9,
+              "x": 2,
+              "y": 0
+            },
+            {
+              "id": "wave-3-payload-1-2",
+              "unitTypeId": "payload",
+              "level": 7,
+              "x": 1,
+              "y": 2
+            },
+            {
+              "id": "wave-3-carrier-2-3",
+              "unitTypeId": "carrier",
+              "level": 7,
+              "x": 2,
+              "y": 3
+            }
+          ]
+        },
+        {
+          "id": "wave-4",
+          "name": "Wave 4",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "enemy-casualties",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-4-grunt-3-1",
+              "unitTypeId": "grunt",
+              "level": 9,
+              "x": 3,
+              "y": 1
+            },
+            {
+              "id": "wave-4-grunt-3-2",
+              "unitTypeId": "grunt",
+              "level": 9,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-5",
+          "name": "Wave 5: Boss Breaker",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-5-breaker-3-2",
+              "unitTypeId": "breaker",
+              "level": 10,
+              "x": 3,
+              "y": 2
+            }
+          ]
+        },
+        {
+          "id": "wave-6",
+          "name": "Wave 6: Boss Grunt",
+          "maxActivations": 1,
+          "trigger": {
+            "type": "player-turns-completed",
+            "every": 1
+          },
+          "units": [
+            {
+              "id": "wave-6-breaker-3-1",
+              "unitTypeId": "breaker",
+              "level": 10,
+              "x": 3,
+              "y": 1
+            }
+          ]
+        }
+      ],
+      "goal": {
+        "type": "defend",
+        "target": {
+          "x": 13,
+          "y": 6
+        },
+        "turnLimit": 8
+      },
+      "runStages": [
+        10
+      ],
+      "stage": 10,
+      "variantStage": 10
+    }
+  ]
+}

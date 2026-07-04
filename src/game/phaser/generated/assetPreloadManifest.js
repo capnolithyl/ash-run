@@ -829,14 +829,19 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 726
   },
   {
-    "url": "./assets/sprites/units/blue/breaker/breaker-attack.png",
+    "url": "./assets/sprites/units/blue/breaker/Blue%20Breaker%20Idle.png",
+    "kind": "image",
+    "byteSize": 3846
+  },
+  {
+    "url": "./assets/sprites/units/blue/breaker/Blue%20Breaker%20Shooting.png",
     "kind": "image",
     "byteSize": 6516
   },
   {
-    "url": "./assets/sprites/units/blue/breaker/breaker-idle.png",
+    "url": "./assets/sprites/units/blue/breaker/Blue%20Breaker%20Teleporting%20.png",
     "kind": "image",
-    "byteSize": 3846
+    "byteSize": 12654
   },
   {
     "url": "./assets/sprites/units/blue/bruiser.svg",
@@ -844,7 +849,7 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 58896
   },
   {
-    "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
+    "url": "./assets/sprites/units/blue/bruiser/Blue%20Bruiser%202.0.png",
     "kind": "image",
     "byteSize": 101934
   },
@@ -859,14 +864,19 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 668
   },
   {
-    "url": "./assets/sprites/units/blue/grunt/grunt-attack.png",
+    "url": "./assets/sprites/units/blue/grunt/Blue%20Grunt%20Idle.png",
+    "kind": "image",
+    "byteSize": 3615
+  },
+  {
+    "url": "./assets/sprites/units/blue/grunt/Blue%20Grunt%20Shooting.png",
     "kind": "image",
     "byteSize": 6054
   },
   {
-    "url": "./assets/sprites/units/blue/grunt/grunt-idle.png",
+    "url": "./assets/sprites/units/blue/grunt/Blue%20Grunt%20Teleporting%20.png",
     "kind": "image",
-    "byteSize": 3615
+    "byteSize": 13977
   },
   {
     "url": "./assets/sprites/units/blue/gunship.svg",
@@ -874,14 +884,19 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 664
   },
   {
-    "url": "./assets/sprites/units/blue/gunship/gunship-attack.png",
-    "kind": "image",
-    "byteSize": 5907
-  },
-  {
-    "url": "./assets/sprites/units/blue/gunship/gunship-idle.png",
+    "url": "./assets/sprites/units/blue/gunship/Blue%20Gunship%20Idle2.0.png",
     "kind": "image",
     "byteSize": 4269
+  },
+  {
+    "url": "./assets/sprites/units/blue/gunship/Blue%20Gunship%20Movement2.0.png",
+    "kind": "image",
+    "byteSize": 17562
+  },
+  {
+    "url": "./assets/sprites/units/blue/gunship/Blue%20Gunship%20Shooting2.0.png",
+    "kind": "image",
+    "byteSize": 5907
   },
   {
     "url": "./assets/sprites/units/blue/interceptor.svg",
@@ -889,19 +904,24 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 606
   },
   {
+    "url": "./assets/sprites/units/blue/interceptor/Interceptor.png",
+    "kind": "image",
+    "byteSize": 166155
+  },
+  {
     "url": "./assets/sprites/units/blue/juggernaut.svg",
     "kind": "image",
     "byteSize": 733
   },
   {
-    "url": "./assets/sprites/units/blue/juggernaut/juggernaut-attack.png",
+    "url": "./assets/sprites/units/blue/juggernaut/Blue%20Juggernaut%20Movement.png",
     "kind": "image",
-    "byteSize": 4980
+    "byteSize": 12045
   },
   {
-    "url": "./assets/sprites/units/blue/juggernaut/juggernaut-idle.png",
+    "url": "./assets/sprites/units/blue/juggernaut/Blue%20Juggernaut%20Shooting.png",
     "kind": "image",
-    "byteSize": 4785
+    "byteSize": 4980
   },
   {
     "url": "./assets/sprites/units/blue/longshot.svg",
@@ -909,14 +929,19 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 669
   },
   {
-    "url": "./assets/sprites/units/blue/longshot/longshot-attack.png",
+    "url": "./assets/sprites/units/blue/longshot/Blue%20Longshot%20Idle.png",
+    "kind": "image",
+    "byteSize": 4473
+  },
+  {
+    "url": "./assets/sprites/units/blue/longshot/Blue%20Longshot%20Shooting.png",
     "kind": "image",
     "byteSize": 16203
   },
   {
-    "url": "./assets/sprites/units/blue/longshot/longshot-idle.png",
+    "url": "./assets/sprites/units/blue/longshot/Blue%20Longshot%20Teleporting.png",
     "kind": "image",
-    "byteSize": 4473
+    "byteSize": 14982
   },
   {
     "url": "./assets/sprites/units/blue/mechanic.svg",
@@ -924,9 +949,29 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 1280
   },
   {
+    "url": "./assets/sprites/units/blue/mechanic/Blue%20Mechanic%20(all).png",
+    "kind": "image",
+    "byteSize": 29826
+  },
+  {
     "url": "./assets/sprites/units/blue/medic.svg",
     "kind": "image",
     "byteSize": 1276
+  },
+  {
+    "url": "./assets/sprites/units/blue/medic/Blue%20Medic%20Idle.png",
+    "kind": "image",
+    "byteSize": 3603
+  },
+  {
+    "url": "./assets/sprites/units/blue/medic/Blue%20Medic%20Shooting.png",
+    "kind": "image",
+    "byteSize": 6363
+  },
+  {
+    "url": "./assets/sprites/units/blue/medic/Blue%20Medic%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 11931
   },
   {
     "url": "./assets/sprites/units/blue/payload.svg",
@@ -934,19 +979,29 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 665
   },
   {
+    "url": "./assets/sprites/units/blue/payload/Blue%20Payload.png",
+    "kind": "image",
+    "byteSize": 18876
+  },
+  {
     "url": "./assets/sprites/units/blue/runner.svg",
     "kind": "image",
     "byteSize": 667
   },
   {
-    "url": "./assets/sprites/units/blue/runner/runner-attack.png",
-    "kind": "image",
-    "byteSize": 7299
-  },
-  {
-    "url": "./assets/sprites/units/blue/runner/runner-idle.png",
+    "url": "./assets/sprites/units/blue/runner/Blue%20Runner%20Idle.png",
     "kind": "image",
     "byteSize": 8685
+  },
+  {
+    "url": "./assets/sprites/units/blue/runner/Blue%20Runner%20Movement.png",
+    "kind": "image",
+    "byteSize": 15918
+  },
+  {
+    "url": "./assets/sprites/units/blue/runner/Blue%20Runner%20Shooting.png",
+    "kind": "image",
+    "byteSize": 7299
   },
   {
     "url": "./assets/sprites/units/blue/siege-gun.svg",
@@ -954,19 +1009,309 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 668
   },
   {
+    "url": "./assets/sprites/units/blue/siege-gun/Blue%20Siege%20Gun.png",
+    "kind": "image",
+    "byteSize": 30177
+  },
+  {
     "url": "./assets/sprites/units/blue/skyguard.svg",
     "kind": "image",
     "byteSize": 669
   },
   {
-    "url": "./assets/sprites/units/blue/skyguard/skyguard-attack.png",
+    "url": "./assets/sprites/units/blue/skyguard/Blue%20Skyguard%20Idle.png",
+    "kind": "image",
+    "byteSize": 12873
+  },
+  {
+    "url": "./assets/sprites/units/blue/skyguard/Blue%20Skyguard%20Movement.png",
+    "kind": "image",
+    "byteSize": 21513
+  },
+  {
+    "url": "./assets/sprites/units/blue/skyguard/Blue%20Skyguard%20Shooting.png",
     "kind": "image",
     "byteSize": 7656
   },
   {
-    "url": "./assets/sprites/units/blue/skyguard/skyguard-idle.png",
+    "url": "./assets/sprites/units/green/breaker/Alt%20Green%20Breaker%20Idle.png",
     "kind": "image",
-    "byteSize": 12873
+    "byteSize": 3780
+  },
+  {
+    "url": "./assets/sprites/units/green/breaker/Alt%20Green%20Breaker%20Shooting.png",
+    "kind": "image",
+    "byteSize": 6405
+  },
+  {
+    "url": "./assets/sprites/units/green/breaker/Alt%20Green%20Breaker%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 12405
+  },
+  {
+    "url": "./assets/sprites/units/green/bruiser/Alt%20Green%20Bruiser%202.0.png",
+    "kind": "image",
+    "byteSize": 99000
+  },
+  {
+    "url": "./assets/sprites/units/green/grunt/Alt%20Green%20Grunt%20Idle.png",
+    "kind": "image",
+    "byteSize": 3558
+  },
+  {
+    "url": "./assets/sprites/units/green/grunt/Alt%20Green%20Grunt%20Shooting.png",
+    "kind": "image",
+    "byteSize": 5856
+  },
+  {
+    "url": "./assets/sprites/units/green/grunt/Alt%20Green%20Grunt%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 13878
+  },
+  {
+    "url": "./assets/sprites/units/green/gunship/Alt%20Green%20Gunship%20Idle2.0.png",
+    "kind": "image",
+    "byteSize": 4218
+  },
+  {
+    "url": "./assets/sprites/units/green/gunship/Alt%20Green%20Gunship%20Movement2.0.png",
+    "kind": "image",
+    "byteSize": 17562
+  },
+  {
+    "url": "./assets/sprites/units/green/gunship/Alt%20Green%20Gunship%20Shooting2.png",
+    "kind": "image",
+    "byteSize": 6000
+  },
+  {
+    "url": "./assets/sprites/units/green/interceptor/Interceptor%20(3).png",
+    "kind": "image",
+    "byteSize": 166323
+  },
+  {
+    "url": "./assets/sprites/units/green/juggernaut/Alt%20Green%20Juggernaut%20Movement.png",
+    "kind": "image",
+    "byteSize": 12429
+  },
+  {
+    "url": "./assets/sprites/units/green/juggernaut/New_%20Alt%20Green%20Juggernaut%20Shooting.png",
+    "kind": "image",
+    "byteSize": 8133
+  },
+  {
+    "url": "./assets/sprites/units/green/longshot/Alt%20Green%20Longshot%20Idle.png",
+    "kind": "image",
+    "byteSize": 4281
+  },
+  {
+    "url": "./assets/sprites/units/green/longshot/Alt%20Green%20Longshot%20Shooting.png",
+    "kind": "image",
+    "byteSize": 15813
+  },
+  {
+    "url": "./assets/sprites/units/green/longshot/Alt%20Green%20Longshot%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 14958
+  },
+  {
+    "url": "./assets/sprites/units/green/mechanic/Alt%20Green%20Mechanic%20(All).png",
+    "kind": "image",
+    "byteSize": 29958
+  },
+  {
+    "url": "./assets/sprites/units/green/medic/Alt%20Green%20Medic%20Idle.png",
+    "kind": "image",
+    "byteSize": 3579
+  },
+  {
+    "url": "./assets/sprites/units/green/medic/Alt%20Green%20Medic%20Shooting.png",
+    "kind": "image",
+    "byteSize": 6258
+  },
+  {
+    "url": "./assets/sprites/units/green/medic/Alt%20Green%20Medic%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 11775
+  },
+  {
+    "url": "./assets/sprites/units/green/payload/Alt%20Green%20Payload.png",
+    "kind": "image",
+    "byteSize": 19071
+  },
+  {
+    "url": "./assets/sprites/units/green/runner/Alt%20Green%20Runner%20Idle.png",
+    "kind": "image",
+    "byteSize": 8745
+  },
+  {
+    "url": "./assets/sprites/units/green/runner/Alt%20Green%20Runner%20Movement.png",
+    "kind": "image",
+    "byteSize": 16041
+  },
+  {
+    "url": "./assets/sprites/units/green/runner/Alt%20Green%20Runner%20Shooting.png",
+    "kind": "image",
+    "byteSize": 7272
+  },
+  {
+    "url": "./assets/sprites/units/green/siege-gun/Alt%20Green%20Siege%20Gun.png",
+    "kind": "image",
+    "byteSize": 30216
+  },
+  {
+    "url": "./assets/sprites/units/green/skyguard/Alt%20Green%20Skyguard%20Idle.png",
+    "kind": "image",
+    "byteSize": 13842
+  },
+  {
+    "url": "./assets/sprites/units/green/skyguard/Alt%20Green%20Skyguard%20Movement.png",
+    "kind": "image",
+    "byteSize": 22665
+  },
+  {
+    "url": "./assets/sprites/units/green/skyguard/Alt%20Green%20Skyguard%20Shooting.png",
+    "kind": "image",
+    "byteSize": 7896
+  },
+  {
+    "url": "./assets/sprites/units/orange/breaker/Alt%20Orange%20Breaker%20Idle.png",
+    "kind": "image",
+    "byteSize": 3861
+  },
+  {
+    "url": "./assets/sprites/units/orange/breaker/Alt%20Orange%20Breaker%20Shooting.png",
+    "kind": "image",
+    "byteSize": 6510
+  },
+  {
+    "url": "./assets/sprites/units/orange/breaker/Alt%20Orange%20Breaker%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 12693
+  },
+  {
+    "url": "./assets/sprites/units/orange/bruiser/Alt%20Orange%20Bruiser%202.0.png",
+    "kind": "image",
+    "byteSize": 98634
+  },
+  {
+    "url": "./assets/sprites/units/orange/grunt/Alt%20Orange%20Grunt%20Idle.png",
+    "kind": "image",
+    "byteSize": 3627
+  },
+  {
+    "url": "./assets/sprites/units/orange/grunt/Alt%20Orange%20Grunt%20Shooting.png",
+    "kind": "image",
+    "byteSize": 6123
+  },
+  {
+    "url": "./assets/sprites/units/orange/grunt/Alt%20Orange%20Grunt%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 14112
+  },
+  {
+    "url": "./assets/sprites/units/orange/gunship/Alt%20Orange%20Gunship%20Idle2.0.png",
+    "kind": "image",
+    "byteSize": 4407
+  },
+  {
+    "url": "./assets/sprites/units/orange/gunship/Alt%20Orange%20Gunship%20Movement2.0.png",
+    "kind": "image",
+    "byteSize": 17670
+  },
+  {
+    "url": "./assets/sprites/units/orange/gunship/Alt%20Orange%20Gunship%20Shooting2.0.png",
+    "kind": "image",
+    "byteSize": 6147
+  },
+  {
+    "url": "./assets/sprites/units/orange/interceptor/Interceptor%20(2).png",
+    "kind": "image",
+    "byteSize": 166458
+  },
+  {
+    "url": "./assets/sprites/units/orange/juggernaut/Alt%20Orange%20Juggernaut%20Movement.png",
+    "kind": "image",
+    "byteSize": 12438
+  },
+  {
+    "url": "./assets/sprites/units/orange/juggernaut/New_%20Alt%20Orange%20Juggernaut%20Shooting.png",
+    "kind": "image",
+    "byteSize": 7977
+  },
+  {
+    "url": "./assets/sprites/units/orange/longshot/Alt%20Orange%20Longshot%20Idle.png",
+    "kind": "image",
+    "byteSize": 4284
+  },
+  {
+    "url": "./assets/sprites/units/orange/longshot/Alt%20Orange%20Longshot%20Shooting.png",
+    "kind": "image",
+    "byteSize": 16008
+  },
+  {
+    "url": "./assets/sprites/units/orange/longshot/Alt%20Orange%20Longshot%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 15045
+  },
+  {
+    "url": "./assets/sprites/units/orange/mechanic/Alt%20Orange%20Mechanic%20(All).png",
+    "kind": "image",
+    "byteSize": 29415
+  },
+  {
+    "url": "./assets/sprites/units/orange/medic/Alt%20Orange%20Medic%20Idle.png",
+    "kind": "image",
+    "byteSize": 3615
+  },
+  {
+    "url": "./assets/sprites/units/orange/medic/Alt%20Orange%20Medic%20Shooting.png",
+    "kind": "image",
+    "byteSize": 6198
+  },
+  {
+    "url": "./assets/sprites/units/orange/medic/Alt%20Orange%20Medic%20Teleporting.png",
+    "kind": "image",
+    "byteSize": 12024
+  },
+  {
+    "url": "./assets/sprites/units/orange/payload/Alt%20Orange%20Payload.png",
+    "kind": "image",
+    "byteSize": 19104
+  },
+  {
+    "url": "./assets/sprites/units/orange/runner/Alt%20Orange%20Runner%20Idle.png",
+    "kind": "image",
+    "byteSize": 8715
+  },
+  {
+    "url": "./assets/sprites/units/orange/runner/Alt%20Orange%20Runner%20Movement.png",
+    "kind": "image",
+    "byteSize": 15363
+  },
+  {
+    "url": "./assets/sprites/units/orange/runner/Alt%20Orange%20Runner%20Shooting.png",
+    "kind": "image",
+    "byteSize": 7293
+  },
+  {
+    "url": "./assets/sprites/units/orange/siege-gun/Alt%20Orange%20Siege%20Gun.png",
+    "kind": "image",
+    "byteSize": 29739
+  },
+  {
+    "url": "./assets/sprites/units/orange/skyguard/Alt%20Orange%20Skyguard%20Idle.png",
+    "kind": "image",
+    "byteSize": 13680
+  },
+  {
+    "url": "./assets/sprites/units/orange/skyguard/Alt%20Orange%20Skyguard%20Movement.png",
+    "kind": "image",
+    "byteSize": 21717
+  },
+  {
+    "url": "./assets/sprites/units/orange/skyguard/Alt%20Orange%20Skyguard%20Shooting.png",
+    "kind": "image",
+    "byteSize": 8004
   },
   {
     "url": "./assets/sprites/units/purple/breaker.svg",
@@ -1282,7 +1627,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/content/maps.generated.js",
     "kind": "script",
-    "byteSize": 86933,
+    "byteSize": 248482,
     "environment": "development"
   },
   {
@@ -1414,7 +1759,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/generated/unitSpriteAnimations.js",
     "kind": "script",
-    "byteSize": 36042,
+    "byteSize": 26189,
     "environment": "development"
   },
   {
@@ -2091,4 +2436,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 93010830;
+export const ASSET_PRELOAD_TOTAL_BYTES = 94676101;

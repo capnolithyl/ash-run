@@ -127,46 +127,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           }
         }
       }
-    },
-    "blue": {
-      "frameWidth": 102,
-      "frameHeight": 128,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:grunt:idle",
-          "url": "./assets/sprites/units/blue/grunt/grunt-idle.png",
-          "frameRate": 5,
-          "frameCount": 2,
-          "sheetWidth": 204,
-          "sheetHeight": 128,
-          "sheetColumns": 2,
-          "sheetRows": 1,
-          "animationKeyBase": "animation:units:blue:grunt:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 1
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:grunt:attack",
-          "url": "./assets/sprites/units/blue/grunt/grunt-attack.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 204,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:grunt:attack",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        }
-      }
     }
   },
   "breaker": {
@@ -227,46 +187,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           }
         }
       }
-    },
-    "blue": {
-      "frameWidth": 102,
-      "frameHeight": 128,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:breaker:idle",
-          "url": "./assets/sprites/units/blue/breaker/breaker-idle.png",
-          "frameRate": 5,
-          "frameCount": 2,
-          "sheetWidth": 204,
-          "sheetHeight": 128,
-          "sheetColumns": 2,
-          "sheetRows": 1,
-          "animationKeyBase": "animation:units:blue:breaker:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 1
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:breaker:attack",
-          "url": "./assets/sprites/units/blue/breaker/breaker-attack.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 204,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:breaker:attack",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        }
-      }
     }
   },
   "longshot": {
@@ -319,47 +239,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetColumns": 3,
           "sheetRows": 3,
           "animationKeyBase": "animation:units:purple:longshot:attack",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 8
-            }
-          },
-          "cutsceneLoopCount": 1
-        }
-      }
-    },
-    "blue": {
-      "frameWidth": 128,
-      "frameHeight": 160,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:longshot:idle",
-          "url": "./assets/sprites/units/blue/longshot/longshot-idle.png",
-          "frameRate": 5,
-          "frameCount": 2,
-          "sheetWidth": 256,
-          "sheetHeight": 160,
-          "sheetColumns": 2,
-          "sheetRows": 1,
-          "animationKeyBase": "animation:units:blue:longshot:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 1
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:longshot:attack",
-          "url": "./assets/sprites/units/blue/longshot/longshot-attack.png",
-          "frameRate": 5,
-          "frameCount": 9,
-          "sheetWidth": 384,
-          "sheetHeight": 480,
-          "sheetColumns": 3,
-          "sheetRows": 3,
-          "animationKeyBase": "animation:units:blue:longshot:attack",
           "ranges": {
             "right": {
               "start": 0,
@@ -562,46 +441,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           }
         }
       }
-    },
-    "blue": {
-      "frameWidth": 128,
-      "frameHeight": 128,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:runner:idle",
-          "url": "./assets/sprites/units/blue/runner/runner-idle.png",
-          "frameRate": 5,
-          "frameCount": 4,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:runner:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 3
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:runner:attack",
-          "url": "./assets/sprites/units/blue/runner/runner-attack.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:runner:attack",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        }
-      }
     }
   },
   "bruiser": {
@@ -661,72 +500,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetColumns": 4,
           "sheetRows": 4,
           "animationKeyBase": "animation:units:purple:bruiser:attack",
-          "ranges": {
-            "right": {
-              "start": 5,
-              "end": 12
-            }
-          },
-          "cutsceneLoopCount": 1
-        }
-      }
-    },
-    "blue": {
-      "frameWidth": 384,
-      "frameHeight": 384,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:bruiser:sheet",
-          "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 1536,
-          "sheetHeight": 1536,
-          "sheetColumns": 4,
-          "sheetRows": 4,
-          "animationKeyBase": "animation:units:blue:bruiser:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        },
-        "walk": {
-          "key": "spritesheet:units:blue:bruiser:sheet",
-          "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
-          "frameRate": 5,
-          "frameCount": 5,
-          "sheetWidth": 1536,
-          "sheetHeight": 1536,
-          "sheetColumns": 4,
-          "sheetRows": 4,
-          "animationKeyBase": "animation:units:blue:bruiser:walk",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 2
-            },
-            "down": {
-              "start": 3,
-              "end": 3
-            },
-            "up": {
-              "start": 4,
-              "end": 4
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:bruiser:sheet",
-          "url": "./assets/sprites/units/blue/bruiser/bruiser-full.png",
-          "frameRate": 8,
-          "frameCount": 13,
-          "sheetWidth": 1536,
-          "sheetHeight": 1536,
-          "sheetColumns": 4,
-          "sheetRows": 4,
-          "animationKeyBase": "animation:units:blue:bruiser:attack",
           "ranges": {
             "right": {
               "start": 5,
@@ -801,46 +574,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetColumns": 2,
           "sheetRows": 2,
           "animationKeyBase": "animation:units:purple:juggernaut:attack",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        }
-      }
-    },
-    "blue": {
-      "frameWidth": 128,
-      "frameHeight": 128,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:juggernaut:idle",
-          "url": "./assets/sprites/units/blue/juggernaut/juggernaut-idle.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:juggernaut:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:juggernaut:attack",
-          "url": "./assets/sprites/units/blue/juggernaut/juggernaut-attack.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:juggernaut:attack",
           "ranges": {
             "right": {
               "start": 0,
@@ -994,46 +727,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           }
         }
       }
-    },
-    "blue": {
-      "frameWidth": 128,
-      "frameHeight": 128,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:skyguard:idle",
-          "url": "./assets/sprites/units/blue/skyguard/skyguard-idle.png",
-          "frameRate": 5,
-          "frameCount": 6,
-          "sheetWidth": 256,
-          "sheetHeight": 384,
-          "sheetColumns": 2,
-          "sheetRows": 3,
-          "animationKeyBase": "animation:units:blue:skyguard:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 5
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:skyguard:attack",
-          "url": "./assets/sprites/units/blue/skyguard/skyguard-attack.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:skyguard:attack",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        }
-      }
     }
   },
   "gunship": {
@@ -1109,46 +802,6 @@ export const GENERATED_UNIT_SPRITE_ANIMATIONS = {
           "sheetColumns": 2,
           "sheetRows": 2,
           "animationKeyBase": "animation:units:purple:gunship:attack",
-          "ranges": {
-            "right": {
-              "start": 0,
-              "end": 2
-            }
-          }
-        }
-      }
-    },
-    "blue": {
-      "frameWidth": 128,
-      "frameHeight": 128,
-      "animations": {
-        "idle": {
-          "key": "spritesheet:units:blue:gunship:idle",
-          "url": "./assets/sprites/units/blue/gunship/gunship-idle.png",
-          "frameRate": 5,
-          "frameCount": 2,
-          "sheetWidth": 128,
-          "sheetHeight": 256,
-          "sheetColumns": 1,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:gunship:idle",
-          "ranges": {
-            "default": {
-              "start": 0,
-              "end": 1
-            }
-          }
-        },
-        "attack": {
-          "key": "spritesheet:units:blue:gunship:attack",
-          "url": "./assets/sprites/units/blue/gunship/gunship-attack.png",
-          "frameRate": 5,
-          "frameCount": 3,
-          "sheetWidth": 256,
-          "sheetHeight": 256,
-          "sheetColumns": 2,
-          "sheetRows": 2,
-          "animationKeyBase": "animation:units:blue:gunship:attack",
           "ranges": {
             "right": {
               "start": 0,
