@@ -76,10 +76,12 @@ export const appShellBattleMeterMethods = {
       }
 
       const hpFill = card.querySelector('[data-meter-fill="hp"]');
+      const staminaFill = card.querySelector('[data-meter-fill="stamina"]');
       const xpFill = card.querySelector('.selection-section--xp [data-meter-fill="xp"]');
 
       meterState.set(unitId, {
         hp: Number(hpFill?.dataset.meterValue),
+        stamina: Number(staminaFill?.dataset.meterValue),
         xp: Number(xpFill?.dataset.meterValue)
       });
     }
@@ -115,6 +117,21 @@ export const appShellBattleMeterMethods = {
         this.animateBattleMeterFill(hpFill, previousMeter.hp, nextHp, {
           duration: BATTLE_HP_METER_ANIMATION_MS,
           emphasisClass: nextHp < previousMeter.hp ? "is-animating-loss" : "is-animating-gain"
+        });
+      }
+
+      const staminaFill = card.querySelector('[data-meter-fill="stamina"]');
+      const nextStamina = Number(staminaFill?.dataset.meterValue);
+
+      if (
+        Number.isFinite(previousMeter.stamina) &&
+        Number.isFinite(nextStamina) &&
+        previousMeter.stamina !== nextStamina
+      ) {
+        this.animateBattleMeterFill(staminaFill, previousMeter.stamina, nextStamina, {
+          duration: BATTLE_HP_METER_ANIMATION_MS,
+          emphasisClass:
+            nextStamina < previousMeter.stamina ? "is-animating-loss" : "is-animating-gain"
         });
       }
     }

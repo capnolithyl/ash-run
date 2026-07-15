@@ -111,6 +111,8 @@ test("battle HUD shows hovered enemy stats while targeting", () => {
   assert.match(html, /Runner/);
   assert.match(html, /selection-level-badge[^>]*>1<\/span>/);
   assert.match(html, /selection-health__value">100\/100<\/span>/);
+  assert.match(html, /aria-label="Stamina 80 out of 80"/);
+  assert.match(html, /<span>Weapon<\/span>[\s\S]*?<strong>Autocannon \(7\/7\)<\/strong>/);
   assert.match(html, /<span>Armor<\/span>[\s\S]*?<strong>Light<\/strong>/);
   assert.match(html, /<span>Terrain<\/span>[\s\S]*?<strong>Road<\/strong>/);
   assert.match(html, /Forecast/);
@@ -1520,12 +1522,18 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
 
   const html = renderHudForBattleState(battleState);
 
+  assert.match(html, /data-experience-value>0\/\d+</);
+  assert.match(html, /data-meter-fill="xp"[^>]*data-meter-value="0"[^>]*style="width:0%"/);
   assert.match(
     html,
     /<strong>Grunt<\/strong>[\s\S]*?<strong>Experience<\/strong>[\s\S]*?selection-health__label">HP<\/span>/
   );
+  assert.match(html, /aria-label="Stamina 60 out of 60"/);
+  assert.match(html, /data-meter-fill="stamina"/);
+  assert.equal(countMatches(html, /class="selection-stat-wrap"/g), 8);
+  assert.doesNotMatch(html, /selection-stat__label">(?:AMMO|STA)<\/span>/);
   assert.match(html, /class="selection-stat__background-icon" src="\.\/*assets\/img\/icons\/battle-hud\/stats\/atk\.png"/);
-  assert.match(html, /<strong>Rifle<\/strong>/);
+  assert.match(html, /<strong>Rifle \(7\/7\)<\/strong>/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/weapons\/rifle\.png/);
   assert.match(html, /<strong>Infantry Armor<\/strong>/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/armor\/infantry\.png/);
@@ -1535,6 +1543,68 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
   );
   assert.doesNotMatch(html, /Weapon Profile/);
   assert.doesNotMatch(html, /Armor Profile/);
+});
+
+test("battle HUD moves partial resources into the stamina meter and weapon card", () => {
+  const unit = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2, {
+    current: {
+      stamina: 35,
+      ammo: 5
+    }
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
+  const html = renderHudForBattleState(battleState);
+  const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+
+  assert.match(selectedPanel, /aria-label="Stamina 35 out of 70"/);
+  assert.match(selectedPanel, /data-meter-fill="stamina"[\s\S]*?data-meter-value="50"/);
+  assert.match(selectedPanel, /<strong>Bruiser Cannon \(5\/6\)<\/strong>/);
+  assert.equal(countMatches(selectedPanel, /class="selection-stat-wrap"/g), 4);
+});
+
+test("battle HUD preserves corrupted stamina and ammo cues after moving the resources", () => {
+  const renderCorruptedPanel = (stat) => {
+    const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+      statuses: [{ type: "corrupted", stat, turnsRemaining: 1, negative: true }]
+    });
+    const battleState = createTestBattleState({ playerUnits: [unit] });
+    battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+    return getBattleSidePanel(renderHudForBattleState(battleState), "battle-side-panel--selected");
+  };
+
+  const staminaPanel = renderCorruptedPanel("stamina");
+  const ammoPanel = renderCorruptedPanel("ammo");
+
+  assert.match(staminaPanel, /selection-health--stamina selection-health--corrupted/);
+  assert.match(staminaPanel, /aria-label="Stamina [^"]+ corrupted"/);
+  assert.match(staminaPanel, /selection-health__condition-icon/);
+  assert.match(ammoPanel, /selection-loadout-card selection-loadout-card--corrupted/);
+  assert.match(ammoPanel, /aria-label="Weapon Rifle \(\d+\/7\) corrupted"/);
+  assert.match(ammoPanel, /selection-loadout-card__condition-icon/);
+});
+
+test("battle HUD keeps unarmed and long weapon labels valid without resource tiles", () => {
+  const transport = createPlacedUnit("carrier", TURN_SIDES.PLAYER, 2, 2);
+  const gunship = createPlacedUnit("interceptor", TURN_SIDES.ENEMY, 4, 2);
+  const battleState = createTestBattleState({
+    playerUnits: [transport],
+    enemyUnits: [gunship]
+  });
+  battleState.selection = { type: "unit", id: transport.id, x: transport.x, y: transport.y };
+
+  const html = renderHudForBattleState(battleState);
+  const selectedPanel = getBattleSidePanel(html, "battle-side-panel--selected");
+
+  assert.match(selectedPanel, /aria-label="Weapon Unarmed"/);
+  assert.doesNotMatch(selectedPanel, /Unarmed \(/);
+
+  battleState.selection = { type: "unit", id: gunship.id, x: gunship.x, y: gunship.y };
+  const targetHtml = renderHudForBattleState(battleState);
+  assert.match(targetHtml, /Interceptor Cannons \(\d+\/\d+\)/);
 });
 
 test("battle HUD can render selected-unit experience from a presentation override", () => {
@@ -1677,7 +1747,7 @@ test("battle HUD shows the matching weapon icon for non-rifle weapon classes", (
 
   const html = renderHudForBattleState(battleState);
 
-  assert.match(html, /<strong>Autocannon<\/strong>/);
+  assert.match(html, /<strong>Autocannon \(7\/7\)<\/strong>/);
   assert.match(html, /assets\/img\/icons\/battle-hud\/weapons\/autocannon\.png/);
 });
 

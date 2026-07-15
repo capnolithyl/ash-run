@@ -16,13 +16,11 @@ const CRITICAL_SELECTORS_BY_SCENE = {
   "skirmish-map": ['[data-action="start-skirmish"]'],
   "options": [
     '[data-display-option="displayMode"]',
-    '[data-display-option="windowResolution"]',
-    ".unit-color-settings"
+    '[data-display-option="windowResolution"]'
   ],
   "battle-pause": [
     '[data-display-option="displayMode"]',
     '[data-display-option="windowResolution"]',
-    ".unit-color-settings",
     '[data-action="resume-battle"]'
   ],
   "battle-reward": ['[data-action="select-run-reward"]'],
@@ -116,6 +114,28 @@ async function expectNoUnexpectedTextOverflow(page) {
   expect(overflowing).toEqual([]);
 }
 
+async function expectNoSidebarHorizontalOverflow(page) {
+  const overflowing = await page.evaluate(() =>
+    Array.from(
+      document.querySelectorAll(
+        ".battle-side-panel, .battle-compact-sheet__panel"
+      )
+    )
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && element.scrollWidth - element.clientWidth > 2;
+      })
+      .map((element) => ({
+        className: element.className,
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        overflow: element.scrollWidth - element.clientWidth
+      }))
+  );
+
+  expect(overflowing).toEqual([]);
+}
+
 for (const scene of UI_HARNESS_SCENES) {
   test(`${scene.id} matches the visual baseline`, async ({ page }) => {
     await page.goto(`/ui-harness.html?scene=${scene.id}&embed=1`);
@@ -123,10 +143,46 @@ for (const scene of UI_HARNESS_SCENES) {
     await expectNoDocumentOverflow(page);
     await expectCriticalControlsInViewport(page, scene.id);
     await expectNoUnexpectedTextOverflow(page);
+    await expectNoSidebarHorizontalOverflow(page);
     await expect(page.locator(scene.locator)).toHaveScreenshot(`${scene.id}.png`, {
       animations: "disabled",
       caret: "hide",
       maxDiffPixels: 4000
     });
+  });
+}
+
+for (const sceneId of ["options", "battle-pause"]) {
+  test(`${sceneId} tabs expose every settings category without overflow`, async ({ page }) => {
+    await page.goto(`/ui-harness.html?scene=${sceneId}&embed=1`);
+    await expect(page.locator(".options-tabs")).toBeVisible();
+
+    const categories = [
+      ["display", "Display", '[data-display-option="displayMode"]'],
+      ["audio", "Audio", '[data-option="masterVolume"]'],
+      ["gameplay", "Gameplay", ".unit-color-settings"]
+    ];
+
+    for (const [tabId, tabName, controlSelector] of categories) {
+      const tab = page.getByRole("tab", { name: tabName, exact: true });
+      await expect(tab).toBeVisible();
+      await page.evaluate((nextTabId) => {
+        for (const candidate of document.querySelectorAll('[role="tab"][data-options-tab]')) {
+          const isActive = candidate.dataset.optionsTab === nextTabId;
+          candidate.classList.toggle("options-tabs__tab--active", isActive);
+          candidate.setAttribute("aria-selected", `${isActive}`);
+          candidate.tabIndex = isActive ? 0 : -1;
+        }
+
+        for (const panel of document.querySelectorAll('[role="tabpanel"][id^="options-panel-"]')) {
+          panel.hidden = panel.id !== `options-panel-${nextTabId}`;
+        }
+      }, tabId);
+      await expect(tab).toHaveAttribute("aria-selected", "true");
+      await expect(page.locator(controlSelector)).toBeVisible();
+      await expectNoDocumentOverflow(page);
+      await expectNoUnexpectedTextOverflow(page);
+      await expectNoSidebarHorizontalOverflow(page);
+    }
   });
 }

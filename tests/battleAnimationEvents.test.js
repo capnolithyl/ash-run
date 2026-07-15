@@ -32,6 +32,8 @@ import {
 } from "../src/game/phaser/view/battleAnimationEvents.js";
 import { getAnimatedMovementPaths } from "../src/game/phaser/scenes/battleScene/renderBoard.js";
 import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
+import { getUnitSpriteDefinition } from "../src/game/phaser/assets.js";
+import { getUnitMovementPlayback } from "../src/game/phaser/view/unitAnimationHelpers.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
 test("battle animation events include secondary-fire attacks that do not consume ammo", () => {
@@ -486,7 +488,7 @@ test("player longshot move events use teleport timing while preserving the path"
   assert.equal(getBattleSnapshotTransitionDurationMs(before, after), 1333);
 });
 
-test("enemy grunt movement keeps segment-based timing without teleport sheets", () => {
+test("enemy grunt movement uses the installed blue teleport sheet timing", () => {
   const player = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3);
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 3);
   const battleState = createTestBattleState({
@@ -515,8 +517,11 @@ test("enemy grunt movement keeps segment-based timing without teleport sheets", 
   assert.deepEqual(moveEvent.path[0], { x: 6, y: 3 });
   assert.ok(moveEvent.path.length > 1);
   const moveSegments = moveEvent.path.length - 1;
-  assert.equal(moveEvent.durationMs, getBattleMoveDuration(moveSegments));
-  assert.equal(moveEvent.endDelayMs, getBattleMoveDuration(moveSegments) + BATTLE_MOVE_SETTLE_MS);
+  const spriteDefinition = getUnitSpriteDefinition("grunt", TURN_SIDES.ENEMY);
+  const movementDuration = getUnitMovementPlayback(spriteDefinition, moveSegments).totalDurationMs;
+  assert.equal(spriteDefinition.walk.movementStyle, "teleport");
+  assert.equal(moveEvent.durationMs, movementDuration);
+  assert.equal(moveEvent.endDelayMs, movementDuration + BATTLE_MOVE_SETTLE_MS);
 });
 
 test("purple gunship move events include the stationary outro before settling", () => {

@@ -238,7 +238,8 @@ function updateExperienceCard(card, presentation) {
   const valueLabel = card.querySelector("[data-experience-value]");
   const xpFill = card.querySelector('[data-meter-fill="xp"]');
   const roundedExperience = Math.round(presentation.experience);
-  const ratioPercent = Math.max(6, Math.max(0, Math.min(1, presentation.ratio)) * 100);
+  const clampedRatio = Math.max(0, Math.min(1, presentation.ratio));
+  const ratioPercent = clampedRatio > 0 ? Math.max(6, clampedRatio * 100) : 0;
 
   if (levelBadge) {
     levelBadge.textContent = `${presentation.level}`;

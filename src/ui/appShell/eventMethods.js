@@ -12,6 +12,67 @@ import {
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
+  selectOptionsTab(tabId, { focus = false } = {}) {
+    const tabIds = ["display", "audio", "gameplay"];
+
+    if (!tabIds.includes(tabId)) {
+      return false;
+    }
+
+    this.activeOptionsTab = tabId;
+
+    for (const tab of this.root.querySelectorAll('[role="tab"][data-options-tab]')) {
+      const isActive = tab.dataset.optionsTab === tabId;
+      tab.classList.toggle("options-tabs__tab--active", isActive);
+      tab.setAttribute("aria-selected", `${isActive}`);
+      tab.tabIndex = isActive ? 0 : -1;
+
+      if (isActive && focus) {
+        tab.focus();
+      }
+    }
+
+    for (const panel of this.root.querySelectorAll('[role="tabpanel"][id^="options-panel-"]')) {
+      panel.hidden = panel.id !== `options-panel-${tabId}`;
+    }
+
+    return true;
+  },
+
+  handleKeyDown(event) {
+    const activeTab = event.target.closest?.('[role="tab"][data-options-tab]');
+
+    if (!activeTab) {
+      return;
+    }
+
+    const tabIds = ["display", "audio", "gameplay"];
+    const currentIndex = tabIds.indexOf(activeTab.dataset.optionsTab);
+    let nextIndex = currentIndex;
+
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowRight":
+        nextIndex = (currentIndex + 1) % tabIds.length;
+        break;
+      case "ArrowUp":
+      case "ArrowLeft":
+        nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = tabIds.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    this.selectOptionsTab(tabIds[nextIndex], { focus: true });
+  },
+
   getDesktopApi() {
     return globalThis.ashRun84Api ?? null;
   },
@@ -141,7 +202,7 @@ export const appShellEventMethods = {
       return;
     }
 
-    const { action, commanderId, slotId, unitTypeId } = trigger.dataset;
+    const { action, commanderId, optionsTab, slotId, unitTypeId } = trigger.dataset;
     const isCommanderSelection = [
       "select-commander",
       "select-skirmish-player-commander",
@@ -171,6 +232,9 @@ export const appShellEventMethods = {
     }
 
     switch (action) {
+      case "select-options-tab":
+        this.selectOptionsTab(optionsTab);
+        break;
       case "open-new-run":
         this.controller.openNewRun();
         break;

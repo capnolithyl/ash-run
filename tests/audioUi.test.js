@@ -180,6 +180,7 @@ test("UI actions classify cancel, danger, adjust, and ordinary confirmation dist
   assert.equal(classifyUiActionAudioCue("resume-battle"), UI_AUDIO_CUES.CANCEL);
   assert.equal(classifyUiActionAudioCue("confirm-abandon-run"), UI_AUDIO_CUES.DANGER);
   assert.equal(classifyUiActionAudioCue("select-slot"), UI_AUDIO_CUES.ADJUST);
+  assert.equal(classifyUiActionAudioCue("select-options-tab"), UI_AUDIO_CUES.ADJUST);
   assert.equal(classifyUiActionAudioCue("start-run"), UI_AUDIO_CUES.CONFIRM);
   assert.equal(isGameplayAudioRoutedAction("begin-attack"), true);
   assert.equal(isGameplayAudioRoutedAction("start-run"), false);

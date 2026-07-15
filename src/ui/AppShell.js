@@ -23,6 +23,7 @@ export class AppShell {
     this.displayConfirmationTimer = null;
     this.displayStateRenderTimer = null;
     this.displayUnsubscribe = null;
+    this.activeOptionsTab = "display";
     this.commanderSliderStates = new Map();
     this.commanderSliderTrackIndex = null;
     this.commanderSliderTransitioning = false;
@@ -85,6 +86,7 @@ export class AppShell {
     this.root.dataset.inputMode = this.inputMode;
 
     this.root.addEventListener("click", (event) => this.handleClick(event));
+    this.root.addEventListener("keydown", (event) => this.handleKeyDown(event));
     this.root.addEventListener("pointerover", (event) => this.handleAudioPointerOver(event));
     this.root.addEventListener("input", (event) => this.handleInput(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));

@@ -163,6 +163,34 @@
   box-shadow: 0 0 18px rgba(255, 138, 61, 0.22);
 }
 
+.selection-health__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.selection-health__bar--stamina {
+  border-color: rgba(90, 224, 255, 0.18);
+  background: rgba(52, 128, 163, 0.12);
+}
+
+.selection-health__fill--stamina {
+  background: linear-gradient(90deg, #1b8fff, #35dcff 58%, #8ff8ff);
+  box-shadow: 0 0 18px rgba(53, 220, 255, 0.26);
+}
+
+.selection-health--corrupted .selection-health__bar--stamina {
+  border-color: rgba(114, 238, 174, 0.34);
+  box-shadow: 0 0 0.85rem rgba(114, 238, 174, 0.08);
+}
+
+.selection-health__condition-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  object-fit: contain;
+  opacity: 0.82;
+}
+
 .selection-health__fill.is-animating-loss {
   animation: selection-health-damage 380ms ease-out;
 }
@@ -309,12 +337,13 @@
 
 .selection-stat-tooltip {
   position: absolute;
-  left: -0.2rem;
-  right: -0.2rem;
+  left: 0;
+  right: auto;
   bottom: calc(100% + 0.38rem);
   display: grid;
   gap: 0.45rem;
-  min-width: 12rem;
+  width: min(12rem, calc(200% + 0.48rem));
+  min-width: 0;
   padding: 0.72rem 0.78rem;
   border: 1px solid rgba(255, 138, 61, 0.2);
   border-radius: 0.85rem;
@@ -338,6 +367,11 @@
 .selection-stat-wrap:is(:hover, :focus-within) .selection-stat-tooltip {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.selection-stat-wrap:nth-child(even) .selection-stat-tooltip {
+  right: 0;
+  left: auto;
 }
 
 .selection-stat-tooltip__header,
@@ -553,6 +587,30 @@
 
 .selection-loadout-card__copy {
   min-width: 0;
+}
+
+.selection-loadout-card--corrupted {
+  border-color: rgba(114, 238, 174, 0.28);
+  box-shadow:
+    inset 0 0 22px rgba(114, 238, 174, 0.06),
+    inset 0 0 34px rgba(255, 138, 61, 0.03),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 0 22px rgba(114, 238, 174, 0.08);
+}
+
+.selection-loadout-card--corrupted .selection-loadout-card__copy {
+  padding-right: 1.35rem;
+}
+
+.selection-loadout-card > .selection-loadout-card__condition-icon {
+  position: absolute;
+  top: 0.64rem;
+  right: 0.7rem;
+  z-index: 2;
+  width: 1.05rem;
+  height: 1.05rem;
+  object-fit: contain;
+  opacity: 0.82;
 }
 
 .selection-loadout-card__copy span {

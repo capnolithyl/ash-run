@@ -50,6 +50,7 @@ const ADJUST_ACTIONS = new Set([
   "select-skirmish-player-commander",
   "select-skirmish-enemy-commander",
   "select-skirmish-map",
+  "select-options-tab",
   "select-next-unit",
   "run-loadout-add",
   "run-loadout-remove",

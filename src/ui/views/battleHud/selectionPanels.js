@@ -183,9 +183,19 @@ function getArmorClassIconFileName(armorClass) {
   return armorClass ? getBattleHudArmorIconFileName(armorClass) : null;
 }
 
-function renderLoadoutSection(iconUrl, label, value) {
+function renderLoadoutSection(
+  iconUrl,
+  label,
+  value,
+  { isCorrupted = false } = {}
+) {
+  const ariaLabel = `${label} ${value}${isCorrupted ? " corrupted" : ""}`;
+
   return `
-    <div class="selection-loadout-card">
+    <div
+      class="selection-loadout-card${isCorrupted ? " selection-loadout-card--corrupted" : ""}"
+      aria-label="${ariaLabel}"
+    >
       ${
         iconUrl
           ? `<img class="selection-loadout-card__icon" src="${iconUrl}" alt="" loading="lazy" decoding="async" />`
@@ -195,6 +205,11 @@ function renderLoadoutSection(iconUrl, label, value) {
         <span>${label}</span>
         <strong>${value}</strong>
       </div>
+      ${
+        isCorrupted
+          ? `<img class="selection-loadout-card__condition-icon" src="${CORRUPTED_ICON_URL}" alt="Corrupted" loading="lazy" decoding="async" />`
+          : ""
+      }
     </div>
   `;
 }
@@ -279,16 +294,11 @@ function renderTerrainLoadoutSection(terrain) {
 
 function renderProfileSummary(unit) {
   const armorName = unit?.armorClass ? `${formatProfileName(unit.armorClass)} Armor` : "Unarmored";
-  const weaponIconFileName = getWeaponClassIconFileName(unit.weaponClass);
   const armorIconFileName = getArmorClassIconFileName(unit.armorClass);
 
   return `
     <div class="selection-loadout-grid">
-      ${renderLoadoutSection(
-        weaponIconFileName ? getBattleHudWeaponIconUrl(weaponIconFileName) : "",
-        "Weapon",
-        formatProfileName(unit.weaponClass, "Unarmed")
-      )}
+      ${renderWeaponSummary(unit)}
       ${renderLoadoutSection(
         armorIconFileName ? getBattleHudArmorIconUrl(armorIconFileName) : "",
         "Armor",
@@ -296,6 +306,22 @@ function renderProfileSummary(unit) {
       )}
     </div>
   `;
+}
+
+function renderWeaponSummary(unit) {
+  const weaponIconFileName = getWeaponClassIconFileName(unit.weaponClass);
+  const weaponName = formatProfileName(unit.weaponClass, "Unarmed");
+  const hasAmmo = Boolean(
+    unit.weaponClass && Number.isFinite(unit.ammo) && Number.isFinite(unit.ammoMax)
+  );
+  const weaponLabel = hasAmmo ? `${weaponName} (${unit.ammo}/${unit.ammoMax})` : weaponName;
+
+  return renderLoadoutSection(
+    weaponIconFileName ? getBattleHudWeaponIconUrl(weaponIconFileName) : "",
+    "Weapon",
+    weaponLabel,
+    { isCorrupted: unit.corruptedStat === "ammo" }
+  );
 }
 
 function renderHealthBar(unit) {
@@ -312,6 +338,36 @@ function renderHealthBar(unit) {
           style="width:${healthRatio}%"
         ></div>
         <span class="selection-health__value">${unit.hp}/${unit.maxHealth}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderStaminaBar(unit) {
+  const staminaRatio = getMeterWidthPercent(unit.stamina, unit.staminaMax);
+  const isCorrupted = unit.corruptedStat === "stamina";
+
+  return `
+    <div class="selection-health selection-health--stamina${isCorrupted ? " selection-health--corrupted" : ""}">
+      <span class="selection-health__label">
+        STA
+        ${
+          isCorrupted
+            ? `<img class="selection-health__condition-icon" src="${CORRUPTED_ICON_URL}" alt="Corrupted" loading="lazy" decoding="async" />`
+            : ""
+        }
+      </span>
+      <div
+        class="selection-health__bar selection-health__bar--stamina"
+        aria-label="Stamina ${unit.stamina} out of ${unit.staminaMax}${isCorrupted ? " corrupted" : ""}"
+      >
+        <div
+          class="selection-health__fill selection-health__fill--stamina"
+          data-meter-fill="stamina"
+          data-meter-value="${staminaRatio}"
+          style="width:${staminaRatio}%"
+        ></div>
+        <span class="selection-health__value">${unit.stamina}/${unit.staminaMax}</span>
       </div>
     </div>
   `;
@@ -343,12 +399,6 @@ function renderUnitStatGrid(unit) {
         breakdown: statBreakdowns.range,
         tooltipId: `selection-stat-tooltip-${unitId}-range`
       })}
-      ${renderStatCell("ammo", "AMMO", `${unit.ammo}/${unit.ammoMax}`, {
-        isCorrupted: unit.corruptedStat === "ammo"
-      })}
-      ${renderStatCell("stamina", "STA", `${unit.stamina}/${unit.staminaMax}`, {
-        isCorrupted: unit.corruptedStat === "stamina"
-      })}
     </div>
   `;
 }
@@ -357,7 +407,8 @@ function renderExperienceBar(unit, experiencePresentation = null) {
   const displayedExperience = experiencePresentation?.experience ?? unit.experience;
   const displayedThreshold = experiencePresentation?.experienceToNextLevel ?? unit.experienceToNextLevel;
   const displayedRatio = experiencePresentation?.ratio ?? unit.experienceRatio;
-  const experienceRatio = Math.max(6, displayedRatio * 100);
+  const clampedRatio = Math.max(0, Math.min(1, displayedRatio));
+  const experienceRatio = clampedRatio > 0 ? Math.max(6, clampedRatio * 100) : 0;
 
   return `
     <div class="selection-section selection-section--xp">
@@ -384,6 +435,7 @@ function renderUnitSummary(
   {
     showExperience = false,
     showLoadout = true,
+    showWeapon = false,
     showGear = true,
     terrainMarkup = "",
     experiencePresentation = null
@@ -415,6 +467,7 @@ function renderUnitSummary(
       </div>
       ${showExperience ? renderExperienceBar(unit, experiencePresentation) : ""}
       ${renderHealthBar(unit)}
+      ${renderStaminaBar(unit)}
       ${renderUnitStatGrid(unit)}
       ${
         unit.isHostageCarrier
@@ -426,10 +479,10 @@ function renderUnitSummary(
           : ""
       }
       ${
-        showLoadout || showGear || terrainMarkup
+        showLoadout || showWeapon || showGear || terrainMarkup
           ? `
               <div class="selection-loadout-stack">
-                ${showLoadout ? renderProfileSummary(unit) : ""}
+                ${showLoadout ? renderProfileSummary(unit) : showWeapon ? renderWeaponSummary(unit) : ""}
                 ${
                   showGear
                     ? renderGearLoadoutSection(attachedGear, {
@@ -510,7 +563,11 @@ function renderTargetIntelCard(tile, { forecast = null } = {}) {
     <div class="card-block card-block--target-intel">
       <h3>Target Intel</h3>
       <div class="target-intel-card">
-        ${renderUnitSummary(unit, { showExperience: false, showLoadout: false })}
+        ${renderUnitSummary(unit, {
+          showExperience: false,
+          showLoadout: false,
+          showWeapon: true
+        })}
         <div class="target-intel-card__rows">
           ${rows
             .map(

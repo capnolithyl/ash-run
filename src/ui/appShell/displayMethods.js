@@ -171,6 +171,7 @@ export const appShellDisplayMethods = {
     );
 
     return {
+      activeOptionsTab: this.activeOptionsTab ?? "display",
       desktopAvailable: Boolean(this.getDesktopApi?.()?.applyDisplaySettings),
       displayState,
       draft,

@@ -99,7 +99,7 @@ test("battlefield name tooltip option can be persisted off", () => {
   );
 });
 
-test("incomplete saved palettes keep their accent selection", () => {
+test("installed animated palettes are enabled and keep their accent selection", () => {
   const options = normalizeMetaOptions({
     playerColor: "green",
     enemyColor: "blue"
@@ -111,7 +111,11 @@ test("incomplete saved palettes keep their accent selection", () => {
     "--player-color": "#66ffbf",
     "--enemy-color": "#5db8ff"
   });
-  assert.match(html, /name="playerColor"[\s\S]*value="green"[\s\S]*checked[\s\S]*disabled/);
+  assert.match(html, /name="playerColor"[\s\S]*value="green"[\s\S]*checked/);
+  const greenInputs = html.match(/<input(?=[^>]*value="green")[^>]*>/g) ?? [];
+  assert.equal(greenInputs.length, 2);
+  assert.ok(greenInputs.some((input) => input.includes("checked") && !input.includes("disabled")));
+  assert.ok(greenInputs.some((input) => input.includes("disabled")));
 });
 
 test("display preset availability filters resolutions against monitor work area", () => {
@@ -157,9 +161,88 @@ test("options view renders display mode and resolution controls", () => {
   assert.match(html, /<input type="checkbox" checked data-option="battlefieldNameTooltips"/);
   assert.match(html, /name="playerColor"[\s\S]*value="purple"[\s\S]*checked/);
   assert.match(html, /name="enemyColor"[\s\S]*value="blue"[\s\S]*checked/);
-  assert.match(html, /value="green"[\s\S]*disabled/);
+  assert.match(html, /value="green"/);
+  assert.match(html, /value="orange"/);
   assert.match(html, /Player Units: Blue[\s\S]*disabled/);
   assert.match(html, /Enemy Units: Purple[\s\S]*disabled/);
+});
+
+test("options renderer groups controls into accessible vertical tabs", () => {
+  const html = renderOptionFields(createDefaultMetaState().options, {
+    showDisplayOptions: true,
+    activeOptionsTab: "audio"
+  });
+
+  assert.match(html, /role="tablist"[^>]*aria-orientation="vertical"/);
+  assert.match(html, /id="options-tab-audio"[\s\S]*?aria-selected="true"/);
+  assert.match(html, /id="options-panel-display"[\s\S]*?hidden/);
+  assert.match(html, /id="options-panel-audio"[\s\S]*?aria-labelledby="options-tab-audio"/);
+  assert.match(html, /id="options-panel-gameplay"[\s\S]*?hidden/);
+  assert.match(html, /options-panel-display[\s\S]*?data-display-option="displayMode"/);
+  assert.match(html, /options-panel-audio[\s\S]*?data-option="masterVolume"/);
+  assert.match(html, /options-panel-audio[\s\S]*?data-option="muted"/);
+  assert.match(html, /options-panel-gameplay[\s\S]*?data-option="playerColor"/);
+  assert.match(html, /options-panel-gameplay[\s\S]*?data-option="showGrid"/);
+});
+
+test("options tab selection updates ARIA state and supports arrow navigation", () => {
+  const createClassList = () => ({
+    active: new Set(),
+    toggle(className, enabled) {
+      enabled ? this.active.add(className) : this.active.delete(className);
+    }
+  });
+  const tabs = ["display", "audio", "gameplay"].map((tabId) => ({
+    dataset: { optionsTab: tabId },
+    classList: createClassList(),
+    attributes: {},
+    tabIndex: -1,
+    focused: false,
+    setAttribute(name, value) {
+      this.attributes[name] = value;
+    },
+    focus() {
+      this.focused = true;
+    }
+  }));
+  const panels = ["display", "audio", "gameplay"].map((tabId) => ({
+    id: `options-panel-${tabId}`,
+    hidden: false
+  }));
+  const shell = {
+    activeOptionsTab: "display",
+    root: {
+      querySelectorAll(selector) {
+        return selector.includes('role="tab"') ? tabs : panels;
+      }
+    },
+    selectOptionsTab: appShellEventMethods.selectOptionsTab
+  };
+
+  assert.equal(appShellEventMethods.selectOptionsTab.call(shell, "audio", { focus: true }), true);
+  assert.equal(shell.activeOptionsTab, "audio");
+  assert.equal(tabs[1].attributes["aria-selected"], "true");
+  assert.equal(tabs[1].tabIndex, 0);
+  assert.equal(tabs[1].focused, true);
+  assert.equal(panels[1].hidden, false);
+  assert.equal(panels[0].hidden, true);
+
+  let prevented = false;
+  appShellEventMethods.handleKeyDown.call(shell, {
+    key: "ArrowDown",
+    target: {
+      closest() {
+        return tabs[1];
+      }
+    },
+    preventDefault() {
+      prevented = true;
+    }
+  });
+
+  assert.equal(prevented, true);
+  assert.equal(shell.activeOptionsTab, "gameplay");
+  assert.equal(tabs[2].focused, true);
 });
 
 test("option change handling preserves radio string values", async () => {

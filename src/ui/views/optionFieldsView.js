@@ -5,11 +5,36 @@ import {
   normalizeDisplayOptions
 } from "../../game/core/displayOptions.js";
 import {
-  UNIT_COLOR_DEFINITIONS,
-  UNIT_COLOR_IDS,
+  getUnitColorDefinition,
   normalizeUnitColorOptions
 } from "../../game/core/unitColors.js";
 import { getUnitSpriteColorAvailability } from "../../game/phaser/assets.js";
+
+export const OPTION_TAB_IDS = Object.freeze(["display", "audio", "gameplay"]);
+
+function normalizeOptionTab(value) {
+  return OPTION_TAB_IDS.includes(value) ? value : "display";
+}
+
+function renderOptionTabButton(tabId, label, activeTab) {
+  const isActive = tabId === activeTab;
+
+  return `
+    <button
+      class="options-tabs__tab${isActive ? " options-tabs__tab--active" : ""}"
+      id="options-tab-${tabId}"
+      type="button"
+      role="tab"
+      aria-selected="${isActive}"
+      aria-controls="options-panel-${tabId}"
+      tabindex="${isActive ? "0" : "-1"}"
+      data-action="select-options-tab"
+      data-options-tab="${tabId}"
+    >
+      ${label}
+    </button>
+  `;
+}
 
 function renderDisplaySettings(options, displayContext = {}) {
   if (!displayContext.showDisplayOptions) {
@@ -123,15 +148,13 @@ function renderUnitColorPicker({
     <fieldset class="unit-color-picker">
       <legend>${label}</legend>
       <div class="unit-color-picker__swatches">
-        ${UNIT_COLOR_IDS.map((colorId) => {
-          const definition = UNIT_COLOR_DEFINITIONS[colorId];
-          const available = availability[colorId] === true;
+        ${Object.keys(availability).map((colorId) => {
+          const definition = getUnitColorDefinition(colorId);
+          const available = true;
           const selected = selectedColor === colorId;
           const conflicts = opposingColor === colorId && !selected;
           const disabled = !available || conflicts;
-          const status = !available
-            ? "Coming soon"
-            : conflicts
+          const status = conflicts
               ? "Used by the other side"
               : "Available";
 
@@ -146,7 +169,7 @@ function renderUnitColorPicker({
                 name="${owner}Color"
                 value="${colorId}"
                 data-option="${owner}Color"
-                aria-label="${label}: ${definition.label}${available ? "" : " (coming soon)"}"
+                aria-label="${label}: ${definition.label}"
                 ${selected ? "checked" : ""}
                 ${disabled ? "disabled" : ""}
               />
@@ -186,9 +209,7 @@ function renderUnitColorSettings(options = {}) {
           availability
         })}
       </div>
-      <small class="unit-color-settings__note">
-        Additional colors unlock when their complete unit sprite sets are installed.
-      </small>
+      <small class="unit-color-settings__note">Colors are read from installed complete unit sprite sets.</small>
     </section>
   `;
 }
@@ -207,41 +228,75 @@ export function renderOptionFields(options = {}, displayContext = {}) {
     : 0.85;
   const sfxVolumePercent = Math.round(sfxVolume * 100);
   const combatCutsceneAnimations = options.combatCutsceneAnimations !== false;
+  const activeTab = normalizeOptionTab(displayContext.activeOptionsTab);
 
   return `
-    ${renderDisplaySettings(options, displayContext)}
-    ${renderUnitColorSettings(options)}
-    <label class="option-row option-row--toggle">
-      <span>Show Grid Highlights</span>
-      <input type="checkbox" ${options.showGrid ? "checked" : ""} data-option="showGrid" />
-    </label>
-    <label class="option-row option-row--toggle">
-      <span>Battlefield Name Tooltips</span>
-      <input type="checkbox" ${options.battlefieldNameTooltips !== false ? "checked" : ""} data-option="battlefieldNameTooltips" />
-    </label>
-    <label class="option-row option-row--toggle">
-      <span>Allow Screen Shake</span>
-      <input type="checkbox" ${options.screenShake ? "checked" : ""} data-option="screenShake" />
-    </label>
-    <label class="option-row option-row--toggle">
-      <span>Combat Cutscene Animations</span>
-      <input type="checkbox" ${combatCutsceneAnimations ? "checked" : ""} data-option="combatCutsceneAnimations" />
-    </label>
-    <label class="option-row option-row--range">
-      <span>Master Volume <strong>${masterVolumePercent}%</strong></span>
-      <input type="range" min="0" max="1" step="0.01" value="${masterVolume}" data-option="masterVolume" />
-    </label>
-    <label class="option-row option-row--range">
-      <span>Music Volume <strong>${musicVolumePercent}%</strong></span>
-      <input type="range" min="0" max="1" step="0.01" value="${musicVolume}" data-option="musicVolume" />
-    </label>
-    <label class="option-row option-row--range">
-      <span>SFX Volume <strong>${sfxVolumePercent}%</strong></span>
-      <input type="range" min="0" max="1" step="0.01" value="${sfxVolume}" data-option="sfxVolume" />
-    </label>
-    <label class="option-row option-row--toggle">
-      <span>Mute Audio</span>
-      <input type="checkbox" ${options.muted ? "checked" : ""} data-option="muted" />
-    </label>
+    <div class="options-tabs" data-options-tabs>
+      <div class="options-tabs__nav" role="tablist" aria-label="Options categories" aria-orientation="vertical">
+        ${renderOptionTabButton("display", "Display", activeTab)}
+        ${renderOptionTabButton("audio", "Audio", activeTab)}
+        ${renderOptionTabButton("gameplay", "Gameplay", activeTab)}
+      </div>
+      <div class="options-tabs__content">
+        <section
+          class="options-tabs__panel"
+          id="options-panel-display"
+          role="tabpanel"
+          aria-labelledby="options-tab-display"
+          ${activeTab === "display" ? "" : "hidden"}
+        >
+          ${renderDisplaySettings(options, displayContext)}
+        </section>
+        <section
+          class="options-tabs__panel"
+          id="options-panel-audio"
+          role="tabpanel"
+          aria-labelledby="options-tab-audio"
+          ${activeTab === "audio" ? "" : "hidden"}
+        >
+          <label class="option-row option-row--range">
+            <span>Master Volume <strong>${masterVolumePercent}%</strong></span>
+            <input type="range" min="0" max="1" step="0.01" value="${masterVolume}" data-option="masterVolume" />
+          </label>
+          <label class="option-row option-row--range">
+            <span>Music Volume <strong>${musicVolumePercent}%</strong></span>
+            <input type="range" min="0" max="1" step="0.01" value="${musicVolume}" data-option="musicVolume" />
+          </label>
+          <label class="option-row option-row--range">
+            <span>SFX Volume <strong>${sfxVolumePercent}%</strong></span>
+            <input type="range" min="0" max="1" step="0.01" value="${sfxVolume}" data-option="sfxVolume" />
+          </label>
+          <label class="option-row option-row--toggle">
+            <span>Mute Audio</span>
+            <input type="checkbox" ${options.muted ? "checked" : ""} data-option="muted" />
+          </label>
+        </section>
+        <section
+          class="options-tabs__panel"
+          id="options-panel-gameplay"
+          role="tabpanel"
+          aria-labelledby="options-tab-gameplay"
+          ${activeTab === "gameplay" ? "" : "hidden"}
+        >
+          ${renderUnitColorSettings(options)}
+          <label class="option-row option-row--toggle">
+            <span>Show Grid Highlights</span>
+            <input type="checkbox" ${options.showGrid ? "checked" : ""} data-option="showGrid" />
+          </label>
+          <label class="option-row option-row--toggle">
+            <span>Battlefield Name Tooltips</span>
+            <input type="checkbox" ${options.battlefieldNameTooltips !== false ? "checked" : ""} data-option="battlefieldNameTooltips" />
+          </label>
+          <label class="option-row option-row--toggle">
+            <span>Allow Screen Shake</span>
+            <input type="checkbox" ${options.screenShake ? "checked" : ""} data-option="screenShake" />
+          </label>
+          <label class="option-row option-row--toggle">
+            <span>Combat Cutscene Animations</span>
+            <input type="checkbox" ${combatCutsceneAnimations ? "checked" : ""} data-option="combatCutsceneAnimations" />
+          </label>
+        </section>
+      </div>
+    </div>
   `;
 }

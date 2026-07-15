@@ -4,9 +4,8 @@
 export const GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY = {
   "purple": true,
   "blue": true,
-  "green": false,
-  "orange": false,
-  "pink": false
+  "green": true,
+  "orange": true
 };
 
 export const GENERATED_UNIT_SPRITE_STATIC_COLORS = {
@@ -64,7 +63,9 @@ export const GENERATED_UNIT_SPRITE_STATIC_COLORS = {
   ],
   "carrier": [
     "purple",
-    "blue"
+    "blue",
+    "green",
+    "orange"
   ]
 };
 

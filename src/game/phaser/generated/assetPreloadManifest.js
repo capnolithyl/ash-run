@@ -1271,7 +1271,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./assets/sprites/units/blue/carrier.svg",
     "kind": "image",
-    "byteSize": 666
+    "byteSize": 667
   },
   {
     "url": "./assets/sprites/units/blue/grunt.svg",
@@ -1474,6 +1474,11 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 99000
   },
   {
+    "url": "./assets/sprites/units/green/carrier.svg",
+    "kind": "image",
+    "byteSize": 667
+  },
+  {
     "url": "./assets/sprites/units/green/grunt/grunt-attack.png",
     "kind": "image",
     "byteSize": 5856
@@ -1612,6 +1617,11 @@ export const ASSET_PRELOAD_MANIFEST = [
     "url": "./assets/sprites/units/orange/bruiser/bruiser-full.png",
     "kind": "image",
     "byteSize": 98634
+  },
+  {
+    "url": "./assets/sprites/units/orange/carrier.svg",
+    "kind": "image",
+    "byteSize": 667
   },
   {
     "url": "./assets/sprites/units/orange/grunt/grunt-attack.png",
@@ -2129,6 +2139,12 @@ export const ASSET_PRELOAD_MANIFEST = [
     "environment": "development"
   },
   {
+    "url": "./src/game/core/generated/unitColorIds.js",
+    "kind": "script",
+    "byteSize": 187,
+    "environment": "development"
+  },
+  {
     "url": "./src/game/core/id.js",
     "kind": "script",
     "byteSize": 261,
@@ -2143,13 +2159,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/core/unitColors.js",
     "kind": "script",
-    "byteSize": 1858,
+    "byteSize": 3153,
     "environment": "development"
   },
   {
     "url": "./src/game/phaser/assets.js",
     "kind": "script",
-    "byteSize": 18130,
+    "byteSize": 18891,
     "environment": "development"
   },
   {
@@ -2197,7 +2213,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/generated/unitSpriteAnimations.js",
     "kind": "script",
-    "byteSize": 99567,
+    "byteSize": 99575,
     "environment": "development"
   },
   {
@@ -2617,7 +2633,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/battle/intel-and-selection.css",
     "kind": "style",
-    "byteSize": 17876,
+    "byteSize": 19223,
     "environment": "development"
   },
   {
@@ -2665,7 +2681,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/shared/chrome.css",
     "kind": "style",
-    "byteSize": 23279,
+    "byteSize": 24690,
     "environment": "development"
   },
   {
@@ -2677,13 +2693,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/AppShell.js",
     "kind": "script",
-    "byteSize": 4925,
+    "byteSize": 5045,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/audioFeedback.js",
     "kind": "script",
-    "byteSize": 5305,
+    "byteSize": 5329,
     "environment": "development"
   },
   {
@@ -2695,13 +2711,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/displayMethods.js",
     "kind": "script",
-    "byteSize": 10804,
+    "byteSize": 10864,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/eventMethods.js",
     "kind": "script",
-    "byteSize": 22304,
+    "byteSize": 24022,
     "environment": "development"
   },
   {
@@ -2713,13 +2729,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/battleMeters.js",
     "kind": "script",
-    "byteSize": 4440,
+    "byteSize": 5152,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/render/battlePresentationPlayback.js",
     "kind": "script",
-    "byteSize": 17432,
+    "byteSize": 17492,
     "environment": "development"
   },
   {
@@ -2809,7 +2825,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/battleHud/selectionPanels.js",
     "kind": "script",
-    "byteSize": 20359,
+    "byteSize": 22203,
     "environment": "development"
   },
   {
@@ -2839,7 +2855,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/optionFieldsView.js",
     "kind": "script",
-    "byteSize": 9271,
+    "byteSize": 11257,
     "environment": "development"
   },
   {
@@ -2886,4 +2902,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 98912632;
+export const ASSET_PRELOAD_TOTAL_BYTES = 98925500;

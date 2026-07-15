@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { BUILDING_KEYS } from "../src/game/core/constants.js";
+import { UNIT_COLOR_IDS } from "../src/game/core/unitColors.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../src/game/content/terrain.js";
 import {
@@ -410,7 +411,7 @@ test("unit sprite sheets are preferred over static fallbacks when present", () =
   );
 });
 
-test("unit animation manifest supports color-specific omissions and mirrored attacks", () => {
+test("unit animation manifest supports installed color sheets and mirrored attacks", () => {
   const playerGruntDefinition = getUnitSpriteDefinition("grunt", "player");
   const enemyGruntDefinition = getUnitSpriteDefinition("grunt", "enemy");
   const playerBreakerDefinition = getUnitSpriteDefinition("breaker", "player");
@@ -429,7 +430,7 @@ test("unit animation manifest supports color-specific omissions and mirrored att
   assert.deepEqual(playerBreakerDefinition.walk.ranges.default, { start: 0, end: 7 });
   assert.deepEqual(playerBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyBreakerDefinition.idle.key, "spritesheet:units:blue:breaker:idle");
-  assert.equal(enemyBreakerDefinition.walk, null);
+  assert.equal(enemyBreakerDefinition.walk.key, "spritesheet:units:blue:breaker:walk");
   assert.deepEqual(enemyBreakerDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(enemyBruiserDefinition.idle.key, "spritesheet:units:blue:bruiser:sheet");
   assert.equal(enemyBruiserDefinition.walk.key, enemyBruiserDefinition.idle.key);
@@ -523,7 +524,7 @@ test("gunship, runner, and skyguard sheets use the expected frame geometry", () 
   assert.equal(playerGunshipDefinition.walk.sheetRows, 3);
   assert.equal(gunshipWalkAsset.frameWidth, 192);
   assert.equal(gunshipWalkAsset.frameHeight, 192);
-  assert.equal(enemyGunshipDefinition.walk, null);
+  assert.equal(enemyGunshipDefinition.walk.key, "spritesheet:units:blue:gunship:walk");
 
   const playerRunnerDefinition = getUnitSpriteDefinition("runner", "player");
   const enemyRunnerDefinition = getUnitSpriteDefinition("runner", "enemy");
@@ -538,7 +539,7 @@ test("gunship, runner, and skyguard sheets use the expected frame geometry", () 
   assert.equal(playerRunnerDefinition.walk.frameHeight, 192);
   assert.equal(playerRunnerDefinition.walk.sheetColumns, 2);
   assert.equal(playerRunnerDefinition.walk.sheetRows, 3);
-  assert.equal(enemyRunnerDefinition.walk, null);
+  assert.equal(enemyRunnerDefinition.walk.key, "spritesheet:units:blue:runner:walk");
 
   assert.equal(playerSkyguardDefinition.walk.key, "spritesheet:units:purple:skyguard:walk");
   assert.deepEqual(playerSkyguardDefinition.walk.ranges.right, { start: 0, end: 5 });
@@ -548,7 +549,7 @@ test("gunship, runner, and skyguard sheets use the expected frame geometry", () 
   assert.equal(playerSkyguardDefinition.walk.frameHeight, 192);
   assert.equal(playerSkyguardDefinition.walk.sheetColumns, 3);
   assert.equal(playerSkyguardDefinition.walk.sheetRows, 3);
-  assert.equal(enemySkyguardDefinition.walk, null);
+  assert.equal(enemySkyguardDefinition.walk.key, "spritesheet:units:blue:skyguard:walk");
 });
 
 test("juggernaut, longshot, and medic sheets use the expected owner coverage and metadata", () => {
@@ -585,12 +586,12 @@ test("juggernaut, longshot, and medic sheets use the expected owner coverage and
   assert.equal(playerJuggernautDefinition.walk.frameHeight, 192);
   assert.equal(playerJuggernautDefinition.walk.sheetColumns, 2);
   assert.equal(playerJuggernautDefinition.walk.sheetRows, 3);
-  assert.equal(enemyJuggernautDefinition.walk, null);
+  assert.equal(enemyJuggernautDefinition.walk.key, "spritesheet:units:blue:juggernaut:walk");
   assert.equal(playerLongshotDefinition.walk.movementStyle, "teleport");
   assert.deepEqual(playerLongshotDefinition.walk.ranges.default, { start: 0, end: 7 });
   assert.equal(playerLongshotDefinition.walk.sheetColumns, 3);
   assert.equal(playerLongshotDefinition.walk.sheetRows, 3);
-  assert.equal(enemyLongshotDefinition.walk, null);
+  assert.equal(enemyLongshotDefinition.walk.key, "spritesheet:units:blue:longshot:walk");
   assert.equal(playerMedicDefinition.type, "spritesheet");
   assert.deepEqual(playerMedicDefinition.idle.ranges.default, { start: 0, end: 1 });
   assert.equal(playerMedicDefinition.walk.movementStyle, "teleport");
@@ -600,12 +601,13 @@ test("juggernaut, longshot, and medic sheets use the expected owner coverage and
   assert.deepEqual(playerMedicDefinition.attack.ranges.right, { start: 0, end: 2 });
   assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.medic.purple.frameWidth, 102);
   assert.equal(GENERATED_UNIT_SPRITE_ANIMATIONS.medic.purple.frameHeight, 128);
-  assert.equal(enemyMedicDefinition.type, "image");
-  assert.equal(enemyMedicDefinition.idle, null);
-  assert.equal(enemyMedicDefinition.attack, null);
+  assert.equal(enemyMedicDefinition.type, "spritesheet");
+  assert.equal(enemyMedicDefinition.idle.key, "spritesheet:units:blue:medic:idle");
+  assert.equal(enemyMedicDefinition.walk.key, "spritesheet:units:blue:medic:walk");
+  assert.equal(enemyMedicDefinition.attack.key, "spritesheet:units:blue:medic:attack");
 });
 
-test("new purple full sheets expose row-major ranges and preserve blue fallbacks", () => {
+test("full sheets expose row-major ranges for every installed color", () => {
   const mechanicDefinition = getUnitSpriteDefinition("mechanic", "player");
   const payloadDefinition = getUnitSpriteDefinition("payload", "player");
   const interceptorDefinition = getUnitSpriteDefinition("interceptor", "player");
@@ -679,10 +681,10 @@ test("new purple full sheets expose row-major ranges and preserve blue fallbacks
   for (const unitTypeId of ["mechanic", "payload", "interceptor", "siege-gun"]) {
     const enemyDefinition = getUnitSpriteDefinition(unitTypeId, "enemy");
 
-    assert.equal(enemyDefinition.type, "image");
-    assert.equal(enemyDefinition.idle, null);
-    assert.equal(enemyDefinition.walk, null);
-    assert.equal(enemyDefinition.attack, null);
+    assert.equal(enemyDefinition.type, "spritesheet");
+    assert.match(enemyDefinition.idle.key, new RegExp(`spritesheet:units:blue:${unitTypeId}:`));
+    assert.ok(enemyDefinition.walk);
+    assert.ok(enemyDefinition.attack);
   }
 });
 
@@ -706,43 +708,66 @@ test("new purple animation sheets are registered for runtime loading and preload
 
 test("unit color availability and sprite fallback follow complete palette coverage", () => {
   assert.deepEqual(getUnitSpriteColorAvailability(), {
-    purple: true,
     blue: true,
-    green: false,
-    orange: false,
-    pink: false
+    green: true,
+    orange: true,
+    purple: true
   });
   assert.deepEqual(getUnitSpriteColorAvailability(), GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY);
 
-  const unavailablePlayer = getUnitSpriteDefinition("grunt", "player", {
+  const greenPlayer = getUnitSpriteDefinition("grunt", "player", {
     playerColor: "green",
-    enemyColor: "pink"
+    enemyColor: "orange"
   });
-  const unavailableEnemy = getUnitSpriteDefinition("grunt", "enemy", {
+  const orangeEnemy = getUnitSpriteDefinition("grunt", "enemy", {
     playerColor: "green",
-    enemyColor: "pink"
+    enemyColor: "orange"
   });
 
-  assert.equal(unavailablePlayer.requestedColorId, "green");
-  assert.equal(unavailablePlayer.colorId, "purple");
-  assert.match(unavailablePlayer.url, /sprites\/units\/purple\/grunt/);
-  assert.equal(unavailableEnemy.requestedColorId, "pink");
-  assert.equal(unavailableEnemy.colorId, "blue");
-  assert.match(unavailableEnemy.url, /sprites\/units\/blue\/grunt/);
+  assert.equal(greenPlayer.requestedColorId, "green");
+  assert.equal(greenPlayer.colorId, "green");
+  assert.match(greenPlayer.url, /sprites\/units\/green\/grunt/);
+  assert.equal(orangeEnemy.requestedColorId, "orange");
+  assert.equal(orangeEnemy.colorId, "orange");
+  assert.match(orangeEnemy.url, /sprites\/units\/orange\/grunt/);
+
+  const greenCarrier = getUnitSpriteDefinition("carrier", "player", {
+    playerColor: "green",
+    enemyColor: "orange"
+  });
+  const orangeCarrier = getUnitSpriteDefinition("carrier", "enemy", {
+    playerColor: "green",
+    enemyColor: "orange"
+  });
+  assert.equal(greenCarrier.requestedColorId, "green");
+  assert.equal(greenCarrier.colorId, "green");
+  assert.match(greenCarrier.url, /sprites\/units\/green\/carrier\.svg/);
+  assert.equal(orangeCarrier.colorId, "orange");
+  assert.match(orangeCarrier.url, /sprites\/units\/orange\/carrier\.svg/);
+});
+
+test("unit color ids are generated from the installed sprite directories", () => {
+  const directoryColors = fs.readdirSync(path.resolve(process.cwd(), "assets/sprites/units"), {
+    withFileTypes: true
+  })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+
+  assert.deepEqual(new Set(UNIT_COLOR_IDS), new Set(directoryColors));
 });
 
 test("available colors can swap sides without changing owner semantics", () => {
   const options = {
-    playerColor: "blue",
-    enemyColor: "purple"
+    playerColor: "green",
+    enemyColor: "orange"
   };
   const playerDefinition = getUnitSpriteDefinition("grunt", "player", options);
   const enemyDefinition = getUnitSpriteDefinition("grunt", "enemy", options);
 
   assert.equal(playerDefinition.owner, "player");
-  assert.equal(playerDefinition.colorId, "blue");
+  assert.equal(playerDefinition.colorId, "green");
   assert.equal(enemyDefinition.owner, "enemy");
-  assert.equal(enemyDefinition.colorId, "purple");
+  assert.equal(enemyDefinition.colorId, "orange");
 });
 
 test("sprite folders only contain manifest assets or documented source masters", () => {

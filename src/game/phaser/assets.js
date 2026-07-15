@@ -496,10 +496,9 @@ export function getMusicTrackKey(trackId) {
 
 export function getUnitSpriteColorAvailability() {
   return Object.fromEntries(
-    UNIT_COLOR_IDS.map((colorId) => [
-      colorId,
-      GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY[colorId] === true
-    ])
+    UNIT_COLOR_IDS
+      .filter((colorId) => GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY[colorId] === true)
+      .map((colorId) => [colorId, true])
   );
 }
 
@@ -523,14 +522,37 @@ export function resolveUnitSpriteColor(owner = "player", colorOptions = {}) {
   return UNIT_COLOR_IDS.find((colorId) => isUnitSpriteColorAvailable(colorId)) ?? requestedColorId;
 }
 
+function hasUnitSpriteColor(unitTypeId, colorId) {
+  return Boolean(
+    UNIT_SPRITES[unitTypeId]?.[colorId] ||
+    GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[colorId]
+  );
+}
+
+function resolveUnitSpriteColorForUnit(unitTypeId, owner, colorOptions) {
+  const requestedColorId = resolveUnitSpriteColor(owner, colorOptions);
+
+  if (hasUnitSpriteColor(unitTypeId, requestedColorId)) {
+    return requestedColorId;
+  }
+
+  const ownerFallback = owner === "enemy" ? DEFAULT_ENEMY_COLOR : DEFAULT_PLAYER_COLOR;
+
+  if (hasUnitSpriteColor(unitTypeId, ownerFallback)) {
+    return ownerFallback;
+  }
+
+  return UNIT_COLOR_IDS.find((colorId) => hasUnitSpriteColor(unitTypeId, colorId)) ?? requestedColorId;
+}
+
 export function getUnitSpriteKey(unitTypeId, owner = "player", colorOptions = {}) {
-  const colorId = resolveUnitSpriteColor(owner, colorOptions);
+  const colorId = resolveUnitSpriteColorForUnit(unitTypeId, owner, colorOptions);
   return UNIT_SPRITES[unitTypeId]?.[colorId]?.key ?? null;
 }
 
 export function getUnitSpriteDefinition(unitTypeId, owner = "player", colorOptions = {}) {
   const requestedColorId = getUnitColorIdForOwner(owner, colorOptions);
-  const colorId = resolveUnitSpriteColor(owner, colorOptions);
+  const colorId = resolveUnitSpriteColorForUnit(unitTypeId, owner, colorOptions);
   const fallbackAsset =
     UNIT_SPRITES[unitTypeId]?.[colorId] ?? null;
   const fallbackKey = fallbackAsset?.key ?? null;
