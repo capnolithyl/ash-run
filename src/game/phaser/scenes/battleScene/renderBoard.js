@@ -9,6 +9,15 @@ import {
 import { getBattlefieldLayout } from "../../../core/battlefieldLayout.js";
 import { deriveBattleAnimationEvents } from "../../view/battleAnimationEvents.js";
 import {
+  createBattleCueContext,
+  getImpactCueIds,
+  getMovementCueId,
+  getNewBattlePresentationEvents,
+  getPresentationEventCueId,
+  getServiceCueId,
+  getWeaponCueId
+} from "../../view/battleAudioRouting.js";
+import {
   getBoardSnapshot,
   getHoveredAttackForecast,
   getHoveredMovementPath,
@@ -58,6 +67,33 @@ function getCommanderPowerTargetUnitIds(powerEvents = []) {
   return new Set(
     powerEvents.flatMap((event) => (event.targets ?? []).map((target) => target.unitId))
   );
+}
+
+export function getCommanderPowerDestroyDelayMs(event, target) {
+  if (target?.destroyed !== true) {
+    return null;
+  }
+
+  return Math.max(0, Number(event?.pulseDurationMs) || 0);
+}
+
+function getAudioDirector(scene) {
+  return scene.game.registry.get("audioDirector") ?? null;
+}
+
+function playBattleCue(scene, cueId, event, snapshot, source, context = {}) {
+  if (!cueId) {
+    return null;
+  }
+
+  return getAudioDirector(scene)?.playCue?.(cueId, {
+    ...createBattleCueContext(event, snapshot, source),
+    ...context
+  });
+}
+
+function getMovementLoopKey(snapshot, event) {
+  return `movement:${snapshot.id}:${event.unitId}`;
 }
 
 export const battleSceneRenderMethods = {
@@ -136,6 +172,21 @@ export const battleSceneRenderMethods = {
       snapshot,
       colorOptions
     );
+    const presentationEvents = getNewBattlePresentationEvents(previousSnapshot, snapshot);
+    const unloadEventsByPassengerId = new Map(
+      presentationEvents
+        .filter((event) => event.type === "transport" && event.action === "unload")
+        .map((event) => [event.passengerId, event])
+    );
+    const statusEventsByCombatStep = new Map();
+    presentationEvents
+      .filter((event) => event.type === "status" && event.combatId)
+      .forEach((event) => {
+        const key = `${event.combatId}:${event.order ?? 0}`;
+        const events = statusEventsByCombatStep.get(key) ?? [];
+        events.push(event);
+        statusEventsByCombatStep.set(key, events);
+      });
     const movementEvents = animationEvents.filter((event) => event.type === "move");
     const powerEvents = animationEvents.filter((event) => event.type === "power");
     const powerTargetUnitIds = getCommanderPowerTargetUnitIds(powerEvents);
@@ -208,6 +259,19 @@ export const battleSceneRenderMethods = {
     const turnTransitionDelay = getTurnTransitionDelay(previousSnapshot, snapshot);
     this.fxLayer.setScreenShakeEnabled(this.latestState.metaState.options.screenShake !== false);
 
+    if (turnTransitionDelay > 0) {
+      playBattleCue(
+        this,
+        snapshot.turn.activeSide === TURN_SIDES.PLAYER
+          ? "world.turn-player"
+          : "world.turn-enemy",
+        { x: Math.floor(snapshot.map.width / 2) },
+        snapshot,
+        "turn",
+        { dedupeKey: `turn:${snapshot.id}:${snapshot.turn.number}:${snapshot.turn.activeSide}` }
+      );
+    }
+
     this.gridLayer.render(snapshot, layout, { useBattlefieldBackdrop: true });
     this.selectionLayer.render(
       snapshot,
@@ -225,13 +289,57 @@ export const battleSceneRenderMethods = {
       }
     );
     this.buildingLayer.render(snapshot, layout, colorOptions);
+    presentationEvents
+      .filter((event) => event.type === "transport" && event.action === "board")
+      .forEach((event) => {
+        playBattleCue(this, "transport.board", event, snapshot, "transport-board");
+      });
     this.unitLayer.render(snapshot, layout, movementEvents, {
       deployUnitIds,
       destroyUnitIds,
       damageByUnitId,
       restoreByUnitId,
       attackingUnitIds,
-      colorOptions
+      colorOptions,
+      movementAudio: {
+        onStart: (event) => {
+          const director = getAudioDirector(this);
+          const cueId = getMovementCueId(event.unitTypeId);
+          const loopKey = getMovementLoopKey(snapshot, event);
+          const context = {
+            ...createBattleCueContext(event, snapshot, "movement"),
+            dedupeKey: loopKey,
+            loopKey
+          };
+
+          if (director?.startLoop) {
+            director.startLoop(cueId, context);
+          } else {
+            director?.playCue?.(cueId, context);
+          }
+        },
+        onStop: (event) => {
+          getAudioDirector(this)?.stopLoop?.(getMovementLoopKey(snapshot, event));
+        },
+        onTeleportDeparture: (event) =>
+          playBattleCue(
+            this,
+            "movement.teleport-depart",
+            event,
+            snapshot,
+            "teleport-depart",
+            { dedupeKey: `${getMovementLoopKey(snapshot, event)}:depart` }
+          ),
+        onTeleportArrival: (event) =>
+          playBattleCue(
+            this,
+            "movement.teleport-arrive",
+            event,
+            snapshot,
+            "teleport-arrive",
+            { dedupeKey: `${getMovementLoopKey(snapshot, event)}:arrive` }
+          )
+      }
     });
     this.fxLayer.setColorOptions(colorOptions);
 
@@ -251,6 +359,26 @@ export const battleSceneRenderMethods = {
           )
         )
       : 0;
+
+    presentationEvents
+      .filter(
+        (event) =>
+          (event.type === "status" && !event.combatId) ||
+          (event.type === "mission" && event.action !== "capture")
+      )
+      .forEach((event) => {
+        this.fxLayer.schedule(
+          turnTransitionDelay + maxMoveDelay + (maxMoveDelay > 0 ? BATTLE_MOVE_SETTLE_MS : 0),
+          () =>
+            playBattleCue(
+              this,
+              getPresentationEventCueId(event),
+              event,
+              snapshot,
+              `${event.type}:${event.action ?? event.statusType ?? "event"}`
+            )
+        );
+      });
     const destroyEventByUnitId = new Map(
       animationEvents
         .filter((event) => event.type === "destroy")
@@ -290,6 +418,19 @@ export const battleSceneRenderMethods = {
               () => {
                 this.unitLayer.playDeploy(event.unitId);
                 this.fxLayer.playDeploy(event, layout);
+                const unloadEvent = unloadEventsByPassengerId.get(event.unitId);
+                if (unloadEvent) {
+                  playBattleCue(
+                    this,
+                    "transport.unload",
+                    unloadEvent,
+                    snapshot,
+                    "transport-unload"
+                  );
+                }
+                playBattleCue(this, "world.deploy", event, snapshot, "deploy", {
+                  dedupeKey: `deploy:${snapshot.id}:${event.unitId}`
+                });
               },
               BATTLE_MOVE_SETTLE_MS
             );
@@ -298,6 +439,9 @@ export const battleSceneRenderMethods = {
           this.fxLayer.schedule(turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS, () => {
             this.unitLayer.playDeploy(event.unitId);
             this.fxLayer.playDeploy(event, layout);
+            playBattleCue(this, "world.deploy", event, snapshot, "deploy", {
+              dedupeKey: `deploy:${snapshot.id}:${event.unitId}`
+            });
           });
         }
       }
@@ -305,7 +449,12 @@ export const battleSceneRenderMethods = {
       if (event.type === "capture") {
         this.fxLayer.schedule(
           turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS,
-          () => this.fxLayer.playCapture(event, layout)
+          () => {
+            this.fxLayer.playCapture(event, layout);
+            playBattleCue(this, "world.capture", event, snapshot, "capture", {
+              dedupeKey: `capture:${snapshot.id}:${event.buildingId}`
+            });
+          }
         );
       }
 
@@ -320,12 +469,15 @@ export const battleSceneRenderMethods = {
 
         const destroyStartDelayMs = combatCutsceneActive
           ? Math.max(turnTransitionDelay + (event.delay ?? 0), combatFollowThroughStartMs)
-          : turnTransitionDelay + (event.delay ?? 0);
+          : event.startDelayMs ?? turnTransitionDelay + (event.delay ?? 0);
 
         this.unitLayer.scheduleDestroy(event.unitId, destroyStartDelayMs);
-        this.fxLayer.schedule(destroyStartDelayMs, () =>
-          this.fxLayer.playDestroy(event, layout)
-        );
+        this.fxLayer.schedule(destroyStartDelayMs, () => {
+          this.fxLayer.playDestroy(event, layout);
+          playBattleCue(this, "impact.destroy", event, snapshot, "destroy", {
+            dedupeKey: `destroy:${snapshot.id}:${event.unitId}`
+          });
+        });
       }
 
       if (event.type === "heal" || event.type === "resupply") {
@@ -333,18 +485,27 @@ export const battleSceneRenderMethods = {
           continue;
         }
 
-        this.fxLayer.schedule(event.startDelayMs ?? turnTransitionDelay, () =>
+        this.fxLayer.schedule(event.startDelayMs ?? turnTransitionDelay, () => {
           this.unitLayer.playRestore(event.unitId, {
             tone: event.type === "heal" ? "heal" : "resupply"
-          })
-        );
+          });
+          playBattleCue(this, getServiceCueId(event), event, snapshot, "service");
+        });
       }
     }
 
     powerEvents.forEach((event) => {
-      this.fxLayer.schedule(Math.max(0, (event.startDelayMs ?? 0) - 90), () =>
-        this.fxLayer.playCommanderPowerWave(event, layout)
-      );
+      this.fxLayer.schedule(Math.max(0, (event.startDelayMs ?? 0) - 90), () => {
+        this.fxLayer.playCommanderPowerWave(event, layout);
+        playBattleCue(
+          this,
+          `commander.${event.commanderId}`,
+          event,
+          snapshot,
+          "commander",
+          { dedupeKey: `commander:${snapshot.id}:${event.activationId}` }
+        );
+      });
 
       (event.targets ?? []).forEach((target, index) => {
         const targetDelayMs =
@@ -367,12 +528,35 @@ export const battleSceneRenderMethods = {
                 },
                 layout
               );
+              playBattleCue(this, "world.reinforcement", target, snapshot, "reinforcement", {
+                dedupeKey: `reinforcement:${event.activationId}:${target.unitId}`
+              });
             }
           } else {
             this.unitLayer.playPowerPulse(target.unitId, target.pulse);
           }
 
           this.fxLayer.playCommanderPowerTarget(target, layout, event);
+
+          const destroyDelayMs = getCommanderPowerDestroyDelayMs(event, target);
+
+          if (destroyDelayMs !== null) {
+            const destroyEvent = destroyEventByUnitId.get(target.unitId) ?? {
+              type: "destroy",
+              unitId: target.unitId,
+              owner: target.owner,
+              x: target.x,
+              y: target.y
+            };
+
+            this.unitLayer.scheduleDestroy(target.unitId, destroyDelayMs);
+            this.fxLayer.schedule(destroyDelayMs, () => {
+              this.fxLayer.playDestroy(destroyEvent, layout);
+              playBattleCue(this, "impact.destroy", destroyEvent, snapshot, "destroy", {
+                dedupeKey: `destroy:${snapshot.id}:${target.unitId}`
+              });
+            });
+          }
         });
       });
     });
@@ -406,21 +590,48 @@ export const battleSceneRenderMethods = {
             durationMs: attackWindowMs,
             suppressVisuals: combatCutsceneActive,
             onStart: () => {
+              playBattleCue(this, getWeaponCueId(event), event, snapshot, "weapon", {
+                dedupeKey: `weapon:${snapshot.id}:${event.eventId ?? `${event.attackerId}:${index}`}`
+              });
+
               if (!combatCutsceneActive) {
                 this.fxLayer.playAttack(event, layout);
               }
 
               if (destroyEvent) {
                 this.unitLayer.scheduleDestroy(event.targetId, destroyDelayMs);
-                this.fxLayer.schedule(destroyDelayMs, () =>
-                  this.fxLayer.playDestroy(destroyEvent, layout)
-                );
+                this.fxLayer.schedule(destroyDelayMs, () => {
+                  this.fxLayer.playDestroy(destroyEvent, layout);
+                  playBattleCue(this, "impact.destroy", destroyEvent, snapshot, "destroy", {
+                    dedupeKey: `destroy:${snapshot.id}:${destroyEvent.unitId}`
+                  });
+                });
               }
 
               this.fxLayer.schedule(attackWindowMs, () => playAttackSequence(index + 1));
             },
             onImpact: () => {
               this.unitLayer.playDamage(event.targetId);
+
+              getImpactCueIds(event).forEach((cueId) => {
+                playBattleCue(this, cueId, event, snapshot, "impact", {
+                  dedupeKey: `impact:${snapshot.id}:${event.eventId ?? `${event.attackerId}:${index}`}:${cueId}`
+                });
+              });
+
+              (
+                statusEventsByCombatStep.get(
+                  `${event.combatId}:${event.strikeOrder ?? 0}`
+                ) ?? []
+              ).forEach((statusEvent) => {
+                playBattleCue(
+                  this,
+                  getPresentationEventCueId(statusEvent),
+                  statusEvent,
+                  snapshot,
+                  `status:${statusEvent.action}`
+                );
+              });
 
               if (!combatCutsceneActive) {
                 this.fxLayer.playDamageNumber(event, layout);
@@ -432,12 +643,12 @@ export const battleSceneRenderMethods = {
 
       const firstAttack = attackEvents[0];
       const firstAttackMoveDelay = this.unitLayer.getMoveTweenRemaining(firstAttack.attackerId);
-      const combatCutsceneRevealStartMs = combatCutscene?.revealStartMs ?? 0;
+      const combatCutsceneFocusStartMs = combatCutscene?.focusStartMs ?? 0;
       const combatCutsceneLeadInDelay = combatCutsceneActive
         ? Math.max(
             0,
             (combatCutscene?.steps?.[0]?.startMs ?? combatCutscene?.openMs ?? 0) -
-              combatCutsceneRevealStartMs
+              combatCutsceneFocusStartMs
           )
         : 0;
 
@@ -461,13 +672,28 @@ export const battleSceneRenderMethods = {
     }
 
     experienceEvents.forEach((event) => {
-      this.fxLayer.schedule(
-        Math.max(
-          event.startDelayMs ?? (turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS),
-          combatFollowThroughStartMs
-        ),
-        () => this.fxLayer.playExperience(event, layout)
+      const experienceStartDelay = Math.max(
+        event.startDelayMs ?? (turnTransitionDelay + maxMoveDelay + BATTLE_MOVE_SETTLE_MS),
+        combatFollowThroughStartMs
       );
+      const experienceDelayOffset = experienceStartDelay - (event.startDelayMs ?? 0);
+      const experienceKey = `${snapshot.id}:${event.unitId}:${event.previousLevel}:${event.nextLevel}:${event.previousExperience}:${event.nextExperience}`;
+
+      this.fxLayer.schedule(experienceStartDelay, () => {
+        this.fxLayer.playExperience(event, layout);
+        playBattleCue(this, "progression.xp", event, snapshot, "experience", {
+          dedupeKey: `xp:${experienceKey}`
+        });
+      });
+
+      (event.thresholdHitDelaysMs ?? []).forEach((thresholdDelay, index) => {
+        const effectiveThresholdDelay = thresholdDelay + experienceDelayOffset;
+        this.fxLayer.schedule(effectiveThresholdDelay, () =>
+          playBattleCue(this, "progression.threshold", event, snapshot, "experience-threshold", {
+            dedupeKey: `xp-threshold:${experienceKey}:${index}`
+          })
+        );
+      });
     });
 
     this.fxLayer.playEvents(

@@ -8,14 +8,29 @@ import {
   UNIT_UNLOCK_TIERS
 } from "../content/runUpgrades.js";
 
+const DEFAULT_AUDIO_OPTIONS = Object.freeze({
+  masterVolume: 0.4,
+  musicVolume: 1,
+  sfxVolume: 0.85,
+  muted: false
+});
+
+function normalizeVolume(value, fallback) {
+  if (value === null || value === "" || typeof value === "boolean") {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : fallback;
+}
+
 export function createDefaultOptions() {
   return {
     showGrid: true,
     screenShake: true,
     battlefieldNameTooltips: true,
     combatCutsceneAnimations: true,
-    masterVolume: 0.4,
-    muted: false,
+    ...DEFAULT_AUDIO_OPTIONS,
     ...normalizeUnitColorOptions(),
     ...normalizeDisplayOptions()
   };
@@ -25,6 +40,16 @@ export function normalizeMetaOptions(options = {}) {
   return {
     ...createDefaultOptions(),
     ...options,
+    masterVolume: normalizeVolume(
+      options.masterVolume,
+      DEFAULT_AUDIO_OPTIONS.masterVolume
+    ),
+    musicVolume: normalizeVolume(
+      options.musicVolume,
+      DEFAULT_AUDIO_OPTIONS.musicVolume
+    ),
+    sfxVolume: normalizeVolume(options.sfxVolume, DEFAULT_AUDIO_OPTIONS.sfxVolume),
+    muted: options.muted === true,
     ...normalizeUnitColorOptions(options),
     ...normalizeDisplayOptions(options)
   };

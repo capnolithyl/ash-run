@@ -198,6 +198,14 @@ export function renderOptionFields(options = {}, displayContext = {}) {
     ? Math.max(0, Math.min(1, Number(options.masterVolume)))
     : 0.4;
   const masterVolumePercent = Math.round(masterVolume * 100);
+  const musicVolume = Number.isFinite(Number(options.musicVolume))
+    ? Math.max(0, Math.min(1, Number(options.musicVolume)))
+    : 1;
+  const musicVolumePercent = Math.round(musicVolume * 100);
+  const sfxVolume = Number.isFinite(Number(options.sfxVolume))
+    ? Math.max(0, Math.min(1, Number(options.sfxVolume)))
+    : 0.85;
+  const sfxVolumePercent = Math.round(sfxVolume * 100);
   const combatCutsceneAnimations = options.combatCutsceneAnimations !== false;
 
   return `
@@ -222,6 +230,14 @@ export function renderOptionFields(options = {}, displayContext = {}) {
     <label class="option-row option-row--range">
       <span>Master Volume <strong>${masterVolumePercent}%</strong></span>
       <input type="range" min="0" max="1" step="0.01" value="${masterVolume}" data-option="masterVolume" />
+    </label>
+    <label class="option-row option-row--range">
+      <span>Music Volume <strong>${musicVolumePercent}%</strong></span>
+      <input type="range" min="0" max="1" step="0.01" value="${musicVolume}" data-option="musicVolume" />
+    </label>
+    <label class="option-row option-row--range">
+      <span>SFX Volume <strong>${sfxVolumePercent}%</strong></span>
+      <input type="range" min="0" max="1" step="0.01" value="${sfxVolume}" data-option="sfxVolume" />
     </label>
     <label class="option-row option-row--toggle">
       <span>Mute Audio</span>

@@ -14,6 +14,41 @@ import {
 } from "./generated/terrainSpritePngIds.js";
 import * as generatedUnitSpriteAnimationsModule from "./generated/unitSpriteAnimations.js";
 import { getUnitSpritePresentation } from "./unitSpritePresentation.js";
+import {
+  ATTACK_PROFILE_SFX_CUE_BY_TYPE,
+  COMMANDER_SFX_CUE_BY_ID,
+  MOVEMENT_SFX_CUE_BY_FAMILY,
+  SERVICE_SFX_CUE_BY_SOURCE,
+  SFX_ASSETS,
+  SFX_CUE_IDS,
+  UNIT_MOVEMENT_SFX_CUE,
+  WEAPON_SFX_CUE_BY_CLASS,
+  getCommanderSfxCueId,
+  getMovementSfxCueId,
+  getServiceSfxCueId,
+  getSfxAssetKey,
+  getSfxCueDefinition,
+  getWeaponSfxCueId,
+  warnSfxOnce,
+} from "./audio/SfxCatalog.js";
+
+export {
+  ATTACK_PROFILE_SFX_CUE_BY_TYPE,
+  COMMANDER_SFX_CUE_BY_ID,
+  MOVEMENT_SFX_CUE_BY_FAMILY,
+  SERVICE_SFX_CUE_BY_SOURCE,
+  SFX_ASSETS,
+  SFX_CUE_IDS,
+  UNIT_MOVEMENT_SFX_CUE,
+  WEAPON_SFX_CUE_BY_CLASS,
+  getCommanderSfxCueId,
+  getMovementSfxCueId,
+  getServiceSfxCueId,
+  getSfxAssetKey,
+  getSfxCueDefinition,
+  getWeaponSfxCueId,
+  warnSfxOnce,
+};
 
 const generatedUnitSpriteAnimationsFallback = Reflect.get(
   generatedUnitSpriteAnimationsModule,
@@ -424,6 +459,19 @@ export function preloadMusicAssets(scene) {
       scene.load.audio(asset.key, asset.url);
     }
   }
+}
+
+export function preloadSfxAssets(scene) {
+  for (const asset of SFX_ASSETS) {
+    if (!scene.cache.audio.exists(asset.key)) {
+      scene.load.audio(asset.key, asset.url);
+    }
+  }
+}
+
+export function preloadAudioAssets(scene) {
+  preloadMusicAssets(scene);
+  preloadSfxAssets(scene);
 }
 
 export function preloadSplashAssets(scene) {

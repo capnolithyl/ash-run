@@ -1,7 +1,8 @@
 import {
   BATTLE_TURN_BANNER_DISPLAY_MS,
   BATTLE_TURN_BANNER_SETTLE_MS,
-  SCREEN_IDS
+  SCREEN_IDS,
+  TURN_SIDES
 } from "../../../game/core/constants.js";
 import { renderBattleHudView } from "../../views/battleHudView.js";
 import { renderCommandFeed } from "../../views/battleHud/interactionPanels.js";
@@ -107,7 +108,65 @@ function buildBattleRenderSignature(state) {
   };
 }
 
+export function getOutcomeAudioCueId(victory, runStatus = null) {
+  if (!victory) {
+    return null;
+  }
+
+  if (victory.winner !== TURN_SIDES.PLAYER) {
+    return "outcome.defeat";
+  }
+
+  return runStatus === "complete" ? "outcome.run-complete" : "outcome.victory";
+}
+
 export const appShellBattleScreenMethods = {
+  playOutcomeAudioIfVisible(state, suppressOutcomeOverlay) {
+    const snapshot = state.battleSnapshot;
+    const victory = snapshot?.victory;
+
+    if (!victory || suppressOutcomeOverlay) {
+      return;
+    }
+
+    this.playedOutcomeAudioKeys ??= new Set();
+    this.playedRewardAudioKeys ??= new Set();
+    const key = this.getVictoryKey(snapshot);
+
+    if (!key) {
+      return;
+    }
+
+    const playerWon = victory.winner === TURN_SIDES.PLAYER;
+    const cueId = getOutcomeAudioCueId(victory, state.runStatus);
+    const outcomeAudioKey = `${key}:${cueId}`;
+
+    if (!this.playedOutcomeAudioKeys.has(outcomeAudioKey)) {
+      this.playedOutcomeAudioKeys.add(outcomeAudioKey);
+      this.controller.emitAudioCue?.(cueId, {
+        dedupeKey: `outcome:${outcomeAudioKey}`,
+        source: "outcome-overlay",
+        userInitiated: false
+      });
+    }
+
+    if (
+      playerWon &&
+      ["reward", "reward-equip"].includes(state.runStatus) &&
+      !this.playedRewardAudioKeys.has(key)
+    ) {
+      this.playedRewardAudioKeys.add(key);
+      this.outcomeRewardAudioTimer = window.setTimeout(() => {
+        this.outcomeRewardAudioTimer = null;
+        this.controller.emitAudioCue?.("progression.reward", {
+          dedupeKey: `reward:${key}`,
+          source: "outcome-overlay",
+          userInitiated: false
+        });
+      }, 680);
+    }
+  },
+
   queueCommanderTurnTransition() {
     if (this.commanderTurnAnimationFrame) {
       window.cancelAnimationFrame(this.commanderTurnAnimationFrame);
@@ -286,6 +345,7 @@ export const appShellBattleScreenMethods = {
       commanderTurnAnimationFromSide,
       displayContext: this.getDisplayRenderContext?.(state)
     });
+    this.playOutcomeAudioIfVisible(state, suppressOutcomeOverlay);
     if (commanderTurnAnimationFromSide) {
       this.queueCommanderTurnTransition();
     }
@@ -309,6 +369,11 @@ export const appShellBattleScreenMethods = {
     if (this.victoryRevealTimer) {
       window.clearTimeout(this.victoryRevealTimer);
       this.victoryRevealTimer = null;
+    }
+
+    if (this.outcomeRewardAudioTimer) {
+      window.clearTimeout(this.outcomeRewardAudioTimer);
+      this.outcomeRewardAudioTimer = null;
     }
 
     if (this.turnBannerTimer) {
@@ -359,6 +424,8 @@ export const appShellBattleScreenMethods = {
     this.pendingCommanderTurnAnimationFromSide = null;
     this.pendingCommanderTurnAnimationTurnKey = null;
     this.previousBattleRenderSignature = null;
+    this.playedOutcomeAudioKeys?.clear?.();
+    this.playedRewardAudioKeys?.clear?.();
   },
 
   getVictoryKey(snapshot) {

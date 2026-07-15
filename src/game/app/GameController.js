@@ -65,6 +65,38 @@ export class GameController {
     return this.events.on("state:changed", handler);
   }
 
+  /**
+   * Subscribe to transient audio requests. These requests deliberately bypass
+   * application state so feedback never dirties a save or causes a rerender.
+   */
+  subscribeAudioCues(handler) {
+    return this.events.on("audio:cue", handler);
+  }
+
+  subscribeAudioOptions(handler) {
+    return this.events.on("audio:options", handler);
+  }
+
+  emitAudioCue(cueId, context = {}) {
+    if (typeof cueId !== "string" || !cueId.trim()) {
+      return;
+    }
+
+    this.events.emit("audio:cue", {
+      ...context,
+      cueId
+    });
+  }
+
+  previewAudioOptions(patch = {}) {
+    const options = normalizeMetaOptions({
+      ...this.state.metaState.options,
+      ...patch
+    });
+
+    this.events.emit("audio:options", options);
+  }
+
   getState() {
     return structuredClone(this.state);
   }

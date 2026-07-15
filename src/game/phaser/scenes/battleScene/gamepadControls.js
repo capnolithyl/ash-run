@@ -213,6 +213,11 @@ export const battleSceneGamepadMethods = {
 
     this.gamepadCursorTile = nextTile;
     this.hoveredTile = nextTile;
+    this.controller.emitAudioCue?.("battle.cursor", {
+      dedupeKey: `grid-cursor:${nextTile.x},${nextTile.y}`,
+      source: "gamepad-grid",
+      userInitiated: false
+    });
 
     if (this.controller.setBattleHoverTile) {
       this.controller.setBattleHoverTile(nextTile);

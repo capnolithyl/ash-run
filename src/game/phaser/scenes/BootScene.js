@@ -3,10 +3,11 @@ import { preloadAssetManifest, waitForBootFonts } from "../../boot/assetPreloade
 import { ASSET_PRELOAD_MANIFEST } from "../generated/assetPreloadManifest.js";
 import {
   getSplashAssetKey,
-  preloadMusicAssets,
+  preloadAudioAssets,
   preloadSplashAssets,
   preloadSpriteAssets,
   SPLASH_ASSET_IDS,
+  warnSfxOnce,
 } from "../assets.js";
 
 const SPLASH_SCREEN_MIN_MS = 4000;
@@ -15,6 +16,15 @@ const BOOT_PROGRESS_WEIGHTS = {
   phaser: 0.35,
   folder: 0.55,
   fonts: 0.1,
+};
+const BOOT_ASSET_LOGGER = {
+  warn(message, error) {
+    if (String(message).includes("/audio/sfx/")) {
+      return;
+    }
+
+    console.warn(message, error);
+  },
 };
 
 export class BootScene extends Phaser.Scene {
@@ -163,7 +173,7 @@ export class BootScene extends Phaser.Scene {
     });
     const folderLoadPromise = preloadAssetManifest(ASSET_PRELOAD_MANIFEST, {
       onProgress: ({ progress }) => this.updateBootProgress("folder", progress),
-      logger: console,
+      logger: BOOT_ASSET_LOGGER,
     });
     const fontLoadPromise = waitForBootFonts()
       .then((results) => {
@@ -232,7 +242,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   loadRemainingAssets(onProgress = null) {
-    preloadMusicAssets(this);
+    preloadAudioAssets(this);
     preloadSpriteAssets(this);
 
     const queuedAssetCount = this.load.list?.size ?? 0;
@@ -243,25 +253,43 @@ export class BootScene extends Phaser.Scene {
     }
 
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => {
+        this.load.off("progress", handleProgress);
+        this.load.off("complete", handleComplete);
+        this.load.off("loaderror", handleError);
+      };
       const handleProgress = (progress) => {
         onProgress?.(progress);
       };
       const handleComplete = () => {
-        this.load.off("progress", handleProgress);
-        this.load.off("loaderror", handleError);
+        if (settled) {
+          return;
+        }
+        settled = true;
+        cleanup();
         onProgress?.(1);
         resolve();
       };
 
       const handleError = (file) => {
-        this.load.off("progress", handleProgress);
-        this.load.off("complete", handleComplete);
+        const key = String(file?.key ?? "");
+        if (key.startsWith("sfx:")) {
+          warnSfxOnce(key, `Optional sound asset failed to load: ${file?.src ?? key}`);
+          return;
+        }
+
+        if (settled) {
+          return;
+        }
+        settled = true;
+        cleanup();
         reject(new Error(`Failed to load boot asset: ${file?.src ?? file?.key ?? "unknown asset"}`));
       };
 
       this.load.on("progress", handleProgress);
       this.load.once("complete", handleComplete);
-      this.load.once("loaderror", handleError);
+      this.load.on("loaderror", handleError);
       this.load.start();
     });
   }

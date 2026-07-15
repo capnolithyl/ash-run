@@ -12,6 +12,7 @@
     "build": "node scripts/build.mjs",
     "check:unused": "knip --include dependencies,unlisted,exports,files",
     "assets:preload": "node scripts/generate-asset-preload-manifest.mjs",
+    "sfx:generate": "node scripts/generate-sfx.mjs",
     "sprites:sheets": "node scripts/generate-sprite-sheet-manifest.mjs",
     "sprites:variants": "node scripts/generate-sprite-variants.mjs",
     "maps:manifest": "node scripts/generate-map-manifest.mjs",

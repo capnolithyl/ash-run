@@ -579,6 +579,7 @@ export function getRunCardAmmoCostForAttack(state, unit, baseCost = 1) {
 
 export function applyRunCardStrikeModifiers(state, attacker, defender, strike) {
   const notes = [];
+  const effects = [];
   const nextStrike = { ...strike };
 
   if (defender?.owner === PLAYER_CARD_SIDE && hasCard(state, "overconfidence")) {
@@ -586,7 +587,7 @@ export function applyRunCardStrikeModifiers(state, attacker, defender, strike) {
   }
 
   if (!isPlayerCardTarget(attacker)) {
-    return { strike: nextStrike, notes };
+    return { strike: nextStrike, notes, effects };
   }
 
   if (hasCard(state, "overconfidence")) {
@@ -616,6 +617,13 @@ export function applyRunCardStrikeModifiers(state, attacker, defender, strike) {
         { leaveAtOne: false }
       );
       notes.push(`${attacker.name}'s experimental ammunition recoiled for ${recoilDamage} damage.`);
+      if (recoilDamage > 0) {
+        effects.push({
+          type: "self-damage",
+          sourceId: experimentalCardId,
+          damage: recoilDamage
+        });
+      }
     }
   }
 
@@ -626,10 +634,17 @@ export function applyRunCardStrikeModifiers(state, attacker, defender, strike) {
       const recoilDamage = applyDamage(attacker, Math.max(1, nextStrike.damage), { leaveAtOne: false });
       nextStrike.damage = 0;
       notes.push(`${attacker.name}'s Devil's Ammo backfired for ${recoilDamage} damage.`);
+      if (recoilDamage > 0) {
+        effects.push({
+          type: "self-damage",
+          sourceId: "devils-ammo",
+          damage: recoilDamage
+        });
+      }
     }
   }
 
-  return { strike: nextStrike, notes };
+  return { strike: nextStrike, notes, effects };
 }
 
 export function applyRunCardOnDamageDealt(state, attacker, defender, damageDealt) {

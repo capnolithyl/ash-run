@@ -35,6 +35,8 @@ test("display option normalization repairs unsupported saved values", () => {
       battlefieldNameTooltips: true,
       combatCutsceneAnimations: true,
       masterVolume: 0.2,
+      musicVolume: 1,
+      sfxVolume: 0.85,
       muted: false,
       playerColor: "purple",
       enemyColor: "blue",
@@ -61,6 +63,8 @@ test("unit color options repair invalid and duplicate saved values", () => {
       battlefieldNameTooltips: true,
       combatCutsceneAnimations: true,
       masterVolume: 0.4,
+      musicVolume: 1,
+      sfxVolume: 0.85,
       muted: false,
       playerColor: "purple",
       enemyColor: "blue",
@@ -86,6 +90,9 @@ test("battlefield name tooltip option can be persisted off", () => {
 
   assert.equal(options.battlefieldNameTooltips, false);
   assert.match(html, /data-option="battlefieldNameTooltips"/);
+  assert.match(html, /data-option="masterVolume"/);
+  assert.match(html, /data-option="musicVolume"/);
+  assert.match(html, /data-option="sfxVolume"/);
   assert.doesNotMatch(
     html,
     /<input type="checkbox" checked data-option="battlefieldNameTooltips"/

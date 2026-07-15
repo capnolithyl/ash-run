@@ -45,6 +45,46 @@ function getLevelUpRowDuration(row) {
   return row.changed ? LEVEL_UP_CHANGED_STAT_MS : LEVEL_UP_UNCHANGED_STAT_MS;
 }
 
+export function buildLevelUpAudioSchedule(levelUpEvent, { reducedMotion = false } = {}) {
+  const key = buildLevelUpKey(levelUpEvent);
+  const statSheet = getLevelUpStatSheet(levelUpEvent);
+  const schedule = [
+    {
+      cueId: "progression.level-up",
+      delayMs: 0,
+      dedupeKey: `level-up:${key}`
+    }
+  ];
+
+  if (!statSheet.some((row) => row.changed)) {
+    return schedule;
+  }
+
+  if (reducedMotion) {
+    schedule.push({
+      cueId: "progression.stat-up",
+      delayMs: LEVEL_UP_POPUP_INTRO_MS,
+      dedupeKey: `level-up-stats:${key}`
+    });
+    return schedule;
+  }
+
+  let rowStartMs = LEVEL_UP_POPUP_INTRO_MS;
+  for (const row of statSheet) {
+    if (row.changed) {
+      schedule.push({
+        cueId: "progression.stat-up",
+        delayMs: rowStartMs,
+        dedupeKey: `level-up-stat:${key}:${row.stat}`
+      });
+    }
+
+    rowStartMs += getLevelUpRowDuration(row) + LEVEL_UP_STAT_GAP_MS;
+  }
+
+  return schedule;
+}
+
 function computeExperiencePresentation(animation, timestamp) {
   const delayOffsetMs = animation.delayOffsetMs ?? 0;
   const event = animation.event;
@@ -262,6 +302,8 @@ export const appShellBattlePresentationPlaybackMethods = {
     this.levelUpRevealByKey ??= new Map();
     this.activeLevelUpPlayback ??= null;
     this.battlePresentationAnimationFrame ??= null;
+    this.levelUpAudioTimers ??= [];
+    this.scheduledLevelUpAudioKeys ??= new Set();
   },
 
   clearBattlePresentationPlayback() {
@@ -272,9 +314,40 @@ export const appShellBattlePresentationPlaybackMethods = {
       this.battlePresentationAnimationFrame = null;
     }
 
+    for (const timer of this.levelUpAudioTimers) {
+      window.clearTimeout(timer);
+    }
+    this.levelUpAudioTimers = [];
+
     this.battleExperienceAnimations.clear();
     this.levelUpRevealByKey.clear();
+    this.scheduledLevelUpAudioKeys.clear();
     this.activeLevelUpPlayback = null;
+  },
+
+  scheduleLevelUpAudio(levelUpEvent, reducedMotion) {
+    const key = buildLevelUpKey(levelUpEvent);
+
+    if (this.scheduledLevelUpAudioKeys.has(key)) {
+      return;
+    }
+
+    this.scheduledLevelUpAudioKeys.add(key);
+    for (const entry of buildLevelUpAudioSchedule(levelUpEvent, { reducedMotion })) {
+      const emitCue = () => {
+        this.controller.emitAudioCue?.(entry.cueId, {
+          dedupeKey: entry.dedupeKey,
+          source: "level-up-overlay",
+          userInitiated: false
+        });
+      };
+
+      if (entry.delayMs <= 0) {
+        emitCue();
+      } else {
+        this.levelUpAudioTimers.push(window.setTimeout(emitCue, entry.delayMs));
+      }
+    }
   },
 
   prepareBattlePresentationPlayback(state) {
@@ -400,6 +473,7 @@ export const appShellBattlePresentationPlaybackMethods = {
 
     const key = buildLevelUpKey(levelUpEvent);
     const reducedMotion = prefersReducedMotion();
+    this.scheduleLevelUpAudio(levelUpEvent, reducedMotion);
 
     if (reducedMotion) {
       this.activeLevelUpPlayback = {

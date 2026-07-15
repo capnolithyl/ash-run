@@ -7,6 +7,11 @@ import {
   getDisplayResolutionLabel,
   normalizeDisplayOptions
 } from "../../game/core/displayOptions.js";
+import {
+  classifyUiActionAudioCue,
+  getAudioFeedbackKey,
+  isAudioFeedbackElementEnabled
+} from "./audioFeedback.js";
 
 function isWindowedMode(displayMode) {
   return displayMode === DISPLAY_MODES.WINDOWED;
@@ -210,9 +215,17 @@ export const appShellDisplayMethods = {
   async handleWindowChromeClick(event) {
     const trigger = event.target.closest("[data-window-action]");
 
-    if (!trigger) {
+    if (!trigger || !isAudioFeedbackElementEnabled(trigger)) {
       return;
     }
+
+    this.controller.emitAudioCue?.(
+      classifyUiActionAudioCue(null, trigger),
+      {
+        dedupeKey: `window:${getAudioFeedbackKey(trigger)}`,
+        source: "window-chrome"
+      }
+    );
 
     const desktopApi = this.getDesktopApi?.();
 

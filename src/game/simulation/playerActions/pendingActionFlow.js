@@ -128,6 +128,16 @@ export function unloadTransportWithPendingUnit(system, x, y) {
   runner.hasMoved = true;
   runner.hasAttacked = true;
   appendLog(system.state, `${carried.name} disembarked from ${runner.name}.`);
+  system.recordPresentationEvent("transport", {
+    action: "unload",
+    carrierId: runner.id,
+    carrierUnitTypeId: runner.unitTypeId,
+    passengerId: carried.id,
+    passengerUnitTypeId: carried.unitTypeId,
+    owner: runner.owner,
+    x,
+    y
+  });
   resolveReinforcementTileCrossing(system.state, [{ x, y }]);
   system.clearPendingAction();
   system.clearSelection();
@@ -293,6 +303,16 @@ export function captureWithPendingUnit(system) {
   const building = getBuildingAt(system.state, unit.x, unit.y);
 
   captureBuildingForUnit(system.state, unit, building);
+  system.recordPresentationEvent("mission", {
+    action: "capture",
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    owner: unit.owner,
+    buildingId: building.id,
+    buildingType: building.type,
+    x: building.x,
+    y: building.y
+  });
   system.clearPendingAction();
   system.state.selection = {
     type: "building",
@@ -317,6 +337,22 @@ export function useSupplyWithPendingUnit(system) {
     return false;
   }
 
+  system.recordPresentationEvent("service", {
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    targetId: unit.id,
+    targetUnitTypeId: unit.unitTypeId,
+    owner: unit.owner,
+    sourceKind: "building",
+    sourceId: building.id,
+    buildingType: building.type,
+    hpRecovered: result.hpRecovered,
+    ammoRecovered: result.ammoRecovered,
+    staminaRecovered: result.staminaRecovered,
+    x: unit.x,
+    y: unit.y
+  });
+
   system.clearPendingAction();
   system.clearSelection();
   return true;
@@ -335,6 +371,15 @@ export function rescueHostageWithPendingUnit(system) {
   if (!changed) {
     return false;
   }
+
+  system.recordPresentationEvent("mission", {
+    action: "rescue",
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    owner: unit.owner,
+    x: unit.x,
+    y: unit.y
+  });
 
   system.clearPendingAction();
   system.state.selection = {
@@ -360,6 +405,15 @@ export function dropOffHostageWithPendingUnit(system) {
   if (!changed) {
     return false;
   }
+
+  system.recordPresentationEvent("mission", {
+    action: "drop-off",
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    owner: unit.owner,
+    x: unit.x,
+    y: unit.y
+  });
 
   system.clearPendingAction();
   system.state.selection = {

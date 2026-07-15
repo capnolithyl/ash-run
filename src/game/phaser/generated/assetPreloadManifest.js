@@ -17,6 +17,416 @@ export const ASSET_PRELOAD_MANIFEST = [
     "byteSize": 5099777
   },
   {
+    "url": "./assets/audio/sfx/commander/atlas.wav",
+    "kind": "audio",
+    "byteSize": 83834
+  },
+  {
+    "url": "./assets/audio/sfx/commander/blaze.wav",
+    "kind": "audio",
+    "byteSize": 90008
+  },
+  {
+    "url": "./assets/audio/sfx/commander/echo.wav",
+    "kind": "audio",
+    "byteSize": 79424
+  },
+  {
+    "url": "./assets/audio/sfx/commander/falcon.wav",
+    "kind": "audio",
+    "byteSize": 82952
+  },
+  {
+    "url": "./assets/audio/sfx/commander/graves.wav",
+    "kind": "audio",
+    "byteSize": 89126
+  },
+  {
+    "url": "./assets/audio/sfx/commander/knox.wav",
+    "kind": "audio",
+    "byteSize": 84716
+  },
+  {
+    "url": "./assets/audio/sfx/commander/nova.wav",
+    "kind": "audio",
+    "byteSize": 86480
+  },
+  {
+    "url": "./assets/audio/sfx/commander/rook.wav",
+    "kind": "audio",
+    "byteSize": 86480
+  },
+  {
+    "url": "./assets/audio/sfx/commander/sable.wav",
+    "kind": "audio",
+    "byteSize": 81188
+  },
+  {
+    "url": "./assets/audio/sfx/commander/viper.wav",
+    "kind": "audio",
+    "byteSize": 82070
+  },
+  {
+    "url": "./assets/audio/sfx/impact/critical.wav",
+    "kind": "audio",
+    "byteSize": 37088
+  },
+  {
+    "url": "./assets/audio/sfx/impact/destroyed.wav",
+    "kind": "audio",
+    "byteSize": 57374
+  },
+  {
+    "url": "./assets/audio/sfx/impact/effective.wav",
+    "kind": "audio",
+    "byteSize": 31796
+  },
+  {
+    "url": "./assets/audio/sfx/impact/glance.wav",
+    "kind": "audio",
+    "byteSize": 16802
+  },
+  {
+    "url": "./assets/audio/sfx/impact/hit.wav",
+    "kind": "audio",
+    "byteSize": 23858
+  },
+  {
+    "url": "./assets/audio/sfx/impact/miss.wav",
+    "kind": "audio",
+    "byteSize": 18566
+  },
+  {
+    "url": "./assets/audio/sfx/movement/air-loop.wav",
+    "kind": "audio",
+    "byteSize": 56492
+  },
+  {
+    "url": "./assets/audio/sfx/movement/infantry-loop.wav",
+    "kind": "audio",
+    "byteSize": 37970
+  },
+  {
+    "url": "./assets/audio/sfx/movement/teleport-arrive.wav",
+    "kind": "audio",
+    "byteSize": 20330
+  },
+  {
+    "url": "./assets/audio/sfx/movement/teleport-depart.wav",
+    "kind": "audio",
+    "byteSize": 18566
+  },
+  {
+    "url": "./assets/audio/sfx/movement/tracked-loop.wav",
+    "kind": "audio",
+    "byteSize": 52964
+  },
+  {
+    "url": "./assets/audio/sfx/movement/wheeled-loop.wav",
+    "kind": "audio",
+    "byteSize": 45908
+  },
+  {
+    "url": "./assets/audio/sfx/outcome/defeat.wav",
+    "kind": "audio",
+    "byteSize": 149984
+  },
+  {
+    "url": "./assets/audio/sfx/outcome/run-complete.wav",
+    "kind": "audio",
+    "byteSize": 202904
+  },
+  {
+    "url": "./assets/audio/sfx/outcome/victory.wav",
+    "kind": "audio",
+    "byteSize": 158804
+  },
+  {
+    "url": "./assets/audio/sfx/progression/level-up.wav",
+    "kind": "audio",
+    "byteSize": 92654
+  },
+  {
+    "url": "./assets/audio/sfx/progression/reward.wav",
+    "kind": "audio",
+    "byteSize": 63548
+  },
+  {
+    "url": "./assets/audio/sfx/progression/stat-gain.wav",
+    "kind": "audio",
+    "byteSize": 14156
+  },
+  {
+    "url": "./assets/audio/sfx/progression/xp-gain.wav",
+    "kind": "audio",
+    "byteSize": 18566
+  },
+  {
+    "url": "./assets/audio/sfx/progression/xp-threshold.wav",
+    "kind": "audio",
+    "byteSize": 26504
+  },
+  {
+    "url": "./assets/audio/sfx/support/field-medpack.wav",
+    "kind": "audio",
+    "byteSize": 41498
+  },
+  {
+    "url": "./assets/audio/sfx/support/hospital.wav",
+    "kind": "audio",
+    "byteSize": 58256
+  },
+  {
+    "url": "./assets/audio/sfx/support/hq.wav",
+    "kind": "audio",
+    "byteSize": 53846
+  },
+  {
+    "url": "./assets/audio/sfx/support/mechanic.wav",
+    "kind": "audio",
+    "byteSize": 47672
+  },
+  {
+    "url": "./assets/audio/sfx/support/medic.wav",
+    "kind": "audio",
+    "byteSize": 45908
+  },
+  {
+    "url": "./assets/audio/sfx/support/passive.wav",
+    "kind": "audio",
+    "byteSize": 33560
+  },
+  {
+    "url": "./assets/audio/sfx/support/repair-station.wav",
+    "kind": "audio",
+    "byteSize": 60020
+  },
+  {
+    "url": "./assets/audio/sfx/support/resupply.wav",
+    "kind": "audio",
+    "byteSize": 40616
+  },
+  {
+    "url": "./assets/audio/sfx/support/run-card.wav",
+    "kind": "audio",
+    "byteSize": 45908
+  },
+  {
+    "url": "./assets/audio/sfx/support/sector.wav",
+    "kind": "audio",
+    "byteSize": 39734
+  },
+  {
+    "url": "./assets/audio/sfx/transport/runner-board.wav",
+    "kind": "audio",
+    "byteSize": 36206
+  },
+  {
+    "url": "./assets/audio/sfx/transport/runner-unload.wav",
+    "kind": "audio",
+    "byteSize": 38852
+  },
+  {
+    "url": "./assets/audio/sfx/ui/adjust.wav",
+    "kind": "audio",
+    "byteSize": 7982
+  },
+  {
+    "url": "./assets/audio/sfx/ui/cancel.wav",
+    "kind": "audio",
+    "byteSize": 14156
+  },
+  {
+    "url": "./assets/audio/sfx/ui/confirm.wav",
+    "kind": "audio",
+    "byteSize": 13274
+  },
+  {
+    "url": "./assets/audio/sfx/ui/danger.wav",
+    "kind": "audio",
+    "byteSize": 20330
+  },
+  {
+    "url": "./assets/audio/sfx/ui/grid-cursor.wav",
+    "kind": "audio",
+    "byteSize": 4896
+  },
+  {
+    "url": "./assets/audio/sfx/ui/hover.wav",
+    "kind": "audio",
+    "byteSize": 6218
+  },
+  {
+    "url": "./assets/audio/sfx/ui/move-confirm.wav",
+    "kind": "audio",
+    "byteSize": 12834
+  },
+  {
+    "url": "./assets/audio/sfx/ui/target-invalid.wav",
+    "kind": "audio",
+    "byteSize": 15920
+  },
+  {
+    "url": "./assets/audio/sfx/ui/target-mode.wav",
+    "kind": "audio",
+    "byteSize": 13274
+  },
+  {
+    "url": "./assets/audio/sfx/ui/target-valid.wav",
+    "kind": "audio",
+    "byteSize": 12834
+  },
+  {
+    "url": "./assets/audio/sfx/ui/unit-deselect.wav",
+    "kind": "audio",
+    "byteSize": 10628
+  },
+  {
+    "url": "./assets/audio/sfx/ui/unit-select.wav",
+    "kind": "audio",
+    "byteSize": 11952
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/aa-gear.wav",
+    "kind": "audio",
+    "byteSize": 42380
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/autocannon.wav",
+    "kind": "audio",
+    "byteSize": 27386
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/breaker-charge.wav",
+    "kind": "audio",
+    "byteSize": 45908
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/bruiser-cannon.wav",
+    "kind": "audio",
+    "byteSize": 36206
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/flak-cannon.wav",
+    "kind": "audio",
+    "byteSize": 33560
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/heavy-cannon.wav",
+    "kind": "audio",
+    "byteSize": 45908
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/interceptor-cannons.wav",
+    "kind": "audio",
+    "byteSize": 24740
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/marksman-rifle.wav",
+    "kind": "audio",
+    "byteSize": 29150
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/payload-bombs.wav",
+    "kind": "audio",
+    "byteSize": 79424
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/rifle.wav",
+    "kind": "audio",
+    "byteSize": 15038
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/rocket-pods.wav",
+    "kind": "audio",
+    "byteSize": 54728
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/secondary-fire.wav",
+    "kind": "audio",
+    "byteSize": 19890
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/sidearm.wav",
+    "kind": "audio",
+    "byteSize": 12834
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/siege-artillery.wav",
+    "kind": "audio",
+    "byteSize": 63548
+  },
+  {
+    "url": "./assets/audio/sfx/weapons/tool-rifle.wav",
+    "kind": "audio",
+    "byteSize": 16802
+  },
+  {
+    "url": "./assets/audio/sfx/world/burn.wav",
+    "kind": "audio",
+    "byteSize": 49436
+  },
+  {
+    "url": "./assets/audio/sfx/world/capture.wav",
+    "kind": "audio",
+    "byteSize": 66194
+  },
+  {
+    "url": "./assets/audio/sfx/world/deployment.wav",
+    "kind": "audio",
+    "byteSize": 49436
+  },
+  {
+    "url": "./assets/audio/sfx/world/drop-off.wav",
+    "kind": "audio",
+    "byteSize": 74132
+  },
+  {
+    "url": "./assets/audio/sfx/world/extinguish.wav",
+    "kind": "audio",
+    "byteSize": 51200
+  },
+  {
+    "url": "./assets/audio/sfx/world/objective.wav",
+    "kind": "audio",
+    "byteSize": 60902
+  },
+  {
+    "url": "./assets/audio/sfx/world/reinforcements.wav",
+    "kind": "audio",
+    "byteSize": 72368
+  },
+  {
+    "url": "./assets/audio/sfx/world/rescue.wav",
+    "kind": "audio",
+    "byteSize": 61784
+  },
+  {
+    "url": "./assets/audio/sfx/world/sabotage.wav",
+    "kind": "audio",
+    "byteSize": 60902
+  },
+  {
+    "url": "./assets/audio/sfx/world/status-damage.wav",
+    "kind": "audio",
+    "byteSize": 31796
+  },
+  {
+    "url": "./assets/audio/sfx/world/turn-end.wav",
+    "kind": "audio",
+    "byteSize": 33560
+  },
+  {
+    "url": "./assets/audio/sfx/world/turn-enemy.wav",
+    "kind": "audio",
+    "byteSize": 54728
+  },
+  {
+    "url": "./assets/audio/sfx/world/turn-player.wav",
+    "kind": "audio",
+    "byteSize": 54728
+  },
+  {
     "url": "./assets/cursor/retrowave_arrow.cur",
     "kind": "cursor",
     "byteSize": 4286
@@ -520,6 +930,11 @@ export const ASSET_PRELOAD_MANIFEST = [
     "url": "./assets/img/upgrade-cards/1_common.png",
     "kind": "image",
     "byteSize": 269499
+  },
+  {
+    "url": "./assets/img/upgrade-cards/1738856685327.jpg",
+    "kind": "image",
+    "byteSize": 24359
   },
   {
     "url": "./assets/img/upgrade-cards/2_uncommon.png",
@@ -1548,7 +1963,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/controllerBattleMethods.js",
     "kind": "script",
-    "byteSize": 15191,
+    "byteSize": 20672,
     "environment": "development"
   },
   {
@@ -1584,7 +1999,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/GameController.js",
     "kind": "script",
-    "byteSize": 3950,
+    "byteSize": 4685,
     "environment": "development"
   },
   {
@@ -1734,13 +2149,31 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/assets.js",
     "kind": "script",
-    "byteSize": 17094,
+    "byteSize": 18130,
+    "environment": "development"
+  },
+  {
+    "url": "./src/game/phaser/audio/GameAudioDirector.js",
+    "kind": "script",
+    "byteSize": 6189,
     "environment": "development"
   },
   {
     "url": "./src/game/phaser/audio/MusicDirector.js",
     "kind": "script",
-    "byteSize": 3213,
+    "byteSize": 4121,
+    "environment": "development"
+  },
+  {
+    "url": "./src/game/phaser/audio/SfxCatalog.js",
+    "kind": "script",
+    "byteSize": 17895,
+    "environment": "development"
+  },
+  {
+    "url": "./src/game/phaser/audio/SoundEffectsDirector.js",
+    "kind": "script",
+    "byteSize": 7941,
     "environment": "development"
   },
   {
@@ -1782,7 +2215,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/scenes/battleScene/gamepadControls.js",
     "kind": "script",
-    "byteSize": 6515,
+    "byteSize": 6694,
     "environment": "development"
   },
   {
@@ -1794,7 +2227,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/scenes/battleScene/renderBoard.js",
     "kind": "script",
-    "byteSize": 16408,
+    "byteSize": 24749,
     "environment": "development"
   },
   {
@@ -1806,13 +2239,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/scenes/BootScene.js",
     "kind": "script",
-    "byteSize": 9116,
+    "byteSize": 9709,
     "environment": "development"
   },
   {
     "url": "./src/game/phaser/scenes/ShellScene.js",
     "kind": "script",
-    "byteSize": 1525,
+    "byteSize": 2009,
     "environment": "development"
   },
   {
@@ -1824,7 +2257,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/view/battleAnimationEvents.js",
     "kind": "script",
-    "byteSize": 22399,
+    "byteSize": 26820,
+    "environment": "development"
+  },
+  {
+    "url": "./src/game/phaser/view/battleAudioRouting.js",
+    "kind": "script",
+    "byteSize": 3122,
     "environment": "development"
   },
   {
@@ -1908,7 +2347,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/view/UnitLayer.js",
     "kind": "script",
-    "byteSize": 52153,
+    "byteSize": 53880,
     "environment": "development"
   },
   {
@@ -1938,7 +2377,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/battleSystem.js",
     "kind": "script",
-    "byteSize": 11046,
+    "byteSize": 13008,
     "environment": "development"
   },
   {
@@ -1968,7 +2407,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/commanderEffects.js",
     "kind": "script",
-    "byteSize": 30623,
+    "byteSize": 30680,
     "environment": "development"
   },
   {
@@ -2040,13 +2479,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/playerActions/combatAction.js",
     "kind": "script",
-    "byteSize": 9994,
+    "byteSize": 18815,
     "environment": "development"
   },
   {
     "url": "./src/game/simulation/playerActions/pendingActionFlow.js",
     "kind": "script",
-    "byteSize": 10346,
+    "byteSize": 11675,
     "environment": "development"
   },
   {
@@ -2070,7 +2509,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/playerActions/supportActions.js",
     "kind": "script",
-    "byteSize": 4620,
+    "byteSize": 5990,
     "environment": "development"
   },
   {
@@ -2088,7 +2527,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/runCardEffects.js",
     "kind": "script",
-    "byteSize": 27653,
+    "byteSize": 28038,
     "environment": "development"
   },
   {
@@ -2112,7 +2551,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/turnFlow.js",
     "kind": "script",
-    "byteSize": 31325,
+    "byteSize": 36131,
     "environment": "development"
   },
   {
@@ -2124,7 +2563,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/state/defaults.js",
     "kind": "script",
-    "byteSize": 1756,
+    "byteSize": 2462,
     "environment": "development"
   },
   {
@@ -2238,7 +2677,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/AppShell.js",
     "kind": "script",
-    "byteSize": 4713,
+    "byteSize": 4925,
+    "environment": "development"
+  },
+  {
+    "url": "./src/ui/appShell/audioFeedback.js",
+    "kind": "script",
+    "byteSize": 5305,
     "environment": "development"
   },
   {
@@ -2250,19 +2695,19 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/displayMethods.js",
     "kind": "script",
-    "byteSize": 10440,
+    "byteSize": 10804,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/eventMethods.js",
     "kind": "script",
-    "byteSize": 20616,
+    "byteSize": 22304,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/inputMethods.js",
     "kind": "script",
-    "byteSize": 17001,
+    "byteSize": 18218,
     "environment": "development"
   },
   {
@@ -2274,13 +2719,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/battlePresentationPlayback.js",
     "kind": "script",
-    "byteSize": 15489,
+    "byteSize": 17432,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/render/battleScreen.js",
     "kind": "script",
-    "byteSize": 17160,
+    "byteSize": 19099,
     "environment": "development"
   },
   {
@@ -2394,7 +2839,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/optionFieldsView.js",
     "kind": "script",
-    "byteSize": 8414,
+    "byteSize": 9271,
     "environment": "development"
   },
   {
@@ -2441,4 +2886,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 94850106;
+export const ASSET_PRELOAD_TOTAL_BYTES = 98912632;

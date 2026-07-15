@@ -7,6 +7,7 @@ import {
   normalizeLoopedIndex,
   shouldTriggerCommanderSwipe
 } from "./shared.js";
+import { UI_AUDIO_CUES } from "./audioFeedback.js";
 
 export const appShellInputMethods = {
   handlePointerDown(event) {
@@ -51,6 +52,10 @@ export const appShellInputMethods = {
     swipeState.swiped = true;
     swipeState.slider?.setPointerCapture?.(event.pointerId);
     this.scrollCommanderSliderById(swipeState.sliderId, deltaX > 0 ? -1 : 1);
+    this.controller.emitAudioCue?.(UI_AUDIO_CUES.ADJUST, {
+      dedupeKey: `swipe:${swipeState.sliderId}`,
+      source: "commander-swipe"
+    });
 
     if (event.cancelable) {
       event.preventDefault();
@@ -327,7 +332,7 @@ export const appShellInputMethods = {
   getControllerFocusableElements() {
     return Array.from(
       this.root.querySelectorAll(
-        'button[data-action], label[for], select, input[type="range"], input[type="checkbox"]:not(.battle-drawer-toggle):not(.tutorial-step-toggle)'
+        'button[data-action], [data-tooltip-trigger], .selection-loadout-card__info, summary, label[for], select, input[type="range"], input[type="checkbox"]:not(.battle-drawer-toggle):not(.tutorial-step-toggle)'
       )
     ).filter((element) => this.isElementControllerFocusable(element));
   },
@@ -337,7 +342,11 @@ export const appShellInputMethods = {
       return false;
     }
 
-    if (element.disabled || element.getAttribute("aria-hidden") === "true") {
+    if (
+      element.disabled ||
+      element.getAttribute("aria-disabled") === "true" ||
+      element.getAttribute("aria-hidden") === "true"
+    ) {
       return false;
     }
 
@@ -374,11 +383,13 @@ export const appShellInputMethods = {
     return true;
   },
 
-  setControllerFocus(element) {
+  setControllerFocus(element, { announce = false } = {}) {
     if (!this.isElementControllerFocusable(element)) {
       this.clearControllerFocus();
       return;
     }
+
+    const previousElement = this.controllerFocusElement;
 
     if (this.controllerFocusElement && this.controllerFocusElement !== element) {
       this.controllerFocusElement.classList.remove("is-controller-focused");
@@ -389,6 +400,13 @@ export const appShellInputMethods = {
 
     if (typeof element.focus === "function") {
       element.focus({ preventScroll: true });
+    }
+
+    if (announce && previousElement !== element) {
+      this.controller.emitAudioCue?.(UI_AUDIO_CUES.HOVER, {
+        dedupeKey: `gamepad-focus:${element.dataset?.action ?? element.dataset?.option ?? element.tagName}`,
+        source: "gamepad-focus"
+      });
     }
   },
 
@@ -407,7 +425,7 @@ export const appShellInputMethods = {
 
     const currentIndex = elements.indexOf(this.controllerFocusElement);
     const nextIndex = normalizeLoopedIndex(currentIndex + step, elements.length);
-    this.setControllerFocus(elements[nextIndex]);
+    this.setControllerFocus(elements[nextIndex], { announce: true });
   },
 
   moveControllerFocus(direction) {
@@ -426,7 +444,7 @@ export const appShellInputMethods = {
     }
 
     if (!this.isElementControllerFocusable(current)) {
-      this.setControllerFocus(this.getDefaultControllerFocus(elements));
+      this.setControllerFocus(this.getDefaultControllerFocus(elements), { announce: true });
       return;
     }
 
@@ -466,7 +484,7 @@ export const appShellInputMethods = {
     }
 
     if (bestCandidate) {
-      this.setControllerFocus(bestCandidate);
+      this.setControllerFocus(bestCandidate, { announce: true });
       return;
     }
 
@@ -545,11 +563,21 @@ export const appShellInputMethods = {
     }
 
     if (this.latestState.battleUi?.pauseMenuOpen) {
-      this.controller.closePauseMenu();
+      if (this.controller.closePauseMenu()) {
+        this.controller.emitAudioCue?.(UI_AUDIO_CUES.CANCEL, {
+          dedupeKey: "gamepad:resume-battle",
+          source: "gamepad"
+        });
+      }
       return;
     }
 
-    this.controller.openPauseMenu();
+    if (this.controller.openPauseMenu()) {
+      this.controller.emitAudioCue?.(UI_AUDIO_CUES.CONFIRM, {
+        dedupeKey: "gamepad:pause-battle",
+        source: "gamepad"
+      });
+    }
   },
 
   handleGamepadBack() {
@@ -577,6 +605,10 @@ export const appShellInputMethods = {
 
     if (this.latestState?.screen === SCREEN_IDS.BATTLE) {
       if (this.controllerFocusElement) {
+        this.controller.emitAudioCue?.(UI_AUDIO_CUES.CANCEL, {
+          dedupeKey: "gamepad:clear-focus",
+          source: "gamepad"
+        });
         this.clearControllerFocus();
         return;
       }

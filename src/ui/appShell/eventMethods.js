@@ -1,4 +1,14 @@
 import { SCREEN_IDS } from "../../game/core/constants.js";
+import {
+  classifyUiActionAudioCue,
+  getAudioFeedbackElement,
+  getAudioFeedbackKey,
+  isAudioFeedbackElementEnabled,
+  isGameplayAudioRoutedAction,
+  UI_AUDIO_CLICK_SELECTOR,
+  UI_AUDIO_CUES,
+  UI_AUDIO_HOVER_SELECTOR
+} from "./audioFeedback.js";
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
@@ -93,6 +103,23 @@ export const appShellEventMethods = {
     await this.controller.handleBattleContextAction();
   },
 
+  handleAudioPointerOver(event) {
+    const trigger = getAudioFeedbackElement(event.target, UI_AUDIO_HOVER_SELECTOR);
+
+    if (
+      !isAudioFeedbackElementEnabled(trigger) ||
+      trigger.contains?.(event.relatedTarget)
+    ) {
+      return;
+    }
+
+    this.controller.emitAudioCue?.(UI_AUDIO_CUES.HOVER, {
+      dedupeKey: `hover:${getAudioFeedbackKey(trigger)}`,
+      source: "dom-hover",
+      userInitiated: false
+    });
+  },
+
   handleToggle(event) {
     if (this.latestState?.screen !== SCREEN_IDS.MAP_EDITOR) {
       return;
@@ -108,13 +135,40 @@ export const appShellEventMethods = {
   },
 
   async handleClick(event) {
-    const trigger = event.target.closest("[data-action]");
+    const trigger = getAudioFeedbackElement(event.target, UI_AUDIO_CLICK_SELECTOR);
 
-    if (!trigger || !this.latestState) {
+    if (!trigger || !this.latestState || !isAudioFeedbackElementEnabled(trigger)) {
       return;
     }
 
     const { action, commanderId, slotId, unitTypeId } = trigger.dataset;
+    const isCommanderSelection = [
+      "select-commander",
+      "select-skirmish-player-commander",
+      "select-skirmish-enemy-commander"
+    ].includes(action);
+
+    if (
+      isCommanderSelection &&
+      this.commanderSliderSuppressClick &&
+      trigger.closest?.('[data-role="commander-slider"]')
+    ) {
+      this.commanderSliderSuppressClick = false;
+      event.preventDefault?.();
+      return;
+    }
+
+    if (!isGameplayAudioRoutedAction(action)) {
+      const cueId = classifyUiActionAudioCue(action, trigger);
+      this.controller.emitAudioCue?.(cueId, {
+        dedupeKey: `click:${action ?? getAudioFeedbackKey(trigger)}`,
+        source: "dom-click"
+      });
+    }
+
+    if (!action) {
+      return;
+    }
 
     switch (action) {
       case "open-new-run":
@@ -205,14 +259,6 @@ export const appShellEventMethods = {
         await this.controller.quitGame();
         break;
       case "select-commander":
-        if (
-          this.commanderSliderSuppressClick &&
-          trigger.closest('[data-role="commander-slider"]')
-        ) {
-          this.commanderSliderSuppressClick = false;
-          event.preventDefault();
-          return;
-        }
         if (trigger.getAttribute("aria-disabled") === "true") {
           return;
         }
@@ -246,28 +292,12 @@ export const appShellEventMethods = {
         this.controller.removeRunLoadoutUnit(unitTypeId);
         break;
       case "select-skirmish-player-commander":
-        if (
-          this.commanderSliderSuppressClick &&
-          trigger.closest('[data-role="commander-slider"]')
-        ) {
-          this.commanderSliderSuppressClick = false;
-          event.preventDefault();
-          return;
-        }
         if (trigger.getAttribute("aria-disabled") === "true") {
           return;
         }
         this.controller.updateSkirmishSetup({ playerCommanderId: commanderId });
         break;
       case "select-skirmish-enemy-commander":
-        if (
-          this.commanderSliderSuppressClick &&
-          trigger.closest('[data-role="commander-slider"]')
-        ) {
-          this.commanderSliderSuppressClick = false;
-          event.preventDefault();
-          return;
-        }
         if (trigger.getAttribute("aria-disabled") === "true") {
           return;
         }
@@ -540,6 +570,16 @@ export const appShellEventMethods = {
   },
 
   async handleChange(event) {
+    const optionKey = event.target.dataset.option;
+    const shouldEmitAudio = isAudioFeedbackElementEnabled(event.target);
+
+    if (shouldEmitAudio && !optionKey) {
+      this.controller.emitAudioCue?.(UI_AUDIO_CUES.ADJUST, {
+        dedupeKey: `change:${getAudioFeedbackKey(event.target)}`,
+        source: "dom-change"
+      });
+    }
+
     if (this.handleDisplayOptionChange?.(event)) {
       return;
     }
@@ -567,8 +607,6 @@ export const appShellEventMethods = {
       return;
     }
 
-    const optionKey = event.target.dataset.option;
-
     if (!optionKey) {
       return;
     }
@@ -583,9 +621,30 @@ export const appShellEventMethods = {
     await this.controller.updateOptions({
       [optionKey]: nextValue
     });
+
+    if (shouldEmitAudio) {
+      this.controller.emitAudioCue?.(UI_AUDIO_CUES.ADJUST, {
+        dedupeKey: `change:${getAudioFeedbackKey(event.target)}`,
+        source: "dom-change"
+      });
+    }
   },
 
   handleInput(event) {
+    const optionKey = event.target.dataset.option;
+
+    if (optionKey && event.target.type === "range") {
+      const value = Number(event.target.value);
+      const valueLabel = event.target.closest?.(".option-row")?.querySelector?.("strong");
+
+      if (valueLabel && Number.isFinite(value)) {
+        valueLabel.textContent = `${Math.round(value * 100)}%`;
+      }
+
+      this.controller.previewAudioOptions?.({ [optionKey]: value });
+      return;
+    }
+
     const skirmishField = event.target.dataset.skirmishField;
 
     if (skirmishField) {

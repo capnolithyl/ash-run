@@ -928,7 +928,7 @@ export function expireCurrentTurnStatuses(state, side) {
   state[side].effects = (state[side]?.effects ?? []).filter((effect) => !effect.currentTurnOnly);
 }
 
-export function tickSideStatuses(state, side) {
+export function tickSideStatuses(state, side, { onAfterStatuses = null } = {}) {
   for (const owner of [TURN_SIDES.PLAYER, TURN_SIDES.ENEMY]) {
     for (const unit of getLivingUnits(state, owner)) {
       const burnedStatus = getStatusEntries(unit, "burn")[0];
@@ -971,6 +971,8 @@ export function tickSideStatuses(state, side) {
       })
       .filter((effect) => (effect.turnsRemaining ?? 0) > 0);
   }
+
+  onAfterStatuses?.();
 
   const commander = getCommanderForSide(state, side);
 

@@ -43,6 +43,121 @@ function getUnitIdAt(controller, x, y) {
   )?.id ?? null;
 }
 
+const TARGETING_MODES = new Set([
+  "fire",
+  "unload",
+  "transport",
+  "support",
+  "medpack",
+  "extinguish",
+  "slipstream"
+]);
+
+function captureBattleControlState(controller) {
+  const battleState =
+    controller.battleSystem?.state ?? controller.battleSystem?.getStateForSave?.() ?? null;
+  const selection = battleState?.selection ?? null;
+  const pendingAction = battleState?.pendingAction ?? null;
+
+  return {
+    selection: selection?.type
+      ? {
+          type: selection.type,
+          id: selection.id ?? null,
+          x: selection.x ?? null,
+          y: selection.y ?? null
+        }
+      : null,
+    pendingAction: pendingAction
+      ? {
+          type: pendingAction.type ?? null,
+          unitId: pendingAction.unitId ?? null,
+          mode: pendingAction.mode ?? "menu",
+          fromX: pendingAction.fromX ?? null,
+          fromY: pendingAction.fromY ?? null,
+          toX: pendingAction.toX ?? null,
+          toY: pendingAction.toY ?? null
+        }
+      : null
+  };
+}
+
+function emitBattleControlCue(controller, cueId, dedupeKey, context = {}) {
+  controller.emitAudioCue?.(cueId, {
+    dedupeKey,
+    source: "battle-control",
+    ...context
+  });
+}
+
+function emitTileSelectionCue(controller, before, after, changed, x, y) {
+  const previousMode = before.pendingAction?.mode ?? null;
+
+  if (!changed) {
+    if (TARGETING_MODES.has(previousMode)) {
+      emitBattleControlCue(controller, "battle.invalid", `invalid:${previousMode}:${x},${y}`);
+    }
+    return;
+  }
+
+  if (TARGETING_MODES.has(previousMode)) {
+    emitBattleControlCue(
+      controller,
+      previousMode === "slipstream" ? "battle.move-confirm" : "battle.target-confirm",
+      `target:${previousMode}:${before.pendingAction?.unitId ?? "unit"}:${x},${y}`
+    );
+    return;
+  }
+
+  const nextPending = after.pendingAction;
+  const moved =
+    nextPending?.type === "move" &&
+    Number.isInteger(nextPending.fromX) &&
+    Number.isInteger(nextPending.fromY) &&
+    (nextPending.fromX !== nextPending.toX || nextPending.fromY !== nextPending.toY);
+
+  if (moved) {
+    emitBattleControlCue(
+      controller,
+      "battle.move-confirm",
+      `move:${nextPending.unitId}:${nextPending.toX},${nextPending.toY}`
+    );
+    return;
+  }
+
+  if (!after.selection && before.selection) {
+    emitBattleControlCue(
+      controller,
+      "battle.deselect",
+      `deselect:${before.selection.type}:${before.selection.id ?? `${before.selection.x},${before.selection.y}`}`
+    );
+    return;
+  }
+
+  if (after.selection) {
+    emitBattleControlCue(
+      controller,
+      "battle.select",
+      `select:${after.selection.type}:${after.selection.id ?? `${after.selection.x},${after.selection.y}`}`
+    );
+  }
+}
+
+function emitTargetingModeCueIfEntered(controller, before, expectedMode) {
+  const after = captureBattleControlState(controller);
+
+  if (
+    before.pendingAction?.mode !== expectedMode &&
+    after.pendingAction?.mode === expectedMode
+  ) {
+    emitBattleControlCue(
+      controller,
+      "battle.targeting",
+      `targeting:${expectedMode}:${after.pendingAction?.unitId ?? "unit"}`
+    );
+  }
+}
+
 export const controllerBattleMethods = {
   openPauseMenu() {
     if (
@@ -51,22 +166,24 @@ export const controllerBattleMethods = {
       this.state.battleSnapshot?.victory ||
       this.state.battleUi.combatCutscene
     ) {
-      return;
+      return false;
     }
 
     this.state.battleUi.pauseMenuOpen = true;
     this.state.battleUi.confirmAbandon = false;
     this.emit();
+    return true;
   },
 
   closePauseMenu() {
     if (!this.state.battleUi.pauseMenuOpen) {
-      return;
+      return false;
     }
 
     this.state.battleUi.pauseMenuOpen = false;
     this.state.battleUi.confirmAbandon = false;
     this.emit();
+    return true;
   },
 
   isBattleInputLocked() {
@@ -223,7 +340,10 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.handleTileSelection(x, y);
+    const afterControlState = captureBattleControlState(this);
+    emitTileSelectionCue(this, beforeControlState, afterControlState, changed, x, y);
 
     if (changed) {
       await this.handleTutorialBattleActionResult?.("tile", { x, y, targetUnitId }, changed);
@@ -269,9 +389,17 @@ export const controllerBattleMethods = {
 
     this.lastBattleContextActionAt = now;
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.handleContextAction();
 
     if (changed) {
+      emitBattleControlCue(
+        this,
+        beforeControlState.pendingAction ? "ui.cancel" : "battle.deselect",
+        beforeControlState.pendingAction
+          ? `context:${beforeControlState.pendingAction.mode}:${beforeControlState.pendingAction.unitId}`
+          : `context:deselect:${beforeControlState.selection?.id ?? "tile"}`
+      );
       await this.persistCurrentRun();
     }
   },
@@ -282,11 +410,13 @@ export const controllerBattleMethods = {
     }
 
     if (this.isTutorialBattle?.()) {
+      emitBattleControlCue(this, "battle.invalid", `recruit:tutorial:${unitTypeId}`);
       this.showTutorialNudge?.("Recruitment is covered after the sim. This guided match uses a fixed squad.");
       return;
     }
 
     if (this.state.runState && !this.state.debugMode) {
+      emitBattleControlCue(this, "battle.invalid", `recruit:run:${unitTypeId}`);
       this.showBattleNotice({
         title: "Run Rules",
         message: "Recruiting is disabled in run mode. Expand your squad between maps instead.",
@@ -303,6 +433,7 @@ export const controllerBattleMethods = {
     }
 
     const unitLimit = this.battleSystem.getPlayerUnitLimitStatus?.();
+    emitBattleControlCue(this, "battle.invalid", `recruit:rejected:${unitTypeId}`);
 
     if (unitLimit?.isAtLimit) {
       this.showBattleNotice({
@@ -325,6 +456,12 @@ export const controllerBattleMethods = {
     const changed = this.battleSystem.selectNextReadyUnit();
 
     if (changed) {
+      const selected = captureBattleControlState(this).selection;
+      emitBattleControlCue(
+        this,
+        "battle.select",
+        `select-next:${selected?.id ?? "unit"}`
+      );
       await this.persistCurrentRun();
     }
   },
@@ -430,9 +567,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.useSupportAbilityWithPendingUnit();
 
     if (changed) {
+      emitTargetingModeCueIfEntered(this, beforeControlState, "support");
       await this.persistCurrentRun();
     }
   },
@@ -442,9 +581,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.useMedpackWithPendingUnit();
 
     if (changed) {
+      emitTargetingModeCueIfEntered(this, beforeControlState, "medpack");
       await this.persistCurrentRun();
     }
   },
@@ -454,9 +595,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.useExtinguishAbilityWithPendingUnit();
 
     if (changed) {
+      emitTargetingModeCueIfEntered(this, beforeControlState, "extinguish");
       await this.persistCurrentRun();
     }
   },
@@ -466,9 +609,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.enterTransportWithPendingUnit();
 
     if (changed) {
+      emitTargetingModeCueIfEntered(this, beforeControlState, "transport");
       await this.persistCurrentRun();
     }
   },
@@ -478,9 +623,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.beginPendingUnload();
 
     if (changed) {
+      emitTargetingModeCueIfEntered(this, beforeControlState, "unload");
       await this.persistCurrentRun();
     }
   },
@@ -494,9 +641,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.beginPendingAttack();
 
     if (changed) {
+      emitTargetingModeCueIfEntered(this, beforeControlState, "fire");
       await this.handleTutorialBattleActionResult?.("begin-attack", {}, changed);
       await this.persistCurrentRun();
     }
@@ -514,6 +663,7 @@ export const controllerBattleMethods = {
     const changed = this.battleSystem.cancelPendingAttack();
 
     if (changed) {
+      emitBattleControlCue(this, "ui.cancel", "cancel:attack");
       await this.persistCurrentRun();
     }
   },
@@ -530,6 +680,7 @@ export const controllerBattleMethods = {
     const changed = this.battleSystem.redoPendingMove();
 
     if (changed) {
+      emitBattleControlCue(this, "ui.cancel", "cancel:move-rollback");
       await this.persistCurrentRun();
     }
   },
@@ -549,6 +700,12 @@ export const controllerBattleMethods = {
       this.syncBattleState();
       return;
     }
+
+    emitBattleControlCue(
+      this,
+      "battle.turn-end",
+      `turn-end:${this.state.battleSnapshot?.turn?.number ?? "current"}`
+    );
 
     this.syncBattleState();
 
@@ -593,6 +750,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    emitBattleControlCue(
+      this,
+      "battle.invalid",
+      `commander:rejected:${this.state.battleSnapshot?.turn?.number ?? "current"}`
+    );
     this.syncBattleState();
   }
 };

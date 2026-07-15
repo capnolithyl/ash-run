@@ -85,6 +85,7 @@ export class AppShell {
     this.root.dataset.inputMode = this.inputMode;
 
     this.root.addEventListener("click", (event) => this.handleClick(event));
+    this.root.addEventListener("pointerover", (event) => this.handleAudioPointerOver(event));
     this.root.addEventListener("input", (event) => this.handleInput(event));
     this.root.addEventListener("change", (event) => this.handleChange(event));
     this.root.addEventListener("toggle", (event) => this.handleToggle(event), true);
@@ -94,6 +95,9 @@ export class AppShell {
     this.root.addEventListener("transitionend", (event) => this.handleTransitionEnd(event));
     this.windowChromeRoot?.addEventListener("click", (event) =>
       this.handleWindowChromeClick(event)
+    );
+    this.windowChromeRoot?.addEventListener("pointerover", (event) =>
+      this.handleAudioPointerOver(event)
     );
     window.addEventListener("pointermove", (event) => this.handlePointerMove(event));
     window.addEventListener("pointerup", (event) => this.handlePointerUp(event));

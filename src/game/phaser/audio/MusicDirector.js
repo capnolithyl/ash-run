@@ -1,20 +1,8 @@
 import { SCREEN_IDS, TURN_SIDES } from "../../core/constants.js";
 import { MUSIC_TRACK_IDS, getMusicTrackKey } from "../assets.js";
 
-const DEFAULT_MASTER_VOLUME = 0.4;
 const MUSIC_FADE_MS = 650;
-
-function clampVolume(value) {
-  if (!Number.isFinite(value)) {
-    return DEFAULT_MASTER_VOLUME;
-  }
-
-  return Math.max(0, Math.min(1, value));
-}
-
-function getEffectiveMasterVolume(options = {}) {
-  return options.muted ? 0 : clampVolume(Number(options.masterVolume));
-}
+const MUSIC_DUCK_FADE_MS = 120;
 
 export function getMusicTrackIdForState(state) {
   if (state?.screen !== SCREEN_IDS.BATTLE || !state?.battleSnapshot) {
@@ -34,15 +22,17 @@ export class MusicDirector {
     this.currentKey = null;
     this.targetKey = null;
     this.sounds = new Map();
+    this.categoryVolume = 1;
+    this.duckFactor = 1;
 
-    this.scene.sound?.once?.("unlocked", () => {
+    this.handleUnlocked = () => {
       this.sync(this.latestState);
-    });
+    };
+    this.scene.sound?.once?.("unlocked", this.handleUnlocked);
   }
 
   sync(state) {
     this.latestState = state;
-    this.applyMasterVolume(state?.metaState?.options);
 
     const nextTrackId = getMusicTrackIdForState(state);
     const nextKey = getMusicTrackKey(nextTrackId);
@@ -65,17 +55,42 @@ export class MusicDirector {
     this.crossfadeTo(nextKey);
   }
 
-  applyMasterVolume(options) {
-    const volume = getEffectiveMasterVolume(options);
+  setCategoryVolume(volume) {
+    const normalizedVolume = Number.isFinite(Number(volume))
+      ? Math.max(0, Math.min(1, Number(volume)))
+      : 1;
 
-    if (typeof this.scene.sound?.setVolume === "function") {
-      this.scene.sound.setVolume(volume);
+    if (this.categoryVolume === normalizedVolume) {
       return;
     }
 
-    if (this.scene.sound) {
-      this.scene.sound.volume = volume;
+    this.categoryVolume = normalizedVolume;
+    this.refreshCurrentVolume();
+  }
+
+  setDuckFactor(factor, { immediate = false } = {}) {
+    const normalizedFactor = Number.isFinite(Number(factor))
+      ? Math.max(0, Math.min(1, Number(factor)))
+      : 1;
+
+    if (this.duckFactor === normalizedFactor) {
+      return;
     }
+
+    this.duckFactor = normalizedFactor;
+    this.refreshCurrentVolume(immediate ? 0 : MUSIC_DUCK_FADE_MS);
+  }
+
+  getTargetVolume() {
+    return this.categoryVolume * this.duckFactor;
+  }
+
+  refreshCurrentVolume(duration = MUSIC_DUCK_FADE_MS) {
+    if (!this.currentSound) {
+      return;
+    }
+
+    this.fadeSound(this.currentSound, this.getTargetVolume(), null, duration);
   }
 
   getOrCreateSound(key) {
@@ -104,7 +119,7 @@ export class MusicDirector {
 
     if (previousSound === nextSound) {
       this.ensurePlaying(nextSound);
-      this.fadeSound(nextSound, 1);
+      this.fadeSound(nextSound, this.getTargetVolume());
       return;
     }
 
@@ -112,7 +127,7 @@ export class MusicDirector {
     this.currentKey = nextKey;
     this.ensurePlaying(nextSound);
     nextSound.setVolume(0);
-    this.fadeSound(nextSound, 1);
+    this.fadeSound(nextSound, this.getTargetVolume());
 
     if (previousSound) {
       this.fadeSound(previousSound, 0, () => {
@@ -132,14 +147,35 @@ export class MusicDirector {
     });
   }
 
-  fadeSound(sound, volume, onComplete = null) {
+  fadeSound(sound, volume, onComplete = null, duration = MUSIC_FADE_MS) {
     this.scene.tweens.killTweensOf(sound);
+
+    if (duration <= 0) {
+      sound.setVolume(volume);
+      onComplete?.();
+      return;
+    }
+
     this.scene.tweens.add({
       targets: sound,
       volume,
-      duration: MUSIC_FADE_MS,
+      duration,
       ease: "Sine.easeInOut",
       onComplete
     });
+  }
+
+  destroy() {
+    this.scene.sound?.off?.("unlocked", this.handleUnlocked);
+    for (const sound of this.sounds.values()) {
+      this.scene.tweens?.killTweensOf?.(sound);
+      sound.stop?.();
+      sound.destroy?.();
+    }
+
+    this.sounds.clear();
+    this.currentSound = null;
+    this.currentKey = null;
+    this.targetKey = null;
   }
 }

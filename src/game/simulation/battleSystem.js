@@ -17,9 +17,17 @@ import { awardExperience } from "./progression.js";
 import * as transportRules from "./transportRules.js";
 import * as turnFlow from "./turnFlow.js";
 
+const MAX_PRESENTATION_EVENTS = 160;
+
 export class BattleSystem {
   constructor(initialState) {
     this.state = structuredClone(initialState);
+    delete this.state.presentation;
+    // Presentation events deliberately live beside simulation state. They are
+    // exposed to snapshots for animation/audio playback, but can never leak
+    // into a save file or influence deterministic battle resolution.
+    this.presentationEvents = [];
+    this.presentationEventSequence = 0;
     this.state.mode ??= BATTLE_MODES.SKIRMISH;
     this.state.pendingAction ??= null;
     this.state.enemyTurn ??= null;
@@ -89,6 +97,7 @@ export class BattleSystem {
     normalizeReinforcementState(this.state);
     const snapshot = structuredClone(this.state);
     snapshot.presentation = buildBattlePresentation(snapshot);
+    snapshot.presentation.events = structuredClone(this.presentationEvents);
     return snapshot;
   }
 
@@ -96,6 +105,32 @@ export class BattleSystem {
     missionRules.normalizeMissionState(this.state);
     normalizeReinforcementState(this.state);
     return structuredClone(this.state);
+  }
+
+  recordPresentationEvent(type, payload = {}) {
+    if (!type) {
+      return null;
+    }
+
+    const event = {
+      id: ++this.presentationEventSequence,
+      type,
+      ...structuredClone(payload)
+    };
+
+    this.presentationEvents.push(event);
+    if (this.presentationEvents.length > MAX_PRESENTATION_EVENTS) {
+      this.presentationEvents.splice(
+        0,
+        this.presentationEvents.length - MAX_PRESENTATION_EVENTS
+      );
+    }
+
+    return structuredClone(event);
+  }
+
+  createPresentationEventGroup(prefix = "event") {
+    return `${prefix}-${this.presentationEventSequence + 1}`;
   }
 
   clearSelection() {
@@ -152,7 +187,22 @@ export class BattleSystem {
   }
 
   boardUnitIntoRunner(unit, runner) {
-    return transportRules.boardUnitIntoRunner(this.state, unit, runner);
+    const changed = transportRules.boardUnitIntoRunner(this.state, unit, runner);
+
+    if (changed) {
+      this.recordPresentationEvent("transport", {
+        action: "board",
+        carrierId: runner.id,
+        carrierUnitTypeId: runner.unitTypeId,
+        passengerId: unit.id,
+        passengerUnitTypeId: unit.unitTypeId,
+        owner: runner.owner,
+        x: runner.x,
+        y: runner.y
+      });
+    }
+
+    return changed;
   }
 
   getNearestOpponentDistance(unit, tile) {
@@ -160,7 +210,24 @@ export class BattleSystem {
   }
 
   unloadTransportForEnemy(runner, destination = null) {
-    return transportRules.unloadTransportForEnemy(this.state, runner, destination);
+    const passengerId = runner?.transport?.carryingUnitId ?? null;
+    const passenger = passengerId ? findUnitById(this.state, passengerId) : null;
+    const changed = transportRules.unloadTransportForEnemy(this.state, runner, destination);
+
+    if (changed && passenger) {
+      this.recordPresentationEvent("transport", {
+        action: "unload",
+        carrierId: runner.id,
+        carrierUnitTypeId: runner.unitTypeId,
+        passengerId: passenger.id,
+        passengerUnitTypeId: passenger.unitTypeId,
+        owner: runner.owner,
+        x: passenger.x,
+        y: passenger.y
+      });
+    }
+
+    return changed;
   }
 
   getSupportTargetForUnit(unit, options) {

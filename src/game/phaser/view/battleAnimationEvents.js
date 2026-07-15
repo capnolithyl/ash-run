@@ -22,6 +22,16 @@ function indexById(items) {
   return new Map(items.map((item) => [item.id, item]));
 }
 
+function getNewPresentationEvents(previousSnapshot, nextSnapshot) {
+  const previousIds = new Set(
+    (previousSnapshot?.presentation?.events ?? []).map((event) => event.id)
+  );
+
+  return (nextSnapshot?.presentation?.events ?? []).filter(
+    (event) => Number.isInteger(event.id) && !previousIds.has(event.id)
+  );
+}
+
 function manhattanDistance(left, right) {
   return Math.abs(left.x - right.x) + Math.abs(left.y - right.y);
 }
@@ -390,6 +400,22 @@ export function deriveBattleAnimationEvents(
   const nextUnits = indexById(getUnits(nextSnapshot));
   const previousBuildings = indexById(previousSnapshot.map.buildings);
   const nextBuildings = indexById(nextSnapshot.map.buildings);
+  const presentationEvents = getNewPresentationEvents(previousSnapshot, nextSnapshot);
+  const authoritativeStrikes = presentationEvents.filter((event) => event.type === "strike");
+  const authoritativeTransportEvents = presentationEvents.filter(
+    (event) => event.type === "transport"
+  );
+  const transportedPassengerIds = new Set(
+    authoritativeTransportEvents.map((event) => event.passengerId)
+  );
+  const authoritativeServicesByTarget = new Map();
+  presentationEvents
+    .filter((event) => event.type === "service" && event.targetId)
+    .forEach((event) => {
+      const services = authoritativeServicesByTarget.get(event.targetId) ?? [];
+      services.push(event);
+      authoritativeServicesByTarget.set(event.targetId, services);
+    });
 
   const damagedTargets = [];
   const movements = [];
@@ -446,6 +472,7 @@ export function deriveBattleAnimationEvents(
     if (
       !previousUnit.transport?.carriedByUnitId &&
       !nextUnit.transport?.carriedByUnitId &&
+      !transportedPassengerIds.has(unitId) &&
       (nextUnit.x !== previousUnit.x || nextUnit.y !== previousUnit.y)
     ) {
       if (isPendingMoveRollback(previousSnapshot, unitId, previousUnit, nextUnit)) {
@@ -483,8 +510,30 @@ export function deriveBattleAnimationEvents(
     const hpRecovered = nextUnit.current.hp > previousUnit.current.hp;
     const ammoRecovered = nextUnit.current.ammo > previousUnit.current.ammo;
     const staminaRecovered = nextUnit.current.stamina > previousUnit.current.stamina;
+    const authoritativeServices = authoritativeServicesByTarget.get(unitId) ?? [];
 
-    if (hpRecovered || ammoRecovered || staminaRecovered) {
+    if (authoritativeServices.length > 0) {
+      authoritativeServices.forEach((service) => {
+        restores.push({
+          type: (service.hpRecovered ?? 0) > 0 ? "heal" : "resupply",
+          eventId: service.id,
+          actorId: service.actorId ?? null,
+          unitId,
+          owner: nextUnit.owner,
+          x: service.x ?? nextUnit.x,
+          y: service.y ?? nextUnit.y,
+          amount: service.hpRecovered ?? 0,
+          ammoAmount: service.ammoRecovered ?? 0,
+          staminaAmount: service.staminaRecovered ?? 0,
+          sourceKind: service.sourceKind,
+          sourceId: service.sourceId,
+          buildingType: service.buildingType ?? null
+        });
+      });
+    } else if (
+      nextUnit.level === previousUnit.level &&
+      (hpRecovered || ammoRecovered || staminaRecovered)
+    ) {
       restores.push({
         type: hpRecovered ? "heal" : "resupply",
         unitId,
@@ -516,6 +565,25 @@ export function deriveBattleAnimationEvents(
     }
   }
 
+  authoritativeTransportEvents
+    .filter((event) => event.action === "unload")
+    .forEach((event) => {
+      if (deployments.some((deployment) => deployment.unitId === event.passengerId)) {
+        return;
+      }
+
+      deployments.push({
+        type: "deploy",
+        eventId: event.id,
+        unitId: event.passengerId,
+        owner: event.owner,
+        x: event.x,
+        y: event.y,
+        fromUnload: true,
+        carrierId: event.carrierId
+      });
+    });
+
   for (const [unitId, nextUnit] of nextUnits.entries()) {
     const previousUnit = previousUnits.get(unitId);
 
@@ -530,7 +598,7 @@ export function deriveBattleAnimationEvents(
       continue;
     }
 
-    if (!didUnitAttack(previousUnit, nextUnit)) {
+    if (authoritativeStrikes.length > 0 || !didUnitAttack(previousUnit, nextUnit)) {
       continue;
     }
 
@@ -556,9 +624,35 @@ export function deriveBattleAnimationEvents(
     });
   }
 
+  authoritativeStrikes.forEach((event) => {
+    attacks.push({
+      type: "attack",
+      eventId: event.id,
+      combatId: event.combatId,
+      strikeOrder: event.order ?? 0,
+      phase: event.phase,
+      profile: event.profile,
+      weaponType: event.weaponType,
+      weaponClass: event.weaponClass,
+      isCrit: Boolean(event.isCrit),
+      isGlance: Boolean(event.isGlance),
+      isEffective: Boolean(event.isEffective),
+      killed: Boolean(event.killed),
+      attackerId: event.attackerId,
+      owner: event.attackerOwner,
+      fromX: event.fromX,
+      fromY: event.fromY,
+      toX: event.toX,
+      toY: event.toY,
+      targetId: event.targetId,
+      damage: event.damage ?? 0,
+      isInitiator: event.phase === "primary" || event.phase === "final-transmission"
+    });
+  });
+
   const existingAttackPairs = new Set(attacks.map((event) => `${event.attackerId}->${event.targetId}`));
 
-  for (const event of [...attacks]) {
+  for (const event of authoritativeStrikes.length > 0 ? [] : [...attacks]) {
     const previousAttacker = previousUnits.get(event.attackerId);
     const nextAttacker = nextUnits.get(event.attackerId);
     const previousDefender = previousUnits.get(event.targetId);
@@ -654,7 +748,11 @@ export function deriveBattleAnimationEvents(
   }
 
   const orderedAttacks = attacks
-    .sort((left, right) => Number(right.isInitiator) - Number(left.isInitiator))
+    .sort((left, right) =>
+      authoritativeStrikes.length > 0
+        ? (left.strikeOrder ?? 0) - (right.strikeOrder ?? 0)
+        : Number(right.isInitiator) - Number(left.isInitiator)
+    )
     .map((event, index) => ({
       ...event,
       delay: index * BATTLE_ATTACK_WINDOW_MS
@@ -697,12 +795,23 @@ export function deriveBattleAnimationEvents(
     durationMs: BATTLE_ATTACK_WINDOW_MS,
     endDelayMs: attackBaseDelayMs + (event.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS
   }));
-  const timedRestores = restores.map((event) => ({
-    ...event,
-    startDelayMs: turnTransitionDelayMs,
-    durationMs: 560,
-    endDelayMs: turnTransitionDelayMs + 560
-  }));
+  const timedRestores = restores.map((event) => {
+    const serviceMoveDurationMs = moveDurationsByUnitId.get(
+      event.actorId ?? event.unitId
+    ) ?? 0;
+    const startDelayMs =
+      turnTransitionDelayMs +
+      (serviceMoveDurationMs > 0
+        ? serviceMoveDurationMs + BATTLE_MOVE_SETTLE_MS
+        : 0);
+
+    return {
+      ...event,
+      startDelayMs,
+      durationMs: 560,
+      endDelayMs: startDelayMs + 560
+    };
+  });
   const timedExperience = experience.map((event) => ({
     ...event,
     ...buildExperienceTimingMetadata(event, experienceStartDelayMs)
@@ -731,12 +840,37 @@ export function deriveBattleAnimationEvents(
     };
   });
 
-  const destroyDelaysByUnitId = new Map(
-    timedAttacks.map((event) => [
+  const destroyDelaysByUnitId = new Map();
+  const recordDestroyDelay = (unitId, delay) => {
+    if (!unitId) {
+      return;
+    }
+    destroyDelaysByUnitId.set(
+      unitId,
+      Math.max(destroyDelaysByUnitId.get(unitId) ?? 0, delay)
+    );
+  };
+  timedAttacks.forEach((event) => {
+    recordDestroyDelay(
       event.targetId,
       (event.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS
-    ])
-  );
+    );
+  });
+  presentationEvents
+    .filter((event) => event.type === "status" && event.killed && event.combatId)
+    .forEach((statusEvent) => {
+      const attack = timedAttacks.find(
+        (event) =>
+          event.combatId === statusEvent.combatId &&
+          (event.strikeOrder ?? 0) === (statusEvent.order ?? 0)
+      );
+      if (attack) {
+        recordDestroyDelay(
+          statusEvent.targetId,
+          (attack.delay ?? 0) + BATTLE_ATTACK_WINDOW_MS
+        );
+      }
+    });
   const orderedDestroys = destroys.map((event) => ({
     ...event,
     delay: destroyDelaysByUnitId.get(event.unitId) ?? 0

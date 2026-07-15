@@ -47,6 +47,12 @@ export function applySupportAbility(system, unit, target) {
     return false;
   }
 
+  const before = {
+    hp: target.current.hp,
+    ammo: target.current.ammo,
+    stamina: target.current.stamina
+  };
+
   const result = restoreUnitServiceResources(system.state, target, {
     healAmount: Math.ceil(target.stats.maxHealth * 0.5)
   });
@@ -59,6 +65,21 @@ export function applySupportAbility(system, unit, target) {
   unit.hasMoved = true;
   unit.hasAttacked = true;
   appendLog(system.state, `${unit.name} serviced ${target.name}.`);
+  system.recordPresentationEvent("service", {
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    targetId: target.id,
+    targetUnitTypeId: target.unitTypeId,
+    owner: unit.owner,
+    sourceKind: unit.unitTypeId === "medic" ? "medic" : "mechanic",
+    sourceId: unit.id,
+    buildingType: null,
+    hpRecovered: Math.max(0, target.current.hp - before.hp),
+    ammoRecovered: Math.max(0, target.current.ammo - before.ammo),
+    staminaRecovered: Math.max(0, target.current.stamina - before.stamina),
+    x: target.x,
+    y: target.y
+  });
   return true;
 }
 
@@ -111,6 +132,21 @@ export function applyMedpackAbility(system, unit, target) {
   unit.hasMoved = true;
   unit.hasAttacked = true;
   appendLog(system.state, `${unit.name} used a Field Medpack on ${target.id === unit.id ? "themself" : target.name}, restoring ${restoredHp} HP.`);
+  system.recordPresentationEvent("service", {
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    targetId: target.id,
+    targetUnitTypeId: target.unitTypeId,
+    owner: unit.owner,
+    sourceKind: "field-medpack",
+    sourceId: "gear-field-meds",
+    buildingType: null,
+    hpRecovered: restoredHp,
+    ammoRecovered: 0,
+    staminaRecovered: 0,
+    x: target.x,
+    y: target.y
+  });
   return true;
 }
 
@@ -144,5 +180,17 @@ export function applyExtinguishAbility(system, unit, target) {
   unit.hasMoved = true;
   unit.hasAttacked = true;
   appendLog(system.state, `${unit.name} extinguished ${target.name}.`);
+  system.recordPresentationEvent("status", {
+    action: "extinguish",
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    targetId: target.id,
+    targetUnitTypeId: target.unitTypeId,
+    owner: unit.owner,
+    statusType: "burn",
+    damage: 0,
+    x: target.x,
+    y: target.y
+  });
   return true;
 }

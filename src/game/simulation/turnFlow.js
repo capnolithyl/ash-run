@@ -61,6 +61,108 @@ import {
 
 const PRODUCTION_BUILDING_TYPES = ["barracks", "motor-pool", "airfield"];
 
+function snapshotUnitResources(state) {
+  return new Map(
+    [...state.player.units, ...state.enemy.units].map((unit) => [
+      unit.id,
+      {
+        hp: unit.current.hp,
+        ammo: unit.current.ammo,
+        stamina: unit.current.stamina,
+        hadBurn: (unit.statuses ?? []).some((status) => status.type === "burn")
+      }
+    ])
+  );
+}
+
+function recordStatusAndPassiveChanges(system, before, side) {
+  for (const unit of [...system.state.player.units, ...system.state.enemy.units]) {
+    const previous = before.get(unit.id);
+    if (!previous) {
+      continue;
+    }
+
+    if (unit.current.hp < previous.hp && previous.hadBurn) {
+      system.recordPresentationEvent("status", {
+        action: "tick",
+        targetId: unit.id,
+        targetUnitTypeId: unit.unitTypeId,
+        owner: unit.owner,
+        statusType: "burn",
+        damage: previous.hp - unit.current.hp,
+        x: unit.x,
+        y: unit.y
+      });
+    }
+
+    if (unit.current.hp > previous.hp) {
+      system.recordPresentationEvent("service", {
+        actorId: null,
+        targetId: unit.id,
+        targetUnitTypeId: unit.unitTypeId,
+        owner: side,
+        sourceKind: "commander-passive",
+        sourceId: "atlas-field-repairs",
+        buildingType: null,
+        hpRecovered: unit.current.hp - previous.hp,
+        ammoRecovered: Math.max(0, unit.current.ammo - previous.ammo),
+        staminaRecovered: Math.max(0, unit.current.stamina - previous.stamina),
+        x: unit.x,
+        y: unit.y
+      });
+    }
+  }
+}
+
+function recordRunCardResourceChanges(system, before, side) {
+  for (const unit of system.state[side].units) {
+    const previous = before.get(unit.id);
+    if (!previous) {
+      continue;
+    }
+
+    const damage = Math.max(0, previous.hp - unit.current.hp);
+    if (damage > 0) {
+      system.recordPresentationEvent("status", {
+        action: "effect-damage",
+        actorId: null,
+        targetId: unit.id,
+        targetUnitTypeId: unit.unitTypeId,
+        owner: side,
+        sourceKind: "run-card",
+        sourceId: "glass-fuel-lines",
+        statusType: null,
+        damage,
+        killed: unit.current.hp <= 0,
+        x: unit.x,
+        y: unit.y
+      });
+    }
+
+    const hpRecovered = Math.max(0, unit.current.hp - previous.hp);
+    const ammoRecovered = Math.max(0, unit.current.ammo - previous.ammo);
+    const staminaRecovered = Math.max(0, unit.current.stamina - previous.stamina);
+    if (hpRecovered + ammoRecovered + staminaRecovered === 0) {
+      continue;
+    }
+
+    system.recordPresentationEvent("service", {
+      actorId: null,
+      targetId: unit.id,
+      targetUnitTypeId: unit.unitTypeId,
+      owner: side,
+      sourceKind: "run-card",
+      sourceId: "turn-start-run-card",
+      buildingType: null,
+      hpRecovered,
+      ammoRecovered,
+      staminaRecovered,
+      x: unit.x,
+      y: unit.y
+    });
+  }
+}
+
 function getActionableUnitsForSide(state, side) {
   return state[side].units.filter((unit) => unit.current.hp > 0);
 }
@@ -160,7 +262,15 @@ export function startEnemyTurnActions(system) {
   }
 
   system.state.enemyTurn.started = true;
-  tickSideStatuses(system.state, TURN_SIDES.ENEMY);
+  const beforeStatusTick = snapshotUnitResources(system.state);
+  let beforeEnemyPassive = beforeStatusTick;
+  tickSideStatuses(system.state, TURN_SIDES.ENEMY, {
+    onAfterStatuses: () => {
+      recordStatusAndPassiveChanges(system, beforeStatusTick, TURN_SIDES.ENEMY);
+      beforeEnemyPassive = snapshotUnitResources(system.state);
+    }
+  });
+  recordStatusAndPassiveChanges(system, beforeEnemyPassive, TURN_SIDES.ENEMY);
   tickUnitDurations(system, TURN_SIDES.ENEMY);
   const incomeGain = collectIncome(system, TURN_SIDES.ENEMY);
   resetActions(system, TURN_SIDES.ENEMY);
@@ -309,6 +419,16 @@ function resolveEnemyCapturePlan(system, unit, capturePlan, movementBudget) {
 
   if (capturePlan.canCaptureAfterMove) {
     captureBuildingForUnit(system.state, unit, capturePlan.building);
+    system.recordPresentationEvent("mission", {
+      action: "capture",
+      actorId: unit.id,
+      actorUnitTypeId: unit.unitTypeId,
+      owner: unit.owner,
+      buildingId: capturePlan.building.id,
+      buildingType: capturePlan.building.type,
+      x: capturePlan.building.x,
+      y: capturePlan.building.y
+    });
     system.updateVictoryState();
   } else if (movement.moved) {
     unit.hasAttacked = true;
@@ -337,6 +457,22 @@ function resolveEnemyRepairPlan(system, unit, repairPlan, movementBudget) {
   if (!supplyResult.changed) {
     return null;
   }
+
+  system.recordPresentationEvent("service", {
+    actorId: unit.id,
+    actorUnitTypeId: unit.unitTypeId,
+    targetId: unit.id,
+    targetUnitTypeId: unit.unitTypeId,
+    owner: unit.owner,
+    sourceKind: "building",
+    sourceId: repairPlan.building.id,
+    buildingType: repairPlan.building.type,
+    hpRecovered: supplyResult.hpRecovered,
+    ammoRecovered: supplyResult.ammoRecovered,
+    staminaRecovered: supplyResult.staminaRecovered,
+    x: unit.x,
+    y: unit.y
+  });
 
   unit.cooldowns.repairMode = Math.max(
     unit.cooldowns.repairMode ?? 0,
@@ -617,6 +753,14 @@ export function processEnemyTurnStep(system) {
     }
 
     if (canUnitSabotageDefendTarget(system.state, unit) && performSabotageDefendTarget(system.state, unit)) {
+      system.recordPresentationEvent("mission", {
+        action: "sabotage",
+        actorId: unit.id,
+        actorUnitTypeId: unit.unitTypeId,
+        owner: unit.owner,
+        x: unit.x,
+        y: unit.y
+      });
       system.updateVictoryState();
       return {
         changed: true,
@@ -973,11 +1117,21 @@ export function finalizeEnemyTurn(system) {
   }
 
   system.state.turn.activeSide = TURN_SIDES.PLAYER;
-  tickSideStatuses(system.state, TURN_SIDES.PLAYER);
+  const beforeStatusTick = snapshotUnitResources(system.state);
+  let beforePlayerPassive = beforeStatusTick;
+  tickSideStatuses(system.state, TURN_SIDES.PLAYER, {
+    onAfterStatuses: () => {
+      recordStatusAndPassiveChanges(system, beforeStatusTick, TURN_SIDES.PLAYER);
+      beforePlayerPassive = snapshotUnitResources(system.state);
+    }
+  });
+  recordStatusAndPassiveChanges(system, beforePlayerPassive, TURN_SIDES.PLAYER);
   tickUnitDurations(system, TURN_SIDES.PLAYER);
   const incomeGain = collectIncome(system, TURN_SIDES.PLAYER);
   resetActions(system, TURN_SIDES.PLAYER);
+  const beforeRunCardEffects = snapshotUnitResources(system.state);
   const runCardNotes = applyRunCardTurnStartEffects(system.state, TURN_SIDES.PLAYER);
+  recordRunCardResourceChanges(system, beforeRunCardEffects, TURN_SIDES.PLAYER);
   runCardNotes.forEach((note) => appendLog(system.state, note));
   removeDeadUnits(system.state);
   system.clearSelection();

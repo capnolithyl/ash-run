@@ -141,6 +141,7 @@ export class UnitLayer {
     this.scene = scene;
     this.entities = new Map();
     this.cellSize = null;
+    this.movementAudio = null;
   }
 
   clear() {
@@ -254,6 +255,7 @@ export class UnitLayer {
 
     return {
       unitId: unit.id,
+      unitTypeId: unit.unitTypeId,
       owner: unit.owner,
       container,
       glow,
@@ -275,6 +277,8 @@ export class UnitLayer {
       movementPhaseTimer: null,
       airHoverTween: null,
       activeMovementPlayback: null,
+      activeMovementEvent: null,
+      movementAudioActive: false,
       movementAnimationMode: null,
       movementFlipX,
       isSpent: false,
@@ -316,6 +320,8 @@ export class UnitLayer {
   }
 
   stopMoveTween(entity) {
+    this.stopMovementAudio(entity);
+
     if (entity.moveTween) {
       entity.moveTween.stop();
       entity.moveTween = null;
@@ -324,6 +330,32 @@ export class UnitLayer {
     this.stopMovementPhaseTimer(entity);
     entity.activeMovementPlayback = null;
     entity.movementAnimationMode = null;
+    entity.activeMovementEvent = null;
+  }
+
+  startMovementAudio(entity, movementPlayback) {
+    const event = entity.activeMovementEvent;
+
+    if (!event || event.teleport) {
+      return;
+    }
+
+    if (movementPlayback?.style === "teleport") {
+      this.movementAudio?.onTeleportDeparture?.(event);
+      return;
+    }
+
+    entity.movementAudioActive = true;
+    this.movementAudio?.onStart?.(event);
+  }
+
+  stopMovementAudio(entity) {
+    if (!entity?.movementAudioActive) {
+      return;
+    }
+
+    entity.movementAudioActive = false;
+    this.movementAudio?.onStop?.(entity.activeMovementEvent ?? { unitId: entity.unitId });
   }
 
   stopMovementPhaseTimer(entity) {
@@ -493,10 +525,12 @@ export class UnitLayer {
   }
 
   finalizeMovement(entity) {
+    this.stopMovementAudio(entity);
     entity.moveTween = null;
     this.stopMovementPhaseTimer(entity);
     entity.activeMovementPlayback = null;
     entity.movementAnimationMode = null;
+    entity.activeMovementEvent = null;
     entity.container.setPosition(entity.targetX, entity.targetY);
     this.playIdleAnimation(entity);
     this.runAfterMoveCallbacks(entity);
@@ -718,6 +752,7 @@ export class UnitLayer {
     }
 
     entity.activeMovementPlayback = movementPlayback;
+    this.startMovementAudio(entity, movementPlayback);
     let activeSegmentIndex = -1;
     const playSegmentAnimation = (segmentIndex) => {
       if (segmentIndex === activeSegmentIndex) {
@@ -815,6 +850,7 @@ export class UnitLayer {
     }
 
     this.stopAnimationTimer(entity);
+    this.startMovementAudio(entity, movementPlayback);
     this.setVisualTexture(
       entity,
       walkAnimation.key,
@@ -839,6 +875,7 @@ export class UnitLayer {
         }
 
         hasTeleported = true;
+        this.movementAudio?.onTeleportArrival?.(entity.activeMovementEvent);
         const accessoryVisibility = this.getTeleportAccessoryVisibility(entity);
         this.hideTeleportAccessories(entity);
         entity.container.setPosition(entity.targetX, entity.targetY);
@@ -1291,6 +1328,13 @@ export class UnitLayer {
     const entity = this.entities.get(unitId);
 
     if (!entity) {
+      callbacks.onStart?.();
+      if (callbacks.onImpact) {
+        this.scene.time.delayedCall(
+          Math.max(0, callbacks.impactDelayMs ?? BATTLE_ATTACK_IMPACT_DELAY_MS),
+          callbacks.onImpact,
+        );
+      }
       return;
     }
 
@@ -1604,6 +1648,7 @@ export class UnitLayer {
   }
 
   render(snapshot, layout, movementEvents = [], lifecycleEvents = {}) {
+    this.movementAudio = lifecycleEvents.movementAudio ?? null;
     if (this.cellSize !== layout.cellSize) {
       this.clear();
       this.cellSize = layout.cellSize;
@@ -1647,6 +1692,7 @@ export class UnitLayer {
         entity.visualSpec?.colorId !== visualSpec?.colorId ||
         entity.visualSpec?.key !== visualSpec?.key;
       entity.owner = unit.owner;
+      entity.unitTypeId = unit.unitTypeId;
       entity.visualSpec = visualSpec;
       entity.isSpent = spentUnitIds.has(unit.id);
       if (!entity.isSpent) {
@@ -1709,6 +1755,15 @@ export class UnitLayer {
 
         entity.targetX = nextPosition.x;
         entity.targetY = nextPosition.y;
+        entity.activeMovementEvent = movementEvent ?? {
+          unitId: unit.id,
+          unitTypeId: unit.unitTypeId,
+          owner: unit.owner,
+          path: [
+            { x: unit.x, y: unit.y },
+            { x: unit.x, y: unit.y }
+          ]
+        };
 
         if (movementEvent?.teleport) {
           entity.container.setPosition(entity.targetX, entity.targetY);
@@ -1720,6 +1775,7 @@ export class UnitLayer {
           const movementPlayback = getUnitMovementPlayback(entity.visualSpec, 1);
 
           entity.activeMovementPlayback = movementPlayback;
+          this.startMovementAudio(entity, movementPlayback);
           if (movementPlayback.style === "phased-path") {
             this.startPhasedMovement(
               entity,
