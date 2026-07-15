@@ -2705,7 +2705,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/commanderSliderMethods.js",
     "kind": "script",
-    "byteSize": 7852,
+    "byteSize": 7983,
     "environment": "development"
   },
   {
@@ -2753,7 +2753,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/screenRouter.js",
     "kind": "script",
-    "byteSize": 8120,
+    "byteSize": 10564,
     "environment": "development"
   },
   {
@@ -2861,7 +2861,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/optionsView.js",
     "kind": "script",
-    "byteSize": 682,
+    "byteSize": 707,
     "environment": "development"
   },
   {
@@ -2902,4 +2902,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 98925500;
+export const ASSET_PRELOAD_TOTAL_BYTES = 98928100;

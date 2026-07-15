@@ -80,9 +80,9 @@ export const appShellCommanderSliderMethods = {
       return;
     }
 
-    this.setCommanderSliderTrackPosition(metrics, sliderState.trackIndex, {
-      animate: false
-    });
+    // Selecting a commander that is already visible does not change the viewport.
+    // Leaving the existing transform untouched avoids a fractional re-positioning
+    // of the entire row after the selected-state styles are applied.
   },
 
   getSelectedCommanderIdForSlider(sliderId, state) {

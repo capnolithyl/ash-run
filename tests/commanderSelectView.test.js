@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../src/game/content/commanders.js";
+import { appShellCommanderSliderMethods } from "../src/ui/appShell/commanderSliderMethods.js";
 import { renderCommanderSelectView } from "../src/ui/views/commanderSelectView.js";
 
 function createCommanderSelectState() {
@@ -52,4 +53,31 @@ test("commander select renders carousel controls and a reachable deployment acti
   assert.doesNotMatch(html, /Starting Squad/);
   assert.doesNotMatch(html, /halves attack/i);
   assert.doesNotMatch(html, /randomly halves one visible stat/i);
+});
+
+test("selecting an already-visible commander leaves the slider transform untouched", () => {
+  let positionWrites = 0;
+  const metrics = {
+    id: "new-run",
+    realCount: 3,
+    homeStartIndex: 3,
+    visibleCount: 3,
+    realSlides: ["atlas", "viper", "nova"].map((commanderId) => ({
+      dataset: { commanderId }
+    }))
+  };
+  const sliderState = { trackIndex: 3, transitioning: false };
+  const shell = {
+    getCommanderSliderMetrics: () => metrics,
+    getCommanderSliderState: () => sliderState,
+    getSelectedCommanderIdForSlider: () => "viper",
+    setCommanderSliderTrackPosition: () => {
+      positionWrites += 1;
+    }
+  };
+
+  appShellCommanderSliderMethods.syncCommanderSliderById.call(shell, "new-run", {});
+
+  assert.equal(positionWrites, 0);
+  assert.equal(sliderState.trackIndex, 3);
 });

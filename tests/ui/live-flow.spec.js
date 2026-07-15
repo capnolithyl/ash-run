@@ -304,3 +304,39 @@ test("title utility screens open and return cleanly", async ({ page }) => {
   await page.locator('[data-action="back-to-title"]').click({ force: true });
   await expect(page.locator(".screen--title")).toBeVisible();
 });
+
+test("main-menu options update without rebuilding the options screen", async ({ page }) => {
+  await gotoTitle(page);
+  await page.locator('[data-action="open-options"]').click({ force: true });
+
+  const optionsScreen = page.locator('[data-screen-id="options"]');
+  await expect(optionsScreen).toBeVisible();
+  await optionsScreen.evaluate((element) => {
+    globalThis.__ashRunOptionsScreen = element;
+  });
+
+  await page.locator('[data-options-tab="gameplay"]').click({ force: true });
+  await page.locator('[data-option="showGrid"]').click({ force: true });
+  await expect(page.locator('[data-options-tab="gameplay"]')).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  await page.locator('[data-options-tab="audio"]').click({ force: true });
+  await page.locator('[data-option="masterVolume"]').evaluate((control) => {
+    control.value = control.value === "0.61" ? "0.62" : "0.61";
+    control.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator('[data-options-tab="audio"]')).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => globalThis.__ashRunOptionsScreen === document.querySelector('[data-screen-id="options"]'),
+      ),
+    )
+    .toBe(true);
+});

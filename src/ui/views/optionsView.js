@@ -4,7 +4,7 @@ export function renderOptionsView(state, displayContext = {}) {
   const { options } = state.metaState;
 
   return `
-    <div class="screen screen--options">
+    <div class="screen screen--options" data-screen-id="options">
       <section class="panel panel--medium">
         <div class="panel-header">
           <div>

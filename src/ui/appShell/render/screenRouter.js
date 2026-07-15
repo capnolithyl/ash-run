@@ -12,6 +12,51 @@ import { renderTutorialView } from "../../views/tutorialView.js";
 import { renderAppToast } from "../../views/appToastView.js";
 import { applyUnitColorTheme } from "../../unitColorTheme.js";
 
+function getOptionControlKey(control) {
+  const valueKey = control.type === "radio" ? `:${control.value}` : "";
+  return `${control.dataset.option}:${control.type}${valueKey}`;
+}
+
+export function syncOptionsControls(currentContainer, nextContainer) {
+  const nextControls = new Map(
+    Array.from(nextContainer.querySelectorAll("[data-option]")).map((control) => [
+      getOptionControlKey(control),
+      control
+    ])
+  );
+
+  for (const currentControl of currentContainer.querySelectorAll("[data-option]")) {
+    const nextControl = nextControls.get(getOptionControlKey(currentControl));
+
+    if (!nextControl) {
+      continue;
+    }
+
+    if (currentControl.type === "checkbox" || currentControl.type === "radio") {
+      currentControl.checked = nextControl.checked;
+    } else {
+      currentControl.value = nextControl.value;
+    }
+
+    currentControl.disabled = nextControl.disabled;
+
+    const currentSwatch = currentControl.closest?.(".unit-color-swatch");
+    const nextSwatch = nextControl.closest?.(".unit-color-swatch");
+
+    if (currentSwatch && nextSwatch) {
+      currentSwatch.className = nextSwatch.className;
+      currentSwatch.title = nextSwatch.title;
+    }
+
+    const currentValueLabel = currentControl.closest?.(".option-row")?.querySelector?.("strong");
+    const nextValueLabel = nextControl.closest?.(".option-row")?.querySelector?.("strong");
+
+    if (currentValueLabel && nextValueLabel) {
+      currentValueLabel.textContent = nextValueLabel.textContent;
+    }
+  }
+}
+
 export const appShellScreenRouterMethods = {
   syncAppToast(state) {
     const existingToast = this.root.querySelector(".app-toast");
@@ -75,9 +120,7 @@ export const appShellScreenRouterMethods = {
         this.syncControllerFocusAfterRender();
         return;
       case SCREEN_IDS.OPTIONS:
-        this.resetBattleUiTimers();
-        this.previousBattleSnapshot = null;
-        this.root.innerHTML = renderOptionsView(state, this.getDisplayRenderContext?.(state));
+        this.renderOptions(state);
         this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
         return;
@@ -125,6 +168,42 @@ export const appShellScreenRouterMethods = {
       }
 
       image.closest("button")?.classList.add("title-button--image-loaded");
+    }
+  },
+
+  renderOptions(state) {
+    this.resetBattleUiTimers();
+    this.previousBattleSnapshot = null;
+
+    const nextMarkup = renderOptionsView(state, this.getDisplayRenderContext?.(state));
+    const existingScreen = this.root.querySelector('[data-screen-id="options"]');
+
+    if (!existingScreen) {
+      this.root.innerHTML = nextMarkup;
+      return;
+    }
+
+    const template = document.createElement("template");
+    template.innerHTML = nextMarkup.trim();
+
+    const nextScreen = template.content.querySelector('[data-screen-id="options"]');
+
+    if (!nextScreen) {
+      this.root.innerHTML = nextMarkup;
+      return;
+    }
+
+    syncOptionsControls(existingScreen, nextScreen);
+
+    const currentDisplaySection = existingScreen.querySelector(".options-section--display");
+    const nextDisplaySection = nextScreen.querySelector(".options-section--display");
+
+    if (
+      currentDisplaySection &&
+      nextDisplaySection &&
+      currentDisplaySection.innerHTML !== nextDisplaySection.innerHTML
+    ) {
+      currentDisplaySection.replaceWith(nextDisplaySection);
     }
   },
 

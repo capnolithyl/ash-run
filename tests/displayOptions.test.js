@@ -11,6 +11,7 @@ import {
 } from "../src/game/core/displayOptions.js";
 import { createDefaultMetaState, normalizeMetaOptions } from "../src/game/state/defaults.js";
 import { appShellEventMethods } from "../src/ui/appShell/eventMethods.js";
+import { syncOptionsControls } from "../src/ui/appShell/render/screenRouter.js";
 import { getUnitColorCssVariables } from "../src/ui/unitColorTheme.js";
 import { renderOptionFields } from "../src/ui/views/optionFieldsView.js";
 
@@ -268,4 +269,85 @@ test("option change handling preserves radio string values", async () => {
   );
 
   assert.deepEqual(receivedPatch, { playerColor: "blue" });
+});
+
+test("options updates synchronize existing controls without replacing them", () => {
+  const createControl = ({
+    option,
+    type,
+    value = "",
+    checked = false,
+    disabled = false,
+    className = "",
+    title = "",
+    valueLabel = ""
+  }) => {
+    const swatch = { className, title };
+    const strong = { textContent: valueLabel };
+
+    return {
+      dataset: { option },
+      type,
+      value,
+      checked,
+      disabled,
+      closest(selector) {
+        if (selector === ".unit-color-swatch" && type === "radio") {
+          return swatch;
+        }
+
+        if (selector === ".option-row") {
+          return {
+            querySelector() {
+              return strong;
+            }
+          };
+        }
+
+        return null;
+      },
+      swatch,
+      strong
+    };
+  };
+  const currentControls = [
+    createControl({ option: "muted", type: "checkbox" }),
+    createControl({ option: "masterVolume", type: "range", value: "0.4", valueLabel: "40%" }),
+    createControl({
+      option: "playerColor",
+      type: "radio",
+      value: "green",
+      className: "unit-color-swatch",
+      title: "Green: Available"
+    })
+  ];
+  const nextControls = [
+    createControl({ option: "muted", type: "checkbox", checked: true }),
+    createControl({ option: "masterVolume", type: "range", value: "0.65", valueLabel: "65%" }),
+    createControl({
+      option: "playerColor",
+      type: "radio",
+      value: "green",
+      checked: true,
+      className: "unit-color-swatch unit-color-swatch--selected",
+      title: "Green: Available"
+    })
+  ];
+  const currentContainer = { querySelectorAll: () => currentControls };
+  const nextContainer = { querySelectorAll: () => nextControls };
+  const originalControls = [...currentControls];
+
+  syncOptionsControls(currentContainer, nextContainer);
+
+  assert.equal(currentControls[0].checked, true);
+  assert.equal(currentControls[1].value, "0.65");
+  assert.equal(currentControls[1].strong.textContent, "65%");
+  assert.equal(currentControls[2].checked, true);
+  assert.equal(
+    currentControls[2].swatch.className,
+    "unit-color-swatch unit-color-swatch--selected"
+  );
+  assert.equal(currentControls[0], originalControls[0]);
+  assert.equal(currentControls[1], originalControls[1]);
+  assert.equal(currentControls[2], originalControls[2]);
 });
