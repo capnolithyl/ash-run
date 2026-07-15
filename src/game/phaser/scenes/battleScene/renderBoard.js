@@ -3,7 +3,8 @@ import {
   BATTLE_ATTACK_WINDOW_MS,
   BATTLE_MOVE_SETTLE_MS,
   BATTLE_POST_COMBAT_PAUSE_MS,
-  BATTLE_TURN_BANNER_SETTLE_MS
+  BATTLE_TURN_BANNER_SETTLE_MS,
+  TURN_SIDES
 } from "../../../core/constants.js";
 import { getBattlefieldLayout } from "../../../core/battlefieldLayout.js";
 import { deriveBattleAnimationEvents } from "../../view/battleAnimationEvents.js";
@@ -15,8 +16,27 @@ import {
   isBattleScreen
 } from "./screenState.js";
 
-export function getAnimatedMovementPaths(movementEvents = [], owner = null) {
-  return movementEvents
+function areMovementPathsEqual(left = [], right = []) {
+  return (
+    left.length === right.length &&
+    left.every((point, index) => point.x === right[index]?.x && point.y === right[index]?.y)
+  );
+}
+
+function getHeldMovementPath(heldMove = null, owner = null) {
+  if (
+    !heldMove?.path?.length ||
+    heldMove.path.length < 2 ||
+    (owner && heldMove.owner !== owner)
+  ) {
+    return null;
+  }
+
+  return heldMove.path;
+}
+
+export function getAnimatedMovementPaths(movementEvents = [], owner = null, heldMove = null) {
+  const paths = movementEvents
     .filter(
       (event) =>
         event.type === "move" &&
@@ -25,6 +45,13 @@ export function getAnimatedMovementPaths(movementEvents = [], owner = null) {
         (!owner || event.owner === owner)
     )
     .map((event) => event.path);
+  const heldPath = getHeldMovementPath(heldMove, owner);
+
+  if (heldPath && !paths.some((path) => areMovementPathsEqual(path, heldPath))) {
+    paths.push(heldPath);
+  }
+
+  return paths;
 }
 
 function getCommanderPowerTargetUnitIds(powerEvents = []) {
@@ -57,6 +84,7 @@ export const battleSceneRenderMethods = {
       this.fxLayer.clear();
       this.hoveredTile = null;
       this.previousSnapshot = null;
+      this.lastEnemyMoveHoldFxId = null;
       return;
     }
 
@@ -66,6 +94,7 @@ export const battleSceneRenderMethods = {
 
     if (this.cameraBattleKey !== battleKey) {
       this.cameraBattleKey = battleKey;
+      this.lastEnemyMoveHoldFxId = null;
       this.resetBattlefieldCamera();
     } else {
       this.clampBattlefieldCamera();
@@ -86,6 +115,7 @@ export const battleSceneRenderMethods = {
       this.buildingLayer.render(snapshot, layout, colorOptions);
       this.unitLayer.render(snapshot, layout, [], { colorOptions });
       this.previousSnapshot = null;
+      this.lastEnemyMoveHoldFxId = null;
       return;
     }
 
@@ -109,7 +139,12 @@ export const battleSceneRenderMethods = {
     const movementEvents = animationEvents.filter((event) => event.type === "move");
     const powerEvents = animationEvents.filter((event) => event.type === "power");
     const powerTargetUnitIds = getCommanderPowerTargetUnitIds(powerEvents);
-    const enemyMovementPaths = getAnimatedMovementPaths(movementEvents, "enemy");
+    const enemyMoveHold = this.latestState?.battleUi?.enemyMoveHold ?? null;
+    const enemyMovementPaths = getAnimatedMovementPaths(
+      movementEvents,
+      TURN_SIDES.ENEMY,
+      enemyMoveHold
+    );
     const attackEvents = animationEvents
       .filter((event) => event.type === "attack")
       .sort((left, right) => (left.delay ?? 0) - (right.delay ?? 0));
@@ -199,6 +234,16 @@ export const battleSceneRenderMethods = {
       colorOptions
     });
     this.fxLayer.setColorOptions(colorOptions);
+
+    if (enemyMoveHold?.id && enemyMoveHold.tile) {
+      if (this.lastEnemyMoveHoldFxId !== enemyMoveHold.id) {
+        this.lastEnemyMoveHoldFxId = enemyMoveHold.id;
+        this.fxLayer.playEnemyMoveHold(enemyMoveHold, layout);
+      }
+    } else {
+      this.lastEnemyMoveHoldFxId = null;
+    }
+
     const maxMoveDelay = movementEvents.length
       ? Math.max(
           ...movementEvents.map((event) =>

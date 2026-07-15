@@ -44,6 +44,12 @@ export class BattleSystem {
     if (this.state.enemyTurn && !("forcePassed" in this.state.enemyTurn)) {
       this.state.enemyTurn.forcePassed = false;
     }
+    if (this.state.enemyTurn && !("plannedActions" in this.state.enemyTurn)) {
+      this.state.enemyTurn.plannedActions = [];
+    }
+    if (this.state.enemyTurn && !("plannedPendingUnitIdsKey" in this.state.enemyTurn)) {
+      this.state.enemyTurn.plannedPendingUnitIdsKey = "";
+    }
     if (this.state.pendingAction && !this.state.pendingAction.mode) {
       this.state.pendingAction.mode = "menu";
     }

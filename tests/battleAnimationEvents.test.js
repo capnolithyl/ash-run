@@ -393,6 +393,29 @@ test("battle render exposes enemy movement paths for transient move arrows", () 
   ]);
 });
 
+test("battle render keeps held enemy movement paths after move animation events clear", () => {
+  const heldMove = {
+    id: "enemy-move-hold-test",
+    unitId: "enemy-runner",
+    owner: TURN_SIDES.ENEMY,
+    path: [
+      { x: 6, y: 3 },
+      { x: 5, y: 3 }
+    ],
+    tile: { x: 5, y: 3 },
+    startedAt: 0,
+    durationMs: 260
+  };
+
+  assert.deepEqual(getAnimatedMovementPaths([], TURN_SIDES.ENEMY, heldMove), [
+    [
+      { x: 6, y: 3 },
+      { x: 5, y: 3 }
+    ]
+  ]);
+  assert.deepEqual(getAnimatedMovementPaths([], TURN_SIDES.PLAYER, heldMove), []);
+});
+
 test("player grunt move events use teleport timing while preserving the path", () => {
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1);
   const battleState = createTestBattleState({

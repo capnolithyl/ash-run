@@ -925,10 +925,79 @@ test("enemy turn sequence waits for the configured pause after movement steps", 
   const timeoutDelays = [];
   const originalSetTimeout = global.setTimeout;
   const originalClearTimeout = global.clearTimeout;
-  let hasPendingStep = true;
+  let capturedHold = null;
+  const playerUnit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3);
+  const enemyUnit = createPlacedUnit("runner", TURN_SIDES.ENEMY, 6, 3);
+  const battleState = createTestBattleState({
+    id: "movement-delay",
+    mode: BATTLE_MODES.RUN,
+    playerUnits: [playerUnit],
+    enemyUnits: [enemyUnit],
+    activeSide: TURN_SIDES.ENEMY
+  });
 
+  battleState.enemy.funds = 0;
+  battleState.enemyTurn = {
+    started: true,
+    pendingAttack: null,
+    pendingSlipstream: null,
+    pendingUnitIds: [enemyUnit.id],
+    pendingReinforcementDeployments: [],
+    forcePassed: false
+  };
   controller.state.screen = SCREEN_IDS.BATTLE;
   controller.state.runState = { id: "run-movement-delay" };
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.syncBattleState();
+  controller.persistCurrentRun = async () => {};
+
+  global.setTimeout = (callback, delayMs) => {
+    timeoutDelays.push(delayMs);
+
+    if (delayMs === BATTLE_ENEMY_MOVE_STEP_PAUSE_MS) {
+      capturedHold = structuredClone(controller.state.battleUi.enemyMoveHold);
+      assert.equal(capturedHold?.unitId, enemyUnit.id);
+      assert.equal(capturedHold?.owner, TURN_SIDES.ENEMY);
+      assert.deepEqual(capturedHold?.path, [
+        { x: 6, y: 3 },
+        { x: 5, y: 3 }
+      ]);
+      assert.deepEqual(capturedHold?.tile, { x: 5, y: 3 });
+      assert.equal(capturedHold?.durationMs, BATTLE_ENEMY_MOVE_STEP_PAUSE_MS);
+    }
+
+    queueMicrotask(callback);
+    return timeoutDelays.length;
+  };
+  global.clearTimeout = () => {};
+
+  try {
+    await controller.runEnemyTurnSequence();
+  } finally {
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
+  }
+
+  assert.ok(timeoutDelays.includes(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS));
+  assert.ok(capturedHold);
+  assert.equal(controller.getState().battleUi.enemyMoveHold, null);
+});
+
+test("enemy turn sequence does not expose move hold for non-move steps", async () => {
+  const controller = new GameController();
+  const timeoutDelays = [];
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  let hasPendingStep = true;
+  let observedHold = false;
+  const originalEmit = controller.emit.bind(controller);
+
+  controller.emit = () => {
+    observedHold ||= Boolean(controller.state.battleUi.enemyMoveHold);
+    originalEmit();
+  };
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.state.runState = { id: "run-attack-delay" };
   controller.state.battleSnapshot = null;
   controller.battleSystem = {
     startEnemyTurnActions() {
@@ -951,9 +1020,8 @@ test("enemy turn sequence waits for the configured pause after movement steps", 
       return {
         changed: true,
         done: false,
-        type: "move",
-        unitId: "enemy-runner",
-        moveSegments: 1
+        type: "attack",
+        unitId: "enemy-gunner"
       };
     },
     performEnemyEndTurnRecruitment() {
@@ -965,8 +1033,8 @@ test("enemy turn sequence waits for the configured pause after movement steps", 
   };
   controller.syncBattleState = () => {
     controller.state.battleSnapshot = {
-      id: "battle-movement-delay",
-      map: { id: "movement-delay-map", buildings: [], tiles: [] },
+      id: "battle-attack-delay",
+      map: { id: "attack-delay-map", buildings: [], tiles: [] },
       turn: { activeSide: TURN_SIDES.ENEMY },
       player: { funds: 0, units: [] },
       enemy: { funds: 0, units: [] },
@@ -974,6 +1042,7 @@ test("enemy turn sequence waits for the configured pause after movement steps", 
       levelUpQueue: [],
       victory: null
     };
+    controller.emit();
   };
   controller.persistCurrentRun = async () => {};
 
@@ -989,9 +1058,12 @@ test("enemy turn sequence waits for the configured pause after movement steps", 
   } finally {
     global.setTimeout = originalSetTimeout;
     global.clearTimeout = originalClearTimeout;
+    controller.emit = originalEmit;
   }
 
-  assert.ok(timeoutDelays.includes(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS));
+  assert.equal(observedHold, false);
+  assert.equal(controller.getState().battleUi.enemyMoveHold, null);
+  assert.equal(timeoutDelays.includes(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS), false);
 });
 
 test("enemy turn sequence announces and staggers queued reinforcements before finalizing", async () => {

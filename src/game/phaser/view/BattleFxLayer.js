@@ -249,6 +249,68 @@ export class BattleFxLayer {
     destroyAfterTween(label, tween);
   }
 
+  playEnemyMoveHold(hold, layout) {
+    const tile = hold?.tile ?? hold?.path?.at?.(-1);
+
+    if (!tile || !Number.isFinite(tile.x) || !Number.isFinite(tile.y)) {
+      return;
+    }
+
+    const color = getOwnerColor(hold.owner, this.colorOptions);
+    const point = toWorldPoint(layout, tile.x, tile.y);
+    const duration = Math.max(180, Number(hold.durationMs) || 260);
+    const markerSize = layout.cellSize * 0.58;
+    const halo = this.track(
+      this.scene.add
+        .circle(point.x, point.y, layout.cellSize * 0.18, color, 0.3)
+        .setDepth(39)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+    const marker = this.track(
+      this.scene.add
+        .rectangle(point.x, point.y, markerSize, markerSize, color, 0.18)
+        .setDepth(40)
+        .setAngle(45)
+        .setStrokeStyle(Math.max(2, layout.cellSize * 0.035), 0xfff6dd, 0.92)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+    const spark = this.track(
+      this.scene.add
+        .circle(point.x, point.y, layout.cellSize * 0.06, 0xfff6dd, 0.88)
+        .setDepth(41)
+        .setBlendMode(Phaser.BlendModes.ADD)
+    );
+
+    const haloTween = this.scene.tweens.add({
+      targets: halo,
+      alpha: 0,
+      scale: 3.2,
+      duration: duration + 160,
+      ease: "Cubic.Out"
+    });
+    destroyAfterTween(halo, haloTween);
+
+    const markerTween = this.scene.tweens.add({
+      targets: marker,
+      alpha: 0,
+      scaleX: 1.18,
+      scaleY: 1.18,
+      duration,
+      ease: "Sine.Out"
+    });
+    destroyAfterTween(marker, markerTween);
+
+    const sparkTween = this.scene.tweens.add({
+      targets: spark,
+      alpha: 0,
+      y: point.y - layout.cellSize * 0.18,
+      scale: 2.6,
+      duration: Math.max(160, duration * 0.75),
+      ease: "Cubic.Out"
+    });
+    destroyAfterTween(spark, sparkTween);
+  }
+
   playCommanderPowerWave(event, layout) {
     const color = resolveAccentColor(
       event.accent,

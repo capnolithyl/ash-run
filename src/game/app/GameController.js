@@ -34,6 +34,7 @@ export class GameController {
     this.battleNoticeSequence = 0;
     this.battlePowerOverlaySequence = 0;
     this.battleCombatCutsceneSequence = 0;
+    this.enemyMoveHoldSequence = 0;
     this.toastSequence = 0;
     this.battleNoticeTimer = null;
     this.battleCombatCutsceneTimer = null;

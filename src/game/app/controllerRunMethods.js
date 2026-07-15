@@ -20,6 +20,7 @@ import {
 import {
   COMMANDER_POWER_PULSE_DURATION_MS,
   COMMANDER_POWER_TARGET_STAGGER_MS,
+  deriveBattleAnimationEvents,
   getBattleSnapshotTransitionDurationMs
 } from "../phaser/view/battleAnimationEvents.js";
 import { deriveBattleCombatCutscene } from "../phaser/view/battleCombatCutscene.js";
@@ -117,9 +118,82 @@ function clearCombatCutscene(controller) {
   controller.state.battleUi.combatCutscene = null;
 }
 
+function clearEnemyMoveHold(controller, holdId = null) {
+  if (holdId && controller.state.battleUi.enemyMoveHold?.id !== holdId) {
+    return false;
+  }
+
+  if (!controller.state.battleUi.enemyMoveHold) {
+    return false;
+  }
+
+  controller.state.battleUi.enemyMoveHold = null;
+  return true;
+}
+
 function forcePassEnemyTurn(controller, reason) {
   clearCombatCutscene(controller);
+  clearEnemyMoveHold(controller);
   return controller.battleSystem?.forcePassEnemyTurn?.(reason) ?? { changed: false, reason };
+}
+
+function buildEnemyMoveHold(controller, previousSnapshot, nextSnapshot, step) {
+  if (step?.type !== "move" || BATTLE_ENEMY_MOVE_STEP_PAUSE_MS <= 0) {
+    return null;
+  }
+
+  const moveEvent = deriveBattleAnimationEvents(
+    previousSnapshot,
+    nextSnapshot,
+    controller.state.metaState.options
+  ).find(
+    (event) =>
+      event.type === "move" &&
+      !event.teleport &&
+      event.owner === TURN_SIDES.ENEMY &&
+      event.unitId === step.unitId &&
+      event.path?.length > 1
+  );
+
+  const tile = moveEvent?.path?.at(-1) ?? null;
+
+  if (!moveEvent || !tile) {
+    return null;
+  }
+
+  return {
+    id: `enemy-move-hold-${++controller.enemyMoveHoldSequence}`,
+    unitId: moveEvent.unitId,
+    owner: moveEvent.owner,
+    path: moveEvent.path.map((point) => ({ x: point.x, y: point.y })),
+    tile: { x: tile.x, y: tile.y },
+    startedAt: Date.now(),
+    durationMs: BATTLE_ENEMY_MOVE_STEP_PAUSE_MS
+  };
+}
+
+async function playEnemyMoveHold(controller, previousSnapshot, nextSnapshot, step) {
+  if (step?.type !== "move" || BATTLE_ENEMY_MOVE_STEP_PAUSE_MS <= 0) {
+    return;
+  }
+
+  const hold = buildEnemyMoveHold(controller, previousSnapshot, nextSnapshot, step);
+
+  if (!hold) {
+    await delay(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS);
+    return;
+  }
+
+  controller.state.battleUi.enemyMoveHold = hold;
+  controller.emit();
+
+  try {
+    await delay(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS);
+  } finally {
+    if (clearEnemyMoveHold(controller, hold.id)) {
+      controller.emit();
+    }
+  }
 }
 
 function maybeSyncCombatCutscene(controller, previousSnapshot, nextSnapshot) {
@@ -614,9 +688,7 @@ export const controllerRunMethods = {
         );
         await delay(Math.max(stepDelay, combatCutsceneDuration));
 
-        if (step.type === "move" && BATTLE_ENEMY_MOVE_STEP_PAUSE_MS > 0) {
-          await delay(BATTLE_ENEMY_MOVE_STEP_PAUSE_MS);
-        }
+        await playEnemyMoveHold(this, previousSnapshot, this.state.battleSnapshot, step);
       } catch {
         forcePassEnemyTurn(this, "error");
         enemyTurnForcePassed = true;

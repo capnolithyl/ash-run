@@ -38,6 +38,7 @@ export function createBattleUiState() {
     notice: null,
     powerOverlay: null,
     combatCutscene: null,
+    enemyMoveHold: null,
     hoveredTile: null,
     playerFocus: null,
     enemyFocus: null,
@@ -64,8 +65,8 @@ export function createDefaultSkirmishSetupState(unlockedCommanderIds = []) {
 
 export function createDefaultRunLoadoutState() {
   return {
-    budget: 10000,
-    fundsRemaining: 10000,
+    budget: 2500,
+    fundsRemaining: 2500,
     units: [],
   };
 }

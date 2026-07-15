@@ -16,6 +16,13 @@ function tileKey(x, y) {
   return `${x},${y}`;
 }
 
+const MOVEMENT_DIRECTIONS = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 }
+];
+
 export function getLivingUnits(state, side) {
   return state[side].units.filter((unit) => unit.current.hp > 0 && !isUnitZombified(unit));
 }
@@ -284,14 +291,7 @@ function getMovementSearch(state, unit, movementBudget) {
       reachable.push({ x: current.x, y: current.y, cost: current.moveCost });
     }
 
-    const directions = [
-      { x: 1, y: 0 },
-      { x: -1, y: 0 },
-      { x: 0, y: 1 },
-      { x: 0, y: -1 }
-    ];
-
-    for (const direction of directions) {
+    for (const direction of MOVEMENT_DIRECTIONS) {
       const nextX = current.x + direction.x;
       const nextY = current.y + direction.y;
       const terrainKey = state.map.tiles[nextY]?.[nextX];
@@ -359,6 +359,79 @@ export function getReachableTiles(state, unit, movementBudget) {
     x: tile.x,
     y: tile.y
   }));
+}
+
+export function getMovementDistanceMapToTiles(state, unit, targetTiles = []) {
+  const frontier = [];
+  const distances = new Map();
+  const settled = new Set();
+
+  for (const targetTile of targetTiles) {
+    const terrainKey = state.map.tiles[targetTile.y]?.[targetTile.x];
+    const terrain = TERRAIN_LIBRARY[terrainKey];
+
+    if (isTerrainBlockedForUnit(state, unit, terrain, terrainKey)) {
+      continue;
+    }
+
+    const key = tileKey(targetTile.x, targetTile.y);
+    if (!distances.has(key)) {
+      distances.set(key, 0);
+      frontier.push({ x: targetTile.x, y: targetTile.y, distance: 0 });
+    }
+  }
+
+  while (frontier.length > 0) {
+    frontier.sort(
+      (left, right) =>
+        left.distance - right.distance ||
+        left.y - right.y ||
+        left.x - right.x
+    );
+    const current = frontier.shift();
+    const currentKey = tileKey(current.x, current.y);
+
+    if (settled.has(currentKey)) {
+      continue;
+    }
+
+    settled.add(currentKey);
+
+    const currentTerrainKey = state.map.tiles[current.y]?.[current.x];
+    const currentTerrain = TERRAIN_LIBRARY[currentTerrainKey];
+
+    if (isTerrainBlockedForUnit(state, unit, currentTerrain, currentTerrainKey)) {
+      continue;
+    }
+
+    const stepStaminaCost =
+      getMovementCost(state, unit, currentTerrain, currentTerrainKey) *
+      getRunCardStaminaCostMultiplier(state, unit);
+
+    for (const direction of MOVEMENT_DIRECTIONS) {
+      const nextX = current.x + direction.x;
+      const nextY = current.y + direction.y;
+      const terrainKey = state.map.tiles[nextY]?.[nextX];
+      const terrain = TERRAIN_LIBRARY[terrainKey];
+
+      if (isTerrainBlockedForUnit(state, unit, terrain, terrainKey)) {
+        continue;
+      }
+
+      const nextDistance = current.distance + stepStaminaCost;
+      const key = tileKey(nextX, nextY);
+      const bestKnownDistance = distances.get(key);
+
+      if (bestKnownDistance !== undefined && bestKnownDistance <= nextDistance) {
+        continue;
+      }
+
+      distances.set(key, nextDistance);
+      frontier.push({ x: nextX, y: nextY, distance: nextDistance });
+    }
+  }
+
+  return distances;
 }
 
 export function getMovementPath(state, unit, movementBudget, targetX, targetY) {

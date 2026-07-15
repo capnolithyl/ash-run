@@ -138,6 +138,8 @@ export function endTurn(system) {
       pendingSlipstream: null,
       pendingUnitIds: [],
       pendingReinforcementDeployments: [],
+      plannedActions: [],
+      plannedPendingUnitIdsKey: "",
       forcePassed: false
     };
     applyMissionTurnEnd(system.state, TURN_SIDES.PLAYER);
@@ -193,6 +195,8 @@ export function forcePassEnemyTurn(system, reason = "safety") {
   system.state.enemyTurn.pendingSlipstream = null;
   system.state.enemyTurn.pendingUnitIds = [];
   system.state.enemyTurn.pendingReinforcementDeployments = [];
+  system.state.enemyTurn.plannedActions = [];
+  system.state.enemyTurn.plannedPendingUnitIdsKey = "";
   system.state.enemyTurn.forcePassed = true;
   system.clearSelection();
   appendLog(system.state, "Enemy command stalled. Enemy passed the turn.");
@@ -361,6 +365,132 @@ function takePendingEnemyUnitId(enemyTurn, preferredUnitId = null) {
   return enemyTurn.pendingUnitIds.shift() ?? null;
 }
 
+function getPendingUnitIdsKey(pendingUnitIds = []) {
+  return pendingUnitIds.join("|");
+}
+
+function clearCachedEnemyTurnPlan(enemyTurn) {
+  if (!enemyTurn) {
+    return;
+  }
+
+  enemyTurn.plannedActions = [];
+  enemyTurn.plannedPendingUnitIdsKey = "";
+}
+
+function clonePlannedAction(action) {
+  return action ? structuredClone(action) : null;
+}
+
+function isPlannedActionReachable(state, unit, action, movementBudget) {
+  const tile = action?.tile;
+
+  if (!tile || !Number.isFinite(tile.x) || !Number.isFinite(tile.y)) {
+    return false;
+  }
+
+  if (unit.x === tile.x && unit.y === tile.y) {
+    return true;
+  }
+
+  return getMovementPathCost(state, unit, movementBudget, tile.x, tile.y) !== null;
+}
+
+function isCachedPlannedActionValid(state, action) {
+  if (!action || !state.enemyTurn?.pendingUnitIds?.includes(action.unitId)) {
+    return false;
+  }
+
+  const unit = findUnitById(state, action.unitId);
+
+  if (
+    !unit ||
+    unit.current.hp <= 0 ||
+    unit.transport?.carriedByUnitId ||
+    (unit.hasMoved && unit.hasAttacked)
+  ) {
+    return false;
+  }
+
+  const movementBudget = unit.stats.movement + getMovementModifier(state, unit);
+
+  if (!isPlannedActionReachable(state, unit, action, movementBudget)) {
+    return false;
+  }
+
+  if (action.type === "attack") {
+    const target = findUnitById(state, action.targetId);
+
+    if (!target || target.current.hp <= 0 || target.owner === unit.owner) {
+      return false;
+    }
+
+    return canUnitAttackTarget(
+      {
+        ...unit,
+        x: action.tile.x,
+        y: action.tile.y
+      },
+      target
+    );
+  }
+
+  if (action.type === "capture" || action.type === "repair") {
+    return Boolean(
+      action.buildingId &&
+        state.map.buildings.some((building) => building.id === action.buildingId)
+    );
+  }
+
+  return false;
+}
+
+function getCachedPlannedAction(system) {
+  const enemyTurn = system.state.enemyTurn;
+  const cachedActions = enemyTurn?.plannedActions ?? [];
+
+  if (cachedActions.length === 0) {
+    return null;
+  }
+
+  if (enemyTurn.plannedPendingUnitIdsKey !== getPendingUnitIdsKey(enemyTurn.pendingUnitIds)) {
+    clearCachedEnemyTurnPlan(enemyTurn);
+    return null;
+  }
+
+  const action = cachedActions[0];
+
+  if (!isCachedPlannedActionValid(system.state, action)) {
+    clearCachedEnemyTurnPlan(enemyTurn);
+    return null;
+  }
+
+  return action;
+}
+
+function updateCachedEnemyTurnPlan(enemyTurn, plannedAction, plannedTurn = null) {
+  if (!enemyTurn || !plannedAction) {
+    clearCachedEnemyTurnPlan(enemyTurn);
+    return;
+  }
+
+  if (plannedTurn?.sequence?.length) {
+    enemyTurn.plannedActions = plannedTurn.sequence.slice(1).map(clonePlannedAction).filter(Boolean);
+  } else if (
+    enemyTurn.plannedActions?.[0]?.unitId === plannedAction.unitId &&
+    enemyTurn.plannedActions?.[0]?.type === plannedAction.type
+  ) {
+    enemyTurn.plannedActions.shift();
+  } else {
+    clearCachedEnemyTurnPlan(enemyTurn);
+    return;
+  }
+
+  enemyTurn.plannedPendingUnitIdsKey = enemyTurn.plannedActions.length
+    ? getPendingUnitIdsKey(enemyTurn.pendingUnitIds)
+    : "";
+}
+
 function resolveEnemyTransportPlan(system, unit, transportPlan, movementBudget) {
   if (!transportPlan) {
     return null;
@@ -428,16 +558,28 @@ export function processEnemyTurnStep(system) {
   }
 
   while (system.state.enemyTurn.pendingUnitIds.length > 0) {
-    const plannedTurn = planEnemyTurn(
-      system.state,
-      system.state.enemyTurn.pendingUnitIds
-    );
-    const plannedAction = plannedTurn?.action ?? null;
+    let plannedTurn = null;
+    let plannedAction = getCachedPlannedAction(system);
+
+    if (!plannedAction) {
+      plannedTurn = planEnemyTurn(
+        system.state,
+        system.state.enemyTurn.pendingUnitIds
+      );
+      plannedAction = plannedTurn?.action ?? null;
+    }
+
     const unitId = takePendingEnemyUnitId(
       system.state.enemyTurn,
       plannedAction?.unitId
     );
     const unit = findUnitById(system.state, unitId);
+
+    if (plannedAction?.unitId === unitId) {
+      updateCachedEnemyTurnPlan(system.state.enemyTurn, plannedAction, plannedTurn);
+    } else {
+      clearCachedEnemyTurnPlan(system.state.enemyTurn);
+    }
 
     if (
       !unit ||
@@ -577,6 +719,10 @@ export function processEnemyTurnStep(system) {
           );
         }
       }
+    }
+
+    if (plannedAction?.unitId === unit.id) {
+      clearCachedEnemyTurnPlan(system.state.enemyTurn);
     }
 
     if (isGrunt && capturePlan) {

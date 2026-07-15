@@ -3,10 +3,13 @@ import { MAP_GOAL_TYPES } from "../../content/mapGoals.js";
 import { getBuildingSupplyPreview } from "../battleServicing.js";
 import { canCaptureBuilding } from "../captureRules.js";
 import { getMovementModifier } from "../commanderEffects.js";
-import { getPositionArmorBonus } from "../combatResolver.js";
+import { getAttackRangeCap, getPositionArmorBonus } from "../combatResolver.js";
 import {
+  canUnitAttackTarget,
+  getAttackProfileForTarget,
   getBuildingAt,
   getLivingUnits,
+  getMovementDistanceMapToTiles,
   getReachableTiles,
   getUnitAt,
   getUnitMovementAllowance
@@ -26,6 +29,8 @@ import {
   getPlayerMovementThreatMargin,
   takeRandomInt
 } from "./shared.js";
+
+const objectiveRouteDistanceMapsByState = new WeakMap();
 
 function canRepairUnitAtBuilding(state, unit, building) {
   return getBuildingSupplyPreview(state, unit, building).changed;
@@ -67,6 +72,96 @@ function getBuildingCapturePriority(building) {
   return (typePriority[building.type] ?? 20) + (building.owner === "neutral" ? 18 : 6);
 }
 
+function getObjectiveTileKey(tile) {
+  return `${tile.x},${tile.y}`;
+}
+
+function getObjectiveRouteDistanceCacheKey(unit, targetTiles) {
+  const gearSlot = unit.gear?.slot ?? "";
+  const targetKey = targetTiles.map(getObjectiveTileKey).join("|");
+  return `${unit.id}:${unit.unitTypeId}:${unit.family}:${gearSlot}:${targetKey}`;
+}
+
+function getObjectiveRouteDistanceMap(state, unit, targetTiles) {
+  let distanceMaps = objectiveRouteDistanceMapsByState.get(state);
+
+  if (!distanceMaps) {
+    distanceMaps = new Map();
+    objectiveRouteDistanceMapsByState.set(state, distanceMaps);
+  }
+
+  const cacheKey = getObjectiveRouteDistanceCacheKey(unit, targetTiles);
+  const cachedDistanceMap = distanceMaps.get(cacheKey);
+
+  if (cachedDistanceMap) {
+    return cachedDistanceMap;
+  }
+
+  const distanceMap = getMovementDistanceMapToTiles(state, unit, targetTiles);
+  distanceMaps.set(cacheKey, distanceMap);
+  return distanceMap;
+}
+
+function getBestObjectiveRouteDistance(state, unit, tile, targetTiles) {
+  const distanceMap = getObjectiveRouteDistanceMap(state, unit, targetTiles);
+  return distanceMap.get(getObjectiveTileKey(tile)) ?? Number.POSITIVE_INFINITY;
+}
+
+function getRouteProgressInfo(state, unit, tile, targetTiles) {
+  const routeDistance = getBestObjectiveRouteDistance(state, unit, tile, targetTiles);
+
+  if (!Number.isFinite(routeDistance)) {
+    return {
+      routeDistance,
+      routeImprovement: 0
+    };
+  }
+
+  const currentRouteDistance = getBestObjectiveRouteDistance(
+    state,
+    unit,
+    { x: unit.x, y: unit.y },
+    targetTiles
+  );
+
+  return {
+    routeDistance,
+    routeImprovement: Number.isFinite(currentRouteDistance)
+      ? currentRouteDistance - routeDistance
+      : 0
+  };
+}
+
+function scoreRouteProgress(
+  state,
+  unit,
+  tile,
+  targetTiles,
+  {
+    maxDistance = 16,
+    distanceWeight = 10,
+    improvementWeight = 20,
+    arrivalBonus = 0
+  } = {}
+) {
+  const { routeDistance, routeImprovement } = getRouteProgressInfo(
+    state,
+    unit,
+    tile,
+    targetTiles
+  );
+
+  if (!Number.isFinite(routeDistance)) {
+    return 0;
+  }
+
+  return (
+    (routeDistance === 0 ? arrivalBonus : 0) +
+    Math.max(0, maxDistance - routeDistance) * distanceWeight +
+    routeImprovement * improvementWeight
+  );
+}
+
 function getCaptureObjectiveScore(state, unit, tile) {
   if (unit.family !== UNIT_TAGS.INFANTRY) {
     return Number.NEGATIVE_INFINITY;
@@ -75,30 +170,161 @@ function getCaptureObjectiveScore(state, unit, tile) {
   return state.map.buildings
     .filter((building) => canCaptureBuilding(unit, building))
     .map((building) => {
-      const distance = Math.abs(tile.x - building.x) + Math.abs(tile.y - building.y);
+      const targetTiles = [{ x: building.x, y: building.y }];
+      const { routeDistance, routeImprovement } = getRouteProgressInfo(
+        state,
+        unit,
+        tile,
+        targetTiles
+      );
+
+      if (!Number.isFinite(routeDistance)) {
+        return Number.NEGATIVE_INFINITY;
+      }
+
       return (
         getBuildingCapturePriority(building) * 3 +
-        (distance === 0 ? 140 : 0) +
-        Math.max(0, 7 - distance) * 14
+        (routeDistance === 0 ? 140 : 0) +
+        Math.max(0, 9 - routeDistance) * 18 +
+        routeImprovement * 26
       );
     })
     .sort((left, right) => right - left)[0] ?? Number.NEGATIVE_INFINITY;
 }
 
-function getPressureScore(state, tile) {
-  const nearestPlayerDistance = getNearestPlayerDistance(state, tile);
-  return Math.max(0, 14 - nearestPlayerDistance) * 8;
+function getTilesInRangeOfTarget(state, target, minimumRange, maximumRange) {
+  const tiles = [];
+
+  for (let y = 0; y < state.map.height; y += 1) {
+    for (let x = 0; x < state.map.width; x += 1) {
+      const distance = Math.abs(x - target.x) + Math.abs(y - target.y);
+
+      if (distance >= minimumRange && distance <= maximumRange) {
+        tiles.push({ x, y });
+      }
+    }
+  }
+
+  return tiles;
 }
 
-function getCommandRushScore(state, tile) {
+function getAttackStagingTilesForTarget(state, unit, target) {
+  if (!canUnitAttackTarget(unit, target)) {
+    return [];
+  }
+
+  const attackProfile = getAttackProfileForTarget(unit, target);
+
+  if (!attackProfile) {
+    return [];
+  }
+
+  return getTilesInRangeOfTarget(
+    state,
+    target,
+    attackProfile.minRange,
+    getAttackRangeCap(state, unit, attackProfile)
+  );
+}
+
+function getPlayerPressureTargetTiles(state, unit) {
+  const attackTiles = getLivingUnits(state, TURN_SIDES.PLAYER)
+    .flatMap((playerUnit) => getAttackStagingTilesForTarget(state, unit, playerUnit));
+
+  if (attackTiles.length > 0) {
+    return attackTiles;
+  }
+
+  return getLivingUnits(state, TURN_SIDES.PLAYER)
+    .flatMap((playerUnit) => [
+      { x: playerUnit.x + 1, y: playerUnit.y },
+      { x: playerUnit.x - 1, y: playerUnit.y },
+      { x: playerUnit.x, y: playerUnit.y + 1 },
+      { x: playerUnit.x, y: playerUnit.y - 1 }
+    ])
+    .filter((tile) => isInsideMap(state, tile));
+}
+
+function getNearestPlayerRouteDistance(state, unit, tile) {
+  const targetTiles = getPlayerPressureTargetTiles(state, unit);
+
+  if (targetTiles.length === 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return getBestObjectiveRouteDistance(state, unit, tile, targetTiles);
+}
+
+function getPressureScore(state, unit, tile) {
+  const nearestPlayerDistance = getNearestPlayerRouteDistance(state, unit, tile);
+
+  if (!Number.isFinite(nearestPlayerDistance)) {
+    return 0;
+  }
+
+  return Math.max(0, 18 - nearestPlayerDistance) * 9;
+}
+
+function getCommandRushScore(state, unit, tile) {
   const playerCommand = getPlayerCommandBuilding(state);
 
   if (!playerCommand) {
     return 0;
   }
 
-  const distance = Math.abs(tile.x - playerCommand.x) + Math.abs(tile.y - playerCommand.y);
-  return Math.max(0, 16 - distance) * 9 + (distance === 0 ? 120 : 0);
+  return scoreRouteProgress(
+    state,
+    unit,
+    tile,
+    [{ x: playerCommand.x, y: playerCommand.y }],
+    {
+      maxDistance: 18,
+      distanceWeight: 12,
+      improvementWeight: 24,
+      arrivalBonus: 120
+    }
+  );
+}
+
+function isInsideMap(state, tile) {
+  return (
+    Number.isInteger(tile?.x) &&
+    Number.isInteger(tile?.y) &&
+    tile.x >= 0 &&
+    tile.y >= 0 &&
+    tile.x < state.map.width &&
+    tile.y < state.map.height
+  );
+}
+
+function getDefendTargetApproachTiles(state, target) {
+  return [
+    { x: target.x + 1, y: target.y },
+    { x: target.x - 1, y: target.y },
+    { x: target.x, y: target.y + 1 },
+    { x: target.x, y: target.y - 1 }
+  ].filter((tile) => isInsideMap(state, tile));
+}
+
+function getDefendTargetApproachScore(state, unit, tile, target) {
+  const targetTiles = getDefendTargetApproachTiles(state, target);
+  const directDistance = Math.abs(tile.x - target.x) + Math.abs(tile.y - target.y);
+
+  return (
+    scoreRouteProgress(
+      state,
+      unit,
+      tile,
+      targetTiles,
+      {
+        maxDistance: 28,
+        distanceWeight: 24,
+        improvementWeight: 44,
+        arrivalBonus: 560
+      }
+    ) +
+    Math.max(0, 7 - directDistance) * 8
+  );
 }
 
 function getMissionObjectiveScore(state, unit, tile) {
@@ -109,7 +335,7 @@ function getMissionObjectiveScore(state, unit, tile) {
   }
 
   if (mission.type === MAP_GOAL_TYPES.HQ_CAPTURE) {
-    return getCommandRushScore(state, tile) * 1.5 + Math.max(0, getCaptureObjectiveScore(state, unit, tile)) * 0.4;
+    return getCommandRushScore(state, unit, tile) * 1.5 + Math.max(0, getCaptureObjectiveScore(state, unit, tile)) * 0.4;
   }
 
   if (mission.type === MAP_GOAL_TYPES.RESCUE) {
@@ -117,31 +343,58 @@ function getMissionObjectiveScore(state, unit, tile) {
       const carrier = mission.rescue.carrierUnitId
         ? state.player.units.find((candidate) => candidate.id === mission.rescue.carrierUnitId) ?? null
         : null;
-      const carrierDistance = carrier
-        ? Math.abs(tile.x - carrier.x) + Math.abs(tile.y - carrier.y)
-        : Number.POSITIVE_INFINITY;
-      const hqDistance = mission.playerHq
-        ? Math.abs(tile.x - mission.playerHq.x) + Math.abs(tile.y - mission.playerHq.y)
-        : Number.POSITIVE_INFINITY;
+      const carrierTiles = carrier
+        ? getAttackStagingTilesForTarget(state, unit, carrier)
+        : [];
+      const carrierScore = carrierTiles.length > 0
+        ? scoreRouteProgress(state, unit, tile, carrierTiles, {
+            maxDistance: 20,
+            distanceWeight: 15,
+            improvementWeight: 26,
+            arrivalBonus: 90
+          })
+        : 0;
+      const hqScore = mission.playerHq
+        ? scoreRouteProgress(
+            state,
+            unit,
+            tile,
+            [{ x: mission.playerHq.x, y: mission.playerHq.y }],
+            {
+              maxDistance: 16,
+              distanceWeight: 8,
+              improvementWeight: 14
+            }
+          )
+        : 0;
 
-      return Math.max(0, 16 - carrierDistance) * 12 + Math.max(0, 12 - hqDistance) * 8;
+      return carrierScore + hqScore * 0.6;
     }
 
     if (mission.target) {
-      const targetDistance = Math.abs(tile.x - mission.target.x) + Math.abs(tile.y - mission.target.y);
-      return Math.max(0, 16 - targetDistance) * 11;
+      return scoreRouteProgress(
+        state,
+        unit,
+        tile,
+        [{ x: mission.target.x, y: mission.target.y }],
+        {
+          maxDistance: 18,
+          distanceWeight: 11,
+          improvementWeight: 22,
+          arrivalBonus: 80
+        }
+      );
     }
 
     return 0;
   }
 
   if (mission.type === MAP_GOAL_TYPES.DEFEND && mission.target) {
-    const targetDistance = Math.abs(tile.x - mission.target.x) + Math.abs(tile.y - mission.target.y);
-    return (targetDistance === 1 ? 180 : 0) + Math.max(0, 10 - targetDistance) * 18;
+    return getDefendTargetApproachScore(state, unit, tile, mission.target);
   }
 
   if (mission.type === MAP_GOAL_TYPES.SURVIVE) {
-    return getPressureScore(state, tile) * 1.45 + getCommandRushScore(state, tile) * 0.5;
+    return getPressureScore(state, unit, tile) * 1.45 + getCommandRushScore(state, unit, tile) * 0.5;
   }
 
   return 0;
@@ -170,43 +423,70 @@ export function getStrategicObjectiveScore(state, unit, tile) {
   const profile = getEnemyAiProfile(state);
   const archetype = getEnemyAiArchetype(state);
   const missionType = state.mission?.type ?? MAP_GOAL_TYPES.ROUT;
-  const captureScore = getCaptureObjectiveScore(state, unit, tile);
-  const pressureScore = getPressureScore(state, tile);
-  const commandScore = getCommandRushScore(state, tile);
-  const safetyScore = getTileSafetyScore(state, unit, tile);
-  const missionObjectiveScore = getMissionObjectiveScore(state, unit, tile);
 
   if (missionType === MAP_GOAL_TYPES.HQ_CAPTURE) {
+    const commandScore = getCommandRushScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
+    const missionObjectiveScore = getMissionObjectiveScore(state, unit, tile);
     return commandScore * Math.max(1.3, profile.objectiveWeight) + missionObjectiveScore + safetyScore * profile.safetyWeight;
   }
 
   if (missionType === MAP_GOAL_TYPES.RESCUE) {
+    const missionObjectiveScore = getMissionObjectiveScore(state, unit, tile);
+    const pressureScore = getPressureScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
     return missionObjectiveScore + pressureScore * 0.7 + safetyScore * profile.safetyWeight;
   }
 
   if (missionType === MAP_GOAL_TYPES.DEFEND) {
-    return missionObjectiveScore + pressureScore * 0.5 + safetyScore * profile.safetyWeight;
+    const missionObjectiveScore = getMissionObjectiveScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
+    return (
+      missionObjectiveScore * Math.max(1.4, profile.objectiveWeight) +
+      safetyScore * profile.safetyWeight * 0.3
+    );
   }
 
   if (missionType === MAP_GOAL_TYPES.SURVIVE) {
+    const missionObjectiveScore = getMissionObjectiveScore(state, unit, tile);
+    const pressureScore = getPressureScore(state, unit, tile);
+    const commandScore = getCommandRushScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
     return missionObjectiveScore + pressureScore * 1.2 + commandScore * 0.4 + safetyScore * 0.7;
   }
 
   if (archetype === ENEMY_AI_ARCHETYPES.HYPER_AGGRESSIVE) {
+    const pressureScore = getPressureScore(state, unit, tile);
+    const commandScore = getCommandRushScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
     return pressureScore * 1.3 + commandScore * 0.45 + safetyScore * profile.safetyWeight;
   }
 
   if (archetype === ENEMY_AI_ARCHETYPES.TURTLE) {
+    const captureScore = getCaptureObjectiveScore(state, unit, tile);
+    const pressureScore = getPressureScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
     return safetyScore * profile.safetyWeight + pressureScore * 0.45 + Math.max(0, captureScore) * 0.3;
   }
 
   if (archetype === ENEMY_AI_ARCHETYPES.CAPTURE) {
+    const captureScore = getCaptureObjectiveScore(state, unit, tile);
+    const pressureScore = getPressureScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
     return Math.max(0, captureScore) * profile.objectiveWeight + pressureScore * 0.45 + safetyScore;
   }
 
   if (archetype === ENEMY_AI_ARCHETYPES.HQ_RUSH) {
+    const commandScore = getCommandRushScore(state, unit, tile);
+    const pressureScore = getPressureScore(state, unit, tile);
+    const safetyScore = getTileSafetyScore(state, unit, tile);
     return commandScore * profile.objectiveWeight + pressureScore * 0.6 + safetyScore * profile.safetyWeight;
   }
+
+  const captureScore = getCaptureObjectiveScore(state, unit, tile);
+  const pressureScore = getPressureScore(state, unit, tile);
+  const commandScore = getCommandRushScore(state, unit, tile);
+  const safetyScore = getTileSafetyScore(state, unit, tile);
 
   return (
     Math.max(0, captureScore) * 0.6 +
@@ -256,6 +536,7 @@ export function getCapturePlans(state, unit, reachableTiles) {
   return state.map.buildings
     .filter((building) => canCaptureBuilding(unit, building))
     .map((building) => {
+      const targetTiles = [{ x: building.x, y: building.y }];
       const occupant = getUnitAt(state, building.x, building.y);
       const directTile =
         (!occupant || occupant.id === unit.id) &&
@@ -265,20 +546,34 @@ export function getCapturePlans(state, unit, reachableTiles) {
         : reachableTiles
             .map((tile) => ({
               ...tile,
-              distance: Math.abs(tile.x - building.x) + Math.abs(tile.y - building.y)
+              routeDistance: getBestObjectiveRouteDistance(
+                state,
+                unit,
+                tile,
+                targetTiles
+              )
             }))
-            .sort((left, right) => left.distance - right.distance)[0];
+            .filter((tile) => Number.isFinite(tile.routeDistance))
+            .sort(
+              (left, right) =>
+                left.routeDistance - right.routeDistance ||
+                left.y - right.y ||
+                left.x - right.x
+            )[0];
 
       if (!bestApproachTile) {
         return null;
       }
 
-      const distanceFromBuilding = Math.abs(bestApproachTile.x - building.x) + Math.abs(bestApproachTile.y - building.y);
-      const distanceImprovement =
-        Math.abs(unit.x - building.x) +
-        Math.abs(unit.y - building.y) -
-        distanceFromBuilding;
+      const {
+        routeDistance: distanceFromBuilding,
+        routeImprovement: distanceImprovement
+      } = getRouteProgressInfo(state, unit, bestApproachTile, targetTiles);
       const isCurrentTile = building.x === unit.x && building.y === unit.y;
+
+      if (!directTile && distanceImprovement <= 0) {
+        return null;
+      }
 
       return {
         building,
@@ -329,6 +624,7 @@ export function getRepairPlans(state, unit, reachableTiles) {
     .filter((building) => canRepairUnitAtBuilding(state, unit, building))
     .map((building) => {
       const preview = getBuildingSupplyPreview(state, unit, building);
+      const targetTiles = [{ x: building.x, y: building.y }];
       const occupant = getUnitAt(state, building.x, building.y);
       const directTile =
         (!occupant || occupant.id === unit.id) &&
@@ -338,18 +634,29 @@ export function getRepairPlans(state, unit, reachableTiles) {
         : reachableTiles
             .map((tile) => ({
               ...tile,
-              distance: Math.abs(tile.x - building.x) + Math.abs(tile.y - building.y)
+              routeDistance: getBestObjectiveRouteDistance(
+                state,
+                unit,
+                tile,
+                targetTiles
+              )
             }))
-            .sort((left, right) => left.distance - right.distance)[0];
+            .filter((tile) => Number.isFinite(tile.routeDistance))
+            .sort(
+              (left, right) =>
+                left.routeDistance - right.routeDistance ||
+                left.y - right.y ||
+                left.x - right.x
+            )[0];
 
       if (!bestApproachTile) {
         return null;
       }
 
-      const currentDistance = Math.abs(unit.x - building.x) + Math.abs(unit.y - building.y);
-      const distanceFromBuilding =
-        Math.abs(bestApproachTile.x - building.x) + Math.abs(bestApproachTile.y - building.y);
-      const distanceImprovement = currentDistance - distanceFromBuilding;
+      const {
+        routeDistance: distanceFromBuilding,
+        routeImprovement: distanceImprovement
+      } = getRouteProgressInfo(state, unit, bestApproachTile, targetTiles);
 
       if (!directTile && distanceImprovement <= 0) {
         return null;
@@ -506,7 +813,7 @@ export function pickFallbackMovementTile(state, unit, reachableTiles) {
   const profile = getEnemyAiProfile(state);
   const currentTile = { x: unit.x, y: unit.y };
   const currentObjectiveScore = getStrategicObjectiveScore(state, unit, currentTile);
-  const currentNearestDistance = getNearestPlayerDistance(state, currentTile);
+  const currentNearestDistance = getNearestPlayerRouteDistance(state, unit, currentTile);
   const currentMovementThreatMargin = getPlayerMovementThreatMargin(state, unit, currentTile);
   const shouldFallBack =
     currentMovementThreatMargin <= 0 &&
@@ -514,11 +821,17 @@ export function pickFallbackMovementTile(state, unit, reachableTiles) {
 
   const rankedTiles = reachableTiles
     .map((tile) => {
-      const nearestPlayerDistance = getNearestPlayerDistance(state, tile);
+      const nearestPlayerDistance = getNearestPlayerRouteDistance(state, unit, tile);
+      const fallbackNearestPlayerDistance = Number.isFinite(nearestPlayerDistance)
+        ? nearestPlayerDistance
+        : getNearestPlayerDistance(state, tile);
       const movementDistance = Math.abs(tile.x - unit.x) + Math.abs(tile.y - unit.y);
       const attackThreatMargin = getPlayerAttackThreatMargin(state, unit, tile);
       const movementThreatMargin = getPlayerMovementThreatMargin(state, unit, tile);
-      const distanceImprovement = currentNearestDistance - nearestPlayerDistance;
+      const distanceImprovement =
+        Number.isFinite(currentNearestDistance) && Number.isFinite(nearestPlayerDistance)
+          ? currentNearestDistance - nearestPlayerDistance
+          : 0;
       const safetyScore = getTileSafetyScore(state, unit, tile);
       const strategicObjectiveScore = getStrategicObjectiveScore(state, unit, tile);
       const stagingScore =
@@ -529,7 +842,7 @@ export function pickFallbackMovementTile(state, unit, reachableTiles) {
         takeRandomInt(state, 0, 4);
       const fallbackScore =
         safetyScore * (profile.safetyWeight + 0.6) +
-        nearestPlayerDistance * 4 -
+        fallbackNearestPlayerDistance * 4 -
         movementDistance -
         (attackThreatMargin > 0 ? 8 : 0) +
         (movementThreatMargin > 0 ? 16 : movementThreatMargin * 6) +

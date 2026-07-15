@@ -42,6 +42,7 @@ export const ENEMY_TURN_PLANNER_BEAM_WIDTH = 10;
 export const ENEMY_TURN_PLANNER_BRANCH_LIMIT = 24;
 export const ENEMY_TURN_PLANNER_ACTIONS_PER_UNIT = 8;
 export const ENEMY_TURN_PLANNER_TILES_PER_TARGET = 4;
+export const ENEMY_TURN_PLANNER_PENDING_UNIT_CAP = 4;
 
 const ACTION_TYPE_PRIORITY = {
   attack: 0,
@@ -561,16 +562,33 @@ function projectAction(node, action, depth) {
 
 export function planEnemyTurn(state, pendingUnitIds = []) {
   const initialState = structuredClone(state);
-  const initialPendingUnitIds = [...new Set(pendingUnitIds)].filter((unitId) => {
+  const activePendingUnitIds = [...new Set(pendingUnitIds)].filter((unitId) => {
     const unit = findUnitById(initialState, unitId);
     return Boolean(unit && unit.current.hp > 0);
   });
+  const initialPendingUnitIds = activePendingUnitIds.slice(
+    0,
+    ENEMY_TURN_PLANNER_PENDING_UNIT_CAP
+  );
 
   if (initialPendingUnitIds.length === 0) {
     return null;
   }
 
   const firstPendingUnitId = initialPendingUnitIds[0];
+  const firstPendingCandidates = getActionCandidates(
+    initialState,
+    [firstPendingUnitId]
+  );
+
+  if (
+    !firstPendingCandidates.some(
+      (candidate) => candidate.unitId === firstPendingUnitId
+    )
+  ) {
+    return null;
+  }
+
   const initialCandidates = getActionCandidates(
     initialState,
     initialPendingUnitIds

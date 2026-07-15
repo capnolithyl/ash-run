@@ -12,10 +12,15 @@ import {
   ENEMY_TURN_PLANNER_ACTIONS_PER_UNIT,
   ENEMY_TURN_PLANNER_BEAM_WIDTH,
   ENEMY_TURN_PLANNER_BRANCH_LIMIT,
+  ENEMY_TURN_PLANNER_PENDING_UNIT_CAP,
   ENEMY_TURN_PLANNER_TILES_PER_TARGET,
   planEnemyTurn
 } from "../src/game/simulation/enemyAi/turnPlanning.js";
-import { getBestMoveAttackOption } from "../src/game/simulation/enemyAi/movementScoring.js";
+import {
+  getBestMoveAttackOption,
+  getBestCapturePlan,
+  pickFallbackMovementTile
+} from "../src/game/simulation/enemyAi/movementScoring.js";
 import { getReachableTiles } from "../src/game/simulation/selectors.js";
 import { createSkirmishBattleState } from "../src/game/state/runFactory.js";
 import {
@@ -166,6 +171,151 @@ test("enemy archetypes use optimistic, expected, and conservative kill forecasts
   assert.equal(aggressivePlan.action.targetId, highValueTarget.id);
   assert.equal(expectedPlan.action.targetId, expectedTarget.id);
   assert.equal(conservativePlan.action.targetId, reliableTarget.id);
+});
+
+test("defend objective staging routes around blocked terrain instead of hugging the direct line", () => {
+  const defender = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 8, 6);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 3);
+
+  defender.stats.attack = 0;
+  enemy.stats.attack = 0;
+
+  const state = createTestBattleState({
+    width: 9,
+    height: 7,
+    playerUnits: [defender],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  fillRoads(state);
+  for (let y = 0; y < 6; y += 1) {
+    state.map.tiles[y][5] = TERRAIN_KEYS.WATER;
+  }
+  state.map.goal = {
+    type: MAP_GOAL_TYPES.DEFEND,
+    target: {
+      x: 7,
+      y: 3
+    },
+    turnLimit: 4
+  };
+  state.map.buildings = [
+    {
+      id: "defend-objective",
+      type: BUILDING_KEYS.SECTOR,
+      owner: TURN_SIDES.PLAYER,
+      x: 7,
+      y: 3
+    }
+  ];
+
+  const system = new BattleSystem(state);
+  const battleState = system.getStateForSave();
+  const plannedEnemy = battleState.enemy.units[0];
+  const reachableTiles = getReachableTiles(
+    battleState,
+    plannedEnemy,
+    plannedEnemy.stats.movement
+  );
+  const fallbackTile = pickFallbackMovementTile(
+    battleState,
+    plannedEnemy,
+    reachableTiles
+  );
+
+  assert.ok(
+    fallbackTile.y >= 5,
+    `expected enemy to route toward the lower gap, received ${fallbackTile.x},${fallbackTile.y}`
+  );
+});
+
+test("enemy fallback movement routes around blocked terrain toward attack targets", () => {
+  const target = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 7, 3);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 3);
+
+  target.stats.attack = 0;
+
+  const state = createTestBattleState({
+    width: 9,
+    height: 7,
+    playerUnits: [target],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  fillRoads(state);
+  state.map.buildings = [];
+  for (let y = 0; y < 6; y += 1) {
+    state.map.tiles[y][5] = TERRAIN_KEYS.WATER;
+  }
+
+  const system = new BattleSystem(state);
+  const battleState = system.getStateForSave();
+  const plannedEnemy = battleState.enemy.units[0];
+  const reachableTiles = getReachableTiles(
+    battleState,
+    plannedEnemy,
+    plannedEnemy.stats.movement
+  );
+  const fallbackTile = pickFallbackMovementTile(
+    battleState,
+    plannedEnemy,
+    reachableTiles
+  );
+
+  assert.ok(
+    fallbackTile.y >= 5,
+    `expected enemy to route toward the lower attack lane, received ${fallbackTile.x},${fallbackTile.y}`
+  );
+});
+
+test("capture plans route infantry around blocked terrain toward buildings", () => {
+  const target = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 8, 6);
+  const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 3);
+
+  target.stats.attack = 0;
+  enemy.stats.attack = 0;
+
+  const state = createTestBattleState({
+    width: 9,
+    height: 7,
+    playerUnits: [target],
+    enemyUnits: [enemy],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  fillRoads(state);
+  state.enemy.aiArchetype = ENEMY_AI_ARCHETYPES.CAPTURE;
+  for (let y = 0; y < 6; y += 1) {
+    state.map.tiles[y][5] = TERRAIN_KEYS.WATER;
+  }
+  state.map.buildings = [
+    {
+      id: "neutral-sector",
+      type: BUILDING_KEYS.SECTOR,
+      owner: "neutral",
+      x: 7,
+      y: 3
+    }
+  ];
+
+  const system = new BattleSystem(state);
+  const battleState = system.getStateForSave();
+  const plannedEnemy = battleState.enemy.units[0];
+  const reachableTiles = getReachableTiles(
+    battleState,
+    plannedEnemy,
+    plannedEnemy.stats.movement
+  );
+  const capturePlan = getBestCapturePlan(
+    battleState,
+    plannedEnemy,
+    reachableTiles
+  );
+
+  assert.ok(capturePlan);
+  assert.ok(
+    capturePlan.tile.y >= 5,
+    `expected capture plan to route toward the lower gap, received ${capturePlan.tile.x},${capturePlan.tile.y}`
+  );
 });
 
 test("repair and capture plans retain archetype priorities", () => {
@@ -415,6 +565,7 @@ test("planning is seed-neutral and enemy units are activated at most once", () =
       (unit) => unit.hasMoved && unit.hasAttacked
     )
   );
+  assert.equal(ENEMY_TURN_PLANNER_PENDING_UNIT_CAP, 4);
 });
 
 test("the bounded planner handles the authored 12-enemy Cauldron map", () => {
