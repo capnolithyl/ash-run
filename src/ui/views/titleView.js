@@ -1,4 +1,9 @@
 import { formatTurnCount } from "../formatters.js";
+import {
+  BUILD_FEATURES,
+  CURRENT_BUILD_CONFIG,
+  isBuildFeatureEnabled
+} from "../../game/core/buildProfiles.js";
 
 const TITLE_BUTTON_IMAGE_DIMENSIONS = {
   settings: { width: 500, height: 500 }
@@ -609,7 +614,7 @@ function renderTitleButton({
   `;
 }
 
-export function renderTitleView(state) {
+export function renderTitleView(state, buildProfileConfig = CURRENT_BUILD_CONFIG) {
   const hasContinue = state.slots.some((slot) => slot.exists);
   const latestClearTurnCount = state.metaState.latestClearTurnCount;
   const bestClearTurnCount = state.metaState.bestClearTurnCount;
@@ -632,30 +637,35 @@ export function renderTitleView(state) {
       className: "title-menu__button",
       label: "Skirmish",
       icon: "skirmish",
+      feature: BUILD_FEATURES.SKIRMISH,
     },
     {
       action: "open-map-editor",
       className: "title-menu__button",
       label: "Map Editor",
       icon: "map-editor",
+      feature: BUILD_FEATURES.MAP_EDITOR,
     },
     {
       action: "open-tutorial",
       className: "title-menu__button",
       label: "Tutorial",
       icon: "tutorial",
+      feature: BUILD_FEATURES.TUTORIAL,
     },
     {
       action: "open-progression",
       className: "title-menu__button",
       label: "Progression",
       icon: "progression",
+      feature: BUILD_FEATURES.PROGRESSION,
     },
     {
       action: "open-debug-run",
       className: "title-menu__button",
       label: "Sandbox",
       icon: "sandbox",
+      feature: BUILD_FEATURES.SANDBOX,
     },
     {
       action: "quit-game",
@@ -665,6 +675,10 @@ export function renderTitleView(state) {
     },
   ];
   const menuMarkup = menuEntries
+    .filter(
+      (entry) =>
+        !entry.feature || isBuildFeatureEnabled(buildProfileConfig, entry.feature)
+    )
     .map(
       (entry) =>
         `<li class="title-menu__item">${renderTitleButton(entry)}</li>`,

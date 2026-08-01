@@ -1,4 +1,5 @@
 import { APP_TOAST_DISPLAY_MS, BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
+import { BUILD_FEATURES } from "../core/buildProfiles.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { normalizeMetaOptions, normalizeUnlockedRunCardIds } from "../state/defaults.js";
@@ -121,6 +122,10 @@ export const controllerFlowMethods = {
   },
 
   startDebugRun(options = {}) {
+    if (!this.isFeatureEnabled(BUILD_FEATURES.SANDBOX)) {
+      return false;
+    }
+
     const currentBattleState = this.battleSystem?.getStateForSave?.() ?? null;
     const commanderId =
       options.playerCommanderId ??
@@ -204,6 +209,10 @@ export const controllerFlowMethods = {
   },
 
   openSkirmish() {
+    if (!this.isFeatureEnabled(BUILD_FEATURES.SKIRMISH)) {
+      return false;
+    }
+
     this.state.screen = SCREEN_IDS.SKIRMISH_SETUP;
     this.state.skirmishSetup = {
       ...this.state.skirmishSetup,
@@ -215,6 +224,10 @@ export const controllerFlowMethods = {
     this.emit();
   },
   openTutorial() {
+    if (!this.isFeatureEnabled(BUILD_FEATURES.TUTORIAL)) {
+      return false;
+    }
+
     this.state.screen = SCREEN_IDS.TUTORIAL;
     if (!this.state.tutorial) {
       this.resetTutorialToIntro?.();
@@ -374,6 +387,10 @@ export const controllerFlowMethods = {
   },
 
   async startSkirmish() {
+    if (!this.isFeatureEnabled(BUILD_FEATURES.SKIRMISH)) {
+      return false;
+    }
+
     const {
       mapId,
       playerCommanderId,

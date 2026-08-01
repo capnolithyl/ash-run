@@ -1,4 +1,5 @@
 import { BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
+import { BUILD_FEATURES } from "../core/buildProfiles.js";
 import {
   TUTORIAL_STEPS,
   applyTutorialStepEntryEffects,
@@ -127,6 +128,10 @@ export const controllerTutorialMethods = {
   },
 
   startTutorialBattle() {
+    if (!this.isFeatureEnabled(BUILD_FEATURES.TUTORIAL)) {
+      return false;
+    }
+
     this.battleSystem = new BattleSystem(createTutorialBattleState());
     this.state.tutorial = createTutorialBattleSession();
     this.state.runState = null;
@@ -139,6 +144,10 @@ export const controllerTutorialMethods = {
   },
 
   openTutorialEpilogue() {
+    if (!this.isFeatureEnabled(BUILD_FEATURES.TUTORIAL)) {
+      return false;
+    }
+
     this.clearBattleSession();
     this.state.tutorial = createTutorialIntroState({
       phase: "epilogue",

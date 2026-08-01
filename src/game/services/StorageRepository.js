@@ -1,8 +1,8 @@
 import { createDefaultMetaState, createEmptySlotSummaries } from "../state/defaults.js";
-
-const META_KEY = "ash-run-84:meta";
-const SLOT_KEY_PREFIX = "ash-run-84:slot:";
-const CUSTOM_MAP_KEY_PREFIX = "ash-run-84:custom-map:";
+import {
+  CURRENT_BUILD_PROFILE,
+  getBuildProfileConfig
+} from "../core/buildProfiles.js";
 
 function normalizeCustomMapStorageKey(fileName, mapData = null) {
   const preferredId = String(mapData?.id ?? "").trim();
@@ -18,8 +18,13 @@ function normalizeCustomMapStorageKey(fileName, mapData = null) {
  * That keeps the controller agnostic to the host environment.
  */
 export class StorageRepository {
-  constructor() {
+  constructor({ buildProfile = CURRENT_BUILD_PROFILE } = {}) {
+    const profileConfig = getBuildProfileConfig(buildProfile);
     this.desktopApi = globalThis.ashRun84Api ?? null;
+    this.storageNamespace = profileConfig.identity.storageNamespace;
+    this.metaKey = `${this.storageNamespace}:meta`;
+    this.slotKeyPrefix = `${this.storageNamespace}:slot:`;
+    this.customMapKeyPrefix = `${this.storageNamespace}:custom-map:`;
   }
 
   async loadMeta() {
@@ -27,7 +32,7 @@ export class StorageRepository {
       return (await this.desktopApi.loadMeta()) ?? createDefaultMetaState();
     }
 
-    const raw = globalThis.localStorage.getItem(META_KEY);
+    const raw = globalThis.localStorage.getItem(this.metaKey);
     return raw ? JSON.parse(raw) : createDefaultMetaState();
   }
 
@@ -36,7 +41,7 @@ export class StorageRepository {
       return this.desktopApi.saveMeta(metaState);
     }
 
-    globalThis.localStorage.setItem(META_KEY, JSON.stringify(metaState));
+    globalThis.localStorage.setItem(this.metaKey, JSON.stringify(metaState));
     return metaState;
   }
 
@@ -48,7 +53,7 @@ export class StorageRepository {
     const slotSummaries = createEmptySlotSummaries();
 
     return slotSummaries.map((slot) => {
-      const raw = globalThis.localStorage.getItem(`${SLOT_KEY_PREFIX}${slot.slotId}`);
+      const raw = globalThis.localStorage.getItem(`${this.slotKeyPrefix}${slot.slotId}`);
 
       if (!raw) {
         return slot;
@@ -70,7 +75,7 @@ export class StorageRepository {
       return this.desktopApi.loadSlot(slotId);
     }
 
-    const raw = globalThis.localStorage.getItem(`${SLOT_KEY_PREFIX}${slotId}`);
+    const raw = globalThis.localStorage.getItem(`${this.slotKeyPrefix}${slotId}`);
     return raw ? JSON.parse(raw) : null;
   }
 
@@ -80,7 +85,7 @@ export class StorageRepository {
     }
 
     globalThis.localStorage.setItem(
-      `${SLOT_KEY_PREFIX}${slotId}`,
+      `${this.slotKeyPrefix}${slotId}`,
       JSON.stringify(slotRecord)
     );
 
@@ -97,7 +102,7 @@ export class StorageRepository {
       return this.desktopApi.deleteSlot(slotId);
     }
 
-    globalThis.localStorage.removeItem(`${SLOT_KEY_PREFIX}${slotId}`);
+    globalThis.localStorage.removeItem(`${this.slotKeyPrefix}${slotId}`);
     return true;
   }
 
@@ -117,7 +122,7 @@ export class StorageRepository {
     for (let index = 0; index < storage.length; index += 1) {
       const key = storage.key(index);
 
-      if (!key?.startsWith(CUSTOM_MAP_KEY_PREFIX)) {
+      if (!key?.startsWith(this.customMapKeyPrefix)) {
         continue;
       }
 
@@ -147,7 +152,7 @@ export class StorageRepository {
     }
 
     const mapData = JSON.parse(text);
-    const storageKey = `${CUSTOM_MAP_KEY_PREFIX}${normalizeCustomMapStorageKey(
+    const storageKey = `${this.customMapKeyPrefix}${normalizeCustomMapStorageKey(
       fileName,
       mapData
     )}`;

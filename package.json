@@ -8,8 +8,11 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "start": "node scripts/start-electron.mjs",
-    "build": "node scripts/build.mjs",
+    "start": "node scripts/start-electron.mjs --profile=production",
+    "start:dev-build": "node scripts/start-electron.mjs --profile=development",
+    "build": "node scripts/build.mjs --profile=production",
+    "build:prod": "node scripts/build.mjs --profile=production",
+    "build:dev": "node scripts/build.mjs --profile=development",
     "check:unused": "knip --include dependencies,unlisted,exports,files",
     "assets:preload": "node scripts/generate-asset-preload-manifest.mjs",
     "sfx:generate": "node scripts/generate-sfx.mjs",
@@ -19,8 +22,12 @@
     "test": "node scripts/generate-asset-preload-manifest.mjs && node scripts/generate-map-manifest.mjs && node --test",
     "test:playthrough": "node scripts/full-playthrough-check.mjs",
     "test:ui": "playwright test",
+    "test:ui:prod": "playwright test --config=playwright.production.config.js",
+    "test:package:profiles": "node scripts/packaged-profile-smoke.mjs",
     "test:ui:update": "playwright test --update-snapshots",
-    "package": "node scripts/build.mjs && electron-builder"
+    "package": "node scripts/package.mjs production",
+    "package:prod": "node scripts/package.mjs production",
+    "package:dev": "node scripts/package.mjs development"
   },
   "dependencies": {
     "phaser": "^3.90.0"
@@ -34,21 +41,15 @@
     "vite": "^6.3.5"
   },
   "build": {
-    "appId": "com.ashrun84.game",
-    "productName": "Ash Run '84",
+    "appId": "com.ashrun84.game.alpha",
+    "productName": "Ash Run '84 Alpha",
     "files": [
       "dist/**/*",
       "electron/**/*",
       "package.json"
     ],
-    "extraResources": [
-      {
-        "from": "src/game/content/maps",
-        "to": "maps",
-        "filter": [
-          "**/*"
-        ]
-      }
+    "asarUnpack": [
+      "dist/map-resources/**"
     ],
     "directories": {
       "buildResources": "build"

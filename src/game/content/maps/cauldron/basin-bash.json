@@ -329,14 +329,6 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-1-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 1,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-1-enemy-runner-8-11",
           "unitTypeId": "runner",
           "owner": "enemy",
@@ -359,14 +351,6 @@
           "level": 1,
           "x": 8,
           "y": 9
-        },
-        {
-          "id": "basin-bash-stage-1-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 1,
-          "x": 9,
-          "y": 9
         }
       ],
       "reinforcements": [
@@ -387,24 +371,10 @@
               "y": 11
             },
             {
-              "id": "wave-1-grunt-1-11",
-              "unitTypeId": "grunt",
-              "level": 1,
-              "x": 1,
-              "y": 11
-            },
-            {
               "id": "wave-1-runner-17-11",
               "unitTypeId": "runner",
               "level": 1,
               "x": 17,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 1,
-              "x": 8,
               "y": 11
             },
             {
@@ -757,14 +727,6 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-2-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 1,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-2-enemy-runner-8-11",
           "unitTypeId": "runner",
           "owner": "enemy",
@@ -786,14 +748,6 @@
           "owner": "enemy",
           "level": 1,
           "x": 8,
-          "y": 9
-        },
-        {
-          "id": "basin-bash-stage-2-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 1,
-          "x": 9,
           "y": 9
         }
       ],
@@ -822,24 +776,10 @@
               "y": 11
             },
             {
-              "id": "wave-1-grunt-1-11",
-              "unitTypeId": "grunt",
-              "level": 1,
-              "x": 1,
-              "y": 11
-            },
-            {
               "id": "wave-1-runner-17-11",
               "unitTypeId": "runner",
               "level": 1,
               "x": 17,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 1,
-              "x": 8,
               "y": 11
             },
             {
@@ -848,13 +788,6 @@
               "level": 1,
               "x": 9,
               "y": 11
-            },
-            {
-              "id": "wave-1-runner-8-9",
-              "unitTypeId": "runner",
-              "level": 1,
-              "x": 8,
-              "y": 9
             },
             {
               "id": "wave-1-grunt-9-9",
@@ -1222,14 +1155,6 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-3-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-3-enemy-breaker-16-2",
           "unitTypeId": "breaker",
           "owner": "enemy",
@@ -1243,14 +1168,6 @@
           "owner": "enemy",
           "level": 2,
           "x": 8,
-          "y": 9
-        },
-        {
-          "id": "basin-bash-stage-3-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
           "y": 9
         }
       ],
@@ -1272,13 +1189,6 @@
               "y": 11
             },
             {
-              "id": "wave-1-breaker-1-11",
-              "unitTypeId": "breaker",
-              "level": 2,
-              "x": 1,
-              "y": 11
-            },
-            {
               "id": "wave-1-breaker-17-11",
               "unitTypeId": "breaker",
               "level": 2,
@@ -1290,13 +1200,6 @@
               "unitTypeId": "grunt",
               "level": 2,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-1-breaker-9-11",
-              "unitTypeId": "breaker",
-              "level": 2,
-              "x": 9,
               "y": 11
             }
           ]
@@ -1316,13 +1219,6 @@
               "level": 2,
               "x": 0,
               "y": 0
-            },
-            {
-              "id": "wave-2-runner-17-11",
-              "unitTypeId": "runner",
-              "level": 2,
-              "x": 17,
-              "y": 11
             }
           ]
         },
@@ -1341,13 +1237,6 @@
               "level": 2,
               "x": 0,
               "y": 2
-            },
-            {
-              "id": "wave-3-bruiser-16-3",
-              "unitTypeId": "bruiser",
-              "level": 2,
-              "x": 16,
-              "y": 3
             }
           ]
         }
@@ -1708,14 +1597,6 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-4-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-4-enemy-breaker-16-2",
           "unitTypeId": "breaker",
           "owner": "enemy",
@@ -1729,14 +1610,6 @@
           "owner": "enemy",
           "level": 2,
           "x": 8,
-          "y": 9
-        },
-        {
-          "id": "basin-bash-stage-4-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
           "y": 9
         }
       ],
@@ -1758,13 +1631,6 @@
               "y": 11
             },
             {
-              "id": "wave-1-breaker-1-11",
-              "unitTypeId": "breaker",
-              "level": 2,
-              "x": 1,
-              "y": 11
-            },
-            {
               "id": "wave-1-breaker-17-11",
               "unitTypeId": "breaker",
               "level": 2,
@@ -1776,13 +1642,6 @@
               "unitTypeId": "grunt",
               "level": 2,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-1-breaker-9-11",
-              "unitTypeId": "breaker",
-              "level": 2,
-              "x": 9,
               "y": 11
             }
           ]
@@ -1802,13 +1661,6 @@
               "level": 2,
               "x": 0,
               "y": 0
-            },
-            {
-              "id": "wave-2-runner-17-11",
-              "unitTypeId": "runner",
-              "level": 2,
-              "x": 17,
-              "y": 11
             }
           ]
         },
@@ -1827,13 +1679,6 @@
               "level": 2,
               "x": 0,
               "y": 2
-            },
-            {
-              "id": "wave-3-bruiser-16-3",
-              "unitTypeId": "bruiser",
-              "level": 2,
-              "x": 16,
-              "y": 3
             }
           ]
         },
@@ -1854,25 +1699,11 @@
               "y": 0
             },
             {
-              "id": "wave-4-runner-15-1",
-              "unitTypeId": "runner",
-              "level": 3,
-              "x": 15,
-              "y": 1
-            },
-            {
               "id": "wave-4-bruiser-7-10",
               "unitTypeId": "bruiser",
               "level": 3,
               "x": 7,
               "y": 10
-            },
-            {
-              "id": "wave-4-bruiser-10-11",
-              "unitTypeId": "bruiser",
-              "level": 3,
-              "x": 10,
-              "y": 11
             },
             {
               "id": "wave-4-runner-16-11",
@@ -2248,27 +2079,11 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-5-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-5-enemy-gunship-0-11",
           "unitTypeId": "gunship",
           "owner": "enemy",
           "level": 3,
           "x": 0,
-          "y": 11
-        },
-        {
-          "id": "basin-bash-stage-5-enemy-gunship-17-11",
-          "unitTypeId": "gunship",
-          "owner": "enemy",
-          "level": 3,
-          "x": 17,
           "y": 11
         },
         {
@@ -2285,14 +2100,6 @@
           "owner": "enemy",
           "level": 2,
           "x": 8,
-          "y": 9
-        },
-        {
-          "id": "basin-bash-stage-5-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
           "y": 9
         }
       ],
@@ -2314,13 +2121,6 @@
               "y": 11
             },
             {
-              "id": "wave-1-breaker-1-11",
-              "unitTypeId": "breaker",
-              "level": 2,
-              "x": 1,
-              "y": 11
-            },
-            {
               "id": "wave-1-breaker-17-11",
               "unitTypeId": "breaker",
               "level": 2,
@@ -2332,13 +2132,6 @@
               "unitTypeId": "grunt",
               "level": 2,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-1-breaker-9-11",
-              "unitTypeId": "breaker",
-              "level": 2,
-              "x": 9,
               "y": 11
             }
           ]
@@ -2358,13 +2151,6 @@
               "level": 2,
               "x": 0,
               "y": 0
-            },
-            {
-              "id": "wave-2-runner-17-11",
-              "unitTypeId": "runner",
-              "level": 2,
-              "x": 17,
-              "y": 11
             }
           ]
         },
@@ -2383,13 +2169,6 @@
               "level": 2,
               "x": 0,
               "y": 2
-            },
-            {
-              "id": "wave-3-bruiser-16-3",
-              "unitTypeId": "bruiser",
-              "level": 2,
-              "x": 16,
-              "y": 3
             }
           ]
         },
@@ -2410,25 +2189,11 @@
               "y": 0
             },
             {
-              "id": "wave-4-runner-15-1",
-              "unitTypeId": "runner",
-              "level": 3,
-              "x": 15,
-              "y": 1
-            },
-            {
               "id": "wave-4-bruiser-7-10",
               "unitTypeId": "bruiser",
               "level": 3,
               "x": 7,
               "y": 10
-            },
-            {
-              "id": "wave-4-bruiser-10-11",
-              "unitTypeId": "bruiser",
-              "level": 3,
-              "x": 10,
-              "y": 11
             },
             {
               "id": "wave-4-runner-16-11",
@@ -2804,27 +2569,11 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-6-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-6-enemy-gunship-0-11",
           "unitTypeId": "gunship",
           "owner": "enemy",
           "level": 3,
           "x": 0,
-          "y": 11
-        },
-        {
-          "id": "basin-bash-stage-6-enemy-gunship-17-11",
-          "unitTypeId": "gunship",
-          "owner": "enemy",
-          "level": 3,
-          "x": 17,
           "y": 11
         },
         {
@@ -2842,14 +2591,6 @@
           "level": 2,
           "x": 8,
           "y": 9
-        },
-        {
-          "id": "basin-bash-stage-6-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 9
         }
       ],
       "reinforcements": [
@@ -2865,21 +2606,14 @@
             {
               "id": "wave-1-bruiser-1-1",
               "unitTypeId": "bruiser",
-              "level": 4,
+              "level": 3,
               "x": 1,
               "y": 1
             },
             {
-              "id": "wave-1-bruiser-8-11",
-              "unitTypeId": "bruiser",
-              "level": 4,
-              "x": 8,
-              "y": 11
-            },
-            {
               "id": "wave-1-juggernaut-9-11",
               "unitTypeId": "juggernaut",
-              "level": 4,
+              "level": 3,
               "x": 9,
               "y": 11
             }
@@ -2902,24 +2636,10 @@
               "y": 0
             },
             {
-              "id": "wave-2-runner-17-11",
-              "unitTypeId": "runner",
-              "level": 2,
-              "x": 17,
-              "y": 11
-            },
-            {
               "id": "wave-2-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 5,
+              "level": 4,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-2-breaker-9-11",
-              "unitTypeId": "breaker",
-              "level": 5,
-              "x": 9,
               "y": 11
             }
           ]
@@ -2934,23 +2654,16 @@
           },
           "units": [
             {
-              "id": "wave-3-grunt-10-11",
-              "unitTypeId": "grunt",
-              "level": 5,
-              "x": 10,
-              "y": 11
-            },
-            {
               "id": "wave-3-grunt-8-11",
               "unitTypeId": "grunt",
-              "level": 5,
+              "level": 4,
               "x": 8,
               "y": 11
             },
             {
               "id": "wave-3-grunt-9-11",
               "unitTypeId": "grunt",
-              "level": 5,
+              "level": 4,
               "x": 9,
               "y": 11
             },
@@ -2960,13 +2673,6 @@
               "level": 2,
               "x": 0,
               "y": 2
-            },
-            {
-              "id": "wave-3-bruiser-16-3",
-              "unitTypeId": "bruiser",
-              "level": 2,
-              "x": 16,
-              "y": 3
             }
           ]
         },
@@ -2982,56 +2688,28 @@
             {
               "id": "wave-4-runner-1-0",
               "unitTypeId": "runner",
-              "level": 3,
+              "level": 2,
               "x": 1,
               "y": 0
             },
             {
-              "id": "wave-4-runner-15-1",
-              "unitTypeId": "runner",
-              "level": 3,
-              "x": 15,
-              "y": 1
-            },
-            {
-              "id": "wave-4-bruiser-7-10",
-              "unitTypeId": "bruiser",
-              "level": 3,
-              "x": 7,
-              "y": 10
-            },
-            {
               "id": "wave-4-breaker-10-11",
               "unitTypeId": "breaker",
-              "level": 5,
+              "level": 4,
               "x": 10,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-11-11",
-              "unitTypeId": "grunt",
-              "level": 5,
-              "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-4-runner-16-11",
-              "unitTypeId": "runner",
-              "level": 3,
-              "x": 16,
               "y": 11
             },
             {
               "id": "wave-4-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 5,
+              "level": 4,
               "x": 8,
               "y": 11
             },
             {
               "id": "wave-4-grunt-9-11",
               "unitTypeId": "grunt",
-              "level": 5,
+              "level": 4,
               "x": 9,
               "y": 11
             }
@@ -3402,27 +3080,11 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-7-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-7-enemy-gunship-0-11",
           "unitTypeId": "gunship",
           "owner": "enemy",
           "level": 3,
           "x": 0,
-          "y": 11
-        },
-        {
-          "id": "basin-bash-stage-7-enemy-gunship-17-11",
-          "unitTypeId": "gunship",
-          "owner": "enemy",
-          "level": 3,
-          "x": 17,
           "y": 11
         },
         {
@@ -3440,14 +3102,6 @@
           "level": 2,
           "x": 8,
           "y": 9
-        },
-        {
-          "id": "basin-bash-stage-7-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 9
         }
       ],
       "reinforcements": [
@@ -3463,21 +3117,14 @@
             {
               "id": "wave-1-bruiser-1-1",
               "unitTypeId": "bruiser",
-              "level": 4,
+              "level": 3,
               "x": 1,
               "y": 1
             },
             {
-              "id": "wave-1-bruiser-8-11",
-              "unitTypeId": "bruiser",
-              "level": 4,
-              "x": 8,
-              "y": 11
-            },
-            {
               "id": "wave-1-juggernaut-9-11",
               "unitTypeId": "juggernaut",
-              "level": 4,
+              "level": 3,
               "x": 9,
               "y": 11
             }
@@ -3500,24 +3147,10 @@
               "y": 0
             },
             {
-              "id": "wave-2-runner-17-11",
-              "unitTypeId": "runner",
-              "level": 2,
-              "x": 17,
-              "y": 11
-            },
-            {
               "id": "wave-2-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 5,
+              "level": 4,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-2-breaker-9-11",
-              "unitTypeId": "breaker",
-              "level": 5,
-              "x": 9,
               "y": 11
             }
           ]
@@ -3532,23 +3165,16 @@
           },
           "units": [
             {
-              "id": "wave-3-grunt-10-11",
-              "unitTypeId": "grunt",
-              "level": 5,
-              "x": 10,
-              "y": 11
-            },
-            {
               "id": "wave-3-grunt-8-11",
               "unitTypeId": "grunt",
-              "level": 5,
+              "level": 4,
               "x": 8,
               "y": 11
             },
             {
               "id": "wave-3-grunt-9-11",
               "unitTypeId": "grunt",
-              "level": 5,
+              "level": 4,
               "x": 9,
               "y": 11
             },
@@ -3558,13 +3184,6 @@
               "level": 2,
               "x": 0,
               "y": 2
-            },
-            {
-              "id": "wave-3-bruiser-16-3",
-              "unitTypeId": "bruiser",
-              "level": 2,
-              "x": 16,
-              "y": 3
             }
           ]
         },
@@ -3580,56 +3199,28 @@
             {
               "id": "wave-4-runner-1-0",
               "unitTypeId": "runner",
-              "level": 3,
+              "level": 2,
               "x": 1,
               "y": 0
             },
             {
-              "id": "wave-4-runner-15-1",
-              "unitTypeId": "runner",
-              "level": 3,
-              "x": 15,
-              "y": 1
-            },
-            {
-              "id": "wave-4-bruiser-7-10",
-              "unitTypeId": "bruiser",
-              "level": 3,
-              "x": 7,
-              "y": 10
-            },
-            {
               "id": "wave-4-breaker-10-11",
               "unitTypeId": "breaker",
-              "level": 5,
+              "level": 4,
               "x": 10,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-11-11",
-              "unitTypeId": "grunt",
-              "level": 5,
-              "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-4-runner-16-11",
-              "unitTypeId": "runner",
-              "level": 3,
-              "x": 16,
               "y": 11
             },
             {
               "id": "wave-4-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 5,
+              "level": 4,
               "x": 8,
               "y": 11
             },
             {
               "id": "wave-4-grunt-9-11",
               "unitTypeId": "grunt",
-              "level": 5,
+              "level": 4,
               "x": 9,
               "y": 11
             }
@@ -3647,43 +3238,22 @@
             {
               "id": "wave-5-gunship-1-11",
               "unitTypeId": "gunship",
-              "level": 5,
+              "level": 4,
               "x": 1,
               "y": 11
             },
             {
               "id": "wave-5-breaker-10-11",
               "unitTypeId": "breaker",
-              "level": 6,
-              "x": 10,
-              "y": 11
-            },
-            {
-              "id": "wave-5-grunt-11-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-5-gunship-17-11",
-              "unitTypeId": "gunship",
               "level": 5,
-              "x": 17,
+              "x": 10,
               "y": 11
             },
             {
               "id": "wave-5-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 5,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-5-grunt-9-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 9,
               "y": 11
             }
           ]
@@ -3700,15 +3270,8 @@
             {
               "id": "wave-6-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 5,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-6-grunt-9-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 9,
               "y": 11
             }
           ]
@@ -4078,27 +3641,11 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-8-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-8-enemy-gunship-0-11",
           "unitTypeId": "gunship",
           "owner": "enemy",
           "level": 3,
           "x": 0,
-          "y": 11
-        },
-        {
-          "id": "basin-bash-stage-8-enemy-gunship-17-11",
-          "unitTypeId": "gunship",
-          "owner": "enemy",
-          "level": 3,
-          "x": 17,
           "y": 11
         },
         {
@@ -4116,14 +3663,6 @@
           "level": 2,
           "x": 8,
           "y": 9
-        },
-        {
-          "id": "basin-bash-stage-8-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 9
         }
       ],
       "reinforcements": [
@@ -4139,42 +3678,28 @@
             {
               "id": "wave-1-bruiser-0-0",
               "unitTypeId": "bruiser",
-              "level": 6,
+              "level": 4,
               "x": 0,
               "y": 0
             },
             {
               "id": "wave-1-grunt-10-11",
               "unitTypeId": "grunt",
-              "level": 6,
+              "level": 4,
               "x": 10,
               "y": 11
             },
             {
               "id": "wave-1-breaker-11-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-12-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 12,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 8,
               "y": 11
             },
             {
               "id": "wave-1-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 9,
               "y": 11
             }
@@ -4192,36 +3717,22 @@
             {
               "id": "wave-2-juggernaut-1-0",
               "unitTypeId": "juggernaut",
-              "level": 6,
+              "level": 4,
               "x": 1,
               "y": 0
             },
             {
               "id": "wave-2-breaker-10-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 10,
-              "y": 11
-            },
-            {
-              "id": "wave-2-grunt-11-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 11,
               "y": 11
             },
             {
               "id": "wave-2-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-2-grunt-9-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 9,
               "y": 11
             }
           ]
@@ -4236,16 +3747,9 @@
           },
           "units": [
             {
-              "id": "wave-3-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 7,
-              "x": 8,
-              "y": 11
-            },
-            {
               "id": "wave-3-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 7,
+              "level": 5,
               "x": 9,
               "y": 11
             }
@@ -4263,7 +3767,7 @@
             {
               "id": "wave-4-grunt-8-11",
               "unitTypeId": "grunt",
-              "level": 8,
+              "level": 6,
               "x": 8,
               "y": 11
             }
@@ -4634,27 +4138,11 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-9-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-9-enemy-gunship-0-11",
           "unitTypeId": "gunship",
           "owner": "enemy",
           "level": 3,
           "x": 0,
-          "y": 11
-        },
-        {
-          "id": "basin-bash-stage-9-enemy-gunship-17-11",
-          "unitTypeId": "gunship",
-          "owner": "enemy",
-          "level": 3,
-          "x": 17,
           "y": 11
         },
         {
@@ -4672,14 +4160,6 @@
           "level": 2,
           "x": 8,
           "y": 9
-        },
-        {
-          "id": "basin-bash-stage-9-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 9
         }
       ],
       "reinforcements": [
@@ -4695,42 +4175,28 @@
             {
               "id": "wave-1-bruiser-0-0",
               "unitTypeId": "bruiser",
-              "level": 6,
+              "level": 4,
               "x": 0,
               "y": 0
             },
             {
               "id": "wave-1-grunt-10-11",
               "unitTypeId": "grunt",
-              "level": 6,
+              "level": 4,
               "x": 10,
               "y": 11
             },
             {
               "id": "wave-1-breaker-11-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-12-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 12,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 8,
               "y": 11
             },
             {
               "id": "wave-1-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 9,
               "y": 11
             }
@@ -4748,36 +4214,22 @@
             {
               "id": "wave-2-juggernaut-1-0",
               "unitTypeId": "juggernaut",
-              "level": 6,
+              "level": 4,
               "x": 1,
               "y": 0
             },
             {
               "id": "wave-2-breaker-10-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 10,
-              "y": 11
-            },
-            {
-              "id": "wave-2-grunt-11-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 11,
               "y": 11
             },
             {
               "id": "wave-2-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-2-grunt-9-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 9,
               "y": 11
             }
           ]
@@ -4792,16 +4244,9 @@
           },
           "units": [
             {
-              "id": "wave-3-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 7,
-              "x": 8,
-              "y": 11
-            },
-            {
               "id": "wave-3-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 7,
+              "level": 5,
               "x": 9,
               "y": 11
             }
@@ -4819,49 +4264,28 @@
             {
               "id": "wave-4-grunt-10-11",
               "unitTypeId": "grunt",
-              "level": 6,
+              "level": 4,
               "x": 10,
               "y": 11
             },
             {
               "id": "wave-4-breaker-11-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-12-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 12,
               "y": 11
             },
             {
               "id": "wave-4-breaker-13-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 13,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-14-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 14,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 8,
               "y": 11
             },
             {
               "id": "wave-4-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 9,
               "y": 11
             }
@@ -4879,7 +4303,7 @@
             {
               "id": "wave-5-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 9,
+              "level": 7,
               "x": 9,
               "y": 11
             }
@@ -5250,27 +4674,11 @@
           "y": 10
         },
         {
-          "id": "basin-bash-stage-10-enemy-grunt-9-10",
-          "unitTypeId": "grunt",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 10
-        },
-        {
           "id": "basin-bash-stage-10-enemy-gunship-0-11",
           "unitTypeId": "gunship",
           "owner": "enemy",
           "level": 3,
           "x": 0,
-          "y": 11
-        },
-        {
-          "id": "basin-bash-stage-10-enemy-gunship-17-11",
-          "unitTypeId": "gunship",
-          "owner": "enemy",
-          "level": 3,
-          "x": 17,
           "y": 11
         },
         {
@@ -5288,14 +4696,6 @@
           "level": 2,
           "x": 8,
           "y": 9
-        },
-        {
-          "id": "basin-bash-stage-10-enemy-breaker-9-9",
-          "unitTypeId": "breaker",
-          "owner": "enemy",
-          "level": 2,
-          "x": 9,
-          "y": 9
         }
       ],
       "reinforcements": [
@@ -5311,42 +4711,28 @@
             {
               "id": "wave-1-bruiser-0-0",
               "unitTypeId": "bruiser",
-              "level": 6,
+              "level": 4,
               "x": 0,
               "y": 0
             },
             {
               "id": "wave-1-grunt-10-11",
               "unitTypeId": "grunt",
-              "level": 6,
+              "level": 4,
               "x": 10,
               "y": 11
             },
             {
               "id": "wave-1-breaker-11-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-12-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 12,
-              "y": 11
-            },
-            {
-              "id": "wave-1-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 8,
               "y": 11
             },
             {
               "id": "wave-1-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 9,
               "y": 11
             }
@@ -5364,36 +4750,22 @@
             {
               "id": "wave-2-juggernaut-1-0",
               "unitTypeId": "juggernaut",
-              "level": 6,
+              "level": 4,
               "x": 1,
               "y": 0
             },
             {
               "id": "wave-2-breaker-10-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 10,
-              "y": 11
-            },
-            {
-              "id": "wave-2-grunt-11-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 11,
               "y": 11
             },
             {
               "id": "wave-2-breaker-8-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 8,
-              "y": 11
-            },
-            {
-              "id": "wave-2-grunt-9-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 9,
               "y": 11
             }
           ]
@@ -5408,16 +4780,9 @@
           },
           "units": [
             {
-              "id": "wave-3-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 7,
-              "x": 8,
-              "y": 11
-            },
-            {
               "id": "wave-3-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 7,
+              "level": 5,
               "x": 9,
               "y": 11
             }
@@ -5435,49 +4800,28 @@
             {
               "id": "wave-4-grunt-10-11",
               "unitTypeId": "grunt",
-              "level": 6,
+              "level": 4,
               "x": 10,
               "y": 11
             },
             {
               "id": "wave-4-breaker-11-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 11,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-12-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 12,
               "y": 11
             },
             {
               "id": "wave-4-breaker-13-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 13,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-14-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 14,
-              "y": 11
-            },
-            {
-              "id": "wave-4-grunt-8-11",
-              "unitTypeId": "grunt",
-              "level": 6,
-              "x": 8,
               "y": 11
             },
             {
               "id": "wave-4-breaker-9-11",
               "unitTypeId": "breaker",
-              "level": 6,
+              "level": 4,
               "x": 9,
               "y": 11
             }
@@ -5495,7 +4839,7 @@
             {
               "id": "wave-5-grunt-8-11",
               "unitTypeId": "grunt",
-              "level": 10,
+              "level": 8,
               "x": 8,
               "y": 11
             }
@@ -5513,7 +4857,7 @@
             {
               "id": "wave-6-grunt-9-11",
               "unitTypeId": "grunt",
-              "level": 10,
+              "level": 8,
               "x": 9,
               "y": 11
             }

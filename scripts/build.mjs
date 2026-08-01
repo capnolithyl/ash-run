@@ -6,9 +6,26 @@ import { generateBuildingSpriteManifest } from "./generate-building-sprite-manif
 import { generateMapManifest } from "./generate-map-manifest.shared.mjs";
 import { generateTerrainSpriteManifest } from "./generate-terrain-sprite-manifest.mjs";
 import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifest.mjs";
+import {
+  BUILD_PROFILES,
+  getBuildProfileConfig
+} from "../src/game/core/buildProfiles.js";
 
 const root = process.cwd();
-const distRoot = path.resolve(root, "dist");
+const requestedProfile =
+  process.argv.find((argument) => argument.startsWith("--profile="))?.split("=")[1] ??
+  BUILD_PROFILES.PRODUCTION;
+
+if (!Object.values(BUILD_PROFILES).includes(requestedProfile)) {
+  throw new Error(
+    `Unsupported build profile: ${requestedProfile}. Expected development or production.`
+  );
+}
+
+const buildProfileConfig = getBuildProfileConfig(requestedProfile);
+const distDirectoryName =
+  requestedProfile === BUILD_PROFILES.DEVELOPMENT ? "dist-dev" : "dist";
+const distRoot = path.resolve(root, distDirectoryName);
 const assetsRoot = path.join(distRoot, "assets");
 
 /**
@@ -35,7 +52,8 @@ await build({
   sourcemap: true,
   define: {
     "import.meta.env.DEV": "false",
-    "import.meta.env.PROD": "true"
+    "import.meta.env.PROD": "true",
+    "__ASH_RUN_BUILD_PROFILE__": JSON.stringify(requestedProfile)
   },
   loader: {
     ".ani": "file",
@@ -59,6 +77,11 @@ const productionHtml = indexTemplate
   .replace('./src/main.js', "./assets/main.js");
 
 await fs.writeFile(path.join(distRoot, "index.html"), productionHtml, "utf8");
+await fs.writeFile(
+  path.join(distRoot, "build-profile.json"),
+  `${JSON.stringify(buildProfileConfig, null, 2)}\n`,
+  "utf8"
+);
 
 await fs.cp(path.resolve(root, "assets/sprites"), path.join(assetsRoot, "sprites"), {
   recursive: true
@@ -79,3 +102,13 @@ await fs.cp(path.resolve(root, "assets/fonts"), path.join(assetsRoot, "fonts"), 
 await fs.cp(path.resolve(root, "assets/cursor"), path.join(assetsRoot, "cursor"), {
   recursive: true
 });
+
+await fs.cp(
+  path.resolve(root, "src/game/content/maps"),
+  path.join(distRoot, "map-resources"),
+  { recursive: true }
+);
+
+console.log(
+  `Built ${buildProfileConfig.identity.productName} (${requestedProfile}) in ${distDirectoryName}/.`
+);

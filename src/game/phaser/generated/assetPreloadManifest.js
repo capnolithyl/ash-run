@@ -1979,13 +1979,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/controllerFlowMethods.js",
     "kind": "script",
-    "byteSize": 13983,
+    "byteSize": 14385,
     "environment": "development"
   },
   {
     "url": "./src/game/app/controllerMapEditorMethods.js",
     "kind": "script",
-    "byteSize": 42519,
+    "byteSize": 42666,
     "environment": "development"
   },
   {
@@ -2003,13 +2003,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/controllerTutorialMethods.js",
     "kind": "script",
-    "byteSize": 8691,
+    "byteSize": 8922,
     "environment": "development"
   },
   {
     "url": "./src/game/app/GameController.js",
     "kind": "script",
-    "byteSize": 4685,
+    "byteSize": 5737,
     "environment": "development"
   },
   {
@@ -2057,7 +2057,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/content/maps.generated.js",
     "kind": "script",
-    "byteSize": 324604,
+    "byteSize": 296556,
     "environment": "development"
   },
   {
@@ -2112,6 +2112,12 @@ export const ASSET_PRELOAD_MANIFEST = [
     "url": "./src/game/core/battlefieldLayout.js",
     "kind": "script",
     "byteSize": 2768,
+    "environment": "development"
+  },
+  {
+    "url": "./src/game/core/buildProfiles.js",
+    "kind": "script",
+    "byteSize": 2563,
     "environment": "development"
   },
   {
@@ -2369,7 +2375,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/services/StorageRepository.js",
     "kind": "script",
-    "byteSize": 4629,
+    "byteSize": 4967,
     "environment": "development"
   },
   {
@@ -2753,7 +2759,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/screenRouter.js",
     "kind": "script",
-    "byteSize": 10564,
+    "byteSize": 10600,
     "environment": "development"
   },
   {
@@ -2855,7 +2861,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/optionFieldsView.js",
     "kind": "script",
-    "byteSize": 11257,
+    "byteSize": 11288,
     "environment": "development"
   },
   {
@@ -2891,7 +2897,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/titleView.js",
     "kind": "script",
-    "byteSize": 19313,
+    "byteSize": 19797,
     "environment": "development"
   },
   {
@@ -2902,4 +2908,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 98928100;
+export const ASSET_PRELOAD_TOTAL_BYTES = 98905336;

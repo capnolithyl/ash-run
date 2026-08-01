@@ -1,5 +1,11 @@
 import { createEmitter } from "../core/emitter.js";
 import { BATTLE_MODES, SCREEN_IDS, SLOT_IDS } from "../core/constants.js";
+import {
+  BUILD_FEATURES,
+  CURRENT_BUILD_PROFILE,
+  getBuildProfileConfig,
+  isBuildFeatureEnabled
+} from "../core/buildProfiles.js";
 import { StorageRepository } from "../services/StorageRepository.js";
 import {
   createDefaultMetaState,
@@ -26,8 +32,9 @@ import { createTutorialIntroState } from "../content/tutorial.js";
  * Scenes and DOM views only talk to it through explicit methods.
  */
 export class GameController {
-  constructor(storage = new StorageRepository()) {
-    this.storage = storage;
+  constructor(storage = null, { buildProfile = CURRENT_BUILD_PROFILE } = {}) {
+    this.buildProfileConfig = getBuildProfileConfig(buildProfile);
+    this.storage = storage ?? new StorageRepository({ buildProfile: this.buildProfileConfig.id });
     this.events = createEmitter();
     this.battleSystem = null;
     this.fundsGainSequence = 0;
@@ -102,7 +109,28 @@ export class GameController {
   }
 
   emit() {
+    this.ensureCurrentScreenIsAvailable();
     this.events.emit("state:changed", this.getState());
+  }
+
+  isFeatureEnabled(featureId) {
+    return isBuildFeatureEnabled(this.buildProfileConfig, featureId);
+  }
+
+  ensureCurrentScreenIsAvailable() {
+    const requiredFeatureByScreen = {
+      [SCREEN_IDS.SKIRMISH_SETUP]: BUILD_FEATURES.SKIRMISH,
+      [SCREEN_IDS.MAP_EDITOR]: BUILD_FEATURES.MAP_EDITOR,
+      [SCREEN_IDS.TUTORIAL]: BUILD_FEATURES.TUTORIAL
+    };
+    const requiredFeature = requiredFeatureByScreen[this.state.screen];
+
+    if (requiredFeature && !this.isFeatureEnabled(requiredFeature)) {
+      this.state.screen = SCREEN_IDS.TITLE;
+      return false;
+    }
+
+    return true;
   }
 
   isRunBattle(snapshot = null) {
@@ -124,7 +152,11 @@ export class GameController {
       options: normalizeMetaOptions(loadedMeta?.options),
       unlockedRunCardIds: normalizeUnlockedRunCardIds(loadedMeta?.unlockedRunCardIds)
     };
-    replaceCustomMaps((await this.storage.listCustomMaps?.()) ?? []);
+    if (this.isFeatureEnabled(BUILD_FEATURES.CUSTOM_MAPS)) {
+      replaceCustomMaps((await this.storage.listCustomMaps?.()) ?? []);
+    } else {
+      replaceCustomMaps([]);
+    }
     this.state.slots = await this.storage.listSlots();
     this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
     this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);

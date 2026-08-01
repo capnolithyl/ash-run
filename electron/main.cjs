@@ -2,6 +2,11 @@ const { app, BrowserWindow, dialog, ipcMain, screen } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const {
+  getDistDirectoryName,
+  hasMapToolAccess,
+  readBuildProfileMetadata
+} = require("./buildProfile.cjs");
+const {
   DEFAULT_WINDOW_RESOLUTION,
   DISPLAY_MODES,
   DISPLAY_RESOLUTION_PRESETS,
@@ -11,21 +16,41 @@ const {
   resolveDisplayResolutionForBounds
 } = require("./displayOptions.cjs");
 const {
-  getPackagedMapsRoot,
   listLoadableMapFiles,
   loadMapFileFromRoot,
   normalizeMapRelativePath: normalizeMapRelativeImportPath,
   resolvePreferredMapRoot
 } = require("./mapFiles.cjs");
 
-const DIST_PATH = path.resolve(__dirname, "../dist/index.html");
 const DEV_SERVER_PORT = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
 const DEV_SERVER_URL = `http://127.0.0.1:${DEV_SERVER_PORT}`;
 const DEV_WINDOW_ICON_PATH = path.resolve(__dirname, "../assets/img/logos/logo.png");
-const PACKAGED_WINDOW_ICON_PATH = path.resolve(__dirname, "../dist/assets/img/logos/logo.png");
 const SLOT_IDS = ["slot-1", "slot-2", "slot-3"];
 const META_FILE_NAME = "meta.json";
 const USE_DEV_SERVER = !app.isPackaged && process.env.ASH_RUN_84_DEV_SERVER === "1";
+const APP_ROOT = path.resolve(__dirname, "..");
+const DIST_DIRECTORY_NAME = app.isPackaged ? "dist" : getDistDirectoryName(process.env);
+const DIST_ROOT = path.resolve(APP_ROOT, DIST_DIRECTORY_NAME);
+const DIST_PATH = path.join(DIST_ROOT, "index.html");
+const PACKAGED_WINDOW_ICON_PATH = path.join(DIST_ROOT, "assets/img/logos/logo.png");
+const BUILD_PROFILE_METADATA = readBuildProfileMetadata({
+  appRoot: APP_ROOT,
+  environment: app.isPackaged
+    ? {
+        ...process.env,
+        ASH_RUN_84_BUILD_PROFILE: undefined,
+        ASH_RUN_84_DIST_DIR: "dist"
+      }
+    : process.env,
+  isDevServer: USE_DEV_SERVER
+});
+const MAP_TOOLS_ENABLED = hasMapToolAccess(BUILD_PROFILE_METADATA);
+
+app.setName(BUILD_PROFILE_METADATA.identity.productName);
+app.setPath(
+  "userData",
+  path.join(app.getPath("appData"), BUILD_PROFILE_METADATA.identity.storageDirectoryName)
+);
 
 let mainWindow = null;
 let appliedDisplayOptions = normalizeDisplayOptions();
@@ -278,7 +303,11 @@ async function resolvePreferredMapDirectory() {
     bundledMapsRoot: getBundledMapsRoot(),
     packagedMapsRoot: getPackagedBundledMapsRoot()
   });
-  await fs.mkdir(preferredRoot, { recursive: true });
+
+  if (!app.isPackaged) {
+    await fs.mkdir(preferredRoot, { recursive: true });
+  }
+
   return preferredRoot;
 }
 
@@ -297,13 +326,19 @@ function getBundledMapsRoot() {
 }
 
 function getPackagedBundledMapsRoot() {
-  return getPackagedMapsRoot(process.resourcesPath);
+  return path.join(
+    process.resourcesPath,
+    "app.asar.unpacked",
+    "dist",
+    "map-resources"
+  );
 }
 
 async function resolvePreferredMapPath(filePath = "custom-map.json") {
+  const { customMapsRoot } = getStoragePaths();
   const normalizedRelativePath = normalizeMapRelativePath(filePath);
   const baseRoot = app.isPackaged
-    ? getPackagedBundledMapsRoot()
+    ? customMapsRoot
     : getBundledMapsRoot();
   const targetPath = path.join(baseRoot, normalizedRelativePath);
 
@@ -385,7 +420,7 @@ async function createWindow() {
     minWidth: 1280,
     minHeight: 720,
     backgroundColor: "#09110f",
-    title: "Ash Run '84",
+    title: BUILD_PROFILE_METADATA.identity.productName,
     frame: false,
     resizable: false,
     maximizable: false,
@@ -474,27 +509,6 @@ ipcMain.handle("storage:delete-slot", async (_event, slotId) => {
   return true;
 });
 
-ipcMain.handle("custom-maps:list", async () => listCustomMaps());
-
-ipcMain.handle("custom-maps:save", async (_event, suggestedFileName, text) => {
-  const { customMapFile } = getStoragePaths();
-  const mapData = JSON.parse(text);
-  const targetPath = customMapFile(suggestedFileName);
-  await fs.mkdir(path.dirname(targetPath), { recursive: true });
-  await fs.writeFile(targetPath, JSON.stringify(mapData, null, 2), "utf8");
-  return mapData;
-});
-
-ipcMain.handle("map-files:list", async () => {
-  const rootDirectory = await resolvePreferredMapDirectory();
-  return listLoadableMapFiles(rootDirectory, fs, console);
-});
-
-ipcMain.handle("map-files:load", async (_event, relativePath) => {
-  const rootDirectory = await resolvePreferredMapDirectory();
-  return loadMapFileFromRoot(rootDirectory, relativePath, fs);
-});
-
 async function handleMapFileSave(event, suggestedFileName, text) {
   const browserWindow = BrowserWindow.fromWebContents(event.sender) ?? undefined;
   const defaultPath = await resolvePreferredMapPath(suggestedFileName);
@@ -521,8 +535,31 @@ async function handleMapFileSave(event, suggestedFileName, text) {
   };
 }
 
-ipcMain.handle("map-files:save", handleMapFileSave);
-ipcMain.handle("map-files:export", handleMapFileSave);
+if (MAP_TOOLS_ENABLED) {
+  ipcMain.handle("custom-maps:list", async () => listCustomMaps());
+
+  ipcMain.handle("custom-maps:save", async (_event, suggestedFileName, text) => {
+    const { customMapFile } = getStoragePaths();
+    const mapData = JSON.parse(text);
+    const targetPath = customMapFile(suggestedFileName);
+    await fs.mkdir(path.dirname(targetPath), { recursive: true });
+    await fs.writeFile(targetPath, JSON.stringify(mapData, null, 2), "utf8");
+    return mapData;
+  });
+
+  ipcMain.handle("map-files:list", async () => {
+    const rootDirectory = await resolvePreferredMapDirectory();
+    return listLoadableMapFiles(rootDirectory, fs, console);
+  });
+
+  ipcMain.handle("map-files:load", async (_event, relativePath) => {
+    const rootDirectory = await resolvePreferredMapDirectory();
+    return loadMapFileFromRoot(rootDirectory, relativePath, fs);
+  });
+
+  ipcMain.handle("map-files:save", handleMapFileSave);
+  ipcMain.handle("map-files:export", handleMapFileSave);
+}
 
 ipcMain.handle("display:get-state", () => getCurrentDisplayState());
 

@@ -330,14 +330,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-1-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-1-enemy-runner-8-11",
             "unitTypeId": "runner",
             "owner": "enemy",
@@ -360,14 +352,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 1,
             "x": 8,
             "y": 9
-          },
-          {
-            "id": "basin-bash-stage-1-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
-            "y": 9
           }
         ],
         "reinforcements": [
@@ -388,24 +372,10 @@ export const GENERATED_MAP_MODULES = {
                 "y": 11
               },
               {
-                "id": "wave-1-grunt-1-11",
-                "unitTypeId": "grunt",
-                "level": 1,
-                "x": 1,
-                "y": 11
-              },
-              {
                 "id": "wave-1-runner-17-11",
                 "unitTypeId": "runner",
                 "level": 1,
                 "x": 17,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 1,
-                "x": 8,
                 "y": 11
               },
               {
@@ -758,14 +728,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-2-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-2-enemy-runner-8-11",
             "unitTypeId": "runner",
             "owner": "enemy",
@@ -787,14 +749,6 @@ export const GENERATED_MAP_MODULES = {
             "owner": "enemy",
             "level": 1,
             "x": 8,
-            "y": 9
-          },
-          {
-            "id": "basin-bash-stage-2-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 9,
             "y": 9
           }
         ],
@@ -823,24 +777,10 @@ export const GENERATED_MAP_MODULES = {
                 "y": 11
               },
               {
-                "id": "wave-1-grunt-1-11",
-                "unitTypeId": "grunt",
-                "level": 1,
-                "x": 1,
-                "y": 11
-              },
-              {
                 "id": "wave-1-runner-17-11",
                 "unitTypeId": "runner",
                 "level": 1,
                 "x": 17,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 1,
-                "x": 8,
                 "y": 11
               },
               {
@@ -849,13 +789,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 1,
                 "x": 9,
                 "y": 11
-              },
-              {
-                "id": "wave-1-runner-8-9",
-                "unitTypeId": "runner",
-                "level": 1,
-                "x": 8,
-                "y": 9
               },
               {
                 "id": "wave-1-grunt-9-9",
@@ -1223,14 +1156,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-3-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-3-enemy-breaker-16-2",
             "unitTypeId": "breaker",
             "owner": "enemy",
@@ -1244,14 +1169,6 @@ export const GENERATED_MAP_MODULES = {
             "owner": "enemy",
             "level": 2,
             "x": 8,
-            "y": 9
-          },
-          {
-            "id": "basin-bash-stage-3-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
             "y": 9
           }
         ],
@@ -1273,13 +1190,6 @@ export const GENERATED_MAP_MODULES = {
                 "y": 11
               },
               {
-                "id": "wave-1-breaker-1-11",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 1,
-                "y": 11
-              },
-              {
                 "id": "wave-1-breaker-17-11",
                 "unitTypeId": "breaker",
                 "level": 2,
@@ -1291,13 +1201,6 @@ export const GENERATED_MAP_MODULES = {
                 "unitTypeId": "grunt",
                 "level": 2,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-1-breaker-9-11",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -1317,13 +1220,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 0
-              },
-              {
-                "id": "wave-2-runner-17-11",
-                "unitTypeId": "runner",
-                "level": 2,
-                "x": 17,
-                "y": 11
               }
             ]
           },
@@ -1342,13 +1238,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 2
-              },
-              {
-                "id": "wave-3-bruiser-16-3",
-                "unitTypeId": "bruiser",
-                "level": 2,
-                "x": 16,
-                "y": 3
               }
             ]
           }
@@ -1709,14 +1598,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-4-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-4-enemy-breaker-16-2",
             "unitTypeId": "breaker",
             "owner": "enemy",
@@ -1730,14 +1611,6 @@ export const GENERATED_MAP_MODULES = {
             "owner": "enemy",
             "level": 2,
             "x": 8,
-            "y": 9
-          },
-          {
-            "id": "basin-bash-stage-4-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
             "y": 9
           }
         ],
@@ -1759,13 +1632,6 @@ export const GENERATED_MAP_MODULES = {
                 "y": 11
               },
               {
-                "id": "wave-1-breaker-1-11",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 1,
-                "y": 11
-              },
-              {
                 "id": "wave-1-breaker-17-11",
                 "unitTypeId": "breaker",
                 "level": 2,
@@ -1777,13 +1643,6 @@ export const GENERATED_MAP_MODULES = {
                 "unitTypeId": "grunt",
                 "level": 2,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-1-breaker-9-11",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -1803,13 +1662,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 0
-              },
-              {
-                "id": "wave-2-runner-17-11",
-                "unitTypeId": "runner",
-                "level": 2,
-                "x": 17,
-                "y": 11
               }
             ]
           },
@@ -1828,13 +1680,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 2
-              },
-              {
-                "id": "wave-3-bruiser-16-3",
-                "unitTypeId": "bruiser",
-                "level": 2,
-                "x": 16,
-                "y": 3
               }
             ]
           },
@@ -1855,25 +1700,11 @@ export const GENERATED_MAP_MODULES = {
                 "y": 0
               },
               {
-                "id": "wave-4-runner-15-1",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 15,
-                "y": 1
-              },
-              {
                 "id": "wave-4-bruiser-7-10",
                 "unitTypeId": "bruiser",
                 "level": 3,
                 "x": 7,
                 "y": 10
-              },
-              {
-                "id": "wave-4-bruiser-10-11",
-                "unitTypeId": "bruiser",
-                "level": 3,
-                "x": 10,
-                "y": 11
               },
               {
                 "id": "wave-4-runner-16-11",
@@ -2249,27 +2080,11 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-5-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-5-enemy-gunship-0-11",
             "unitTypeId": "gunship",
             "owner": "enemy",
             "level": 3,
             "x": 0,
-            "y": 11
-          },
-          {
-            "id": "basin-bash-stage-5-enemy-gunship-17-11",
-            "unitTypeId": "gunship",
-            "owner": "enemy",
-            "level": 3,
-            "x": 17,
             "y": 11
           },
           {
@@ -2286,14 +2101,6 @@ export const GENERATED_MAP_MODULES = {
             "owner": "enemy",
             "level": 2,
             "x": 8,
-            "y": 9
-          },
-          {
-            "id": "basin-bash-stage-5-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
             "y": 9
           }
         ],
@@ -2315,13 +2122,6 @@ export const GENERATED_MAP_MODULES = {
                 "y": 11
               },
               {
-                "id": "wave-1-breaker-1-11",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 1,
-                "y": 11
-              },
-              {
                 "id": "wave-1-breaker-17-11",
                 "unitTypeId": "breaker",
                 "level": 2,
@@ -2333,13 +2133,6 @@ export const GENERATED_MAP_MODULES = {
                 "unitTypeId": "grunt",
                 "level": 2,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-1-breaker-9-11",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -2359,13 +2152,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 0
-              },
-              {
-                "id": "wave-2-runner-17-11",
-                "unitTypeId": "runner",
-                "level": 2,
-                "x": 17,
-                "y": 11
               }
             ]
           },
@@ -2384,13 +2170,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 2
-              },
-              {
-                "id": "wave-3-bruiser-16-3",
-                "unitTypeId": "bruiser",
-                "level": 2,
-                "x": 16,
-                "y": 3
               }
             ]
           },
@@ -2411,25 +2190,11 @@ export const GENERATED_MAP_MODULES = {
                 "y": 0
               },
               {
-                "id": "wave-4-runner-15-1",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 15,
-                "y": 1
-              },
-              {
                 "id": "wave-4-bruiser-7-10",
                 "unitTypeId": "bruiser",
                 "level": 3,
                 "x": 7,
                 "y": 10
-              },
-              {
-                "id": "wave-4-bruiser-10-11",
-                "unitTypeId": "bruiser",
-                "level": 3,
-                "x": 10,
-                "y": 11
               },
               {
                 "id": "wave-4-runner-16-11",
@@ -2805,27 +2570,11 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-6-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-6-enemy-gunship-0-11",
             "unitTypeId": "gunship",
             "owner": "enemy",
             "level": 3,
             "x": 0,
-            "y": 11
-          },
-          {
-            "id": "basin-bash-stage-6-enemy-gunship-17-11",
-            "unitTypeId": "gunship",
-            "owner": "enemy",
-            "level": 3,
-            "x": 17,
             "y": 11
           },
           {
@@ -2843,14 +2592,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 2,
             "x": 8,
             "y": 9
-          },
-          {
-            "id": "basin-bash-stage-6-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 9
           }
         ],
         "reinforcements": [
@@ -2866,21 +2607,14 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-bruiser-1-1",
                 "unitTypeId": "bruiser",
-                "level": 4,
+                "level": 3,
                 "x": 1,
                 "y": 1
               },
               {
-                "id": "wave-1-bruiser-8-11",
-                "unitTypeId": "bruiser",
-                "level": 4,
-                "x": 8,
-                "y": 11
-              },
-              {
                 "id": "wave-1-juggernaut-9-11",
                 "unitTypeId": "juggernaut",
-                "level": 4,
+                "level": 3,
                 "x": 9,
                 "y": 11
               }
@@ -2903,24 +2637,10 @@ export const GENERATED_MAP_MODULES = {
                 "y": 0
               },
               {
-                "id": "wave-2-runner-17-11",
-                "unitTypeId": "runner",
-                "level": 2,
-                "x": 17,
-                "y": 11
-              },
-              {
                 "id": "wave-2-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 5,
+                "level": 4,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-2-breaker-9-11",
-                "unitTypeId": "breaker",
-                "level": 5,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -2935,23 +2655,16 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-3-grunt-10-11",
-                "unitTypeId": "grunt",
-                "level": 5,
-                "x": 10,
-                "y": 11
-              },
-              {
                 "id": "wave-3-grunt-8-11",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-3-grunt-9-11",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 9,
                 "y": 11
               },
@@ -2961,13 +2674,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 2
-              },
-              {
-                "id": "wave-3-bruiser-16-3",
-                "unitTypeId": "bruiser",
-                "level": 2,
-                "x": 16,
-                "y": 3
               }
             ]
           },
@@ -2983,56 +2689,28 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-4-runner-1-0",
                 "unitTypeId": "runner",
-                "level": 3,
+                "level": 2,
                 "x": 1,
                 "y": 0
               },
               {
-                "id": "wave-4-runner-15-1",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 15,
-                "y": 1
-              },
-              {
-                "id": "wave-4-bruiser-7-10",
-                "unitTypeId": "bruiser",
-                "level": 3,
-                "x": 7,
-                "y": 10
-              },
-              {
                 "id": "wave-4-breaker-10-11",
                 "unitTypeId": "breaker",
-                "level": 5,
+                "level": 4,
                 "x": 10,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-11-11",
-                "unitTypeId": "grunt",
-                "level": 5,
-                "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-4-runner-16-11",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 16,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 5,
+                "level": 4,
                 "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-4-grunt-9-11",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 9,
                 "y": 11
               }
@@ -3403,27 +3081,11 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-7-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-7-enemy-gunship-0-11",
             "unitTypeId": "gunship",
             "owner": "enemy",
             "level": 3,
             "x": 0,
-            "y": 11
-          },
-          {
-            "id": "basin-bash-stage-7-enemy-gunship-17-11",
-            "unitTypeId": "gunship",
-            "owner": "enemy",
-            "level": 3,
-            "x": 17,
             "y": 11
           },
           {
@@ -3441,14 +3103,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 2,
             "x": 8,
             "y": 9
-          },
-          {
-            "id": "basin-bash-stage-7-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 9
           }
         ],
         "reinforcements": [
@@ -3464,21 +3118,14 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-bruiser-1-1",
                 "unitTypeId": "bruiser",
-                "level": 4,
+                "level": 3,
                 "x": 1,
                 "y": 1
               },
               {
-                "id": "wave-1-bruiser-8-11",
-                "unitTypeId": "bruiser",
-                "level": 4,
-                "x": 8,
-                "y": 11
-              },
-              {
                 "id": "wave-1-juggernaut-9-11",
                 "unitTypeId": "juggernaut",
-                "level": 4,
+                "level": 3,
                 "x": 9,
                 "y": 11
               }
@@ -3501,24 +3148,10 @@ export const GENERATED_MAP_MODULES = {
                 "y": 0
               },
               {
-                "id": "wave-2-runner-17-11",
-                "unitTypeId": "runner",
-                "level": 2,
-                "x": 17,
-                "y": 11
-              },
-              {
                 "id": "wave-2-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 5,
+                "level": 4,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-2-breaker-9-11",
-                "unitTypeId": "breaker",
-                "level": 5,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -3533,23 +3166,16 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-3-grunt-10-11",
-                "unitTypeId": "grunt",
-                "level": 5,
-                "x": 10,
-                "y": 11
-              },
-              {
                 "id": "wave-3-grunt-8-11",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-3-grunt-9-11",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 9,
                 "y": 11
               },
@@ -3559,13 +3185,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 2
-              },
-              {
-                "id": "wave-3-bruiser-16-3",
-                "unitTypeId": "bruiser",
-                "level": 2,
-                "x": 16,
-                "y": 3
               }
             ]
           },
@@ -3581,56 +3200,28 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-4-runner-1-0",
                 "unitTypeId": "runner",
-                "level": 3,
+                "level": 2,
                 "x": 1,
                 "y": 0
               },
               {
-                "id": "wave-4-runner-15-1",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 15,
-                "y": 1
-              },
-              {
-                "id": "wave-4-bruiser-7-10",
-                "unitTypeId": "bruiser",
-                "level": 3,
-                "x": 7,
-                "y": 10
-              },
-              {
                 "id": "wave-4-breaker-10-11",
                 "unitTypeId": "breaker",
-                "level": 5,
+                "level": 4,
                 "x": 10,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-11-11",
-                "unitTypeId": "grunt",
-                "level": 5,
-                "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-4-runner-16-11",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 16,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 5,
+                "level": 4,
                 "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-4-grunt-9-11",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 9,
                 "y": 11
               }
@@ -3648,43 +3239,22 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-5-gunship-1-11",
                 "unitTypeId": "gunship",
-                "level": 5,
+                "level": 4,
                 "x": 1,
                 "y": 11
               },
               {
                 "id": "wave-5-breaker-10-11",
                 "unitTypeId": "breaker",
-                "level": 6,
-                "x": 10,
-                "y": 11
-              },
-              {
-                "id": "wave-5-grunt-11-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-5-gunship-17-11",
-                "unitTypeId": "gunship",
                 "level": 5,
-                "x": 17,
+                "x": 10,
                 "y": 11
               },
               {
                 "id": "wave-5-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 5,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-5-grunt-9-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -3701,15 +3271,8 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-6-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 5,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-6-grunt-9-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -4079,27 +3642,11 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-8-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-8-enemy-gunship-0-11",
             "unitTypeId": "gunship",
             "owner": "enemy",
             "level": 3,
             "x": 0,
-            "y": 11
-          },
-          {
-            "id": "basin-bash-stage-8-enemy-gunship-17-11",
-            "unitTypeId": "gunship",
-            "owner": "enemy",
-            "level": 3,
-            "x": 17,
             "y": 11
           },
           {
@@ -4117,14 +3664,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 2,
             "x": 8,
             "y": 9
-          },
-          {
-            "id": "basin-bash-stage-8-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 9
           }
         ],
         "reinforcements": [
@@ -4140,42 +3679,28 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-bruiser-0-0",
                 "unitTypeId": "bruiser",
-                "level": 6,
+                "level": 4,
                 "x": 0,
                 "y": 0
               },
               {
                 "id": "wave-1-grunt-10-11",
                 "unitTypeId": "grunt",
-                "level": 6,
+                "level": 4,
                 "x": 10,
                 "y": 11
               },
               {
                 "id": "wave-1-breaker-11-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-12-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 12,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-1-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 9,
                 "y": 11
               }
@@ -4193,36 +3718,22 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-juggernaut-1-0",
                 "unitTypeId": "juggernaut",
-                "level": 6,
+                "level": 4,
                 "x": 1,
                 "y": 0
               },
               {
                 "id": "wave-2-breaker-10-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 10,
-                "y": 11
-              },
-              {
-                "id": "wave-2-grunt-11-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 11,
                 "y": 11
               },
               {
                 "id": "wave-2-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-2-grunt-9-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -4237,16 +3748,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-3-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 8,
-                "y": 11
-              },
-              {
                 "id": "wave-3-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 7,
+                "level": 5,
                 "x": 9,
                 "y": 11
               }
@@ -4264,7 +3768,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-4-grunt-8-11",
                 "unitTypeId": "grunt",
-                "level": 8,
+                "level": 6,
                 "x": 8,
                 "y": 11
               }
@@ -4635,27 +4139,11 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-9-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-9-enemy-gunship-0-11",
             "unitTypeId": "gunship",
             "owner": "enemy",
             "level": 3,
             "x": 0,
-            "y": 11
-          },
-          {
-            "id": "basin-bash-stage-9-enemy-gunship-17-11",
-            "unitTypeId": "gunship",
-            "owner": "enemy",
-            "level": 3,
-            "x": 17,
             "y": 11
           },
           {
@@ -4673,14 +4161,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 2,
             "x": 8,
             "y": 9
-          },
-          {
-            "id": "basin-bash-stage-9-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 9
           }
         ],
         "reinforcements": [
@@ -4696,42 +4176,28 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-bruiser-0-0",
                 "unitTypeId": "bruiser",
-                "level": 6,
+                "level": 4,
                 "x": 0,
                 "y": 0
               },
               {
                 "id": "wave-1-grunt-10-11",
                 "unitTypeId": "grunt",
-                "level": 6,
+                "level": 4,
                 "x": 10,
                 "y": 11
               },
               {
                 "id": "wave-1-breaker-11-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-12-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 12,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-1-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 9,
                 "y": 11
               }
@@ -4749,36 +4215,22 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-juggernaut-1-0",
                 "unitTypeId": "juggernaut",
-                "level": 6,
+                "level": 4,
                 "x": 1,
                 "y": 0
               },
               {
                 "id": "wave-2-breaker-10-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 10,
-                "y": 11
-              },
-              {
-                "id": "wave-2-grunt-11-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 11,
                 "y": 11
               },
               {
                 "id": "wave-2-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-2-grunt-9-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -4793,16 +4245,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-3-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 8,
-                "y": 11
-              },
-              {
                 "id": "wave-3-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 7,
+                "level": 5,
                 "x": 9,
                 "y": 11
               }
@@ -4820,49 +4265,28 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-4-grunt-10-11",
                 "unitTypeId": "grunt",
-                "level": 6,
+                "level": 4,
                 "x": 10,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-11-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-12-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 12,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-13-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 13,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-14-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 14,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 9,
                 "y": 11
               }
@@ -4880,7 +4304,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-5-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 9,
+                "level": 7,
                 "x": 9,
                 "y": 11
               }
@@ -5251,27 +4675,11 @@ export const GENERATED_MAP_MODULES = {
             "y": 10
           },
           {
-            "id": "basin-bash-stage-10-enemy-grunt-9-10",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 10
-          },
-          {
             "id": "basin-bash-stage-10-enemy-gunship-0-11",
             "unitTypeId": "gunship",
             "owner": "enemy",
             "level": 3,
             "x": 0,
-            "y": 11
-          },
-          {
-            "id": "basin-bash-stage-10-enemy-gunship-17-11",
-            "unitTypeId": "gunship",
-            "owner": "enemy",
-            "level": 3,
-            "x": 17,
             "y": 11
           },
           {
@@ -5289,14 +4697,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 2,
             "x": 8,
             "y": 9
-          },
-          {
-            "id": "basin-bash-stage-10-enemy-breaker-9-9",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 9,
-            "y": 9
           }
         ],
         "reinforcements": [
@@ -5312,42 +4712,28 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-bruiser-0-0",
                 "unitTypeId": "bruiser",
-                "level": 6,
+                "level": 4,
                 "x": 0,
                 "y": 0
               },
               {
                 "id": "wave-1-grunt-10-11",
                 "unitTypeId": "grunt",
-                "level": 6,
+                "level": 4,
                 "x": 10,
                 "y": 11
               },
               {
                 "id": "wave-1-breaker-11-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-12-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 12,
-                "y": 11
-              },
-              {
-                "id": "wave-1-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-1-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 9,
                 "y": 11
               }
@@ -5365,36 +4751,22 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-juggernaut-1-0",
                 "unitTypeId": "juggernaut",
-                "level": 6,
+                "level": 4,
                 "x": 1,
                 "y": 0
               },
               {
                 "id": "wave-2-breaker-10-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 10,
-                "y": 11
-              },
-              {
-                "id": "wave-2-grunt-11-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 11,
                 "y": 11
               },
               {
                 "id": "wave-2-breaker-8-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 8,
-                "y": 11
-              },
-              {
-                "id": "wave-2-grunt-9-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 9,
                 "y": 11
               }
             ]
@@ -5409,16 +4781,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-3-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 8,
-                "y": 11
-              },
-              {
                 "id": "wave-3-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 7,
+                "level": 5,
                 "x": 9,
                 "y": 11
               }
@@ -5436,49 +4801,28 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-4-grunt-10-11",
                 "unitTypeId": "grunt",
-                "level": 6,
+                "level": 4,
                 "x": 10,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-11-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 11,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-12-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 12,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-13-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 13,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-14-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 14,
-                "y": 11
-              },
-              {
-                "id": "wave-4-grunt-8-11",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 8,
                 "y": 11
               },
               {
                 "id": "wave-4-breaker-9-11",
                 "unitTypeId": "breaker",
-                "level": 6,
+                "level": 4,
                 "x": 9,
                 "y": 11
               }
@@ -5496,7 +4840,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-5-grunt-8-11",
                 "unitTypeId": "grunt",
-                "level": 10,
+                "level": 8,
                 "x": 8,
                 "y": 11
               }
@@ -5514,7 +4858,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-6-grunt-9-11",
                 "unitTypeId": "grunt",
-                "level": 10,
+                "level": 8,
                 "x": 9,
                 "y": 11
               }
@@ -9627,14 +8971,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 1
           },
           {
-            "id": "mereopolis-stage-1-enemy-breaker-4-1",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 4,
-            "y": 1
-          },
-          {
             "id": "mereopolis-stage-1-enemy-medic-2-2",
             "unitTypeId": "medic",
             "owner": "enemy",
@@ -9649,14 +8985,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 1,
             "x": 3,
             "y": 2
-          },
-          {
-            "id": "mereopolis-stage-1-enemy-grunt-3-3",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 1,
-            "x": 3,
-            "y": 3
           },
           {
             "id": "mereopolis-stage-1-enemy-breaker-4-3",
@@ -9982,14 +9310,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 1
           },
           {
-            "id": "mereopolis-stage-2-enemy-breaker-4-1",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 4,
-            "y": 1
-          },
-          {
             "id": "mereopolis-stage-2-enemy-medic-2-2",
             "unitTypeId": "medic",
             "owner": "enemy",
@@ -10004,14 +9324,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 1,
             "x": 3,
             "y": 2
-          },
-          {
-            "id": "mereopolis-stage-2-enemy-grunt-3-3",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 1,
-            "x": 3,
-            "y": 3
           },
           {
             "id": "mereopolis-stage-2-enemy-breaker-4-3",
@@ -10046,13 +9358,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 1,
                 "x": 3,
                 "y": 0
-              },
-              {
-                "id": "wave-1-grunt-3-3",
-                "unitTypeId": "grunt",
-                "level": 1,
-                "x": 3,
-                "y": 3
               }
             ]
           },
@@ -10070,13 +9375,6 @@ export const GENERATED_MAP_MODULES = {
                 "unitTypeId": "grunt",
                 "level": 2,
                 "x": 2,
-                "y": 1
-              },
-              {
-                "id": "wave-2-breaker-3-1",
-                "unitTypeId": "breaker",
-                "level": 1,
-                "x": 3,
                 "y": 1
               },
               {
@@ -10403,14 +9701,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 1
           },
           {
-            "id": "mereopolis-stage-3-enemy-breaker-4-1",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 4,
-            "y": 1
-          },
-          {
             "id": "mereopolis-stage-3-enemy-medic-2-2",
             "unitTypeId": "medic",
             "owner": "enemy",
@@ -10425,14 +9715,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 1,
             "x": 3,
             "y": 2
-          },
-          {
-            "id": "mereopolis-stage-3-enemy-grunt-3-3",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 1,
-            "x": 3,
-            "y": 3
           },
           {
             "id": "mereopolis-stage-3-enemy-breaker-4-3",
@@ -10467,13 +9749,6 @@ export const GENERATED_MAP_MODULES = {
                 "level": 1,
                 "x": 3,
                 "y": 0
-              },
-              {
-                "id": "wave-1-grunt-3-3",
-                "unitTypeId": "grunt",
-                "level": 1,
-                "x": 3,
-                "y": 3
               }
             ]
           },
@@ -10491,13 +9766,6 @@ export const GENERATED_MAP_MODULES = {
                 "unitTypeId": "grunt",
                 "level": 2,
                 "x": 2,
-                "y": 1
-              },
-              {
-                "id": "wave-2-breaker-3-1",
-                "unitTypeId": "breaker",
-                "level": 1,
-                "x": 3,
                 "y": 1
               },
               {
@@ -10824,14 +10092,6 @@ export const GENERATED_MAP_MODULES = {
             "y": 1
           },
           {
-            "id": "mereopolis-stage-4-enemy-breaker-4-1",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 1,
-            "x": 4,
-            "y": 1
-          },
-          {
             "id": "mereopolis-stage-4-enemy-medic-2-2",
             "unitTypeId": "medic",
             "owner": "enemy",
@@ -10846,14 +10106,6 @@ export const GENERATED_MAP_MODULES = {
             "level": 1,
             "x": 3,
             "y": 2
-          },
-          {
-            "id": "mereopolis-stage-4-enemy-grunt-3-3",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 1,
-            "x": 3,
-            "y": 3
           },
           {
             "id": "mereopolis-stage-4-enemy-breaker-4-3",
@@ -10915,13 +10167,6 @@ export const GENERATED_MAP_MODULES = {
                 "y": 1
               },
               {
-                "id": "wave-2-breaker-3-1",
-                "unitTypeId": "breaker",
-                "level": 1,
-                "x": 3,
-                "y": 1
-              },
-              {
                 "id": "wave-2-breaker-2-2",
                 "unitTypeId": "breaker",
                 "level": 2,
@@ -10946,13 +10191,6 @@ export const GENERATED_MAP_MODULES = {
               "targetUnitId": "mereopolis-stage-4-enemy-bruiser-4-0"
             },
             "units": [
-              {
-                "id": "wave-3-breaker-4-0",
-                "unitTypeId": "breaker",
-                "level": 2,
-                "x": 4,
-                "y": 0
-              },
               {
                 "id": "wave-3-juggernaut-3-3",
                 "unitTypeId": "juggernaut",
@@ -11241,7 +10479,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-5-enemy-gunship-1-0",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 1,
             "y": 0
           },
@@ -11249,7 +10487,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-5-enemy-breaker-3-0",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 3,
+            "level": 2,
             "x": 3,
             "y": 0
           },
@@ -11257,7 +10495,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-5-enemy-bruiser-4-0",
             "unitTypeId": "bruiser",
             "owner": "enemy",
-            "level": 3,
+            "level": 2,
             "x": 4,
             "y": 0
           },
@@ -11265,7 +10503,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-5-enemy-breaker-2-1",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 2,
             "y": 1
           },
@@ -11273,7 +10511,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-5-enemy-grunt-3-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 3,
+            "level": 2,
             "x": 3,
             "y": 1
           },
@@ -11281,31 +10519,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-5-enemy-grunt-2-2",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 2,
             "y": 2
-          },
-          {
-            "id": "mereopolis-stage-5-enemy-breaker-3-2",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 3,
-            "y": 2
-          },
-          {
-            "id": "mereopolis-stage-5-enemy-grunt-3-3",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 3,
-            "x": 3,
-            "y": 3
           },
           {
             "id": "mereopolis-stage-5-enemy-juggernaut-3-4",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 3,
             "y": 4
           },
@@ -11313,7 +10535,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-5-enemy-runner-4-4",
             "unitTypeId": "runner",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 4,
             "y": 4
           }
@@ -11331,23 +10553,16 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-grunt-3-1",
                 "unitTypeId": "grunt",
-                "level": 3,
+                "level": 2,
                 "x": 3,
                 "y": 1
               },
               {
                 "id": "wave-1-breaker-3-2",
                 "unitTypeId": "breaker",
-                "level": 3,
+                "level": 2,
                 "x": 3,
                 "y": 2
-              },
-              {
-                "id": "wave-1-runner-3-3",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 3,
-                "y": 3
               }
             ]
           },
@@ -11363,16 +10578,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-grunt-2-0",
                 "unitTypeId": "grunt",
-                "level": 3,
+                "level": 2,
                 "x": 2,
                 "y": 0
-              },
-              {
-                "id": "wave-2-breaker-4-3",
-                "unitTypeId": "breaker",
-                "level": 3,
-                "x": 4,
-                "y": 3
               }
             ]
           },
@@ -11386,16 +10594,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-3-grunt-1-0",
-                "unitTypeId": "grunt",
-                "level": 3,
-                "x": 1,
-                "y": 0
-              },
-              {
                 "id": "wave-3-carrier-1-1",
                 "unitTypeId": "carrier",
-                "level": 3,
+                "level": 2,
                 "x": 1,
                 "y": 1
               }
@@ -11411,16 +10612,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-4-grunt-4-1",
-                "unitTypeId": "grunt",
-                "level": 3,
-                "x": 4,
-                "y": 1
-              },
-              {
                 "id": "wave-4-grunt-3-2",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 3,
                 "y": 2
               }
@@ -11705,7 +10899,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-6-enemy-gunship-1-0",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 1,
             "y": 0
           },
@@ -11713,7 +10907,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-6-enemy-breaker-3-0",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 3,
+            "level": 2,
             "x": 3,
             "y": 0
           },
@@ -11721,7 +10915,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-6-enemy-bruiser-4-0",
             "unitTypeId": "bruiser",
             "owner": "enemy",
-            "level": 3,
+            "level": 2,
             "x": 4,
             "y": 0
           },
@@ -11729,7 +10923,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-6-enemy-breaker-2-1",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 2,
             "y": 1
           },
@@ -11737,7 +10931,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-6-enemy-grunt-3-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 3,
+            "level": 2,
             "x": 3,
             "y": 1
           },
@@ -11745,31 +10939,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-6-enemy-grunt-2-2",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 2,
             "y": 2
-          },
-          {
-            "id": "mereopolis-stage-6-enemy-breaker-3-2",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 2,
-            "x": 3,
-            "y": 2
-          },
-          {
-            "id": "mereopolis-stage-6-enemy-grunt-3-3",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 3,
-            "x": 3,
-            "y": 3
           },
           {
             "id": "mereopolis-stage-6-enemy-juggernaut-3-4",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 3,
             "y": 4
           },
@@ -11777,7 +10955,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-6-enemy-runner-4-4",
             "unitTypeId": "runner",
             "owner": "enemy",
-            "level": 2,
+            "level": 1,
             "x": 4,
             "y": 4
           }
@@ -11795,23 +10973,16 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-grunt-3-1",
                 "unitTypeId": "grunt",
-                "level": 3,
+                "level": 2,
                 "x": 3,
                 "y": 1
               },
               {
                 "id": "wave-1-breaker-3-2",
                 "unitTypeId": "breaker",
-                "level": 3,
+                "level": 2,
                 "x": 3,
                 "y": 2
-              },
-              {
-                "id": "wave-1-runner-3-3",
-                "unitTypeId": "runner",
-                "level": 3,
-                "x": 3,
-                "y": 3
               }
             ]
           },
@@ -11827,16 +10998,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-grunt-2-0",
                 "unitTypeId": "grunt",
-                "level": 3,
+                "level": 2,
                 "x": 2,
                 "y": 0
-              },
-              {
-                "id": "wave-2-breaker-4-3",
-                "unitTypeId": "breaker",
-                "level": 3,
-                "x": 4,
-                "y": 3
               }
             ]
           },
@@ -11850,16 +11014,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-3-grunt-1-0",
-                "unitTypeId": "grunt",
-                "level": 3,
-                "x": 1,
-                "y": 0
-              },
-              {
                 "id": "wave-3-carrier-1-1",
                 "unitTypeId": "carrier",
-                "level": 3,
+                "level": 2,
                 "x": 1,
                 "y": 1
               }
@@ -11875,16 +11032,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-4-grunt-4-1",
-                "unitTypeId": "grunt",
-                "level": 3,
-                "x": 4,
-                "y": 1
-              },
-              {
                 "id": "wave-4-grunt-3-2",
                 "unitTypeId": "grunt",
-                "level": 5,
+                "level": 4,
                 "x": 3,
                 "y": 2
               }
@@ -11900,16 +11050,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-5-grunt-2-1",
-                "unitTypeId": "grunt",
-                "level": 5,
-                "x": 2,
-                "y": 1
-              },
-              {
                 "id": "wave-5-breaker-3-2",
                 "unitTypeId": "breaker",
-                "level": 5,
+                "level": 4,
                 "x": 3,
                 "y": 2
               }
@@ -12194,7 +11337,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-7-enemy-gunship-1-0",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 1,
             "y": 0
           },
@@ -12202,7 +11345,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-7-enemy-juggernaut-3-0",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 3,
             "y": 0
           },
@@ -12210,7 +11353,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-7-enemy-grunt-2-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 2,
             "y": 1
           },
@@ -12218,7 +11361,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-7-enemy-grunt-3-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 6,
+            "level": 4,
             "x": 3,
             "y": 1
           },
@@ -12226,7 +11369,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-7-enemy-gunship-1-2",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 1,
             "y": 2
           },
@@ -12234,23 +11377,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-7-enemy-breaker-2-2",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 2,
-            "y": 2
-          },
-          {
-            "id": "mereopolis-stage-7-enemy-grunt-3-2",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 5,
-            "x": 3,
             "y": 2
           },
           {
             "id": "mereopolis-stage-7-enemy-runner-3-3",
             "unitTypeId": "runner",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 3,
             "y": 3
           }
@@ -12266,16 +11401,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-1-grunt-3-1",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 3,
-                "y": 1
-              },
-              {
                 "id": "wave-1-breaker-2-2",
                 "unitTypeId": "breaker",
-                "level": 7,
+                "level": 5,
                 "x": 2,
                 "y": 2
               }
@@ -12293,16 +11421,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-longshot-2-1",
                 "unitTypeId": "longshot",
-                "level": 6,
+                "level": 4,
                 "x": 2,
                 "y": 1
-              },
-              {
-                "id": "wave-2-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 3,
-                "y": 2
               }
             ]
           },
@@ -12318,16 +11439,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-3-juggernaut-3-0",
                 "unitTypeId": "juggernaut",
-                "level": 7,
+                "level": 5,
                 "x": 3,
                 "y": 0
-              },
-              {
-                "id": "wave-3-grunt-3-3",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 3,
-                "y": 3
               }
             ]
           },
@@ -12341,23 +11455,16 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-4-grunt-2-1",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 2,
-                "y": 1
-              },
-              {
                 "id": "wave-4-medic-2-2",
                 "unitTypeId": "medic",
-                "level": 7,
+                "level": 5,
                 "x": 2,
                 "y": 2
               },
               {
                 "id": "wave-4-breaker-3-2",
                 "unitTypeId": "breaker",
-                "level": 7,
+                "level": 5,
                 "x": 3,
                 "y": 2
               }
@@ -12642,7 +11749,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-8-enemy-gunship-1-0",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 1,
             "y": 0
           },
@@ -12650,7 +11757,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-8-enemy-juggernaut-3-0",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 3,
             "y": 0
           },
@@ -12658,7 +11765,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-8-enemy-grunt-2-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 2,
             "y": 1
           },
@@ -12666,7 +11773,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-8-enemy-grunt-3-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 6,
+            "level": 4,
             "x": 3,
             "y": 1
           },
@@ -12674,7 +11781,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-8-enemy-gunship-1-2",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 1,
             "y": 2
           },
@@ -12682,23 +11789,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-8-enemy-breaker-2-2",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 2,
-            "y": 2
-          },
-          {
-            "id": "mereopolis-stage-8-enemy-grunt-3-2",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 5,
-            "x": 3,
             "y": 2
           },
           {
             "id": "mereopolis-stage-8-enemy-runner-3-3",
             "unitTypeId": "runner",
             "owner": "enemy",
-            "level": 5,
+            "level": 3,
             "x": 3,
             "y": 3
           }
@@ -12714,16 +11813,9 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-1-grunt-3-1",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 3,
-                "y": 1
-              },
-              {
                 "id": "wave-1-breaker-2-2",
                 "unitTypeId": "breaker",
-                "level": 7,
+                "level": 5,
                 "x": 2,
                 "y": 2
               }
@@ -12741,16 +11833,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-longshot-2-1",
                 "unitTypeId": "longshot",
-                "level": 6,
+                "level": 4,
                 "x": 2,
                 "y": 1
-              },
-              {
-                "id": "wave-2-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 6,
-                "x": 3,
-                "y": 2
               }
             ]
           },
@@ -12766,16 +11851,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-3-juggernaut-3-0",
                 "unitTypeId": "juggernaut",
-                "level": 7,
+                "level": 5,
                 "x": 3,
                 "y": 0
-              },
-              {
-                "id": "wave-3-grunt-3-3",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 3,
-                "y": 3
               }
             ]
           },
@@ -12789,23 +11867,16 @@ export const GENERATED_MAP_MODULES = {
             },
             "units": [
               {
-                "id": "wave-4-grunt-2-1",
-                "unitTypeId": "grunt",
-                "level": 7,
-                "x": 2,
-                "y": 1
-              },
-              {
                 "id": "wave-4-medic-2-2",
                 "unitTypeId": "medic",
-                "level": 7,
+                "level": 5,
                 "x": 2,
                 "y": 2
               },
               {
                 "id": "wave-4-breaker-3-2",
                 "unitTypeId": "breaker",
-                "level": 7,
+                "level": 5,
                 "x": 3,
                 "y": 2
               }
@@ -12814,7 +11885,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-5",
             "name": "Wave 5: Boss Grunt",
-            "maxActivations": 2,
+            "maxActivations": 1,
             "trigger": {
               "type": "player-turns-completed",
               "every": 2
@@ -12823,7 +11894,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-5-medic-3-1",
                 "unitTypeId": "medic",
-                "level": 9,
+                "level": 7,
                 "x": 3,
                 "y": 1
               }
@@ -13108,7 +12179,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-9-enemy-breaker-3-0",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 3,
             "y": 0
           },
@@ -13116,7 +12187,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-9-enemy-bruiser-4-0",
             "unitTypeId": "bruiser",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 4,
             "y": 0
           },
@@ -13124,7 +12195,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-9-enemy-juggernaut-5-0",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 5,
             "y": 0
           },
@@ -13132,23 +12203,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-9-enemy-gunship-1-1",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 1,
-            "y": 1
-          },
-          {
-            "id": "mereopolis-stage-9-enemy-breaker-2-1",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 8,
-            "x": 2,
             "y": 1
           },
           {
             "id": "mereopolis-stage-9-enemy-grunt-3-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 3,
             "y": 1
           },
@@ -13156,23 +12219,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-9-enemy-longshot-5-1",
             "unitTypeId": "longshot",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 5,
             "y": 1
-          },
-          {
-            "id": "mereopolis-stage-9-enemy-grunt-2-2",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 8,
-            "x": 2,
-            "y": 2
           },
           {
             "id": "mereopolis-stage-9-enemy-breaker-3-2",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 3,
             "y": 2
           },
@@ -13180,23 +12235,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-9-enemy-grunt-3-3",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 3,
-            "y": 3
-          },
-          {
-            "id": "mereopolis-stage-9-enemy-longshot-5-3",
-            "unitTypeId": "longshot",
-            "owner": "enemy",
-            "level": 8,
-            "x": 5,
             "y": 3
           },
           {
             "id": "mereopolis-stage-9-enemy-bruiser-3-4",
             "unitTypeId": "bruiser",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 3,
             "y": 4
           },
@@ -13204,7 +12251,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-9-enemy-juggernaut-3-5",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 8,
+            "level": 6,
             "x": 3,
             "y": 5
           }
@@ -13222,29 +12269,22 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-longshot-2-1",
                 "unitTypeId": "longshot",
-                "level": 8,
+                "level": 6,
                 "x": 2,
                 "y": 1
               },
               {
                 "id": "wave-1-breaker-3-1",
                 "unitTypeId": "breaker",
-                "level": 8,
+                "level": 6,
                 "x": 3,
                 "y": 1
               },
               {
                 "id": "wave-1-medic-2-2",
                 "unitTypeId": "medic",
-                "level": 8,
+                "level": 6,
                 "x": 2,
-                "y": 2
-              },
-              {
-                "id": "wave-1-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 8,
-                "x": 3,
                 "y": 2
               }
             ]
@@ -13261,16 +12301,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-breaker-3-1",
                 "unitTypeId": "breaker",
-                "level": 9,
+                "level": 7,
                 "x": 3,
                 "y": 1
-              },
-              {
-                "id": "wave-2-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 9,
-                "x": 3,
-                "y": 2
               }
             ]
           },
@@ -13286,23 +12319,16 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-3-interceptor-2-0",
                 "unitTypeId": "interceptor",
-                "level": 9,
+                "level": 7,
                 "x": 2,
                 "y": 0
               },
               {
                 "id": "wave-3-payload-1-2",
                 "unitTypeId": "payload",
-                "level": 7,
+                "level": 5,
                 "x": 1,
                 "y": 2
-              },
-              {
-                "id": "wave-3-carrier-2-3",
-                "unitTypeId": "carrier",
-                "level": 7,
-                "x": 2,
-                "y": 3
               }
             ]
           },
@@ -13318,16 +12344,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-4-grunt-3-1",
                 "unitTypeId": "grunt",
-                "level": 9,
+                "level": 7,
                 "x": 3,
                 "y": 1
-              },
-              {
-                "id": "wave-4-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 9,
-                "x": 3,
-                "y": 2
               }
             ]
           },
@@ -13343,7 +12362,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-5-breaker-3-2",
                 "unitTypeId": "breaker",
-                "level": 10,
+                "level": 8,
                 "x": 3,
                 "y": 2
               }
@@ -13628,7 +12647,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-10-enemy-breaker-3-0",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 3,
             "y": 0
           },
@@ -13636,7 +12655,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-10-enemy-bruiser-4-0",
             "unitTypeId": "bruiser",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 4,
             "y": 0
           },
@@ -13644,7 +12663,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-10-enemy-juggernaut-5-0",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 5,
             "y": 0
           },
@@ -13652,23 +12671,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-10-enemy-gunship-1-1",
             "unitTypeId": "gunship",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 1,
-            "y": 1
-          },
-          {
-            "id": "mereopolis-stage-10-enemy-breaker-2-1",
-            "unitTypeId": "breaker",
-            "owner": "enemy",
-            "level": 8,
-            "x": 2,
             "y": 1
           },
           {
             "id": "mereopolis-stage-10-enemy-grunt-3-1",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 3,
             "y": 1
           },
@@ -13676,23 +12687,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-10-enemy-longshot-5-1",
             "unitTypeId": "longshot",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 5,
             "y": 1
-          },
-          {
-            "id": "mereopolis-stage-10-enemy-grunt-2-2",
-            "unitTypeId": "grunt",
-            "owner": "enemy",
-            "level": 8,
-            "x": 2,
-            "y": 2
           },
           {
             "id": "mereopolis-stage-10-enemy-breaker-3-2",
             "unitTypeId": "breaker",
             "owner": "enemy",
-            "level": 9,
+            "level": 7,
             "x": 3,
             "y": 2
           },
@@ -13700,23 +12703,15 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-10-enemy-grunt-3-3",
             "unitTypeId": "grunt",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 3,
-            "y": 3
-          },
-          {
-            "id": "mereopolis-stage-10-enemy-longshot-5-3",
-            "unitTypeId": "longshot",
-            "owner": "enemy",
-            "level": 8,
-            "x": 5,
             "y": 3
           },
           {
             "id": "mereopolis-stage-10-enemy-bruiser-3-4",
             "unitTypeId": "bruiser",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 3,
             "y": 4
           },
@@ -13724,7 +12719,7 @@ export const GENERATED_MAP_MODULES = {
             "id": "mereopolis-stage-10-enemy-juggernaut-3-5",
             "unitTypeId": "juggernaut",
             "owner": "enemy",
-            "level": 8,
+            "level": 7,
             "x": 3,
             "y": 5
           }
@@ -13742,29 +12737,22 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-1-longshot-2-1",
                 "unitTypeId": "longshot",
-                "level": 8,
+                "level": 7,
                 "x": 2,
                 "y": 1
               },
               {
                 "id": "wave-1-breaker-3-1",
                 "unitTypeId": "breaker",
-                "level": 8,
+                "level": 7,
                 "x": 3,
                 "y": 1
               },
               {
                 "id": "wave-1-medic-2-2",
                 "unitTypeId": "medic",
-                "level": 8,
+                "level": 7,
                 "x": 2,
-                "y": 2
-              },
-              {
-                "id": "wave-1-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 8,
-                "x": 3,
                 "y": 2
               }
             ]
@@ -13781,16 +12769,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-2-breaker-3-1",
                 "unitTypeId": "breaker",
-                "level": 9,
+                "level": 7,
                 "x": 3,
                 "y": 1
-              },
-              {
-                "id": "wave-2-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 9,
-                "x": 3,
-                "y": 2
               }
             ]
           },
@@ -13806,23 +12787,16 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-3-interceptor-2-0",
                 "unitTypeId": "interceptor",
-                "level": 9,
+                "level": 7,
                 "x": 2,
                 "y": 0
               },
               {
                 "id": "wave-3-payload-1-2",
                 "unitTypeId": "payload",
-                "level": 7,
+                "level": 6,
                 "x": 1,
                 "y": 2
-              },
-              {
-                "id": "wave-3-carrier-2-3",
-                "unitTypeId": "carrier",
-                "level": 7,
-                "x": 2,
-                "y": 3
               }
             ]
           },
@@ -13838,16 +12812,9 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-4-grunt-3-1",
                 "unitTypeId": "grunt",
-                "level": 9,
+                "level": 7,
                 "x": 3,
                 "y": 1
-              },
-              {
-                "id": "wave-4-grunt-3-2",
-                "unitTypeId": "grunt",
-                "level": 9,
-                "x": 3,
-                "y": 2
               }
             ]
           },
@@ -13863,7 +12830,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-5-breaker-3-2",
                 "unitTypeId": "breaker",
-                "level": 10,
+                "level": 8,
                 "x": 3,
                 "y": 2
               }
@@ -13881,7 +12848,7 @@ export const GENERATED_MAP_MODULES = {
               {
                 "id": "wave-6-breaker-3-1",
                 "unitTypeId": "breaker",
-                "level": 10,
+                "level": 8,
                 "x": 3,
                 "y": 1
               }

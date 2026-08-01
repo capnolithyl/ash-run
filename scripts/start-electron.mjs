@@ -6,9 +6,21 @@ import electronPath from "electron";
  * that happen on Windows UNC paths.
  */
 const useDevServer = process.argv.includes("--dev-server");
+const requestedBuildProfile =
+  process.argv.find((argument) => argument.startsWith("--profile="))?.split("=")[1] ??
+  (useDevServer ? "development" : "production");
+
+if (!["development", "production"].includes(requestedBuildProfile)) {
+  throw new Error(
+    `Unsupported build profile: ${requestedBuildProfile}. Expected development or production.`
+  );
+}
+
 const childEnv = {
   ...process.env,
-  ASH_RUN_84_DEV_SERVER: useDevServer ? "1" : "0"
+  ASH_RUN_84_DEV_SERVER: useDevServer ? "1" : "0",
+  ASH_RUN_84_BUILD_PROFILE: requestedBuildProfile,
+  ASH_RUN_84_DIST_DIR: requestedBuildProfile === "development" ? "dist-dev" : "dist"
 };
 
 delete childEnv.ELECTRON_RUN_AS_NODE;

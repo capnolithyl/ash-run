@@ -152,7 +152,7 @@ export const appShellScreenRouterMethods = {
       default:
         this.resetBattleUiTimers();
         this.previousBattleSnapshot = null;
-        this.root.innerHTML = renderTitleView(state);
+        this.root.innerHTML = renderTitleView(state, this.controller.buildProfileConfig);
         this.syncLoadedTitleButtonImages();
         this.syncAppToast(state);
         this.syncControllerFocusAfterRender();

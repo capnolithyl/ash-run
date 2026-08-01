@@ -7,6 +7,13 @@ import { generateUnitSpriteSheetManifest } from "./generate-sprite-sheet-manifes
 
 const root = process.cwd();
 const port = Number(process.env.ASH_RUN_84_DEV_PORT ?? 5173);
+const buildProfile = process.env.ASH_RUN_84_BUILD_PROFILE ?? "development";
+
+if (!["development", "production"].includes(buildProfile)) {
+  throw new Error(
+    `Unsupported build profile: ${buildProfile}. Expected development or production.`
+  );
+}
 
 await generateAssetPreloadManifest({ root });
 await generateBuildingSpriteManifest({ root });
@@ -17,6 +24,9 @@ await generateUnitSpriteSheetManifest({ root });
 const server = await createServer({
   configFile: false,
   root,
+  define: {
+    __ASH_RUN_BUILD_PROFILE__: JSON.stringify(buildProfile)
+  },
   server: {
     host: "127.0.0.1",
     port,

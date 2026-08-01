@@ -8,7 +8,7 @@ Snapshot: April 30, 2026
 
 The prototype already supports a full desktop play loop:
 
-- Title shell with `New Run`, `Continue`, `Skirmish`, `Sandbox`, `Tutorial`, `Progression`, `Options`, and `Quit`
+- Development title shell with `New Run`, `Continue`, `Skirmish`, `Sandbox`, `Tutorial`, `Progression`, `Options`, and `Quit`
 - 3 manual save slots with slot summaries and last-played metadata
 - Commander selection, slot assignment, and opening-squad drafting before run start
 - 10-map runs sampled from a 20-map authored pool
@@ -164,16 +164,36 @@ docs/                     Core design, systems, and planning docs
 
 Architecturally, `src/game/simulation/battleSystem.js` acts as the battle facade/orchestrator, while focused helper folders now split player actions, enemy AI, Phaser battle-scene behavior, and AppShell rendering into smaller modules behind stable entrypoints.
 
+## Build Profiles
+
+Ash Run has two isolated build profiles:
+
+| Profile | Included gameplay | Web output | Windows output | Save identity |
+| --- | --- | --- | --- | --- |
+| Development | Run, Progression, Skirmish, Map Editor, Tutorial, Sandbox | `dist-dev/` | `release/dev/` | `Ash Run '84 Dev` |
+| Production Alpha | Run and Progression | `dist/` | `release/prod/` | `Ash Run '84 Alpha` |
+
+The production title keeps `New Run`, `Continue`, `Progression`, `Options`, and `Quit`. Restricted modes are guarded in the controller and their Electron map APIs are not registered. Production also ignores saved custom maps so alpha runs always use the bundled authored pool.
+
+Both profiles start with separate browser and Electron save data. There is no automatic migration between development and alpha progression.
+
+`build` and `package` intentionally default to the restricted production profile. Upload the contents of `dist/` for a production web build, or distribute the installer from `release/prod/` to Windows testers.
+
 ## Commands
 
 - `yarn dev` - start the Vite + Electron development workflow
-- `yarn start` - launch the Electron app against the built output
-- `yarn build` - create a production build in `dist/`
+- `yarn start` - launch Electron against the production build in `dist/`
+- `yarn start:dev-build` - launch Electron against the full-feature build in `dist-dev/`
+- `yarn build` / `yarn build:prod` - create the restricted alpha web build in `dist/`
+- `yarn build:dev` - create the full-feature web build in `dist-dev/`
 - `yarn test` - run the Node test suite
 - `yarn test:playthrough` - run the forced full-run smoke check
 - `yarn test:ui` - run Playwright UI and visual regression coverage
+- `yarn test:ui:prod` - smoke-test the restricted production profile
+- `yarn test:package:profiles` - smoke-test both previously packaged Windows executables
 - `yarn test:ui:update` - refresh approved Playwright snapshots
-- `yarn package` - build and package the Electron app
+- `yarn package` / `yarn package:prod` - build the alpha installer in `release/prod/`
+- `yarn package:dev` - build the full-feature developer installer in `release/dev/`
 - `node scripts/damage-formula-test.mjs` - focused combat-math validation
 
 Set `ASH_RUN_84_DEV_PORT` before `yarn dev` if port `5173` is already taken.

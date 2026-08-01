@@ -2,11 +2,11 @@ import {
   DISPLAY_MODE_LABELS,
   DISPLAY_MODES,
   DISPLAY_RESOLUTION_PRESETS,
-  normalizeDisplayOptions
+  normalizeDisplayOptions,
 } from "../../game/core/displayOptions.js";
 import {
   getUnitColorDefinition,
-  normalizeUnitColorOptions
+  normalizeUnitColorOptions,
 } from "../../game/core/unitColors.js";
 import { getUnitSpriteColorAvailability } from "../../game/phaser/assets.js";
 
@@ -43,8 +43,11 @@ function renderDisplaySettings(options, displayContext = {}) {
 
   const draft = normalizeDisplayOptions(displayContext.draft ?? options);
   const presets = displayContext.presets ?? DISPLAY_RESOLUTION_PRESETS;
-  const currentMode = normalizeDisplayOptions(displayContext.displayState?.current ?? draft).displayMode;
-  const applyDisabled = displayContext.applyDisabled || !displayContext.desktopAvailable;
+  const currentMode = normalizeDisplayOptions(
+    displayContext.displayState?.current ?? draft,
+  ).displayMode;
+  const applyDisabled =
+    displayContext.applyDisabled || !displayContext.desktopAvailable;
   const confirmation = displayContext.confirmation;
 
   return `
@@ -62,7 +65,7 @@ function renderDisplaySettings(options, displayContext = {}) {
                 <option value="${mode}" ${draft.displayMode === mode ? "selected" : ""}>
                   ${DISPLAY_MODE_LABELS[mode]}
                 </option>
-              `
+              `,
             )
             .join("")}
         </select>
@@ -87,7 +90,7 @@ function renderDisplaySettings(options, displayContext = {}) {
                 >
                   ${preset.label}${preset.available === false ? " (Unavailable)" : ""}
                 </option>
-              `
+              `,
             )
             .join("")}
         </select>
@@ -142,23 +145,22 @@ function renderUnitColorPicker({
   label,
   selectedColor,
   opposingColor,
-  availability
+  availability,
 }) {
   return `
     <fieldset class="unit-color-picker">
       <legend>${label}</legend>
       <div class="unit-color-picker__swatches">
-        ${Object.keys(availability).map((colorId) => {
-          const definition = getUnitColorDefinition(colorId);
-          const available = true;
-          const selected = selectedColor === colorId;
-          const conflicts = opposingColor === colorId && !selected;
-          const disabled = !available || conflicts;
-          const status = conflicts
-              ? "Used by the other side"
-              : "Available";
+        ${Object.keys(availability)
+          .map((colorId) => {
+            const definition = getUnitColorDefinition(colorId);
+            const available = true;
+            const selected = selectedColor === colorId;
+            const conflicts = opposingColor === colorId && !selected;
+            const disabled = !available || conflicts;
+            const status = conflicts ? "Used by the other side" : "Available";
 
-          return `
+            return `
             <label
               class="unit-color-swatch${selected ? " unit-color-swatch--selected" : ""}${disabled ? " unit-color-swatch--disabled" : ""}"
               style="--unit-color-swatch:${definition.hex}"
@@ -177,7 +179,8 @@ function renderUnitColorPicker({
               <span class="unit-color-swatch__label">${definition.label}</span>
             </label>
           `;
-        }).join("")}
+          })
+          .join("")}
       </div>
     </fieldset>
   `;
@@ -199,14 +202,14 @@ function renderUnitColorSettings(options = {}) {
           label: "Player Units",
           selectedColor: normalized.playerColor,
           opposingColor: normalized.enemyColor,
-          availability
+          availability,
         })}
         ${renderUnitColorPicker({
           owner: "enemy",
           label: "Enemy Units",
           selectedColor: normalized.enemyColor,
           opposingColor: normalized.playerColor,
-          availability
+          availability,
         })}
       </div>
       <small class="unit-color-settings__note">Colors are read from installed complete unit sprite sets.</small>
@@ -221,11 +224,11 @@ export function renderOptionFields(options = {}, displayContext = {}) {
   const masterVolumePercent = Math.round(masterVolume * 100);
   const musicVolume = Number.isFinite(Number(options.musicVolume))
     ? Math.max(0, Math.min(1, Number(options.musicVolume)))
-    : 1;
+    : 0.3;
   const musicVolumePercent = Math.round(musicVolume * 100);
   const sfxVolume = Number.isFinite(Number(options.sfxVolume))
     ? Math.max(0, Math.min(1, Number(options.sfxVolume)))
-    : 0.85;
+    : 0.4;
   const sfxVolumePercent = Math.round(sfxVolume * 100);
   const combatCutsceneAnimations = options.combatCutsceneAnimations !== false;
   const activeTab = normalizeOptionTab(displayContext.activeOptionsTab);

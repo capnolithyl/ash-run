@@ -22,6 +22,7 @@ import {
   normalizeMapDefinition,
   resizeMapDefinition
 } from "../content/mapEditor.js";
+import { BUILD_FEATURES } from "../core/buildProfiles.js";
 import {
   createDefaultReinforcementWave,
   getReinforcementValidationErrors,
@@ -568,6 +569,10 @@ function synchronizeMapEditorIdentity(mapData) {
 
 export const controllerMapEditorMethods = {
   openMapEditor() {
+    if (!this.isFeatureEnabled(BUILD_FEATURES.MAP_EDITOR)) {
+      return false;
+    }
+
     const editorState = createDefaultMapEditorState(
       synchronizeMapEditorIdentity(ensureEditableMapVariant(createBlankMapDefinition()))
     );
