@@ -72,6 +72,13 @@ export function handleTileSelection(system, x, y) {
     return true;
   }
 
+  if (
+    pendingAction?.type === "commander-power" &&
+    pendingAction.mode === "air-strike"
+  ) {
+    return system.activatePower({ x, y });
+  }
+
   if (pendingAction && pendingUnit?.owner === TURN_SIDES.PLAYER) {
     if ((pendingAction.mode ?? "menu") === "slipstream") {
       const canMoveToTile = getSlipstreamTiles(system.state, pendingUnit)
@@ -261,6 +268,15 @@ export function handleContextAction(system) {
 
   const pendingAction = system.state.pendingAction;
   const pendingUnit = pendingAction ? findUnitById(system.state, pendingAction.unitId) : null;
+
+  if (
+    pendingAction?.type === "commander-power" &&
+    pendingAction.mode === "air-strike"
+  ) {
+    system.clearPendingAction();
+    system.clearSelection();
+    return true;
+  }
 
   if (pendingAction && pendingUnit?.owner === TURN_SIDES.PLAYER) {
     if ((pendingAction.mode ?? "menu") === "slipstream") {

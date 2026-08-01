@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { getAirStrikeTiles } from "../../simulation/airStrike.js";
 import {
   buildBattlefieldNameTooltip,
   buildForecastTooltipLabel
@@ -583,6 +584,31 @@ export class SelectionLayer {
       presentation.pendingAction?.mode === "unload"
         ? presentation.pendingAction.unloadPreviewTiles ?? presentation.unloadPreviewTiles ?? []
         : presentation.unloadPreviewTiles ?? [];
+    const airStrikeAction = presentation.pendingAction?.isAirStrikeTargeting
+      ? presentation.pendingAction
+      : null;
+
+    if (airStrikeAction && hoveredTile) {
+      for (const tile of getAirStrikeTiles(snapshot, hoveredTile, airStrikeAction)) {
+        const x = layout.originX + tile.x * layout.cellSize;
+        const y = layout.originY + tile.y * layout.cellSize;
+        const isCenter = tile.zone === "center";
+        const color = isCenter ? 0xff4d3d : 0xffa23d;
+
+        this.graphics.fillStyle(color, isCenter ? 0.38 : 0.22);
+        this.graphics.fillRoundedRect(x + 1, y + 1, layout.cellSize - 4, layout.cellSize - 4, 6);
+        this.graphics.lineStyle(isCenter ? 4 : 3, color, isCenter ? 0.98 : 0.88);
+        this.graphics.strokeRoundedRect(x + 4, y + 4, layout.cellSize - 10, layout.cellSize - 10, 5);
+        drawCornerMarkers(
+          this.graphics,
+          x + 6,
+          y + 6,
+          layout.cellSize - 14,
+          isCenter ? 0xfff1c9 : 0xffd28a,
+          isCenter ? 0.96 : 0.72
+        );
+      }
+    }
 
     for (const tile of unloadTiles) {
       const x = layout.originX + tile.x * layout.cellSize;

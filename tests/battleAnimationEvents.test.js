@@ -20,6 +20,8 @@ import { REINFORCEMENT_TRIGGER_TYPES } from "../src/game/content/reinforcements.
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { getXpThreshold } from "../src/game/simulation/progression.js";
 import {
+  AIR_STRIKE_FLYOVER_DURATION_MS,
+  AIR_STRIKE_IMPACT_DELAY_MS,
   COMMANDER_POWER_PULSE_DURATION_MS,
   COMMANDER_POWER_TARGET_STAGGER_MS,
   EXPERIENCE_EXIT_DELAY_MS,
@@ -361,6 +363,73 @@ test("battle animation events emit damage pulses for blaze ignition", () => {
   assert.equal(event.targets.every((target) => target.pulse === "damage"), true);
   assert.ok(event.targets.every((target) => target.amount === 10));
   assert.ok(event.targets.every((target) => target.label === "BURN"));
+});
+
+test("battle animation events expose Falcon Air Strike flyover and impact timing", () => {
+  const target = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 2, {
+    current: { hp: 60 }
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: [target]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(
+    deriveBattleAnimationEvents(before, system.getSnapshot()).some((event) => event.type === "power"),
+    false
+  );
+  assert.equal(system.handleTileSelection(4, 2), true);
+
+  const event = deriveBattleAnimationEvents(before, system.getSnapshot()).find(
+    (candidate) => candidate.type === "power"
+  );
+
+  assert.ok(event);
+  assert.equal(event.powerType, "falcon-air-strike");
+  assert.deepEqual(event.center, { x: 4, y: 2 });
+  assert.equal(event.areaTiles.length, 5);
+  assert.equal(event.targets.length, 1);
+  assert.equal(event.targets[0].amount, 60);
+  assert.equal(event.targets[0].destroyed, true);
+  assert.equal(event.targetStaggerMs, 0);
+  assert.equal(event.impactDelayMs, AIR_STRIKE_IMPACT_DELAY_MS);
+  assert.equal(event.flightDurationMs, AIR_STRIKE_FLYOVER_DURATION_MS);
+  assert.equal(event.flyoverDirection, 1);
+  assert.equal(
+    event.durationMs,
+    Math.max(
+      AIR_STRIKE_FLYOVER_DURATION_MS,
+      AIR_STRIKE_IMPACT_DELAY_MS + COMMANDER_POWER_PULSE_DURATION_MS
+    )
+  );
+});
+
+test("battle animation events retain an empty Falcon Air Strike", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 5)]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const system = new BattleSystem(battleState);
+  const before = system.getSnapshot();
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.handleTileSelection(0, 5), true);
+
+  const event = deriveBattleAnimationEvents(before, system.getSnapshot()).find(
+    (candidate) => candidate.type === "power"
+  );
+
+  assert.ok(event);
+  assert.deepEqual(event.center, { x: 0, y: 5 });
+  assert.equal(event.areaTiles.length, 3);
+  assert.equal(event.targets.length, 0);
 });
 
 test("battle render exposes enemy movement paths for transient move arrows", () => {

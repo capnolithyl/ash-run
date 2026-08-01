@@ -338,8 +338,8 @@ export class BattleSystem {
     return playerActions.recruitUnit(this, unitTypeId);
   }
 
-  activatePower() {
-    return playerActions.activatePower(this);
+  activatePower(target = null) {
+    return playerActions.activatePower(this, target);
   }
 
   getLastPowerResult() {

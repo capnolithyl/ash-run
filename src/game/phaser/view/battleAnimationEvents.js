@@ -93,6 +93,8 @@ export const EXPERIENCE_EXIT_DELAY_MS = 120;
 export const EXPERIENCE_EXIT_DURATION_MS = 280;
 export const COMMANDER_POWER_TARGET_STAGGER_MS = 85;
 export const COMMANDER_POWER_PULSE_DURATION_MS = 620;
+export const AIR_STRIKE_FLYOVER_DURATION_MS = 1100;
+export const AIR_STRIKE_IMPACT_DELAY_MS = 520;
 
 function getTurnTransitionDelayMs(previousSnapshot, nextSnapshot) {
   if (!previousSnapshot || previousSnapshot.turn.activeSide === nextSnapshot.turn.activeSide) {
@@ -249,7 +251,9 @@ function getBattleAnimationEventDurationMs(event) {
     case "experience":
       return getExperienceEventDuration(event);
     case "power":
-      return COMMANDER_POWER_PULSE_DURATION_MS;
+      return event.powerType === "falcon-air-strike"
+        ? event.durationMs
+        : COMMANDER_POWER_PULSE_DURATION_MS;
     case "capture":
       return 520;
     case "deploy":
@@ -337,16 +341,22 @@ function buildCommanderPowerEvent(previousSnapshot, nextSnapshot, previousUnits,
       .filter(Boolean),
     powerResult.side
   );
+  const isAirStrike = powerResult.powerType === "falcon-air-strike";
 
-  if (targets.length === 0) {
+  if (targets.length === 0 && !isAirStrike) {
     return null;
   }
 
   const startDelayMs = BATTLE_POWER_OVERLAY_DISPLAY_MS;
+  const targetStaggerMs = isAirStrike ? 0 : COMMANDER_POWER_TARGET_STAGGER_MS;
+  const impactDelayMs = isAirStrike ? AIR_STRIKE_IMPACT_DELAY_MS : 0;
+  const flightDurationMs = isAirStrike ? AIR_STRIKE_FLYOVER_DURATION_MS : 0;
+  const effectDurationMs = isAirStrike
+    ? Math.max(flightDurationMs, impactDelayMs + COMMANDER_POWER_PULSE_DURATION_MS)
+    : Math.max(0, targets.length - 1) * targetStaggerMs + COMMANDER_POWER_PULSE_DURATION_MS;
   const endDelayMs =
     startDelayMs +
-    Math.max(0, targets.length - 1) * COMMANDER_POWER_TARGET_STAGGER_MS +
-    COMMANDER_POWER_PULSE_DURATION_MS;
+    effectDurationMs;
 
   return {
     type: "power",
@@ -358,11 +368,18 @@ function buildCommanderPowerEvent(previousSnapshot, nextSnapshot, previousUnits,
     powerName: powerResult.powerName,
     powerType: powerResult.powerType,
     accent: powerResult.accent,
+    center: powerResult.center ?? null,
+    areaTiles: powerResult.areaTiles ?? [],
+    mapWidth: nextSnapshot.map.width,
+    mapHeight: nextSnapshot.map.height,
+    flyoverDirection: powerResult.side === "enemy" ? -1 : 1,
     targets,
-    targetStaggerMs: COMMANDER_POWER_TARGET_STAGGER_MS,
+    targetStaggerMs,
     pulseDurationMs: COMMANDER_POWER_PULSE_DURATION_MS,
+    impactDelayMs,
+    flightDurationMs,
     startDelayMs,
-    durationMs: endDelayMs - startDelayMs,
+    durationMs: effectDurationMs,
     endDelayMs
   };
 }

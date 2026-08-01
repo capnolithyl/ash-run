@@ -6,6 +6,12 @@ import {
 } from "../core/constants.js";
 import { getCommanderPortraitImageUrl } from "../content/commanderArt.js";
 import {
+  AIR_STRIKE_FLYOVER_DURATION_MS,
+  AIR_STRIKE_IMPACT_DELAY_MS,
+  COMMANDER_POWER_PULSE_DURATION_MS,
+  COMMANDER_POWER_TARGET_STAGGER_MS
+} from "../phaser/view/battleAnimationEvents.js";
+import {
   BATTLE_CONTEXT_ACTION_DEDUPE_MS,
   RUN_CAPTURE_EXPERIENCE_REWARD,
   RUN_CAPTURE_INTEL_REWARD,
@@ -50,7 +56,8 @@ const TARGETING_MODES = new Set([
   "support",
   "medpack",
   "extinguish",
-  "slipstream"
+  "slipstream",
+  "air-strike"
 ]);
 
 function captureBattleControlState(controller) {
@@ -191,6 +198,7 @@ export const controllerBattleMethods = {
       this.state.battleUi.pauseMenuOpen ||
         this.state.battleUi.fundsGain ||
         this.state.battleUi.powerOverlay ||
+        this.state.battleUi.powerEffectActive ||
         this.state.battleUi.combatCutscene ||
         this.state.battleSnapshot?.levelUpQueue?.length
     );
@@ -278,7 +286,17 @@ export const controllerBattleMethods = {
       portraitImageUrl: getCommanderPortraitImageUrl(powerResult.commanderId),
       accent: powerResult.accent
     };
+    const effectTailMs = powerResult.powerType === "falcon-air-strike"
+      ? Math.max(
+          AIR_STRIKE_FLYOVER_DURATION_MS,
+          AIR_STRIKE_IMPACT_DELAY_MS + COMMANDER_POWER_PULSE_DURATION_MS
+        )
+      : powerResult.targets?.length
+        ? Math.max(0, powerResult.targets.length - 1) * COMMANDER_POWER_TARGET_STAGGER_MS +
+          COMMANDER_POWER_PULSE_DURATION_MS
+        : 0;
 
+    this.state.battleUi.powerEffectActive = true;
     this.state.battleUi.powerOverlay = overlay;
     this.syncBattleState();
     await delay(BATTLE_POWER_OVERLAY_DISPLAY_MS);
@@ -287,6 +305,13 @@ export const controllerBattleMethods = {
       this.state.battleUi.powerOverlay = null;
       this.syncBattleState();
     }
+
+    if (effectTailMs > 0) {
+      await delay(effectTailMs);
+    }
+
+    this.state.battleUi.powerEffectActive = false;
+    this.syncBattleState();
   },
 
   promptAbandonRun() {
@@ -341,11 +366,22 @@ export const controllerBattleMethods = {
     }
 
     const beforeControlState = captureBattleControlState(this);
+    const previousPowerActivationId = this.battleSystem.getLastPowerResult?.()?.activationId ?? null;
     const changed = this.battleSystem.handleTileSelection(x, y);
     const afterControlState = captureBattleControlState(this);
+    const nextPowerActivationId = this.battleSystem.getLastPowerResult?.()?.activationId ?? null;
+    const activatedPower = Boolean(
+      nextPowerActivationId && nextPowerActivationId !== previousPowerActivationId
+    );
     emitTileSelectionCue(this, beforeControlState, afterControlState, changed, x, y);
 
     if (changed) {
+      if (activatedPower) {
+        await this.playPowerOverlay(TURN_SIDES.PLAYER);
+        await this.persistCurrentRun();
+        return;
+      }
+
       await this.handleTutorialBattleActionResult?.("tile", { x, y, targetUnitId }, changed);
 
       if (this.battleSystem.isEnemyTurnActive?.()) {
@@ -744,6 +780,22 @@ export const controllerBattleMethods = {
     const changed = this.battleSystem.activatePower();
 
     if (changed) {
+      const pendingAction = this.battleSystem.getStateForSave().pendingAction;
+
+      if (
+        pendingAction?.type === "commander-power" &&
+        pendingAction.mode === "air-strike"
+      ) {
+        emitBattleControlCue(
+          this,
+          "battle.targeting",
+          `targeting:air-strike:${this.state.battleSnapshot?.turn?.number ?? "current"}`
+        );
+        this.syncBattleState();
+        await this.persistCurrentRun();
+        return;
+      }
+
       await this.playPowerOverlay(TURN_SIDES.PLAYER);
       await this.handleTutorialBattleActionResult?.("activate-power", {}, changed);
       await this.persistCurrentRun();

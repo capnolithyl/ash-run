@@ -915,7 +915,7 @@ test("knox doubles positional armor for units that stay put and fortress protoco
   assert.equal(updatedAttacker.current.hp, attacker.current.hp);
 });
 
-test("falcon buffs aircraft and reinforcements spawn a temporary gunship near HQ", () => {
+test("falcon buffs aircraft and enters cancellable Air Strike targeting without spending charge", () => {
   const gunship = createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1);
   const enemy = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4);
   const battleState = createTestBattleState({
@@ -928,60 +928,164 @@ test("falcon buffs aircraft and reinforcements spawn a temporary gunship near HQ
   assert.equal(getAttackModifier(battleState, gunship), 16);
   assert.equal(getArmorModifier(battleState, gunship), 2);
 
-  const hq = battleState.map.buildings.find(
-    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.deepEqual(system.getStateForSave().pendingAction, {
+    type: "commander-power",
+    mode: "air-strike",
+    commanderId: "falcon",
+    powerName: "Air Strike"
+  });
+  assert.equal(system.getStateForSave().player.charge, getCommanderPowerMax("falcon"));
+  assert.equal(system.getStateForSave().player.powerUsedTurn ?? null, null);
+
+  assert.equal(system.handleContextAction(), true);
+  assert.equal(system.getStateForSave().pendingAction, null);
+  assert.equal(system.getStateForSave().player.charge, getCommanderPowerMax("falcon"));
+});
+
+test("falcon Air Strike damages only enemies in the center and cardinal adjacent tiles", () => {
+  const friendly = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3);
+  const centerTarget = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 4, 2);
+  const adjacentTarget = createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 4, 1);
+  const diagonalTarget = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 3);
+  const battleState = createTestBattleState({
+    playerUnits: [friendly],
+    enemyUnits: [centerTarget, adjacentTarget, diagonalTarget]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.handleTileSelection(4, 2), true);
+
+  const afterPower = system.getStateForSave();
+  assert.equal(afterPower.enemy.units.find((unit) => unit.id === centerTarget.id).current.hp, 30);
+  assert.equal(afterPower.enemy.units.find((unit) => unit.id === adjacentTarget.id).current.hp, 60);
+  assert.equal(afterPower.enemy.units.find((unit) => unit.id === diagonalTarget.id).current.hp, 100);
+  assert.equal(afterPower.player.units.find((unit) => unit.id === friendly.id).current.hp, 100);
+  assert.equal(afterPower.player.charge, 0);
+  assert.equal(afterPower.pendingAction, null);
+  assert.deepEqual(afterPower.lastPowerResult.center, { x: 4, y: 2 });
+  assert.deepEqual(
+    afterPower.lastPowerResult.targets.map((target) => [target.unitId, target.zone, target.amount]),
+    [
+      [centerTarget.id, "center", 70],
+      [adjacentTarget.id, "adjacent", 40]
+    ]
   );
+});
+
+test("falcon Air Strike can be confirmed on a completely empty edge tile", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4)]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.handleTileSelection(0, 5), true);
+  assert.equal(system.getStateForSave().player.charge, 0);
+  assert.deepEqual(system.getLastPowerResult().center, { x: 0, y: 5 });
+  assert.equal(system.getLastPowerResult().targets.length, 0);
+  assert.equal(system.getLastPowerResult().areaTiles.length, 3);
+});
+
+test("falcon Air Strike ignores transported cargo", () => {
+  const runner = createPlacedUnit("runner", TURN_SIDES.ENEMY, 3, 3);
+  const cargo = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 3);
+  runner.transport.carryingUnitId = cargo.id;
+  cargo.transport.carriedByUnitId = runner.id;
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0)],
+    enemyUnits: [runner, cargo]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.activatePower({ x: 3, y: 3 }), true);
+
+  const afterPower = system.getStateForSave();
+  assert.equal(afterPower.enemy.units.find((unit) => unit.id === runner.id).current.hp, 30);
+  assert.equal(afterPower.enemy.units.find((unit) => unit.id === cargo.id).current.hp, 100);
+  assert.deepEqual(system.getLastPowerResult().targets.map((target) => target.unitId), [runner.id]);
+});
+
+test("falcon Air Strike records lethal damage, updates victory, and logs the destroyed unit", () => {
+  const target = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 2, 2, {
+    current: { hp: 25 }
+  });
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0)],
+    enemyUnits: [target]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.handleTileSelection(2, 2), true);
+
+  const result = system.getLastPowerResult();
+  assert.equal(result.targets[0].amount, 25);
+  assert.equal(result.targets[0].nominalAmount, 70);
+  assert.equal(result.targets[0].destroyed, true);
+  assert.equal(system.getStateForSave().victory.winner, TURN_SIDES.PLAYER);
+  assert.ok(
+    system.getStateForSave().log.some((line) =>
+      line.includes(`${target.name} took 25 Air Strike damage and was destroyed.`)
+    )
+  );
+});
+
+test("falcon cannot activate Air Strike twice in one turn after charge is restored", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0)],
+    enemyUnits: [createPlacedUnit("bruiser", TURN_SIDES.ENEMY, 4, 4)]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  assert.equal(system.handleTileSelection(0, 5), true);
+  system.setDebugCharge(TURN_SIDES.PLAYER, getCommanderPowerMax("falcon"));
+
+  assert.equal(system.activatePower(), false);
+  assert.equal(system.getStateForSave().pendingAction, null);
+});
+
+test("enemy falcon activates Air Strike on its highest-funds-damage center", () => {
+  const bruiser = createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2);
+  const grunts = [
+    createPlacedUnit("grunt", TURN_SIDES.PLAYER, 6, 2),
+    createPlacedUnit("grunt", TURN_SIDES.PLAYER, 7, 3),
+    createPlacedUnit("grunt", TURN_SIDES.PLAYER, 6, 4)
+  ];
+  const battleState = createTestBattleState({
+    width: 10,
+    height: 7,
+    activeSide: TURN_SIDES.ENEMY,
+    playerUnits: [bruiser, ...grunts],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 9, 6)]
+  });
+  battleState.enemy.commanderId = "falcon";
+  battleState.enemy.charge = getCommanderPowerMax("falcon");
   const system = new BattleSystem(battleState);
 
   assert.equal(system.activatePower(), true);
 
-  const afterPower = system.getStateForSave();
-  const summonedGunship = afterPower.player.units.find(
-    (unit) => unit.id !== gunship.id && unit.unitTypeId === "gunship"
-  );
-
-  assert.ok(summonedGunship);
-  assert.equal(summonedGunship.temporary?.battleLocalOnly, true);
-  assert.equal(Math.abs(summonedGunship.x - hq.x) + Math.abs(summonedGunship.y - hq.y) <= 1, true);
-  assert.equal(summonedGunship.hasMoved, false);
-  assert.equal(summonedGunship.hasAttacked, false);
-});
-
-test("falcon power fails cleanly without spending charge when HQ and adjacent tiles are blocked", () => {
-  const battleState = createTestBattleState({
-    playerUnits: [
-      createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0),
-      createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0),
-      createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0),
-      createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0),
-      createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0)
-    ],
-    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4)]
-  });
-  battleState.player.commanderId = "falcon";
-  battleState.player.charge = getCommanderPowerMax(battleState.player.commanderId);
-  const hq = battleState.map.buildings.find(
-    (building) => building.type === BUILDING_KEYS.COMMAND && building.owner === TURN_SIDES.PLAYER
-  );
-  const occupiedTiles = [
-    { x: hq.x, y: hq.y },
-    { x: hq.x + 1, y: hq.y },
-    { x: hq.x - 1, y: hq.y },
-    { x: hq.x, y: hq.y + 1 },
-    { x: hq.x, y: hq.y - 1 }
-  ];
-
-  battleState.player.units.forEach((unit, index) => {
-    unit.x = occupiedTiles[index].x;
-    unit.y = occupiedTiles[index].y;
-  });
-
-  const system = new BattleSystem(battleState);
-
-  assert.equal(system.activatePower(), false);
-  assert.equal(system.getStateForSave().player.units.length, 5);
-  assert.equal(system.getStateForSave().player.charge, getCommanderPowerMax("falcon"));
-  assert.equal(system.getLastPowerResult().applied, false);
+  const result = system.getLastPowerResult();
+  assert.deepEqual(result.center, { x: 2, y: 2 });
+  assert.equal(result.targets[0].unitId, bruiser.id);
+  assert.equal(result.targets[0].amount, 70);
+  assert.equal(system.getStateForSave().enemy.charge, 0);
 });
 
 test("graves gains 50 percent bonus combat xp on kills and nonlethal attacks", () => {

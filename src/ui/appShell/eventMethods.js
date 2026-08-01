@@ -674,6 +674,7 @@ export const appShellEventMethods = {
         await this.controller.cancelSelectedAttack();
         break;
       case "cancel-transport-choice":
+      case "cancel-air-strike":
       case "cancel-support-choice":
       case "cancel-medpack-choice":
       case "cancel-extinguish-choice":

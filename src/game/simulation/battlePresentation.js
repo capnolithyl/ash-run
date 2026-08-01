@@ -799,6 +799,21 @@ function createPendingActionView(state) {
     return null;
   }
 
+  if (
+    pendingAction.type === "commander-power" &&
+    pendingAction.mode === "air-strike"
+  ) {
+    const commander = getCommanderById(pendingAction.commanderId);
+
+    return {
+      ...pendingAction,
+      powerName: commander?.active?.name ?? pendingAction.powerName ?? "Air Strike",
+      centerDamage: Math.max(0, Number(commander?.active?.centerDamage) || 0),
+      adjacentDamage: Math.max(0, Number(commander?.active?.adjacentDamage) || 0),
+      isAirStrikeTargeting: true
+    };
+  }
+
   const unit = findUnitById(state, pendingAction.unitId);
 
   if (!unit) {

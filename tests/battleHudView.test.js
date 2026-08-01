@@ -1141,6 +1141,26 @@ test("battle HUD turns the power meter into the activation control", () => {
   assert.match(renderHudForBattleState(enemyTurnState), /commander-power-button--readonly/);
 });
 
+test("battle HUD shows a cancellable Air Strike targeting prompt", () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("gunship", TURN_SIDES.PLAYER, 1, 1)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 4)]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const system = new BattleSystem(battleState);
+
+  assert.equal(system.activatePower(), true);
+  const html = renderHudForBattleState(system.getStateForSave());
+
+  assert.match(html, /Air Strike ready/);
+  assert.match(html, /Center: 70 damage/);
+  assert.match(html, /Cardinal tiles: 40 damage/);
+  assert.match(html, /data-action="cancel-air-strike"/);
+  assert.match(getActionButton(html, "activate-power"), /disabled/);
+  assert.doesNotMatch(html, /Unit Orders/);
+});
+
 test("battle HUD sizes the power meter tray to each commander cap", () => {
   const cases = [
     ["viper", 250, 5],

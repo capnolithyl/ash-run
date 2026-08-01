@@ -24,8 +24,6 @@ import {
   normalizeOwnedRunCardIds
 } from "../content/runUpgrades.js";
 import {
-  COMMANDER_POWER_PULSE_DURATION_MS,
-  COMMANDER_POWER_TARGET_STAGGER_MS,
   deriveBattleAnimationEvents,
   getBattleSnapshotTransitionDurationMs
 } from "../phaser/view/battleAnimationEvents.js";
@@ -769,15 +767,6 @@ export const controllerRunMethods = {
 
     if (enemyPowerUsed) {
       await this.playPowerOverlay(TURN_SIDES.ENEMY);
-      const enemyPowerResult = this.battleSystem?.getLastPowerResult?.() ?? null;
-      const enemyPowerTailMs = enemyPowerResult?.targets?.length
-        ? Math.max(0, enemyPowerResult.targets.length - 1) * COMMANDER_POWER_TARGET_STAGGER_MS +
-          COMMANDER_POWER_PULSE_DURATION_MS
-        : 0;
-
-      if (enemyPowerTailMs > 0) {
-        await delay(enemyPowerTailMs);
-      }
 
       if (this.state.battleSnapshot?.victory) {
         await this.persistCurrentRun();

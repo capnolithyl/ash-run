@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import {
   BATTLE_ATTACK_WINDOW_MS
 } from "../../core/constants.js";
+import { getUnitSpriteDefinition } from "../assets.js";
 import { getOwnerColor } from "./ownerPalette.js";
 
 function resolveAccentColor(accent, fallback) {
@@ -355,6 +356,99 @@ export class BattleFxLayer {
       ease: "Sine.Out"
     });
     destroyAfterTween(line, lineTween);
+  }
+
+  playAirStrikeFlyover(event, layout) {
+    if (!event.center || !Number.isInteger(event.mapWidth)) {
+      return;
+    }
+
+    const visualSpec = getUnitSpriteDefinition("payload", event.side, this.colorOptions);
+    const textureKey = visualSpec?.fallbackKey ?? visualSpec?.key ?? null;
+
+    if (!textureKey || !this.scene.textures.exists(textureKey)) {
+      return;
+    }
+
+    const direction = event.flyoverDirection === -1 ? -1 : 1;
+    const startX = direction > 0
+      ? layout.originX - layout.cellSize * 1.4
+      : layout.originX + event.mapWidth * layout.cellSize + layout.cellSize * 1.4;
+    const endX = direction > 0
+      ? layout.originX + event.mapWidth * layout.cellSize + layout.cellSize * 1.4
+      : layout.originX - layout.cellSize * 1.4;
+    const rowY = layout.originY + (event.center.y + 0.5) * layout.cellSize;
+    const shadow = this.scene.add
+      .ellipse(0, layout.cellSize * 0.24, layout.cellSize * 0.92, layout.cellSize * 0.22, 0x08040f, 0.34)
+      .setOrigin(0.5);
+    const aircraft = this.scene.add
+      .image(0, 0, textureKey)
+      .setOrigin(0.5)
+      .setDisplaySize(layout.cellSize * 1.34, layout.cellSize * 1.34)
+      .setFlipX(direction < 0);
+    const container = this.track(this.scene.add.container(startX, rowY, [shadow, aircraft]));
+    container.setDepth(47);
+
+    const tween = this.scene.tweens.add({
+      targets: container,
+      x: endX,
+      duration: Math.max(1, Number(event.flightDurationMs) || 1),
+      ease: "Linear"
+    });
+    destroyAfterTween(container, tween);
+  }
+
+  playAirStrikeImpact(event, layout) {
+    for (const tile of event.areaTiles ?? []) {
+      const point = toWorldPoint(layout, tile.x, tile.y);
+      const isCenter = tile.zone === "center";
+      const blast = this.track(
+        this.scene.add
+          .circle(
+            point.x,
+            point.y,
+            layout.cellSize * (isCenter ? 0.34 : 0.25),
+            isCenter ? 0xff643d : 0xffa23d,
+            isCenter ? 0.5 : 0.38
+          )
+          .setDepth(48)
+          .setBlendMode(Phaser.BlendModes.ADD)
+      );
+      const core = this.track(
+        this.scene.add
+          .circle(
+            point.x,
+            point.y,
+            layout.cellSize * (isCenter ? 0.16 : 0.12),
+            0xfff2c7,
+            isCenter ? 0.74 : 0.56
+          )
+          .setDepth(49)
+          .setBlendMode(Phaser.BlendModes.ADD)
+      );
+
+      const blastTween = this.scene.tweens.add({
+        targets: blast,
+        alpha: 0,
+        scale: isCenter ? 3.8 : 3.1,
+        duration: isCenter ? 520 : 440,
+        ease: "Cubic.Out"
+      });
+      destroyAfterTween(blast, blastTween);
+
+      const coreTween = this.scene.tweens.add({
+        targets: core,
+        alpha: 0,
+        scale: isCenter ? 4.4 : 3.7,
+        duration: isCenter ? 390 : 340,
+        ease: "Sine.Out"
+      });
+      destroyAfterTween(core, coreTween);
+    }
+
+    if (this.screenShakeEnabled) {
+      this.scene.cameras.main.shake(150, 0.0048);
+    }
   }
 
   playCommanderPowerTarget(target, layout, event) {

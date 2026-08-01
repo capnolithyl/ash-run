@@ -1,5 +1,7 @@
 import { BUILDING_KEYS, PROTOTYPE_ROSTER_CAP, TURN_SIDES } from "../../core/constants.js";
+import { getCommanderById, getCommanderPowerMax } from "../../content/commanders.js";
 import { BUILDING_RECRUITMENT, UNIT_CATALOG } from "../../content/unitCatalog.js";
+import { chooseEnemyAirStrikeCenter } from "../airStrike.js";
 import { appendLog } from "../battleLog.js";
 import { activateCommanderPower } from "../commanderEffects.js";
 import { getLivingUnits, getSelectedBuilding, getUnitAt } from "../selectors.js";
@@ -64,12 +66,64 @@ export function recruitUnit(system, unitTypeId) {
   return true;
 }
 
-export function activatePower(system) {
-  const result = activateCommanderPower(system.state, system.state.turn.activeSide, system.state.seed);
+export function activatePower(system, target = null) {
+  const side = system.state.turn.activeSide;
+  const commander = getCommanderById(system.state[side]?.commanderId);
+  const isAirStrike = commander?.active?.type === "falcon-air-strike";
+
+  if (
+    isAirStrike &&
+    side === TURN_SIDES.PLAYER &&
+    !target
+  ) {
+    if (
+      system.state.victory ||
+      system.state.pendingAction ||
+      system.state.player.charge < getCommanderPowerMax(commander.id) ||
+      system.state.player.powerUsedTurn === system.state.turn.number
+    ) {
+      return false;
+    }
+
+    system.clearSelection();
+    system.state.pendingAction = {
+      type: "commander-power",
+      mode: "air-strike",
+      commanderId: commander.id,
+      powerName: commander.active.name
+    };
+    return true;
+  }
+
+  let resolvedTarget = target;
+
+  if (isAirStrike && side === TURN_SIDES.ENEMY && !resolvedTarget) {
+    const choice = chooseEnemyAirStrikeCenter(
+      system.state,
+      side,
+      commander.active,
+      system.state.seed
+    );
+    system.state.seed = choice.seed;
+    resolvedTarget = choice.center;
+  }
+
+  const result = activateCommanderPower(
+    system.state,
+    side,
+    system.state.seed,
+    { target: resolvedTarget }
+  );
 
   system.state.lastPowerResult = structuredClone(result);
   system.state.seed = result.seed;
   result.notes.forEach((note) => appendLog(system.state, note));
+
+  if (result.changed && isAirStrike) {
+    system.clearPendingAction();
+    system.clearSelection();
+  }
+
   system.updateVictoryState();
   return result.changed;
 }

@@ -84,7 +84,7 @@ Charge behavior in the current prototype:
 - **Falcon** - _The Ace_
   - Quote: "Own the sky and the ground starts asking permission."
   - Passive: **Air Superiority** - Aircraft gain +20% attack and +10% armor.
-  - Active: **Reinforcements** - Spawn a Gunship at or near HQ. That Gunship can act immediately.
+  - Active: **Air Strike** - Choose any tile. Enemies on the center take 70 damage, while enemies on the cardinal adjacent tiles take 40 damage.
   - Starting squad: Grunt, Gunship, Longshot
 
 - **Nova** - _The Glass Cannon_

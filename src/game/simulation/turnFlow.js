@@ -226,7 +226,7 @@ export function endTurn(system) {
   }
 
   if (system.state.pendingAction) {
-    appendLog(system.state, "Resolve the selected unit action before ending the turn.");
+    appendLog(system.state, "Resolve or cancel the current action before ending the turn.");
     return false;
   }
 
@@ -1163,7 +1163,7 @@ export function shouldEnemyUsePower(system) {
     "echo-disruption",
     "blaze-ignition",
     "knox-fortress-protocol",
-    "falcon-reinforcements",
+    "falcon-air-strike",
     "graves-execution-window",
     "nova-overload",
     "sable-lucky-seven"

@@ -17,6 +17,7 @@ import {
   TURN_SIDES
 } from "../src/game/core/constants.js";
 import { GameController } from "../src/game/app/GameController.js";
+import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { getMapById, MAP_POOL, replaceCustomMaps } from "../src/game/content/maps.js";
 import { getDefaultUnlockedRunCardIds } from "../src/game/content/runUpgrades.js";
 import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
@@ -279,6 +280,45 @@ test("enemy-turn inspection clicks sync the HUD without persisting a save", asyn
   assert.equal(syncCalls, 1);
   assert.equal(receivedOptions.allowEnemyFocusDuringEnemyTurn, true);
   assert.equal(persistCalls, 0);
+});
+
+test("controller persists Falcon Air Strike targeting and confirms any selected tile", async () => {
+  const battleState = createTestBattleState({
+    playerUnits: [createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0)],
+    enemyUnits: [createPlacedUnit("grunt", TURN_SIDES.ENEMY, 7, 4)]
+  });
+  battleState.player.commanderId = "falcon";
+  battleState.player.charge = getCommanderPowerMax("falcon");
+  const controller = new GameController();
+  let persistCalls = 0;
+  let overlaySide = null;
+
+  controller.state.screen = SCREEN_IDS.BATTLE;
+  controller.battleSystem = new BattleSystem(battleState);
+  controller.persistCurrentRun = async () => {
+    persistCalls += 1;
+  };
+  controller.playPowerOverlay = async (side) => {
+    overlaySide = side;
+    controller.syncBattleState();
+  };
+  controller.syncBattleState();
+
+  await controller.activatePower();
+
+  assert.equal(controller.getState().battleSnapshot.pendingAction.mode, "air-strike");
+  assert.equal(
+    controller.getState().battleSnapshot.player.charge,
+    getCommanderPowerMax("falcon")
+  );
+
+  await controller.handleBattleTileClick(0, 5);
+
+  assert.equal(overlaySide, TURN_SIDES.PLAYER);
+  assert.equal(controller.battleSystem.getStateForSave().pendingAction, null);
+  assert.deepEqual(controller.battleSystem.getLastPowerResult().center, { x: 0, y: 5 });
+  assert.equal(controller.battleSystem.getStateForSave().player.charge, 0);
+  assert.equal(persistCalls, 2);
 });
 
 test("syncBattleState preserves player focus when enemy focus updates", () => {

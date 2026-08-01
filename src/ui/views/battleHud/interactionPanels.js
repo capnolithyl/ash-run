@@ -95,6 +95,7 @@ export function renderActionPrompt(battleSnapshot) {
 
   if (
     !pendingAction ||
+    pendingAction.isAirStrikeTargeting ||
     pendingAction.isTargeting ||
     pendingAction.isChoosingTransport ||
     pendingAction.isChoosingSupport ||
@@ -171,6 +172,25 @@ export function renderActionPrompt(battleSnapshot) {
           }
         </div>
       </div>
+    </div>
+  `;
+}
+
+export function renderAirStrikePrompt(battleSnapshot) {
+  const pendingAction = battleSnapshot.presentation?.pendingAction;
+
+  if (!pendingAction?.isAirStrikeTargeting) {
+    return "";
+  }
+
+  return `
+    <div class="battle-targeting-hint battle-targeting-hint--air-strike">
+      <div class="battle-targeting-hint__copy">
+        <p class="eyebrow">Commander Power</p>
+        <strong>${escapeHtml(pendingAction.powerName)} ready</strong>
+        <span>Select any tile. Center: ${pendingAction.centerDamage} damage. Cardinal tiles: ${pendingAction.adjacentDamage} damage.</span>
+      </div>
+      <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-air-strike">Cancel</button>
     </div>
   `;
 }

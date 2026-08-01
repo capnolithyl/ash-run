@@ -1,7 +1,11 @@
 import { TURN_SIDES, UNIT_TAGS } from "../core/constants.js";
 import { getCommanderById, getCommanderPowerMax } from "../content/commanders.js";
-import { createUnitFromType } from "./unitFactory.js";
-import { getLivingUnits, getBuildingAt, getTerrainAt, getUnitAt } from "./selectors.js";
+import {
+  getAirStrikeTargets,
+  getAirStrikeTiles,
+  isAirStrikeCenterInBounds
+} from "./airStrike.js";
+import { getLivingUnits, getBuildingAt } from "./selectors.js";
 import {
   canRunCardRepositionAfterAttack,
   getRunCardArmorModifier,
@@ -348,30 +352,10 @@ function createPowerTarget(unit, pulse, options = {}) {
     destroyed: options.destroyed === true,
     stat: options.stat ?? null,
     unitTypeId: unit.unitTypeId,
-    label: options.label ?? null
+    label: options.label ?? null,
+    zone: options.zone ?? null,
+    nominalAmount: Math.max(0, Number(options.nominalAmount) || 0)
   };
-}
-
-function canSpawnAirUnitAt(state, x, y) {
-  return Boolean(getTerrainAt(state, x, y)) && !getUnitAt(state, x, y);
-}
-
-function getFalconSpawnPosition(state, side) {
-  const hq = state.map.buildings.find((building) => building.type === "command" && building.owner === side);
-
-  if (!hq) {
-    return null;
-  }
-
-  const candidates = [
-    { x: hq.x, y: hq.y },
-    { x: hq.x + 1, y: hq.y },
-    { x: hq.x - 1, y: hq.y },
-    { x: hq.x, y: hq.y + 1 },
-    { x: hq.x, y: hq.y - 1 }
-  ];
-
-  return candidates.find((candidate) => canSpawnAirUnitAt(state, candidate.x, candidate.y)) ?? null;
 }
 
 function sideCanUseLuckySeven(state, side) {
@@ -770,35 +754,41 @@ function applyKnoxFortressProtocol(state, side, commander, notes) {
   };
 }
 
-function applyFalconReinforcements(state, side, commander, notes) {
-  const spawnPosition = getFalconSpawnPosition(state, side);
+function applyFalconAirStrike(state, side, commander, notes, options = {}) {
+  const center = options.target;
 
-  if (!spawnPosition) {
-    notes.push(`${commander.name} could not deploy reinforcements near HQ.`);
+  if (!isAirStrikeCenterInBounds(state, center)) {
+    notes.push(`${commander.name} needs an in-bounds Air Strike target.`);
     return { applied: false };
   }
 
-  const summon = createUnitFromType(commander.active.summonUnitTypeId ?? "gunship", side);
-  summon.x = spawnPosition.x;
-  summon.y = spawnPosition.y;
-  summon.temporary = {
-    source: "falcon-reinforcements",
-    battleLocalOnly: true
-  };
-  state[side].units.push(summon);
+  const targets = getAirStrikeTargets(state, side, center, commander.active).map((target) => {
+    target.unit.current.hp = Math.max(0, target.unit.current.hp - target.actualDamage);
+    const wasDestroyed = target.unit.current.hp <= 0;
 
-  if (side === TURN_SIDES.ENEMY && state.enemyTurn?.started) {
-    state.enemyTurn.pendingUnitIds.unshift(summon.id);
-  }
+    notes.push(
+      wasDestroyed
+        ? `${target.unit.name} took ${target.actualDamage} Air Strike damage and was destroyed.`
+        : `${target.unit.name} took ${target.actualDamage} Air Strike damage.`
+    );
 
-  notes.push(`${commander.name} called in a Gunship near HQ.`);
+    return createPowerTarget(target.unit, "damage", {
+      amount: target.actualDamage,
+      nominalAmount: target.damage,
+      destroyed: wasDestroyed,
+      zone: target.zone,
+      label: target.zone === "center" ? "DIRECT" : "BLAST"
+    });
+  });
+
+  notes.push(
+    `${commander.name} called an Air Strike on tile ${center.x + 1},${center.y + 1}.`
+  );
   return {
     applied: true,
-    targets: [
-      createPowerTarget(summon, "deploy", {
-        label: "DROP"
-      })
-    ]
+    center: { x: center.x, y: center.y },
+    areaTiles: getAirStrikeTiles(state, center, commander.active),
+    targets
   };
 }
 
@@ -867,13 +857,13 @@ const activeHandlers = {
   "echo-disruption": applyEchoDisruption,
   "blaze-ignition": applyBlazeIgnition,
   "knox-fortress-protocol": applyKnoxFortressProtocol,
-  "falcon-reinforcements": applyFalconReinforcements,
+  "falcon-air-strike": applyFalconAirStrike,
   "graves-execution-window": applyGravesExecutionWindow,
   "nova-overload": applyNovaOverload,
   "sable-lucky-seven": applySableLuckySeven
 };
 
-export function activateCommanderPower(state, side, seed) {
+export function activateCommanderPower(state, side, seed, options = {}) {
   const commander = getCommanderForSide(state, side);
   const notes = [];
 
@@ -885,6 +875,10 @@ export function activateCommanderPower(state, side, seed) {
     return { changed: false, applied: false, seed: state.seed, notes };
   }
 
+  if (state[side].powerUsedTurn === state.turn?.number) {
+    return { changed: false, applied: false, seed: state.seed, notes };
+  }
+
   const handler = activeHandlers[commander.active.type];
 
   if (!handler) {
@@ -892,7 +886,7 @@ export function activateCommanderPower(state, side, seed) {
     return { changed: false, applied: false, seed: state.seed, notes };
   }
 
-  const outcome = handler(state, side, commander, notes) ?? { applied: true };
+  const outcome = handler(state, side, commander, notes, options) ?? { applied: true };
 
   if (!outcome.applied) {
     return { changed: false, applied: false, seed: state.seed, notes };
@@ -914,6 +908,8 @@ export function activateCommanderPower(state, side, seed) {
     powerName: commander.active.name,
     powerType: commander.active.type,
     accent: commander.accent,
+    center: outcome.center ?? null,
+    areaTiles: outcome.areaTiles ?? [],
     targets: outcome.targets ?? [],
     seed: state.seed,
     notes

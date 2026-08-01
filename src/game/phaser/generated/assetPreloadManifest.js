@@ -1983,7 +1983,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/controllerBattleMethods.js",
     "kind": "script",
-    "byteSize": 20672,
+    "byteSize": 22476,
     "environment": "development"
   },
   {
@@ -2001,13 +2001,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/controllerRunMethods.js",
     "kind": "script",
-    "byteSize": 30337,
+    "byteSize": 29880,
     "environment": "development"
   },
   {
     "url": "./src/game/app/controllerShared.js",
     "kind": "script",
-    "byteSize": 4054,
+    "byteSize": 4084,
     "environment": "development"
   },
   {
@@ -2043,7 +2043,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/content/commanders.js",
     "kind": "script",
-    "byteSize": 7587,
+    "byteSize": 7615,
     "environment": "development"
   },
   {
@@ -2265,7 +2265,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/scenes/battleScene/renderBoard.js",
     "kind": "script",
-    "byteSize": 24749,
+    "byteSize": 25801,
     "environment": "development"
   },
   {
@@ -2295,7 +2295,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/view/battleAnimationEvents.js",
     "kind": "script",
-    "byteSize": 26820,
+    "byteSize": 27652,
     "environment": "development"
   },
   {
@@ -2313,7 +2313,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/view/BattleFxLayer.js",
     "kind": "script",
-    "byteSize": 26092,
+    "byteSize": 29137,
     "environment": "development"
   },
   {
@@ -2349,7 +2349,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/view/SelectionLayer.js",
     "kind": "script",
-    "byteSize": 27286,
+    "byteSize": 28398,
     "environment": "development"
   },
   {
@@ -2395,6 +2395,12 @@ export const ASSET_PRELOAD_MANIFEST = [
     "environment": "development"
   },
   {
+    "url": "./src/game/simulation/airStrike.js",
+    "kind": "script",
+    "byteSize": 4185,
+    "environment": "development"
+  },
+  {
     "url": "./src/game/simulation/battleLog.js",
     "kind": "script",
     "byteSize": 1745,
@@ -2403,7 +2409,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/battlePresentation.js",
     "kind": "script",
-    "byteSize": 33440,
+    "byteSize": 33938,
     "environment": "development"
   },
   {
@@ -2415,7 +2421,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/battleSystem.js",
     "kind": "script",
-    "byteSize": 13008,
+    "byteSize": 13029,
     "environment": "development"
   },
   {
@@ -2445,7 +2451,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/commanderEffects.js",
     "kind": "script",
-    "byteSize": 30680,
+    "byteSize": 30827,
     "environment": "development"
   },
   {
@@ -2529,13 +2535,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/playerActions/recruitmentActions.js",
     "kind": "script",
-    "byteSize": 2619,
+    "byteSize": 3966,
     "environment": "development"
   },
   {
     "url": "./src/game/simulation/playerActions/selectionFlow.js",
     "kind": "script",
-    "byteSize": 9492,
+    "byteSize": 9828,
     "environment": "development"
   },
   {
@@ -2739,7 +2745,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/eventMethods.js",
     "kind": "script",
-    "byteSize": 30168,
+    "byteSize": 30200,
     "environment": "development"
   },
   {
@@ -2841,7 +2847,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/battleHud/interactionPanels.js",
     "kind": "script",
-    "byteSize": 27702,
+    "byteSize": 28490,
     "environment": "development"
   },
   {
@@ -2865,7 +2871,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/battleHudView.js",
     "kind": "script",
-    "byteSize": 14918,
+    "byteSize": 14990,
     "environment": "development"
   },
   {
@@ -2930,4 +2936,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 109335754;
+export const ASSET_PRELOAD_TOTAL_BYTES = 109350626;

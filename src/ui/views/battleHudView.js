@@ -7,6 +7,7 @@ import {
   renderCommanderPanel
 } from "./battleHud/commanderPanels.js";
 import {
+  renderAirStrikePrompt,
   renderActionPrompt,
   renderCommandFeed,
   renderExtinguishPrompt,
@@ -374,6 +375,7 @@ export function renderBattleHudView(state, options = {}) {
         experiencePresentation
       )}
       ${renderActionPrompt(battleSnapshot)}
+      ${renderAirStrikePrompt(battleSnapshot)}
       ${renderTargetingPrompt(battleSnapshot)}
       ${renderUnloadPrompt(battleSnapshot)}
       ${renderTransportPrompt(battleSnapshot)}

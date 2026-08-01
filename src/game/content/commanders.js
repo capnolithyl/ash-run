@@ -163,10 +163,11 @@ export const COMMANDERS = [
       summary: "Aircraft gain 20% attack and 10% armor.",
     },
     active: {
-      name: "Reinforcements",
-      type: "falcon-reinforcements",
-      summonUnitTypeId: "gunship",
-      summary: "Spawn a Gunship at or near HQ. That Gunship can act immediately.",
+      name: "Air Strike",
+      type: "falcon-air-strike",
+      centerDamage: 70,
+      adjacentDamage: 40,
+      summary: "Strike any tile for 70 damage at the center and 40 damage on cardinal adjacent tiles.",
     },
   },
   {

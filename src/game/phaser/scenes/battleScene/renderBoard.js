@@ -495,8 +495,15 @@ export const battleSceneRenderMethods = {
     }
 
     powerEvents.forEach((event) => {
-      this.fxLayer.schedule(Math.max(0, (event.startDelayMs ?? 0) - 90), () => {
-        this.fxLayer.playCommanderPowerWave(event, layout);
+      const isAirStrike = event.powerType === "falcon-air-strike";
+      const powerStartDelayMs = Math.max(0, event.startDelayMs ?? 0);
+
+      this.fxLayer.schedule(Math.max(0, powerStartDelayMs - 90), () => {
+        if (isAirStrike) {
+          this.fxLayer.playAirStrikeFlyover(event, layout);
+        } else {
+          this.fxLayer.playCommanderPowerWave(event, layout);
+        }
         playBattleCue(
           this,
           `commander.${event.commanderId}`,
@@ -507,9 +514,30 @@ export const battleSceneRenderMethods = {
         );
       });
 
+      if (isAirStrike) {
+        const impactDelayMs = powerStartDelayMs + Math.max(0, event.impactDelayMs ?? 0);
+
+        this.fxLayer.schedule(
+          Math.max(powerStartDelayMs, impactDelayMs - 120),
+          () => {
+            playBattleCue(this, "weapon.payload_bombs", event, snapshot, "air-strike-release", {
+              dedupeKey: `air-strike-release:${snapshot.id}:${event.activationId}`
+            });
+          }
+        );
+        this.fxLayer.schedule(impactDelayMs, () => {
+          this.fxLayer.playAirStrikeImpact(event, layout);
+          playBattleCue(this, "impact.hit", event, snapshot, "air-strike-impact", {
+            dedupeKey: `air-strike-impact:${snapshot.id}:${event.activationId}`
+          });
+        });
+      }
+
       (event.targets ?? []).forEach((target, index) => {
         const targetDelayMs =
-          (event.startDelayMs ?? 0) + index * (event.targetStaggerMs ?? 0);
+          powerStartDelayMs +
+          Math.max(0, event.impactDelayMs ?? 0) +
+          index * (event.targetStaggerMs ?? 0);
 
         this.unitLayer.preparePowerEffect(target.unitId);
         this.fxLayer.schedule(targetDelayMs, () => {
