@@ -3,9 +3,9 @@ import { SoundEffectsDirector } from "./SoundEffectsDirector.js";
 import { SFX_CUE_IDS } from "./SfxCatalog.js";
 
 export const DEFAULT_AUDIO_OPTIONS = Object.freeze({
-  masterVolume: 0.4,
-  musicVolume: 1,
-  sfxVolume: 0.85,
+  masterVolume: 0.45,
+  musicVolume: 0.6,
+  sfxVolume: 0.45,
   muted: false,
 });
 

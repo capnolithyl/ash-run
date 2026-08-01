@@ -2193,7 +2193,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/audio/GameAudioDirector.js",
     "kind": "script",
-    "byteSize": 6189,
+    "byteSize": 6192,
     "environment": "development"
   },
   {
@@ -2499,7 +2499,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/enemyAi/turnPlanning.js",
     "kind": "script",
-    "byteSize": 18181,
+    "byteSize": 20212,
     "environment": "development"
   },
   {
@@ -2571,7 +2571,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/selectors.js",
     "kind": "script",
-    "byteSize": 14782,
+    "byteSize": 14845,
     "environment": "development"
   },
   {
@@ -2589,7 +2589,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/turnFlow.js",
     "kind": "script",
-    "byteSize": 36131,
+    "byteSize": 37946,
     "environment": "development"
   },
   {
@@ -2601,7 +2601,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/state/defaults.js",
     "kind": "script",
-    "byteSize": 2462,
+    "byteSize": 2465,
     "environment": "development"
   },
   {
@@ -2883,7 +2883,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/optionFieldsView.js",
     "kind": "script",
-    "byteSize": 12280,
+    "byteSize": 12282,
     "environment": "development"
   },
   {
@@ -2930,4 +2930,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 109331837;
+export const ASSET_PRELOAD_TOTAL_BYTES = 109335754;

@@ -44,6 +44,7 @@ import {
   pickFallbackMovementTile
 } from "./enemyAi.js";
 import {
+  canUnitOccupyTile,
   canUnitAttackTarget,
   getAttackProfileForTarget,
   getLivingUnits,
@@ -319,47 +320,90 @@ export function forcePassEnemyTurn(system, reason = "safety") {
 
 function moveEnemyUnit(system, unit, tile, movementBudget) {
   const moved = tile && (tile.x !== unit.x || tile.y !== unit.y);
+
+  if (!moved) {
+    return {
+      moved: false,
+      moveSegments: 0
+    };
+  }
+
+  if (!canUnitOccupyTile(system.state, unit, tile.x, tile.y)) {
+    return {
+      moved: false,
+      moveSegments: 0
+    };
+  }
+
   const movePath = moved
     ? getMovementPath(system.state, unit, movementBudget, tile.x, tile.y)
     : [];
-  const moveCost = moved
-    ? getMovementPathCost(system.state, unit, movementBudget, tile.x, tile.y) ?? 0
-    : 0;
-  const moveSegments = Math.max(0, movePath.length - 1);
+  const moveCost = getMovementPathCost(
+    system.state,
+    unit,
+    movementBudget,
+    tile.x,
+    tile.y
+  );
 
-  if (moved) {
-    unit.x = tile.x;
-    unit.y = tile.y;
-    unit.movedThisTurn = true;
-    unit.current.stamina = Math.max(0, unit.current.stamina - moveCost);
-    if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
-      unit.transport.canUnloadAfterMove = true;
-    }
-    system.syncTransportCargoPosition(unit);
-    unit.hasMoved = true;
-    system.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  if (moveCost === null || movePath.length < 2) {
+    return {
+      moved: false,
+      moveSegments: 0
+    };
   }
 
+  const moveSegments = Math.max(0, movePath.length - 1);
+
+  unit.x = tile.x;
+  unit.y = tile.y;
+  unit.movedThisTurn = true;
+  unit.current.stamina = Math.max(0, unit.current.stamina - moveCost);
+  if (unit.unitTypeId === "runner" && unit.transport?.carryingUnitId) {
+    unit.transport.canUnloadAfterMove = true;
+  }
+  system.syncTransportCargoPosition(unit);
+  unit.hasMoved = true;
+  system.state.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+
   return {
-    moved,
+    moved: true,
     moveSegments
   };
 }
 
-function queueEnemySlipstreamMove(system, unitId) {
+function areTilesEqual(left, right) {
+  return Boolean(left && right && left.x === right.x && left.y === right.y);
+}
+
+function queueEnemySlipstreamMove(system, unitId, projectedPostAttackTile = undefined) {
   const unit = findUnitById(system.state, unitId);
 
   if (!unit || !canSlipstreamAfterAttack(system.state, unit) || unit.transport?.carriedByUnitId) {
+    if (projectedPostAttackTile !== undefined && projectedPostAttackTile !== null) {
+      clearCachedEnemyTurnPlan(system.state.enemyTurn);
+    }
     return null;
   }
 
   const reachableTiles = getReachableTiles(system.state, unit, 1);
 
   if (reachableTiles.length === 0) {
+    if (projectedPostAttackTile !== undefined) {
+      clearCachedEnemyTurnPlan(system.state.enemyTurn);
+    }
     return null;
   }
 
   const slipstreamTile = pickEnemySlipstreamTile(system.state, unit, reachableTiles);
+  const livePostAttackTile = slipstreamTile ?? { x: unit.x, y: unit.y };
+
+  if (
+    projectedPostAttackTile !== undefined &&
+    !areTilesEqual(projectedPostAttackTile, livePostAttackTile)
+  ) {
+    clearCachedEnemyTurnPlan(system.state.enemyTurn);
+  }
 
   if (!slipstreamTile || (slipstreamTile.x === unit.x && slipstreamTile.y === unit.y)) {
     return null;
@@ -389,10 +433,26 @@ function performQueuedEnemySlipstreamMove(system) {
   const unit = findUnitById(system.state, queuedSlipstream.unitId);
 
   if (!unit || !canSlipstreamAfterAttack(system.state, unit) || unit.transport?.carriedByUnitId) {
+    clearCachedEnemyTurnPlan(system.state.enemyTurn);
     return null;
   }
 
   if (unit.x === queuedSlipstream.x && unit.y === queuedSlipstream.y) {
+    clearCachedEnemyTurnPlan(system.state.enemyTurn);
+    return null;
+  }
+
+  if (
+    !canUnitOccupyTile(system.state, unit, queuedSlipstream.x, queuedSlipstream.y) ||
+    getMovementPathCost(
+      system.state,
+      unit,
+      1,
+      queuedSlipstream.x,
+      queuedSlipstream.y
+    ) === null
+  ) {
+    clearCachedEnemyTurnPlan(system.state.enemyTurn);
     return null;
   }
 
@@ -522,6 +582,10 @@ function isPlannedActionReachable(state, unit, action, movementBudget) {
   const tile = action?.tile;
 
   if (!tile || !Number.isFinite(tile.x) || !Number.isFinite(tile.y)) {
+    return false;
+  }
+
+  if (!canUnitOccupyTile(state, unit, tile.x, tile.y)) {
     return false;
   }
 
@@ -675,7 +739,11 @@ export function processEnemyTurnStep(system) {
     const changed = system.attackTarget(queuedAttack.attackerId, queuedAttack.targetId);
 
     if (changed) {
-      queueEnemySlipstreamMove(system, queuedAttack.attackerId);
+      queueEnemySlipstreamMove(
+        system,
+        queuedAttack.attackerId,
+        queuedAttack.postAttackTile
+      );
       return {
         changed: true,
         done: system.state.victory || !hasPendingEnemyTurn(system),
@@ -683,6 +751,8 @@ export function processEnemyTurnStep(system) {
         unitId: queuedAttack.attackerId
       };
     }
+
+    clearCachedEnemyTurnPlan(system.state.enemyTurn);
   }
 
   if (system.state.enemyTurn.pendingSlipstream) {
@@ -800,7 +870,10 @@ export function processEnemyTurnStep(system) {
         if (movement.moved) {
           system.state.enemyTurn.pendingAttack = {
             attackerId: unit.id,
-            targetId: plannedAction.targetId
+            targetId: plannedAction.targetId,
+            postAttackTile: plannedAction.postAttackTile
+              ? { ...plannedAction.postAttackTile }
+              : null
           };
           return {
             changed: true,
@@ -812,7 +885,11 @@ export function processEnemyTurnStep(system) {
         }
 
         if (system.attackTarget(unit.id, plannedAction.targetId)) {
-          queueEnemySlipstreamMove(system, unit.id);
+          queueEnemySlipstreamMove(
+            system,
+            unit.id,
+            plannedAction.postAttackTile ?? null
+          );
           return {
             changed: true,
             done: system.state.victory || !hasPendingEnemyTurn(system),

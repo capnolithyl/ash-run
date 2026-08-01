@@ -85,9 +85,9 @@ test("audio option defaults and old saves normalize category volumes without a m
       muted: createDefaultOptions().muted
     },
     {
-      masterVolume: 0.4,
-      musicVolume: 1,
-      sfxVolume: 0.85,
+      masterVolume: 0.45,
+      musicVolume: 0.6,
+      sfxVolume: 0.45,
       muted: false
     }
   );
@@ -101,7 +101,7 @@ test("audio option defaults and old saves normalize category volumes without a m
 
   assert.equal(repaired.masterVolume, 1);
   assert.equal(repaired.musicVolume, 0);
-  assert.equal(repaired.sfxVolume, 0.85);
+  assert.equal(repaired.sfxVolume, 0.45);
   assert.equal(repaired.muted, false);
 });
 

@@ -123,6 +123,12 @@ function createFakeScene() {
 }
 
 test("audio option normalization and effective category gains are bounded", () => {
+  assert.deepEqual(DEFAULT_AUDIO_OPTIONS, {
+    masterVolume: 0.45,
+    musicVolume: 0.6,
+    sfxVolume: 0.45,
+    muted: false,
+  });
   assert.deepEqual(normalizeAudioOptions({}), DEFAULT_AUDIO_OPTIONS);
   assert.deepEqual(normalizeAudioOptions({
     masterVolume: 2,

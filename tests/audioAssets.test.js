@@ -83,18 +83,23 @@ test("music track selection follows the active commander's available theme", () 
   );
 });
 
-test("new audio options default to a quiet master volume", () => {
+test("new audio options use the balanced default volume mix", () => {
   const metaState = createDefaultMetaState();
   const fallbackOptionsHtml = renderOptionFields({});
 
   assert.equal(metaState.options.combatCutsceneAnimations, true);
-  assert.equal(metaState.options.masterVolume, 0.4);
+  assert.equal(metaState.options.masterVolume, 0.45);
+  assert.equal(metaState.options.musicVolume, 0.6);
+  assert.equal(metaState.options.sfxVolume, 0.45);
   assert.equal(metaState.options.muted, false);
   assert.match(fallbackOptionsHtml, /Combat Cutscene Animations/);
   assert.match(
     fallbackOptionsHtml,
     /<input type="checkbox"[^>]*checked[^>]*data-option="combatCutsceneAnimations"/
   );
-  assert.match(fallbackOptionsHtml, /Master Volume <strong>40%<\/strong>/);
-  assert.match(fallbackOptionsHtml, /value="0.4"/);
+  assert.match(fallbackOptionsHtml, /Master Volume <strong>45%<\/strong>/);
+  assert.match(fallbackOptionsHtml, /Music Volume <strong>60%<\/strong>/);
+  assert.match(fallbackOptionsHtml, /SFX Volume <strong>45%<\/strong>/);
+  assert.match(fallbackOptionsHtml, /value="0.45"/);
+  assert.match(fallbackOptionsHtml, /value="0.6"/);
 });

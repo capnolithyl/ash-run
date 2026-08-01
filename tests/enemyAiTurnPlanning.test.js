@@ -45,6 +45,19 @@ function setEnemyTurn(state, unitIds) {
   };
 }
 
+function assertUniqueDeployedUnitPositions(state) {
+  const deployedUnits = [...state.player.units, ...state.enemy.units].filter(
+    (unit) => unit.current.hp > 0 && !unit.transport?.carriedByUnitId
+  );
+  const occupiedTiles = deployedUnits.map((unit) => `${unit.x},${unit.y}`);
+
+  assert.equal(
+    new Set(occupiedTiles).size,
+    occupiedTiles.length,
+    "living deployed units must occupy unique tiles"
+  );
+}
+
 test("enemy planner reorders units so a heavy opener creates a finisher kill", () => {
   const target = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 3);
   const finisher = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 3);
@@ -130,6 +143,275 @@ test("enemy planner gives up the best solo tile to preserve a follow-up lane", (
   assert.notDeepEqual(plan.action.tile, soloOption.tile);
   assert.deepEqual(plan.sequence[1].tile, soloOption.tile);
   assert.equal(plan.sequence[1].unitId, finisher.id);
+});
+
+test("enemy planner projects echo slipstream so a grunt can finish through the vacated lane", () => {
+  const target = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 4, 3, {
+    current: {
+      hp: 80
+    }
+  });
+  const distantRunner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 0, 3);
+  const opener = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 5, 3);
+  const finisher = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 3);
+
+  Object.assign(target.stats, {
+    attack: 0,
+    armor: 14,
+    luck: 0,
+    maxHealth: 100
+  });
+  Object.assign(distantRunner.stats, { attack: 0, luck: 0 });
+  Object.assign(opener.stats, { attack: 70, luck: 0 });
+  Object.assign(finisher.stats, { attack: 62, luck: 0 });
+
+  const state = createTestBattleState({
+    width: 7,
+    height: 5,
+    playerUnits: [target, distantRunner],
+    enemyUnits: [opener, finisher],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 7
+  });
+  state.map.tiles = Array.from(
+    { length: state.map.height },
+    () => Array(state.map.width).fill(TERRAIN_KEYS.WATER)
+  );
+  state.map.tiles[3] = Array(state.map.width).fill(TERRAIN_KEYS.ROAD);
+  state.map.tiles[4][5] = TERRAIN_KEYS.ROAD;
+  state.map.buildings = [
+    {
+      id: "player-command",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.PLAYER,
+      x: 0,
+      y: 3
+    },
+    {
+      id: "enemy-command",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.ENEMY,
+      x: 5,
+      y: 4
+    }
+  ];
+  state.enemy.commanderId = "echo";
+  setEnemyTurn(state, [opener.id, finisher.id]);
+
+  const plan = planEnemyTurn(state, state.enemyTurn.pendingUnitIds);
+
+  assert.deepEqual(
+    plan.sequence.map((action) => ({
+      unitId: action.unitId,
+      targetId: action.targetId,
+      tile: action.tile,
+      postAttackTile: action.postAttackTile
+    })),
+    [
+      {
+        unitId: opener.id,
+        targetId: target.id,
+        tile: { x: 5, y: 3 },
+        postAttackTile: { x: 5, y: 4 }
+      },
+      {
+        unitId: finisher.id,
+        targetId: target.id,
+        tile: { x: 5, y: 3 },
+        postAttackTile: { x: 6, y: 3 }
+      }
+    ]
+  );
+
+  const system = new BattleSystem(state);
+  const openerAttack = system.processEnemyTurnStep();
+  assert.equal(openerAttack.type, "attack");
+  assertUniqueDeployedUnitPositions(system.getStateForSave());
+
+  const openerSlipstream = system.processEnemyTurnStep();
+  assert.equal(openerSlipstream.type, "move");
+  assert.deepEqual(
+    (({ x, y }) => ({ x, y }))(
+      system.getStateForSave().enemy.units.find((unit) => unit.id === opener.id)
+    ),
+    { x: 5, y: 4 }
+  );
+  assertUniqueDeployedUnitPositions(system.getStateForSave());
+
+  const finisherMove = system.processEnemyTurnStep();
+  assert.equal(finisherMove.type, "move");
+  assert.deepEqual(
+    (({ x, y }) => ({ x, y }))(
+      system.getStateForSave().enemy.units.find((unit) => unit.id === finisher.id)
+    ),
+    { x: 5, y: 3 }
+  );
+  assertUniqueDeployedUnitPositions(system.getStateForSave());
+
+  const finisherAttack = system.processEnemyTurnStep();
+  assert.equal(finisherAttack.type, "attack");
+  assert.equal(
+    system.getStateForSave().player.units.some((unit) => unit.id === target.id),
+    false
+  );
+  assertUniqueDeployedUnitPositions(system.getStateForSave());
+});
+
+test("enemy execution rejects a cached attack destination that became occupied", () => {
+  const target = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 4, 2);
+  const mover = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 1, 2);
+  const blocker = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 3, 2);
+
+  Object.assign(target.stats, { attack: 0, luck: 0, maxHealth: 1000 });
+  target.current.hp = 1000;
+  Object.assign(mover.stats, { attack: 20, luck: 0 });
+
+  const state = createTestBattleState({
+    width: 7,
+    height: 5,
+    playerUnits: [target],
+    enemyUnits: [mover, blocker],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  fillRoads(state);
+  state.map.buildings = [];
+  setEnemyTurn(state, [mover.id]);
+  state.enemyTurn.plannedActions = [
+    {
+      type: "attack",
+      unitId: mover.id,
+      targetId: target.id,
+      tile: { x: blocker.x, y: blocker.y }
+    }
+  ];
+  state.enemyTurn.plannedPendingUnitIdsKey = mover.id;
+
+  const system = new BattleSystem(state);
+  const step = system.processEnemyTurnStep();
+  const afterStep = system.getStateForSave();
+  const updatedMover = afterStep.enemy.units.find((unit) => unit.id === mover.id);
+
+  assert.equal(step.type, "move");
+  assert.notDeepEqual(
+    { x: updatedMover.x, y: updatedMover.y },
+    { x: blocker.x, y: blocker.y }
+  );
+  assert.equal(afterStep.enemyTurn.pendingAttack.targetId, target.id);
+  assertUniqueDeployedUnitPositions(afterStep);
+});
+
+test("queued echo slipstream refuses a destination occupied before resolution", () => {
+  const target = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 3);
+  const attacker = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 5, 3);
+  const blocker = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 5, 4);
+  attacker.hasAttacked = true;
+  attacker.hasMoved = true;
+
+  const state = createTestBattleState({
+    width: 7,
+    height: 6,
+    playerUnits: [target],
+    enemyUnits: [attacker, blocker],
+    activeSide: TURN_SIDES.ENEMY
+  });
+  fillRoads(state);
+  state.map.buildings = [];
+  state.enemy.commanderId = "echo";
+  setEnemyTurn(state, []);
+  state.enemyTurn.pendingSlipstream = {
+    unitId: attacker.id,
+    x: blocker.x,
+    y: blocker.y,
+    moveSegments: 1
+  };
+  state.enemyTurn.plannedActions = [
+    {
+      type: "attack",
+      unitId: blocker.id,
+      targetId: target.id,
+      tile: { x: blocker.x, y: blocker.y }
+    }
+  ];
+  state.enemyTurn.plannedPendingUnitIdsKey = blocker.id;
+
+  const system = new BattleSystem(state);
+  const step = system.processEnemyTurnStep();
+  const afterStep = system.getStateForSave();
+  const updatedAttacker = afterStep.enemy.units.find((unit) => unit.id === attacker.id);
+
+  assert.equal(step.changed, false);
+  assert.deepEqual(
+    { x: updatedAttacker.x, y: updatedAttacker.y },
+    { x: attacker.x, y: attacker.y }
+  );
+  assert.deepEqual(afterStep.enemyTurn.plannedActions, []);
+  assert.equal(afterStep.enemyTurn.plannedPendingUnitIdsKey, "");
+  assertUniqueDeployedUnitPositions(afterStep);
+});
+
+test("enemy execution clears cached actions when live echo slipstream differs from projection", () => {
+  const target = createPlacedUnit("breaker", TURN_SIDES.PLAYER, 4, 3);
+  const attacker = createPlacedUnit("breaker", TURN_SIDES.ENEMY, 5, 3);
+  const follower = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 6, 3);
+
+  Object.assign(target.stats, {
+    attack: 0,
+    luck: 0,
+    maxHealth: 1000
+  });
+  target.current.hp = 1000;
+  Object.assign(attacker.stats, { attack: 70, luck: 0 });
+  attacker.hasMoved = true;
+
+  const state = createTestBattleState({
+    width: 7,
+    height: 6,
+    playerUnits: [target],
+    enemyUnits: [attacker, follower],
+    activeSide: TURN_SIDES.ENEMY,
+    seed: 7
+  });
+  fillRoads(state);
+  state.map.buildings = [
+    {
+      id: "enemy-command",
+      type: BUILDING_KEYS.COMMAND,
+      owner: TURN_SIDES.ENEMY,
+      x: 5,
+      y: 4
+    }
+  ];
+  state.enemy.commanderId = "echo";
+  setEnemyTurn(state, [follower.id]);
+  state.enemyTurn.pendingAttack = {
+    attackerId: attacker.id,
+    targetId: target.id,
+    postAttackTile: { x: 5, y: 2 }
+  };
+  state.enemyTurn.plannedActions = [
+    {
+      type: "attack",
+      unitId: follower.id,
+      targetId: target.id,
+      tile: { x: follower.x, y: follower.y }
+    }
+  ];
+  state.enemyTurn.plannedPendingUnitIdsKey = follower.id;
+
+  const system = new BattleSystem(state);
+  const step = system.processEnemyTurnStep();
+  const afterStep = system.getStateForSave();
+
+  assert.equal(step.type, "attack");
+  assert.deepEqual(afterStep.enemyTurn.pendingSlipstream, {
+    unitId: attacker.id,
+    x: 5,
+    y: 4,
+    moveSegments: 1
+  });
+  assert.deepEqual(afterStep.enemyTurn.plannedActions, []);
+  assert.equal(afterStep.enemyTurn.plannedPendingUnitIdsKey, "");
+  assertUniqueDeployedUnitPositions(afterStep);
 });
 
 test("enemy archetypes use optimistic, expected, and conservative kill forecasts", () => {

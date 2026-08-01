@@ -234,7 +234,7 @@ function occupiesBlockingLayer(movingUnit, occupant) {
   return isAirUnit(movingUnit) === isAirUnit(occupant);
 }
 
-function canUnitOccupyTile(state, unit, x, y) {
+export function canUnitOccupyTile(state, unit, x, y) {
   const terrainKey = state.map.tiles[y]?.[x];
   const terrain = TERRAIN_LIBRARY[terrainKey];
 
@@ -242,7 +242,8 @@ function canUnitOccupyTile(state, unit, x, y) {
     return false;
   }
 
-  return !getUnitAt(state, x, y);
+  const occupant = getUnitAt(state, x, y);
+  return !occupant || occupant.id === unit.id;
 }
 
 export function getValidUnloadTiles(state, runner, carriedUnit) {

@@ -9,6 +9,7 @@ import {
   getBuildingSupplyPreview
 } from "../battleServicing.js";
 import {
+  canSlipstreamAfterAttack,
   getMovementModifier,
   shouldDefenderPreemptCombat,
   shouldPreventCombatDamage
@@ -24,6 +25,7 @@ import {
 } from "../missionRules.js";
 import { isUnitZombified } from "../runCardEffects.js";
 import {
+  canUnitOccupyTile,
   getAttackProfileForTarget,
   getMovementPathCost,
   getReachableTiles
@@ -33,7 +35,8 @@ import {
   getCapturePlans,
   getRepairPlans,
   getScoredMoveAttackOptions,
-  getStrategicObjectiveScore
+  getStrategicObjectiveScore,
+  pickEnemySlipstreamTile
 } from "./movementScoring.js";
 import { getEnemyAiArchetype, getEnemyAiProfile } from "./profiles.js";
 import { getBestRunnerTransportPlan } from "./transportPlans.js";
@@ -83,7 +86,7 @@ function getSequenceKey(sequence) {
   return sequence
     .map(
       (action) =>
-        `${action.type}:${action.unitId}:${action.targetId ?? action.buildingId ?? ""}:${action.tile.x},${action.tile.y}`
+        `${action.type}:${action.unitId}:${action.targetId ?? action.buildingId ?? ""}:${action.tile.x},${action.tile.y}:${action.postAttackTile?.x ?? ""},${action.postAttackTile?.y ?? ""}`
     )
     .join("|");
 }
@@ -332,21 +335,83 @@ function getActionCandidates(state, pendingUnitIds) {
     .slice(0, ENEMY_TURN_PLANNER_BRANCH_LIMIT);
 }
 
+function syncProjectedTransportCargoPosition(state, unit) {
+  const carriedUnitId = unit.transport?.carryingUnitId;
+
+  if (!carriedUnitId) {
+    return;
+  }
+
+  const carriedUnit = findUnitById(state, carriedUnitId);
+
+  if (carriedUnit) {
+    carriedUnit.x = unit.x;
+    carriedUnit.y = unit.y;
+  }
+}
+
 function projectMovement(state, unit, tile) {
   const movementBudget = getMovementBudget(state, unit);
-  const movementCost =
-    getMovementPathCost(state, unit, movementBudget, tile.x, tile.y) ?? 0;
   const moved = tile.x !== unit.x || tile.y !== unit.y;
 
   if (moved) {
+    if (!canUnitOccupyTile(state, unit, tile.x, tile.y)) {
+      return null;
+    }
+
+    const movementCost = getMovementPathCost(
+      state,
+      unit,
+      movementBudget,
+      tile.x,
+      tile.y
+    );
+
+    if (movementCost === null) {
+      return null;
+    }
+
     unit.x = tile.x;
     unit.y = tile.y;
     unit.movedThisTurn = true;
     unit.current.stamina = Math.max(0, unit.current.stamina - movementCost);
     unit.hasMoved = true;
+    syncProjectedTransportCargoPosition(state, unit);
   }
 
   return moved;
+}
+
+function projectSlipstreamMovement(state, unit) {
+  if (
+    !unit ||
+    unit.current.hp <= 0 ||
+    unit.transport?.carriedByUnitId ||
+    !canSlipstreamAfterAttack(state, unit)
+  ) {
+    return null;
+  }
+
+  const currentTile = { x: unit.x, y: unit.y };
+  const reachableTiles = getReachableTiles(state, unit, 1);
+  const slipstreamTile = pickEnemySlipstreamTile(state, unit, reachableTiles);
+
+  if (
+    !slipstreamTile ||
+    (slipstreamTile.x === unit.x && slipstreamTile.y === unit.y) ||
+    !canUnitOccupyTile(state, unit, slipstreamTile.x, slipstreamTile.y) ||
+    getMovementPathCost(state, unit, 1, slipstreamTile.x, slipstreamTile.y) === null
+  ) {
+    return currentTile;
+  }
+
+  unit.x = slipstreamTile.x;
+  unit.y = slipstreamTile.y;
+  unit.movedThisTurn = true;
+  unit.hasMoved = true;
+  syncProjectedTransportCargoPosition(state, unit);
+
+  return { x: unit.x, y: unit.y };
 }
 
 function scoreProjectedAttack({
@@ -387,6 +452,11 @@ function projectAttack(state, action) {
   }
 
   const moved = projectMovement(state, attacker, action.tile);
+
+  if (moved === null) {
+    return null;
+  }
+
   const attackerProfile = getAttackProfileForTarget(attacker, defender);
 
   if (!attackerProfile) {
@@ -457,7 +527,12 @@ function projectAttack(state, action) {
 
   removeDeadUnits(state);
   updateMissionVictory(state);
-  return score;
+  const postAttackTile = projectSlipstreamMovement(state, attacker);
+
+  return {
+    score,
+    postAttackTile
+  };
 }
 
 function projectCapture(state, action) {
@@ -472,6 +547,11 @@ function projectCapture(state, action) {
 
   const profile = getEnemyAiProfile(state);
   const moved = projectMovement(state, unit, action.tile);
+
+  if (moved === null) {
+    return null;
+  }
+
   let score =
     action.estimate * 0.18 +
     getStrategicObjectiveScore(state, unit, action.tile) * 0.04;
@@ -510,6 +590,11 @@ function projectRepair(state, action) {
   const profile = getEnemyAiProfile(state);
   const repairNeedEstimate = getRepairNeedEstimate(unit);
   const moved = projectMovement(state, unit, action.tile);
+
+  if (moved === null) {
+    return null;
+  }
+
   const preview = getBuildingSupplyPreview(state, unit, building);
 
   applyBuildingSupply(state, unit, building, { spendAction: true, log: false });
@@ -529,9 +614,15 @@ function projectRepair(state, action) {
 function projectAction(node, action, depth) {
   const state = structuredClone(node.state);
   let actionScore = null;
+  let postAttackTile = null;
 
   if (action.type === "attack") {
-    actionScore = projectAttack(state, action);
+    const attackProjection = projectAttack(state, action);
+
+    if (attackProjection) {
+      actionScore = attackProjection.score;
+      postAttackTile = attackProjection.postAttackTile;
+    }
   } else if (action.type === "capture") {
     actionScore = projectCapture(state, action);
   } else if (action.type === "repair") {
@@ -549,6 +640,7 @@ function projectAction(node, action, depth) {
   );
   const projectedAction = {
     ...action,
+    ...(postAttackTile ? { postAttackTile } : {}),
     projectedScore: actionScore
   };
 

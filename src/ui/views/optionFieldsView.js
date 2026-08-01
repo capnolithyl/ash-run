@@ -225,15 +225,15 @@ function renderUnitColorSettings(options = {}) {
 export function renderOptionFields(options = {}, displayContext = {}) {
   const masterVolume = Number.isFinite(Number(options.masterVolume))
     ? Math.max(0, Math.min(1, Number(options.masterVolume)))
-    : 0.4;
+    : 0.45;
   const masterVolumePercent = Math.round(masterVolume * 100);
   const musicVolume = Number.isFinite(Number(options.musicVolume))
     ? Math.max(0, Math.min(1, Number(options.musicVolume)))
-    : 0.3;
+    : 0.6;
   const musicVolumePercent = Math.round(musicVolume * 100);
   const sfxVolume = Number.isFinite(Number(options.sfxVolume))
     ? Math.max(0, Math.min(1, Number(options.sfxVolume)))
-    : 0.4;
+    : 0.45;
   const sfxVolumePercent = Math.round(sfxVolume * 100);
   const combatCutsceneAnimations = options.combatCutsceneAnimations !== false;
   const debugContent = typeof displayContext.debugContent === "string"
