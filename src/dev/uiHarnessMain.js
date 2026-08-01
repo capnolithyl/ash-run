@@ -36,6 +36,7 @@ function renderSceneMarkup(sceneId, state) {
     case "commander-select":
       return renderCommanderSelectView(state);
     case "run-loadout":
+    case "run-loadout-naming":
       return renderRunLoadoutView(state);
     case "skirmish-commanders":
     case "skirmish-map":
@@ -51,6 +52,7 @@ function renderSceneMarkup(sceneId, state) {
     case "battle-tutorial":
     case "battle-pause":
     case "battle-reward":
+    case "battle-reinforcement-naming":
     case "battle-run-complete":
     case "battle-run-lost":
     case "battle-level-up":

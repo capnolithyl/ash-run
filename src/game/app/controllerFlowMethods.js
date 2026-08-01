@@ -1,7 +1,13 @@
 import { APP_TOAST_DISPLAY_MS, BATTLE_MODES, SCREEN_IDS, TURN_SIDES } from "../core/constants.js";
 import { BUILD_FEATURES } from "../core/buildProfiles.js";
+import { createId } from "../core/id.js";
 import { RUN_UPGRADES, UNIT_UNLOCK_TIERS } from "../content/runUpgrades.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
+import {
+  generateRunUnitName,
+  normalizeRunUnitName,
+  validateRunUnitName
+} from "../content/runUnitNames.js";
 import { normalizeMetaOptions, normalizeUnlockedRunCardIds } from "../state/defaults.js";
 import { getMapById } from "../content/maps.js";
 import { BattleSystem } from "../simulation/battleSystem.js";
@@ -40,6 +46,18 @@ function getAvailableRunCardIdsForRun(metaState, currentIds = []) {
     ...(metaState?.unlockedRunCardIds ?? []),
     ...(Array.isArray(currentIds) ? currentIds : [])
   ]);
+}
+
+function getOtherDraftNames(units, draftId) {
+  return units
+    .filter((draft) => draft.id !== draftId)
+    .map((draft) => draft.name);
+}
+
+function areRunLoadoutNamesValid(units) {
+  return units.every((draft) =>
+    validateRunUnitName(draft.name, getOtherDraftNames(units, draft.id)).valid
+  );
 }
 
 export const controllerFlowMethods = {
@@ -158,6 +176,7 @@ export const controllerFlowMethods = {
     runState.selectedRewards = [...(previousRunState?.selectedRewards ?? [])];
     runState.pendingRewardChoices = [];
     runState.pendingGearReward = null;
+    runState.pendingUnitNaming = null;
 
     if (resolvedMapId) {
       runState.mapSequence = [
@@ -299,13 +318,26 @@ export const controllerFlowMethods = {
       return;
     }
 
-    this.state.runLoadout.units.push(unitTypeId);
+    const id = createId(unitTypeId);
+    const name = generateRunUnitName(unitTypeId, {
+      unitId: id,
+      excludedNames: this.state.runLoadout.units.map((draft) => draft.name)
+    });
+
+    this.state.runLoadout.units.push({
+      id,
+      unitTypeId,
+      name,
+      nameRoll: 0
+    });
     this.state.runLoadout.fundsRemaining -= unitType.cost;
     this.emit();
   },
 
   removeRunLoadoutUnit(unitTypeId) {
-    const index = this.state.runLoadout.units.lastIndexOf(unitTypeId);
+    const index = this.state.runLoadout.units.findLastIndex(
+      (draft) => draft.unitTypeId === unitTypeId
+    );
 
     if (index < 0) {
       return;
@@ -314,6 +346,50 @@ export const controllerFlowMethods = {
     const unitType = UNIT_CATALOG[unitTypeId];
     this.state.runLoadout.units.splice(index, 1);
     this.state.runLoadout.fundsRemaining += unitType?.cost ?? 0;
+    this.emit();
+  },
+
+  openRunLoadoutNamingReview() {
+    if (this.state.runLoadout.units.length === 0) {
+      return;
+    }
+
+    this.state.runLoadout.namingReviewOpen = true;
+    this.emit();
+  },
+
+  closeRunLoadoutNamingReview() {
+    this.state.runLoadout.namingReviewOpen = false;
+    this.emit();
+  },
+
+  updateRunLoadoutUnitName(unitId, value) {
+    const draft = this.state.runLoadout.units.find((unit) => unit.id === unitId);
+
+    if (!draft) {
+      return;
+    }
+
+    draft.name = normalizeRunUnitName(value);
+    this.emit();
+  },
+
+  randomizeRunLoadoutUnitName(unitId) {
+    const draft = this.state.runLoadout.units.find((unit) => unit.id === unitId);
+
+    if (!draft) {
+      return;
+    }
+
+    draft.nameRoll = (draft.nameRoll ?? 0) + 1;
+    draft.name = generateRunUnitName(draft.unitTypeId, {
+      unitId: draft.id,
+      roll: draft.nameRoll,
+      excludedNames: [
+        ...getOtherDraftNames(this.state.runLoadout.units, draft.id),
+        draft.name
+      ]
+    });
     this.emit();
   },
 
@@ -422,7 +498,12 @@ export const controllerFlowMethods = {
   },
 
   async startNewRun() {
-    if (!this.state.selectedCommanderId || this.state.runLoadout.units.length === 0) {
+    if (
+      !this.state.selectedCommanderId ||
+      this.state.runLoadout.units.length === 0 ||
+      !this.state.runLoadout.namingReviewOpen ||
+      !areRunLoadoutNamesValid(this.state.runLoadout.units)
+    ) {
       return;
     }
 
@@ -433,10 +514,15 @@ export const controllerFlowMethods = {
     runState.availableRunCardIds = getAvailableRunCardIdsForRun(this.state.metaState);
     runState.availableDraftUnitIds = [...this.state.metaState.unlockedUnitIds];
     const purchasedRoster = this.state.runLoadout.units
-      .map((unitTypeId) => createUnitFromType(unitTypeId, TURN_SIDES.PLAYER))
+      .map((draft) => ({
+        ...createUnitFromType(draft.unitTypeId, TURN_SIDES.PLAYER),
+        id: draft.id,
+        name: normalizeRunUnitName(draft.name)
+      }))
       .map((unit) => createPersistentUnitSnapshot(unit));
 
     runState.roster = purchasedRoster;
+    runState.unitNameHistory = purchasedRoster.map((unit) => unit.name);
     runState.ownedRunCardIds = [];
     const battleState = createBattleStateForRun(runState);
 
@@ -463,6 +549,16 @@ export const controllerFlowMethods = {
 
     const normalizedRunState = normalizeRunState(slotRecord.runState);
     const normalizedBattleState = normalizeBattleState(slotRecord.battleState);
+    const runUnitNamesById = new Map(
+      (normalizedRunState?.roster ?? []).map((unit) => [unit.id, unit.name])
+    );
+
+    if (Array.isArray(normalizedBattleState?.player?.units)) {
+      normalizedBattleState.player.units = normalizedBattleState.player.units.map((unit) => ({
+        ...unit,
+        name: runUnitNamesById.get(unit.id) ?? unit.name
+      }));
+    }
 
     normalizedRunState.availableRunCardIds = getAvailableRunCardIdsForRun(
       this.state.metaState,
@@ -480,8 +576,15 @@ export const controllerFlowMethods = {
     this.state.debugMode = false;
     this.resetBattleUi();
     this.state.metaState.lastPlayedSlotId = slotId;
-    this.state.runStatus =
-      slotRecord.battleState?.victory?.winner === TURN_SIDES.ENEMY ? "failed" : null;
+    this.state.runStatus = slotRecord.battleState?.victory?.winner === TURN_SIDES.ENEMY
+      ? "failed"
+      : normalizedRunState.pendingUnitNaming
+        ? "reward-name-unit"
+        : normalizedRunState.pendingGearReward
+          ? "reward-equip"
+          : (normalizedRunState.pendingRewardChoices?.length ?? 0) > 0
+            ? "reward"
+            : null;
 
     await this.storage.saveMeta(this.state.metaState);
     this.syncBattleState();

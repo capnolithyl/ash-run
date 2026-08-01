@@ -5151,11 +5151,25 @@ export const GENERATED_MAP_MODULES = {
                 "y": 5
               },
               {
+                "id": "wave-1-grunt-0-6",
+                "unitTypeId": "grunt",
+                "level": 1,
+                "x": 0,
+                "y": 6
+              },
+              {
                 "id": "wave-1-grunt-14-5",
                 "unitTypeId": "grunt",
                 "level": 1,
                 "x": 14,
                 "y": 5
+              },
+              {
+                "id": "wave-1-breaker-14-6",
+                "unitTypeId": "breaker",
+                "level": 1,
+                "x": 14,
+                "y": 6
               }
             ]
           }
@@ -5466,6 +5480,13 @@ export const GENERATED_MAP_MODULES = {
                 "level": 2,
                 "x": 0,
                 "y": 6
+              },
+              {
+                "id": "wave-2-grunt-14-6",
+                "unitTypeId": "grunt",
+                "level": 2,
+                "x": 14,
+                "y": 6
               }
             ]
           }
@@ -5739,7 +5760,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-1",
             "name": "Infantry Spawns",
-            "maxActivations": 1,
+            "maxActivations": 3,
             "trigger": {
               "type": "player-turns-completed",
               "every": 2
@@ -5764,7 +5785,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-2",
             "name": "More Infantry",
-            "maxActivations": 1,
+            "maxActivations": 6,
             "trigger": {
               "type": "player-turns-completed",
               "every": 1
@@ -6074,7 +6095,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-1",
             "name": "Infantry Spawns",
-            "maxActivations": 1,
+            "maxActivations": 3,
             "trigger": {
               "type": "player-turns-completed",
               "every": 2
@@ -6099,7 +6120,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-2",
             "name": "More Infantry",
-            "maxActivations": 1,
+            "maxActivations": 6,
             "trigger": {
               "type": "player-turns-completed",
               "every": 1
@@ -6425,7 +6446,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-1",
             "name": "Infantry Spawns",
-            "maxActivations": 1,
+            "maxActivations": 3,
             "trigger": {
               "type": "player-turns-completed",
               "every": 2
@@ -6450,7 +6471,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-2",
             "name": "More Infantry",
-            "maxActivations": 1,
+            "maxActivations": 6,
             "trigger": {
               "type": "player-turns-completed",
               "every": 1
@@ -6776,7 +6797,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-1",
             "name": "Infantry Spawns",
-            "maxActivations": 1,
+            "maxActivations": 3,
             "trigger": {
               "type": "player-turns-completed",
               "every": 2
@@ -6801,7 +6822,7 @@ export const GENERATED_MAP_MODULES = {
           {
             "id": "wave-2",
             "name": "More Infantry",
-            "maxActivations": 1,
+            "maxActivations": 6,
             "trigger": {
               "type": "player-turns-completed",
               "every": 1
@@ -8664,6 +8685,3513 @@ export const GENERATED_MAP_MODULES = {
         "goal": {
           "type": "survive",
           "turnLimit": 7
+        },
+        "runStages": [
+          10
+        ],
+        "stage": 10,
+        "variantStage": 10
+      }
+    ]
+  },
+  "./maps/cauldron/cinder-switchyard.json": {
+    "format": "ash-run-map-bundle-v1",
+    "id": "cinder-switchyard",
+    "name": "Cinder Switchyard",
+    "stages": [
+      {
+        "id": "cinder-switchyard-stage-1",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-1-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-1-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-1-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-1-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-1-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-1-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-1-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-1-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-1-enemy-grunt-10-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 1,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-1-enemy-breaker-12-5",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 12,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-1-enemy-runner-10-9",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 1,
+            "x": 10,
+            "y": 9
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          1
+        ],
+        "stage": 1,
+        "variantStage": 1
+      },
+      {
+        "id": "cinder-switchyard-stage-2",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-2-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-2-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-2-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-2-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-2-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-2-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-2-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-2-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-2-enemy-grunt-10-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-2-enemy-breaker-12-5",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 1,
+            "x": 12,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-2-enemy-longshot-11-3",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 1,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-2-enemy-runner-10-9",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 1,
+            "x": 10,
+            "y": 9
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          2
+        ],
+        "stage": 2,
+        "variantStage": 2
+      },
+      {
+        "id": "cinder-switchyard-stage-3",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-3-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-3-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-3-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-3-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-3-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-3-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-3-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-3-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-3-enemy-grunt-10-5",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-3-enemy-breaker-12-5",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 2,
+            "x": 12,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-3-enemy-longshot-11-3",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 2,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-3-enemy-bruiser-10-6",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 1,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-3-enemy-medic-12-7",
+            "unitTypeId": "medic",
+            "owner": "enemy",
+            "level": 2,
+            "x": 12,
+            "y": 7
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          3
+        ],
+        "stage": 3,
+        "variantStage": 3
+      },
+      {
+        "id": "cinder-switchyard-stage-4",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-4-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-4-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-4-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-4-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-4-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-4-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-4-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-4-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-4-enemy-breaker-12-2",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 2,
+            "x": 12,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-4-enemy-longshot-11-3",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 2,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-4-enemy-runner-10-5",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-4-enemy-bruiser-10-6",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 1,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-4-enemy-mechanic-12-7",
+            "unitTypeId": "mechanic",
+            "owner": "enemy",
+            "level": 2,
+            "x": 12,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-4-enemy-grunt-10-9",
+            "unitTypeId": "grunt",
+            "owner": "enemy",
+            "level": 3,
+            "x": 10,
+            "y": 9
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          4
+        ],
+        "stage": 4,
+        "variantStage": 4
+      },
+      {
+        "id": "cinder-switchyard-stage-5",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-5-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-5-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-5-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-5-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-5-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-5-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-5-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-5-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-5-enemy-longshot-12-2",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-5-enemy-siege-gun-11-3",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 1,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-5-enemy-breaker-10-5",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 3,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-5-enemy-bruiser-10-6",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-5-enemy-skyguard-12-7",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 1,
+            "x": 12,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-5-enemy-mechanic-10-9",
+            "unitTypeId": "mechanic",
+            "owner": "enemy",
+            "level": 3,
+            "x": 10,
+            "y": 9
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          5
+        ],
+        "stage": 5,
+        "variantStage": 5
+      },
+      {
+        "id": "cinder-switchyard-stage-6",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-6-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-6-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-6-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-6-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-6-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-6-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-6-enemy-longshot-12-2",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-siege-gun-11-3",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 2,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-runner-12-4",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-bruiser-10-6",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-breaker-12-7",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-mechanic-10-9",
+            "unitTypeId": "mechanic",
+            "owner": "enemy",
+            "level": 3,
+            "x": 10,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-6-enemy-gunship-9-5",
+            "unitTypeId": "gunship",
+            "owner": "enemy",
+            "level": 1,
+            "x": 9,
+            "y": 5
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          6
+        ],
+        "stage": 6,
+        "variantStage": 6
+      },
+      {
+        "id": "cinder-switchyard-stage-7",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-7-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-7-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-7-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-7-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-7-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-7-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-7-enemy-siege-gun-12-2",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 2,
+            "x": 12,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-longshot-11-3",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 4,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-juggernaut-10-5",
+            "unitTypeId": "juggernaut",
+            "owner": "enemy",
+            "level": 1,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-skyguard-10-6",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-breaker-12-7",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 4,
+            "x": 12,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-mechanic-10-9",
+            "unitTypeId": "mechanic",
+            "owner": "enemy",
+            "level": 4,
+            "x": 10,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-7-enemy-gunship-9-5",
+            "unitTypeId": "gunship",
+            "owner": "enemy",
+            "level": 2,
+            "x": 9,
+            "y": 5
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          7
+        ],
+        "stage": 7,
+        "variantStage": 7
+      },
+      {
+        "id": "cinder-switchyard-stage-8",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-8-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-8-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-8-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-8-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-8-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-8-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-8-enemy-siege-gun-12-2",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-payload-11-3",
+            "unitTypeId": "payload",
+            "owner": "enemy",
+            "level": 1,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-bruiser-12-4",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-juggernaut-10-5",
+            "unitTypeId": "juggernaut",
+            "owner": "enemy",
+            "level": 1,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-skyguard-10-6",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 3,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-breaker-12-7",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 4,
+            "x": 12,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-mechanic-10-9",
+            "unitTypeId": "mechanic",
+            "owner": "enemy",
+            "level": 4,
+            "x": 10,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-8-enemy-gunship-9-5",
+            "unitTypeId": "gunship",
+            "owner": "enemy",
+            "level": 2,
+            "x": 9,
+            "y": 5
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          8
+        ],
+        "stage": 8,
+        "variantStage": 8
+      },
+      {
+        "id": "cinder-switchyard-stage-9",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-9-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-9-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-9-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-9-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-9-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-9-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-9-enemy-siege-gun-12-2",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-payload-11-3",
+            "unitTypeId": "payload",
+            "owner": "enemy",
+            "level": 2,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-runner-10-4",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 4,
+            "x": 10,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-bruiser-12-4",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 3,
+            "x": 12,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-juggernaut-10-5",
+            "unitTypeId": "juggernaut",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-skyguard-10-6",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 3,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-longshot-12-7",
+            "unitTypeId": "longshot",
+            "owner": "enemy",
+            "level": 5,
+            "x": 12,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-mechanic-10-9",
+            "unitTypeId": "mechanic",
+            "owner": "enemy",
+            "level": 5,
+            "x": 10,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-9-enemy-gunship-9-5",
+            "unitTypeId": "gunship",
+            "owner": "enemy",
+            "level": 3,
+            "x": 9,
+            "y": 5
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
+        },
+        "runStages": [
+          9
+        ],
+        "stage": 9,
+        "variantStage": 9
+      },
+      {
+        "id": "cinder-switchyard-stage-10",
+        "name": "Cinder Switchyard",
+        "theme": "ash",
+        "layout": "east-west",
+        "width": 14,
+        "height": 12,
+        "tiles": [
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "plain",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "plain",
+            "mountain",
+            "forest",
+            "plain",
+            "road",
+            "road",
+            "road",
+            "road",
+            "plain",
+            "forest",
+            "mountain",
+            "plain",
+            "plain"
+          ],
+          [
+            "plain",
+            "forest",
+            "plain",
+            "mountain",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "mountain",
+            "plain",
+            "forest",
+            "plain"
+          ],
+          [
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road",
+            "road"
+          ],
+          [
+            "plain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "water",
+            "water",
+            "forest",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "plain"
+          ],
+          [
+            "mountain",
+            "mountain",
+            "forest",
+            "forest",
+            "plain",
+            "plain",
+            "water",
+            "water",
+            "plain",
+            "plain",
+            "forest",
+            "forest",
+            "mountain",
+            "mountain"
+          ]
+        ],
+        "buildings": [
+          {
+            "id": "cinder-switchyard-stage-10-player-command-1-5",
+            "type": "command",
+            "owner": "player",
+            "x": 1,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-10-player-sector-2-6",
+            "type": "sector",
+            "owner": "player",
+            "x": 2,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-10-neutral-hospital-5-2",
+            "type": "hospital",
+            "owner": "neutral",
+            "x": 5,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-10-neutral-sector-5-4",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 5,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-10-neutral-sector-8-7",
+            "type": "sector",
+            "owner": "neutral",
+            "x": 8,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-10-neutral-repair-station-8-9",
+            "type": "repair-station",
+            "owner": "neutral",
+            "x": 8,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-sector-11-5",
+            "type": "sector",
+            "owner": "enemy",
+            "x": 11,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-command-12-6",
+            "type": "command",
+            "owner": "enemy",
+            "x": 12,
+            "y": 6
+          }
+        ],
+        "units": [
+          {
+            "id": "cinder-switchyard-stage-10-enemy-siege-gun-12-2",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 4,
+            "x": 12,
+            "y": 2
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-payload-11-3",
+            "unitTypeId": "payload",
+            "owner": "enemy",
+            "level": 2,
+            "x": 11,
+            "y": 3
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-runner-10-4",
+            "unitTypeId": "runner",
+            "owner": "enemy",
+            "level": 4,
+            "x": 10,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-bruiser-12-4",
+            "unitTypeId": "bruiser",
+            "owner": "enemy",
+            "level": 4,
+            "x": 12,
+            "y": 4
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-juggernaut-10-5",
+            "unitTypeId": "juggernaut",
+            "owner": "enemy",
+            "level": 2,
+            "x": 10,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-skyguard-10-6",
+            "unitTypeId": "skyguard",
+            "owner": "enemy",
+            "level": 4,
+            "x": 10,
+            "y": 6
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-breaker-12-7",
+            "unitTypeId": "breaker",
+            "owner": "enemy",
+            "level": 5,
+            "x": 12,
+            "y": 7
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-mechanic-10-9",
+            "unitTypeId": "mechanic",
+            "owner": "enemy",
+            "level": 5,
+            "x": 10,
+            "y": 9
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-gunship-9-5",
+            "unitTypeId": "gunship",
+            "owner": "enemy",
+            "level": 3,
+            "x": 9,
+            "y": 5
+          },
+          {
+            "id": "cinder-switchyard-stage-10-enemy-siege-gun-9-6",
+            "unitTypeId": "siege-gun",
+            "owner": "enemy",
+            "level": 4,
+            "x": 9,
+            "y": 6
+          }
+        ],
+        "reinforcements": [],
+        "playerSpawns": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "enemySpawns": [],
+        "goal": {
+          "type": "rout"
         },
         "runStages": [
           10

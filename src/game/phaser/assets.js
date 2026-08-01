@@ -3,14 +3,14 @@ import {
   DEFAULT_ENEMY_COLOR,
   DEFAULT_PLAYER_COLOR,
   UNIT_COLOR_IDS,
-  getUnitColorIdForOwner
+  getUnitColorIdForOwner,
 } from "../core/unitColors.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import { TERRAIN_LIBRARY } from "../content/terrain.js";
 import { GENERATED_BUILDING_SPRITE_PNG_OWNERS } from "./generated/buildingSpritePngOwners.js";
 import {
   GENERATED_TERRAIN_ANIMATED_IDS,
-  GENERATED_TERRAIN_SPRITE_PNG_IDS
+  GENERATED_TERRAIN_SPRITE_PNG_IDS,
 } from "./generated/terrainSpritePngIds.js";
 import * as generatedUnitSpriteAnimationsModule from "./generated/unitSpriteAnimations.js";
 import { getUnitSpritePresentation } from "./unitSpritePresentation.js";
@@ -246,12 +246,12 @@ export const SPLASH_ASSET_IDS = {
   GAME_LOGO: "game-logo",
 };
 export const BATTLEFIELD_ASSET_IDS = {
-  BACKGROUND: "background"
+  BACKGROUND: "background",
 };
 export const MUSIC_TRACK_IDS = {
   MENU: "menu",
-  ALLY_TURN: "ally-turn",
-  ENEMY_TURN: "enemy-turn",
+  COMMANDER_ROOK: "commander-rook",
+  COMMANDER_NOVA: "commander-nova",
 };
 
 const UNIT_ANIMATION_IDS = ["idle", "walk", "attack"];
@@ -300,7 +300,7 @@ function createTerrainAnimationAsset(terrainId) {
     frameCount: config.frameCount ?? null,
     sheetColumns: config.sheetColumns ?? null,
     sheetRows: config.sheetRows ?? null,
-    animationKey: `animation:terrain:${terrainId}:default`
+    animationKey: `animation:terrain:${terrainId}:default`,
   };
 }
 
@@ -322,10 +322,9 @@ const TERRAIN_SPRITES = Object.fromEntries(
 );
 
 const BUILDING_PNG_OVERRIDES = Object.fromEntries(
-  Object.entries(GENERATED_BUILDING_SPRITE_PNG_OWNERS).map(([buildingTypeId, owners]) => [
-    buildingTypeId,
-    new Set(owners),
-  ]),
+  Object.entries(GENERATED_BUILDING_SPRITE_PNG_OWNERS).map(
+    ([buildingTypeId, owners]) => [buildingTypeId, new Set(owners)],
+  ),
 );
 
 const BUILDING_SPRITES = Object.fromEntries(
@@ -349,19 +348,27 @@ const MUSIC_TRACKS = {
   [MUSIC_TRACK_IDS.MENU]: {
     id: MUSIC_TRACK_IDS.MENU,
     key: "music:menu",
-    url: `${AUDIO_ASSET_ROOT}/music/Theme.mp3`,
+    url: `${AUDIO_ASSET_ROOT}/music/Ashes To Ashes - Main Theme.mp3`,
   },
-  [MUSIC_TRACK_IDS.ALLY_TURN]: {
-    id: MUSIC_TRACK_IDS.ALLY_TURN,
-    key: "music:ally-turn",
-    url: `${AUDIO_ASSET_ROOT}/music/Ally Theme.mp3`,
+  [MUSIC_TRACK_IDS.COMMANDER_ROOK]: {
+    id: MUSIC_TRACK_IDS.COMMANDER_ROOK,
+    commanderId: "rook",
+    key: "music:commander:rook",
+    url: `${AUDIO_ASSET_ROOT}/music/The House Always Wins - Rook's Theme.mp3`,
   },
-  [MUSIC_TRACK_IDS.ENEMY_TURN]: {
-    id: MUSIC_TRACK_IDS.ENEMY_TURN,
-    key: "music:enemy-turn",
-    url: `${AUDIO_ASSET_ROOT}/music/Enemy Theme.mp3`,
+  [MUSIC_TRACK_IDS.COMMANDER_NOVA]: {
+    id: MUSIC_TRACK_IDS.COMMANDER_NOVA,
+    commanderId: "nova",
+    key: "music:commander:nova",
+    url: `${AUDIO_ASSET_ROOT}/music/Super Nova - Nova's Theme.mp3`,
   },
 };
+
+const COMMANDER_MUSIC_TRACK_IDS = Object.fromEntries(
+  Object.values(MUSIC_TRACKS)
+    .filter((track) => track.commanderId)
+    .map((track) => [track.commanderId, track.id]),
+);
 
 const SPLASH_ASSETS = {
   [SPLASH_ASSET_IDS.BACKGROUND]: {
@@ -381,8 +388,8 @@ const SPLASH_ASSETS = {
 const BATTLEFIELD_ASSETS = {
   [BATTLEFIELD_ASSET_IDS.BACKGROUND]: {
     key: "image:battlefield:background",
-    url: `${IMAGE_ASSET_ROOT}/ui/background/battlefield-bg.png`
-  }
+    url: `${IMAGE_ASSET_ROOT}/ui/background/battlefield-bg.png`,
+  },
 };
 
 function flattenUnitAnimationAssets() {
@@ -416,7 +423,7 @@ export const SPRITE_ASSETS = [
   ...Object.values(UNIT_SPRITES).flatMap((variants) => Object.values(variants)),
   ...flattenUnitAnimationAssets(),
   ...Object.values(TERRAIN_SPRITES).flatMap(({ fallback, animated }) =>
-    animated ? [fallback, animated] : [fallback]
+    animated ? [fallback, animated] : [fallback],
   ),
   ...Object.values(TERRAIN_CLUSTER_VARIANT_ASSETS),
   ...Object.values(TERRAIN_TRANSITION_OVERLAY_ASSETS),
@@ -494,11 +501,15 @@ export function getMusicTrackKey(trackId) {
   return MUSIC_TRACKS[trackId]?.key ?? null;
 }
 
+export function getCommanderMusicTrackId(commanderId) {
+  return COMMANDER_MUSIC_TRACK_IDS[commanderId] ?? null;
+}
+
 export function getUnitSpriteColorAvailability() {
   return Object.fromEntries(
-    UNIT_COLOR_IDS
-      .filter((colorId) => GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY[colorId] === true)
-      .map((colorId) => [colorId, true])
+    UNIT_COLOR_IDS.filter(
+      (colorId) => GENERATED_UNIT_SPRITE_COLOR_AVAILABILITY[colorId] === true,
+    ).map((colorId) => [colorId, true]),
   );
 }
 
@@ -513,19 +524,23 @@ export function resolveUnitSpriteColor(owner = "player", colorOptions = {}) {
     return requestedColorId;
   }
 
-  const ownerFallback = owner === "enemy" ? DEFAULT_ENEMY_COLOR : DEFAULT_PLAYER_COLOR;
+  const ownerFallback =
+    owner === "enemy" ? DEFAULT_ENEMY_COLOR : DEFAULT_PLAYER_COLOR;
 
   if (isUnitSpriteColorAvailable(ownerFallback)) {
     return ownerFallback;
   }
 
-  return UNIT_COLOR_IDS.find((colorId) => isUnitSpriteColorAvailable(colorId)) ?? requestedColorId;
+  return (
+    UNIT_COLOR_IDS.find((colorId) => isUnitSpriteColorAvailable(colorId)) ??
+    requestedColorId
+  );
 }
 
 function hasUnitSpriteColor(unitTypeId, colorId) {
   return Boolean(
     UNIT_SPRITES[unitTypeId]?.[colorId] ||
-    GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[colorId]
+    GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[colorId],
   );
 }
 
@@ -536,27 +551,47 @@ function resolveUnitSpriteColorForUnit(unitTypeId, owner, colorOptions) {
     return requestedColorId;
   }
 
-  const ownerFallback = owner === "enemy" ? DEFAULT_ENEMY_COLOR : DEFAULT_PLAYER_COLOR;
+  const ownerFallback =
+    owner === "enemy" ? DEFAULT_ENEMY_COLOR : DEFAULT_PLAYER_COLOR;
 
   if (hasUnitSpriteColor(unitTypeId, ownerFallback)) {
     return ownerFallback;
   }
 
-  return UNIT_COLOR_IDS.find((colorId) => hasUnitSpriteColor(unitTypeId, colorId)) ?? requestedColorId;
+  return (
+    UNIT_COLOR_IDS.find((colorId) => hasUnitSpriteColor(unitTypeId, colorId)) ??
+    requestedColorId
+  );
 }
 
-export function getUnitSpriteKey(unitTypeId, owner = "player", colorOptions = {}) {
-  const colorId = resolveUnitSpriteColorForUnit(unitTypeId, owner, colorOptions);
+export function getUnitSpriteKey(
+  unitTypeId,
+  owner = "player",
+  colorOptions = {},
+) {
+  const colorId = resolveUnitSpriteColorForUnit(
+    unitTypeId,
+    owner,
+    colorOptions,
+  );
   return UNIT_SPRITES[unitTypeId]?.[colorId]?.key ?? null;
 }
 
-export function getUnitSpriteDefinition(unitTypeId, owner = "player", colorOptions = {}) {
+export function getUnitSpriteDefinition(
+  unitTypeId,
+  owner = "player",
+  colorOptions = {},
+) {
   const requestedColorId = getUnitColorIdForOwner(owner, colorOptions);
-  const colorId = resolveUnitSpriteColorForUnit(unitTypeId, owner, colorOptions);
-  const fallbackAsset =
-    UNIT_SPRITES[unitTypeId]?.[colorId] ?? null;
+  const colorId = resolveUnitSpriteColorForUnit(
+    unitTypeId,
+    owner,
+    colorOptions,
+  );
+  const fallbackAsset = UNIT_SPRITES[unitTypeId]?.[colorId] ?? null;
   const fallbackKey = fallbackAsset?.key ?? null;
-  const animationBundle = GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[colorId] ?? null;
+  const animationBundle =
+    GENERATED_UNIT_SPRITE_ANIMATIONS[unitTypeId]?.[colorId] ?? null;
   const idleAnimation = animationBundle?.animations?.idle ?? null;
 
   if (!fallbackKey && !animationBundle) {
@@ -573,7 +608,9 @@ export function getUnitSpriteDefinition(unitTypeId, owner = "player", colorOptio
     frameWidth: animationBundle?.frameWidth ?? null,
     frameHeight: animationBundle?.frameHeight ?? null,
     frameCount: idleAnimation?.ranges?.default
-      ? idleAnimation.ranges.default.end - idleAnimation.ranges.default.start + 1
+      ? idleAnimation.ranges.default.end -
+        idleAnimation.ranges.default.start +
+        1
       : 1,
     frameRate: idleAnimation?.frameRate ?? null,
     fallbackKey,
@@ -606,7 +643,7 @@ export function getTerrainSpriteDefinition(terrainId) {
     url: spriteBundle.animated?.url ?? spriteBundle.fallback.url,
     fallbackKey: spriteBundle.fallback.key,
     fallbackUrl: spriteBundle.fallback.url,
-    animated: spriteBundle.animated
+    animated: spriteBundle.animated,
   };
 }
 
@@ -627,14 +664,19 @@ export function getBuildingSpriteDefinition(buildingTypeId, owner = "neutral") {
   };
 }
 
-export function getTerrainTransitionOverlayDefinition(sourceTerrainId, adjacentTerrainId) {
-  const transitionSpec = TERRAIN_TRANSITION_REGISTRY[sourceTerrainId]?.[adjacentTerrainId] ?? null;
+export function getTerrainTransitionOverlayDefinition(
+  sourceTerrainId,
+  adjacentTerrainId,
+) {
+  const transitionSpec =
+    TERRAIN_TRANSITION_REGISTRY[sourceTerrainId]?.[adjacentTerrainId] ?? null;
 
   if (!transitionSpec) {
     return null;
   }
 
-  const asset = TERRAIN_TRANSITION_OVERLAY_ASSETS[transitionSpec.assetId] ?? null;
+  const asset =
+    TERRAIN_TRANSITION_OVERLAY_ASSETS[transitionSpec.assetId] ?? null;
 
   if (!asset) {
     return null;
@@ -653,7 +695,8 @@ export function getTerrainClusterVariantTerrainIds() {
 }
 
 export function getTerrainClusterVariantDefinition(terrainId, shape) {
-  const variantSpec = TERRAIN_CLUSTER_VARIANT_REGISTRY[terrainId]?.[shape] ?? null;
+  const variantSpec =
+    TERRAIN_CLUSTER_VARIANT_REGISTRY[terrainId]?.[shape] ?? null;
 
   if (!variantSpec) {
     return null;

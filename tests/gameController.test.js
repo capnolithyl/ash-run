@@ -554,21 +554,67 @@ test("run loadout purchases update counts and remaining funds", () => {
   controller.state.runLoadout = {
     budget: 500,
     fundsRemaining: 500,
-    units: []
+    units: [],
+    namingReviewOpen: false
   };
 
   controller.addRunLoadoutUnit("grunt");
   controller.addRunLoadoutUnit("runner");
 
   let state = controller.getState();
-  assert.deepEqual(state.runLoadout.units, ["grunt", "runner"]);
+  assert.deepEqual(state.runLoadout.units.map((unit) => unit.unitTypeId), ["grunt", "runner"]);
+  assert.equal(new Set(state.runLoadout.units.map((unit) => unit.name)).size, 2);
+  assert.ok(state.runLoadout.units.every((unit) => unit.id && unit.nameRoll === 0));
   assert.equal(state.runLoadout.fundsRemaining, 0);
 
   controller.removeRunLoadoutUnit("grunt");
 
   state = controller.getState();
-  assert.deepEqual(state.runLoadout.units, ["runner"]);
+  assert.deepEqual(state.runLoadout.units.map((unit) => unit.unitTypeId), ["runner"]);
   assert.equal(state.runLoadout.fundsRemaining, 100);
+});
+
+test("opening squad names can be reviewed, rerolled, customized, and persisted into battle", async () => {
+  const savedSlots = [];
+  const controller = new GameController({
+    async saveMeta() {},
+    async saveSlot(slotId, record) {
+      savedSlots.push({ slotId, record });
+    },
+    async listSlots() {
+      return [];
+    }
+  });
+
+  controller.openNewRun();
+  controller.state.metaState.unlockedUnitIds = ["grunt"];
+  controller.openRunLoadout();
+  controller.addRunLoadoutUnit("grunt");
+  const draftId = controller.getState().runLoadout.units[0].id;
+  const firstName = controller.getState().runLoadout.units[0].name;
+
+  await controller.startNewRun();
+  assert.equal(controller.getState().screen, SCREEN_IDS.RUN_LOADOUT);
+
+  controller.openRunLoadoutNamingReview();
+  assert.equal(controller.getState().runLoadout.namingReviewOpen, true);
+  controller.closeRunLoadoutNamingReview();
+  assert.equal(controller.getState().runLoadout.namingReviewOpen, false);
+  await controller.startNewRun();
+  assert.equal(controller.getState().screen, SCREEN_IDS.RUN_LOADOUT);
+  controller.openRunLoadoutNamingReview();
+  controller.randomizeRunLoadoutUnitName(draftId);
+  assert.notEqual(controller.getState().runLoadout.units[0].name, firstName);
+  controller.updateRunLoadoutUnitName(draftId, "  Mara   Vale  ");
+  await controller.startNewRun();
+
+  const state = controller.getState();
+  assert.equal(state.screen, SCREEN_IDS.BATTLE);
+  assert.equal(state.runState.roster[0].id, draftId);
+  assert.equal(state.runState.roster[0].name, "Mara Vale");
+  assert.deepEqual(state.runState.unitNameHistory, ["Mara Vale"]);
+  assert.equal(state.battleSnapshot.player.units[0].name, "Mara Vale");
+  assert.equal(savedSlots.at(-1).record.version, 2);
 });
 
 test("run-mode captures award intel credits instead of funds", async () => {
@@ -715,16 +761,81 @@ test("selecting a reinforcement draft adds that unit to the run roster", async (
       }
     ]
   };
-  controller.startNextRunBattle = async () => {};
+  let startNextRunBattleCalls = 0;
+  controller.startNextRunBattle = async () => {
+    startNextRunBattleCalls += 1;
+  };
 
   await controller.selectRunReward("draft-runner");
 
-  const state = controller.getState();
-  assert.equal(state.runStatus, null);
+  let state = controller.getState();
+  assert.equal(state.runStatus, "reward-name-unit");
   assert.equal(state.runState.roster.length, 1);
   assert.equal(state.runState.roster[0].unitTypeId, "runner");
+  assert.notEqual(state.runState.roster[0].name, "Runner");
+  assert.equal(state.runState.pendingUnitNaming.unitId, state.runState.roster[0].id);
   assert.deepEqual(state.runState.selectedRewards, []);
   assert.deepEqual(state.runState.pendingRewardChoices, []);
+  assert.equal(startNextRunBattleCalls, 0);
+
+  await controller.updatePendingRunUnitName("Road Ace");
+  await controller.confirmPendingRunUnitName();
+
+  state = controller.getState();
+  assert.equal(state.runStatus, null);
+  assert.equal(state.runState.pendingUnitNaming, null);
+  assert.equal(state.runState.roster[0].name, "Road Ace");
+  assert.ok(state.runState.unitNameHistory.includes("Road Ace"));
+  assert.equal(startNextRunBattleCalls, 1);
+});
+
+test("loading a pending reinforcement naming step restores the overlay state and custom identity", async () => {
+  const rosterUnit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 0, 0, {
+    name: "Redline"
+  });
+  const battleUnit = createPlacedUnit("runner", TURN_SIDES.PLAYER, 0, 0, {
+    id: rosterUnit.id
+  });
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN,
+    playerUnits: [battleUnit]
+  });
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Route secured."
+  };
+  const controller = new GameController({
+    async loadSlot() {
+      return {
+        version: 2,
+        runState: {
+          id: "run-pending-name",
+          seed: 42,
+          slotId: "slot-1",
+          commanderId: "atlas",
+          mapIndex: 1,
+          targetMapCount: 10,
+          mapSequence: [MAP_POOL[0].id],
+          roster: [rosterUnit],
+          unitNameHistory: ["Redline"],
+          completedMaps: [],
+          selectedRewards: [],
+          pendingRewardChoices: [],
+          pendingGearReward: null,
+          pendingUnitNaming: { unitId: rosterUnit.id, nameRoll: 0 }
+        },
+        battleState
+      };
+    },
+    async saveMeta() {}
+  });
+
+  await controller.loadSlot("slot-1");
+
+  const state = controller.getState();
+  assert.equal(state.runStatus, "reward-name-unit");
+  assert.equal(state.runState.roster[0].name, "Redline");
+  assert.equal(state.battleSnapshot.player.units[0].name, "Redline");
 });
 
 test("selecting a gear reward enters the equip flow instead of starting the next battle", async () => {
@@ -768,6 +879,8 @@ test("equipping pending run gear writes it onto the selected roster unit", async
   let startNextRunBattleCalls = 0;
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0);
   const medic = createPlacedUnit("medic", TURN_SIDES.PLAYER, 0, 0);
+  grunt.name = "Mara";
+  medic.name = "Solace";
   medic.gear = { slot: "gear-field-meds" };
 
   controller.state.runStatus = "reward-equip";
@@ -794,6 +907,8 @@ test("equipping pending run gear writes it onto the selected roster unit", async
   assert.equal(state.runStatus, null);
   assert.equal(state.runState.pendingGearReward, null);
   assert.equal(updatedMedic.gear.slot, "gear-aa-kit");
+  assert.equal(updatedMedic.name, "Solace");
+  assert.equal(state.runState.roster.find((unit) => unit.id === grunt.id).name, "Mara");
   assert.equal(startNextRunBattleCalls, 1);
 });
 

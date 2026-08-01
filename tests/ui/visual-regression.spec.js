@@ -12,6 +12,10 @@ const CRITICAL_SELECTORS_BY_SCENE = {
     ".run-loadout-panel__footer",
     '[data-role="start-run-button"]'
   ],
+  "run-loadout-naming": [
+    ".run-naming-dialog__footer",
+    '[data-action="start-run"]'
+  ],
   "skirmish-commanders": ['[data-action="skirmish-next-step"]'],
   "skirmish-map": ['[data-action="start-skirmish"]'],
   "options": [
@@ -24,6 +28,7 @@ const CRITICAL_SELECTORS_BY_SCENE = {
     '[data-action="resume-battle"]'
   ],
   "battle-reward": ['[data-action="select-run-reward"]'],
+  "battle-reinforcement-naming": ['[data-action="confirm-pending-run-unit-name"]'],
   "battle-run-complete": ['[data-action="open-progression"]'],
   "battle-run-lost": ['[data-action="back-to-title"]'],
   "battle-level-up": ['[data-action="acknowledge-level-up"]']
@@ -79,7 +84,7 @@ async function expectNoUnexpectedTextOverflow(page) {
           ".option-row > span",
           ".slot-card strong",
           ".commander-name",
-          ".run-loadout-unit-cell__body strong",
+          ".run-loadout-unit-card__body strong",
           ".overlay-card h2"
         ].join(",")
       )
@@ -151,6 +156,41 @@ for (const scene of UI_HARNESS_SCENES) {
     });
   });
 }
+
+test("run loadout keeps the footer fixed while only the unit grid scrolls", async ({ page }) => {
+  await page.goto("/ui-harness.html?scene=run-loadout&embed=1");
+  const panel = page.locator(".run-loadout-panel");
+  const gridShell = page.locator('[data-role="run-loadout-grid-shell"]');
+  const footer = page.locator(".run-loadout-panel__footer");
+  const before = await footer.boundingBox();
+
+  await expect(panel).toBeVisible();
+  await expect(gridShell).toBeVisible();
+  await expect(footer).toBeVisible();
+  expect(await panel.evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
+
+  await gridShell.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  const after = await footer.boundingBox();
+
+  expect(after.y).toBeCloseTo(before.y, 1);
+  expect(await panel.evaluate((element) => element.scrollTop)).toBe(0);
+  await expectCriticalControlsInViewport(page, "run-loadout");
+});
+
+test("run loadout remains single-scroll at the narrow breakpoint", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "preset-1280x720-chromium");
+  await page.setViewportSize({ width: 760, height: 900 });
+  await page.goto("/ui-harness.html?scene=run-loadout&embed=1");
+
+  await expectNoDocumentOverflow(page);
+  await expectCriticalControlsInViewport(page, "run-loadout");
+  await expect(page.locator(".run-loadout-unit-grid")).toHaveCSS("grid-template-columns", /.+/);
+  expect(
+    await page.locator(".run-loadout-panel").evaluate((element) => getComputedStyle(element).overflowY)
+  ).toBe("hidden");
+});
 
 for (const sceneId of ["options", "battle-pause"]) {
   test(`${sceneId} tabs expose every settings category without overflow`, async ({ page }) => {

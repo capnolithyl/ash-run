@@ -4,6 +4,7 @@ import {
   TURN_SIDES
 } from "../../../game/core/constants.js";
 import { getBuildingArmorBonusForType } from "../../../game/content/buildings.js";
+import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
 import { getPositionArmorBonus } from "../../../game/simulation/combatResolver.js";
 import { buildFocusedTile, describeUnit } from "../../../game/simulation/battlePresentation.js";
 import {
@@ -14,6 +15,7 @@ import {
   renderBattleHudStatBackground,
   renderSelectionIcon
 } from "../../shared/unitStatPresentation.js";
+import { escapeHtml } from "../../shared/html.js";
 
 function getMeterWidthPercent(current, maximum) {
   if (!Number.isFinite(current) || !Number.isFinite(maximum) || maximum <= 0) {
@@ -443,12 +445,15 @@ function renderUnitSummary(
 ) {
   const attachedGear = unit.gear ?? null;
   const displayedLevel = experiencePresentation?.level ?? unit.level;
+  const unitTypeName = UNIT_CATALOG[unit.unitTypeId]?.name ?? unit.unitTypeId;
+  const showUnitType = unit.name !== unitTypeName;
 
   return `
     <div class="selection-section selection-section--unit" data-selection-unit-card="${unit.id ?? ""}">
       <div class="selection-unit-heading">
       <div class="selection-unit-heading__title">
-        <strong>${unit.name}</strong>
+        <strong>${escapeHtml(unit.name)}</strong>
+        ${showUnitType ? `<small>${escapeHtml(unitTypeName)}</small>` : ""}
         <span class="selection-level-badge" data-experience-level aria-label="Level ${displayedLevel}">${displayedLevel}</span>
         ${
           unit.isBurned

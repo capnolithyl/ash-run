@@ -14,8 +14,10 @@ import {
   applyBattleVictoryToRun,
   createBattleStateForRun,
   createNewRunState,
+  createSlotRecord,
   createSkirmishBattleState,
-  normalizeBattleState
+  normalizeBattleState,
+  normalizeRunState
 } from "../src/game/state/runFactory.js";
 import { createPersistentUnitSnapshot, createUnitFromType } from "../src/game/simulation/unitFactory.js";
 
@@ -37,6 +39,45 @@ function createRunState(overrides = {}) {
     ...overrides
   };
 }
+
+test("legacy player run units receive stable generated identities and version-two saves", () => {
+  const legacyGrunt = createPersistentUnitSnapshot(
+    createUnitFromType("grunt", TURN_SIDES.PLAYER)
+  );
+  const normalized = normalizeRunState(createRunState({ roster: [legacyGrunt] }));
+  const normalizedAgain = normalizeRunState(normalized);
+  const battleState = createBattleStateForRun(normalized);
+  const slotRecord = createSlotRecord(normalized, battleState);
+
+  assert.notEqual(normalized.roster[0].name, UNIT_CATALOG.grunt.name);
+  assert.equal(normalizedAgain.roster[0].name, normalized.roster[0].name);
+  assert.deepEqual(normalized.unitNameHistory, [normalized.roster[0].name]);
+  assert.equal(battleState.player.units[0].name, normalized.roster[0].name);
+  assert.equal(slotRecord.version, 2);
+});
+
+test("custom unit identities survive victory snapshots and the next deployment", () => {
+  const namedUnit = createUnitFromType("grunt", TURN_SIDES.PLAYER);
+  namedUnit.name = "Mara Vale";
+  const runState = normalizeRunState(createRunState({
+    mapSequence: [MAP_POOL[0].id, MAP_POOL[0].id],
+    roster: [createPersistentUnitSnapshot(namedUnit)],
+    unitNameHistory: [namedUnit.name]
+  }));
+  const firstBattle = createBattleStateForRun(runState);
+  const firstBattleUnit = firstBattle.player.units[0];
+
+  assert.equal(firstBattleUnit.id, namedUnit.id);
+  assert.equal(firstBattleUnit.name, namedUnit.name);
+
+  const nextRunState = applyBattleVictoryToRun(runState, firstBattle);
+  const nextBattle = createBattleStateForRun(nextRunState);
+
+  assert.equal(nextRunState.roster[0].id, namedUnit.id);
+  assert.equal(nextRunState.roster[0].name, namedUnit.name);
+  assert.ok(nextRunState.unitNameHistory.includes(namedUnit.name));
+  assert.equal(nextBattle.player.units[0].name, namedUnit.name);
+});
 
 function uniquePositionCount(units) {
   return new Set(units.map((unit) => `${unit.x},${unit.y}`)).size;

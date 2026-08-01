@@ -742,6 +742,7 @@ test("battle HUD renders tutorial guide and highlights", () => {
 
 test("battle HUD renders the combat cutscene overlay with stable sprite layers and split lanes", () => {
   const attacker = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  attacker.name = "Mara";
   const defender = createPlacedUnit("grunt", TURN_SIDES.ENEMY, 3, 2);
   const battleState = createTestBattleState({
     playerUnits: [attacker],
@@ -803,6 +804,7 @@ test("battle HUD renders the combat cutscene overlay with stable sprite layers a
   assert.match(html, /combat-cutscene__lane combat-cutscene__lane--enemy[\s\S]*data-terrain-id="ridge"/);
   assert.match(html, /data-cutscene-hp-fill="player"/);
   assert.match(html, /data-cutscene-hp-fill="enemy"/);
+  assert.match(html, /<strong>Mara<\/strong><small>Grunt<\/small>/);
   assert.match(html, /combat-cutscene__sprite-actor[\s\S]*combat-cutscene__sprite-layer--idle[\s\S]*combat-cutscene__sprite-layer--attack/);
   assert.match(html, /combat-cutscene__sprite-sheet-viewport/);
   assert.match(html, /data-cutscene-attack-strip="player"/);
@@ -1457,6 +1459,7 @@ test("reward-equip overlay shows eligible squad units and skip control", () => {
     message: "Route secured."
   };
   const grunt = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 0, 0);
+  grunt.name = "Mara";
   const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 0, 0);
   const system = new BattleSystem(battleState);
   const html = renderBattleHudView({
@@ -1488,9 +1491,49 @@ test("reward-equip overlay shows eligible squad units and skip control", () => {
 
   assert.match(html, /Equip AA Kit/);
   assert.match(html, /data-action="equip-run-gear"/);
-  assert.match(html, /Grunt/);
+  assert.match(html, /Mara/);
+  assert.match(html, /Grunt.*Level 1/);
   assert.doesNotMatch(html, /Runner<\/strong><br \/>/);
   assert.match(html, /data-action="discard-run-gear"/);
+});
+
+test("reinforcement naming overlay exposes custom and random naming before the next map", () => {
+  const battleState = createTestBattleState({ mode: BATTLE_MODES.RUN });
+  battleState.victory = {
+    winner: TURN_SIDES.PLAYER,
+    message: "Route secured."
+  };
+  const runner = createPlacedUnit("runner", TURN_SIDES.PLAYER, 0, 0);
+  runner.name = "Redline";
+  const system = new BattleSystem(battleState);
+  const html = renderBattleHudView({
+    battleSnapshot: system.getSnapshot(),
+    runState: {
+      mapIndex: 1,
+      targetMapCount: 10,
+      roster: [runner],
+      unitNameHistory: ["Redline"],
+      pendingRewardChoices: [],
+      pendingUnitNaming: { unitId: runner.id, nameRoll: 0 }
+    },
+    battleUi: {
+      pauseMenuOpen: false,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    debugMode: false,
+    runStatus: "reward-name-unit",
+    banner: ""
+  });
+
+  assert.match(html, /Name Your Runner/);
+  assert.match(html, /value="Redline"/);
+  assert.match(html, /data-pending-run-unit-name/);
+  assert.match(html, /data-action="randomize-pending-run-unit-name"/);
+  assert.match(html, /data-action="confirm-pending-run-unit-name"/);
 });
 
 test("battle HUD keeps gear inside the loadout stack with tooltip details and ammo state", () => {
@@ -1514,6 +1557,7 @@ test("battle HUD keeps gear inside the loadout stack with tooltip details and am
 
 test("battle HUD places experience above HP and shows weapon and armor profiles for selected units", () => {
   const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  unit.name = "Mara";
   const battleState = createTestBattleState({
     playerUnits: [unit]
   });
@@ -1526,7 +1570,7 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
   assert.match(html, /data-meter-fill="xp"[^>]*data-meter-value="0"[^>]*style="width:0%"/);
   assert.match(
     html,
-    /<strong>Grunt<\/strong>[\s\S]*?<strong>Experience<\/strong>[\s\S]*?selection-health__label">HP<\/span>/
+    /<strong>Mara<\/strong>[\s\S]*?<small>Grunt<\/small>[\s\S]*?<strong>Experience<\/strong>[\s\S]*?selection-health__label">HP<\/span>/
   );
   assert.match(html, /aria-label="Stamina 60 out of 60"/);
   assert.match(html, /data-meter-fill="stamina"/);
@@ -1543,6 +1587,22 @@ test("battle HUD places experience above HP and shows weapon and armor profiles 
   );
   assert.doesNotMatch(html, /Weapon Profile/);
   assert.doesNotMatch(html, /Armor Profile/);
+});
+
+test("battle HUD escapes custom unit names in identity panels and the command feed", () => {
+  const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2);
+  unit.name = "Mara <script>alert(1)</script>";
+  const battleState = createTestBattleState({
+    mode: BATTLE_MODES.RUN,
+    playerUnits: [unit]
+  });
+  battleState.selection = { type: "unit", id: unit.id, x: unit.x, y: unit.y };
+  battleState.log = [`${unit.name} captured the relay.`];
+
+  const html = renderHudForBattleState(battleState);
+
+  assert.match(html, /Mara &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
 });
 
 test("battle HUD moves partial resources into the stamina meter and weapon card", () => {
@@ -1658,6 +1718,7 @@ test("battle HUD renders the full level-up stat board, sprite art, and locked co
   const unit = createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
     level: 3
   });
+  unit.name = "Mara";
   const battleState = createTestBattleState({
     playerUnits: [unit]
   });
@@ -1727,6 +1788,8 @@ test("battle HUD renders the full level-up stat board, sprite art, and locked co
 
   assert.match(html, new RegExp(`data-level-up-key=\"${unit.id}-2-3\"`));
   assert.equal(countMatches(html, /data-level-up-stat=/g), 8);
+  assert.match(html, /<h2>Mara<\/h2>/);
+  assert.match(html, /Grunt &middot; Level 2 to 3/);
   assert.match(html, /Level 2 to 3/);
   assert.match(html, /data-level-up-display="maxHealth"[\s\S]*?>101<\/strong>/);
   assert.match(html, /level-up-card__stats-head">Current<\/span>/);

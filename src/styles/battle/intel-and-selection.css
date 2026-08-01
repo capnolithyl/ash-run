@@ -169,6 +169,13 @@
   gap: 0.22rem;
 }
 
+.selection-unit-heading__title small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .selection-health__bar--stamina {
   border-color: rgba(90, 224, 255, 0.18);
   background: rgba(52, 128, 163, 0.12);

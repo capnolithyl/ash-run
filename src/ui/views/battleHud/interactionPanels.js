@@ -18,6 +18,7 @@ import {
   RUN_UPGRADE_RARITY_LABELS
 } from "../../../game/content/runUpgrades.js";
 import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
+import { escapeHtml } from "../../shared/html.js";
 
 const DEBUG_GEAR_UPGRADES = RUN_UPGRADES.filter((upgrade) => upgrade.type === RUN_CARD_TYPES.GEAR);
 const DEBUG_RUN_CARD_UPGRADES = RUN_UPGRADES.filter(
@@ -109,7 +110,7 @@ export function renderActionPrompt(battleSnapshot) {
       <div class="battle-command-prompt__card">
         <div class="battle-command-prompt__header">
           <p class="eyebrow">${pendingAction.isSlipstream ? "Slipstream" : "Unit Orders"}</p>
-          <strong>${pendingAction.unitName}</strong>
+          <strong>${escapeHtml(pendingAction.unitName)}</strong>
         </div>
         <div class="battle-command-prompt__menu">
           ${
@@ -186,7 +187,7 @@ export function renderCommandFeed(log, hoveredTile) {
         ${hoveredTileLabel ? `<span class="selection-chip">${hoveredTileLabel}</span>` : ""}
       </div>
       <div class="log-feed">
-        ${log.map((line) => `<p>${line}</p>`).join("")}
+        ${log.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
     </div>
   `;
@@ -203,7 +204,7 @@ export function renderSupportPrompt(battleSnapshot) {
     <div class="battle-targeting-hint">
       <div class="battle-targeting-hint__copy">
         <p class="eyebrow">Support Mode</p>
-        <strong>${pendingAction.unitName} ready to support</strong>
+        <strong>${escapeHtml(pendingAction.unitName)} ready to support</strong>
         <span>Select a highlighted ally or cancel.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-support-choice">Cancel</button>
@@ -222,7 +223,7 @@ export function renderMedpackPrompt(battleSnapshot) {
     <div class="battle-targeting-hint">
       <div class="battle-targeting-hint__copy">
         <p class="eyebrow">Medpack Mode</p>
-        <strong>${pendingAction.unitName} ready to use a medpack</strong>
+        <strong>${escapeHtml(pendingAction.unitName)} ready to use a medpack</strong>
         <span>Select the acting unit or a highlighted infantry ally.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-medpack-choice">Cancel</button>
@@ -241,7 +242,7 @@ export function renderExtinguishPrompt(battleSnapshot) {
     <div class="battle-targeting-hint">
       <div class="battle-targeting-hint__copy">
         <p class="eyebrow">Extinguish Mode</p>
-        <strong>${pendingAction.unitName} is ready to put out a fire</strong>
+        <strong>${escapeHtml(pendingAction.unitName)} is ready to put out a fire</strong>
         <span>Select a highlighted burned ally or cancel.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-extinguish-choice">Cancel</button>
@@ -260,7 +261,7 @@ export function renderTransportPrompt(battleSnapshot) {
     <div class="battle-targeting-hint">
       <div class="battle-targeting-hint__copy">
         <p class="eyebrow">Transport Mode</p>
-        <strong>${pendingAction.unitName} ready to board</strong>
+        <strong>${escapeHtml(pendingAction.unitName)} ready to board</strong>
         <span>Select a highlighted runner or cancel.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-transport-choice">Cancel</button>
@@ -279,7 +280,7 @@ export function renderTargetingPrompt(battleSnapshot) {
     <div class="battle-targeting-hint">
       <div class="battle-targeting-hint__copy">
         <p class="eyebrow">Attack Mode</p>
-        <strong>${pendingAction.unitName} ready to fire</strong>
+        <strong>${escapeHtml(pendingAction.unitName)} ready to fire</strong>
         <span>Select a highlighted enemy or cancel.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-attack">Cancel</button>
@@ -298,7 +299,7 @@ export function renderUnloadPrompt(battleSnapshot) {
     <div class="battle-targeting-hint">
       <div class="battle-targeting-hint__copy">
         <p class="eyebrow">Unload Mode</p>
-        <strong>${pendingAction.unitName} ready to unload</strong>
+        <strong>${escapeHtml(pendingAction.unitName)} ready to unload</strong>
         <span>Select a highlighted tile or cancel.</span>
       </div>
       <button class="ghost-button ghost-button--small battle-targeting-hint__cancel" data-action="cancel-unload-choice">Cancel</button>
@@ -362,8 +363,8 @@ function renderDebugToolCard({ id, title, summary }, activeTool) {
       aria-current="${isActive ? "true" : "false"}"
       aria-controls="debug-tool-panel-${id}"
     >
-      <strong>${title}</strong>
-      <small>${summary}</small>
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(summary)}</small>
     </button>
   `;
 }
@@ -379,8 +380,8 @@ function renderDebugToolPanel({ id, title, description, content }, activeTool) {
     >
       <div class="debug-tool-panel__header">
         <p class="eyebrow">Debug Tool</p>
-        <h3>${title}</h3>
-        <p>${description}</p>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(description)}</p>
       </div>
       ${content}
     </section>

@@ -9,7 +9,12 @@ function createRunLoadoutState() {
     runLoadout: {
       budget: 1000,
       fundsRemaining: 350,
-      units: ["grunt", "grunt", "longshot"]
+      namingReviewOpen: false,
+      units: [
+        { id: "grunt-one", unitTypeId: "grunt", name: "Mara", nameRoll: 0 },
+        { id: "grunt-two", unitTypeId: "grunt", name: "Rook", nameRoll: 0 },
+        { id: "longshot-one", unitTypeId: "longshot", name: "Hush", nameRoll: 0 }
+      ]
     },
     metaState: {
       unlockedUnitIds: ["grunt", "longshot", "runner", "bruiser"]
@@ -26,14 +31,13 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /Selected Squad/);
   assert.match(html, /Funds/);
   assert.match(html, /350\/1000/);
-  assert.match(html, /<table class="run-loadout-table">/);
+  assert.match(html, /class="run-loadout-unit-grid"/);
+  assert.doesNotMatch(html, /<table/);
   assert.doesNotMatch(html, /Purchase Units/);
   assert.doesNotMatch(html, /Selected slot:/);
   assert.doesNotMatch(html, /Commander:/);
-  assert.match(html, /<th scope="col">Unit<\/th>/);
-  assert.match(html, /<th scope="col">Battle Stats<\/th>/);
-  assert.match(html, /<th scope="col">Purchase<\/th>/);
-  assert.match(html, /data-role="run-loadout-table-shell"/);
+  assert.doesNotMatch(html, /Battle Stats/);
+  assert.match(html, /data-role="run-loadout-grid-shell"/);
   assert.match(html, /Selected Squad/);
   assert.match(html, /2x Grunt/);
   assert.match(html, /1x Longshot/);
@@ -48,14 +52,41 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.match(html, /--preview-columns:4;/);
   assert.match(html, /--preview-rows:4;/);
   assert.doesNotMatch(html, /run-unit-card__preview-strip/);
-  assert.match(html, /class="selection-stat run-loadout-stat"/);
-  assert.match(html, /class="selection-stat__background-icon" src="\.\/*assets\/img\/icons\/battle-hud\/stats\/atk\.png"/);
-  assert.match(html, /class="selection-stat__content"/);
+  assert.match(html, /class="run-loadout-unit-card run-loadout-unit-card--selected"/);
+  assert.match(html, /class="run-loadout-unit-card__count"/);
   assert.match(html, /Count/);
   assert.match(html, /run-loadout-start-button/);
   assert.match(html, /title-button__icon/);
   assert.match(html, /run-loadout-commander__details/);
   assert.match(html, /Commander Details/);
+});
+
+test("run loadout naming review renders one validated editable identity per purchased unit", () => {
+  const state = createRunLoadoutState();
+  state.runLoadout.namingReviewOpen = true;
+  const html = renderRunLoadoutView(state);
+
+  assert.match(html, /role="dialog"/);
+  assert.match(html, /Name Your Squad/);
+  assert.equal((html.match(/data-run-loadout-unit-name=/g) ?? []).length, 3);
+  assert.equal((html.match(/data-action="randomize-run-loadout-name"/g) ?? []).length, 3);
+  assert.match(html, /value="Mara"/);
+  assert.match(html, /data-action="start-run"/);
+  assert.match(html, /Deploy To Map One/);
+});
+
+test("run loadout naming review rejects duplicate and unsafe custom names", () => {
+  const state = createRunLoadoutState();
+  state.runLoadout.namingReviewOpen = true;
+  state.runLoadout.units[0].name = "Rook";
+  state.runLoadout.units[2].name = "<script>";
+  const html = renderRunLoadoutView(state);
+
+  assert.match(html, /That name is already part of this run\./);
+  assert.match(html, /Use letters, numbers/);
+  assert.match(html, /value="&lt;script&gt;"/);
+  assert.match(html, /data-action="start-run"[\s\S]*?disabled/);
+  assert.doesNotMatch(html, /value="<script>"/);
 });
 
 test("run loadout commander summary keeps blaze and echo status text concise", () => {

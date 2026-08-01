@@ -1,4 +1,5 @@
 import { TURN_SIDES } from "../../../game/core/constants.js";
+import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
 import { getUnitSpriteDefinition } from "../../../game/phaser/assets.js";
 import { getBattleCombatCutsceneState } from "../../../game/phaser/view/battleCombatCutscene.js";
 import {
@@ -7,6 +8,7 @@ import {
   getAttackAnimationPlayback,
   getOwnerIdleFlipX,
 } from "../../../game/phaser/view/unitAnimationHelpers.js";
+import { escapeHtml, escapeHtmlAttribute } from "../../shared/html.js";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -21,6 +23,13 @@ function formatWeaponLabel(weaponClass) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function renderCutsceneUnitIdentity(unit) {
+  const unitTypeName = UNIT_CATALOG[unit.unitTypeId]?.name ?? unit.unitTypeId;
+  const showType = unit.name !== unitTypeName;
+
+  return `<strong>${escapeHtml(unit.name)}</strong>${showType ? `<small>${escapeHtml(unitTypeName)}</small>` : ""}`;
 }
 
 function formatFrameSequence(frameSequence = []) {
@@ -237,7 +246,7 @@ function renderSpriteLayer(layerConfig, side, layerType) {
 
   return `
     <div class="${layerClasses} combat-cutscene__sprite-layer--text">
-      <div class="combat-cutscene__sprite-fallback">${layerConfig.label}</div>
+      <div class="combat-cutscene__sprite-fallback">${escapeHtml(layerConfig.label)}</div>
     </div>
   `;
 }
@@ -271,7 +280,7 @@ function renderUnitSprite(
       class="${actorClasses}"
       data-cutscene-sprite="${side}"
       role="img"
-      aria-label="${unit.name} combat portrait"
+      aria-label="${escapeHtmlAttribute(unit.name)} combat portrait"
       style="
         --combat-unit-scale:${combatScale};
         --combat-unit-size:${(15 * combatScale).toFixed(3)}rem;
@@ -390,11 +399,11 @@ export function renderCombatCutsceneOverlay(cutscene, options = {}) {
         <header class="combat-cutscene__header">
           <div class="combat-cutscene__unit-summary combat-cutscene__unit-summary--player">
             <span class="combat-cutscene__unit-badge" aria-hidden="true"></span>
-            <strong>${cutscene.playerUnit.name}</strong>
+            ${renderCutsceneUnitIdentity(cutscene.playerUnit)}
           </div>
           <div class="combat-cutscene__header-pill">HP</div>
           <div class="combat-cutscene__unit-summary combat-cutscene__unit-summary--enemy">
-            <strong>${cutscene.enemyUnit.name}</strong>
+            ${renderCutsceneUnitIdentity(cutscene.enemyUnit)}
             <span class="combat-cutscene__unit-badge" aria-hidden="true"></span>
           </div>
         </header>

@@ -1,11 +1,12 @@
 import { getCommanderById } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
-import { getUnitSpriteDefinition } from "../../game/phaser/assets.js";
 import {
-  formatRangeLabel,
-  renderBattleHudStatBackground
-} from "../shared/unitStatPresentation.js";
+  RUN_UNIT_NAME_MAX_LENGTH,
+  validateRunUnitName
+} from "../../game/content/runUnitNames.js";
+import { getUnitSpriteDefinition } from "../../game/phaser/assets.js";
+import { escapeHtml, escapeHtmlAttribute } from "../shared/html.js";
 
 const UNIT_FAMILY_LABELS = {
   infantry: "Infantry",
@@ -85,7 +86,8 @@ function buildUnitPreviewKeyframes(unitTypeId, animationId, frameIndices, column
 function getLoadoutCounts(units = []) {
   const counts = new Map();
 
-  for (const unitTypeId of units) {
+  for (const draft of units) {
+    const unitTypeId = typeof draft === "string" ? draft : draft.unitTypeId;
     counts.set(unitTypeId, (counts.get(unitTypeId) ?? 0) + 1);
   }
 
@@ -170,23 +172,8 @@ function renderSelectedSquad(counts) {
     <div class="run-loadout-selected__chips">
       ${Array.from(counts.entries()).map(([unitTypeId, count]) => {
         const unitName = UNIT_CATALOG[unitTypeId]?.name ?? unitTypeId;
-        return `<span class="run-loadout-selected__chip">${count}x ${unitName}</span>`;
+        return `<span class="run-loadout-selected__chip">${count}x ${escapeHtml(unitName)}</span>`;
       }).join("")}
-    </div>
-  `;
-}
-
-function renderLoadoutStatCell(iconName, label, value) {
-  return `
-    <div
-      class="selection-stat run-loadout-stat"
-      aria-label="${label} ${value}"
-    >
-      ${renderBattleHudStatBackground(iconName)}
-      <div class="selection-stat__content">
-        <span class="selection-stat__label">${label}</span>
-        <strong>${value}</strong>
-      </div>
     </div>
   `;
 }
@@ -208,6 +195,101 @@ function renderCommanderSummaryLines(commander) {
   `;
 }
 
+function getDraftNameValidation(drafts, draft) {
+  return validateRunUnitName(
+    draft.name,
+    drafts.filter((candidate) => candidate.id !== draft.id).map((candidate) => candidate.name)
+  );
+}
+
+function renderRunNamingReview(drafts, previewStyles, colorOptions) {
+  if (drafts.length === 0) {
+    return "";
+  }
+
+  const rows = drafts.map((draft, index) => {
+    const unitType = UNIT_CATALOG[draft.unitTypeId];
+
+    if (!unitType) {
+      return "";
+    }
+
+    const validation = getDraftNameValidation(drafts, draft);
+    const errorId = `run-unit-name-error-${sanitizeCssIdentifier(draft.id)}`;
+
+    return `
+      <div class="run-naming-row">
+        <div class="run-unit-card__preview run-naming-row__preview">
+          ${renderUnitPreview(draft.unitTypeId, unitType.name, previewStyles, colorOptions)}
+        </div>
+        <div class="run-naming-row__identity">
+          <strong>${escapeHtml(unitType.name)}</strong>
+          <span>${escapeHtml(UNIT_FAMILY_LABELS[unitType.family] ?? unitType.family)} · Unit ${index + 1}</span>
+        </div>
+        <label class="run-naming-row__field">
+          <span>Unit name</span>
+          <input
+            type="text"
+            value="${escapeHtmlAttribute(draft.name)}"
+            maxlength="${RUN_UNIT_NAME_MAX_LENGTH}"
+            autocomplete="off"
+            spellcheck="false"
+            data-run-loadout-unit-name="${escapeHtmlAttribute(draft.id)}"
+            aria-describedby="${errorId}"
+            aria-invalid="${validation.valid ? "false" : "true"}"
+          />
+          <small id="${errorId}" class="run-naming-row__error">${escapeHtml(validation.error)}</small>
+        </label>
+        <button
+          class="ghost-button ghost-button--small run-naming-row__randomize"
+          data-action="randomize-run-loadout-name"
+          data-unit-id="${escapeHtmlAttribute(draft.id)}"
+          aria-label="Randomize name for ${escapeHtmlAttribute(unitType.name)} unit ${index + 1}"
+        >
+          Randomize
+        </button>
+      </div>
+    `;
+  }).join("");
+  const allNamesValid = drafts.every((draft) => getDraftNameValidation(drafts, draft).valid);
+
+  return `
+    <div class="run-naming-overlay">
+      <section
+        class="overlay-card run-naming-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="run-naming-title"
+        aria-describedby="run-naming-description"
+      >
+        <div class="run-naming-dialog__header">
+          <div>
+            <p class="eyebrow">Final Roster</p>
+            <h2 id="run-naming-title">Name Your Squad</h2>
+            <p id="run-naming-description">Give each unit a name or draw another from its role-specific pool.</p>
+          </div>
+          <button class="ghost-button" data-action="close-run-naming-review">Back</button>
+        </div>
+        <div class="run-naming-list">
+          ${rows}
+        </div>
+        <div class="run-naming-dialog__footer">
+          <button
+            class="menu-button run-loadout-start-button"
+            data-action="start-run"
+            ${allNamesValid ? "" : "disabled"}
+          >
+            <span class="title-button__content">
+              <span class="title-button__icon run-loadout-start-button__icon">${renderDeploymentIcon()}</span>
+              <span class="title-button__label">Deploy To Map One</span>
+            </span>
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 export function renderRunLoadoutView(state) {
   const commander = getCommanderById(state.selectedCommanderId);
   const commanderPortraitUrl = commander ? getCommanderPortraitImageUrl(commander.id) : null;
@@ -217,7 +299,7 @@ export function renderRunLoadoutView(state) {
   const purchasedUnitCount = runLoadout.units.length;
   const budgetLabel = `${runLoadout.fundsRemaining ?? 0}/${runLoadout.budget ?? 0}`;
   const previewStyles = new Map();
-  const unitRowsMarkup = unlockedUnitIds.map((unitTypeId) => {
+  const unitCardsMarkup = unlockedUnitIds.map((unitTypeId) => {
     const unit = UNIT_CATALOG[unitTypeId];
     const count = loadoutCounts.get(unitTypeId) ?? 0;
     const canAfford = (runLoadout.fundsRemaining ?? 0) >= (unit?.cost ?? Number.POSITIVE_INFINITY);
@@ -227,58 +309,47 @@ export function renderRunLoadoutView(state) {
     }
 
     return `
-      <tr class="run-loadout-row ${count > 0 ? "run-loadout-row--selected" : ""}">
-        <td>
-          <div class="run-loadout-unit-cell">
-            <div class="run-unit-card__preview run-loadout-unit-cell__preview">
+      <article class="run-loadout-unit-card ${count > 0 ? "run-loadout-unit-card--selected" : ""}">
+        <button
+          class="ghost-button ghost-button--small run-loadout-unit-card__adjust"
+          data-action="run-loadout-remove"
+          data-unit-type-id="${escapeHtmlAttribute(unitTypeId)}"
+          aria-label="Remove ${escapeHtmlAttribute(unit.name)} from starting squad"
+          ${count > 0 ? "" : "disabled"}
+        >
+          −
+        </button>
+        <div class="run-loadout-unit-card__center">
+          <div class="run-loadout-unit-card__identity">
+            <div class="run-unit-card__preview run-loadout-unit-card__preview">
               ${renderUnitPreview(unitTypeId, unit.name, previewStyles, state.metaState?.options)}
             </div>
-            <div class="run-loadout-unit-cell__body">
-              <strong>${unit.name}</strong>
-              <span>${UNIT_FAMILY_LABELS[unit.family] ?? unit.family}</span>
+            <div class="run-loadout-unit-card__body">
+              <strong>${escapeHtml(unit.name)}</strong>
+              <span>${escapeHtml(UNIT_FAMILY_LABELS[unit.family] ?? unit.family)}</span>
               <small>${unit.cost} funds</small>
             </div>
           </div>
-        </td>
-        <td>
-          <div class="selection-stat-grid run-loadout-stat-grid">
-            ${renderLoadoutStatCell("attack", "ATK", unit.attack)}
-            ${renderLoadoutStatCell("armor", "ARM", unit.armor)}
-            ${renderLoadoutStatCell("movement", "MOV", unit.movement)}
-            ${renderLoadoutStatCell("range", "RNG", formatRangeLabel(unit.minRange, unit.maxRange))}
-            ${renderLoadoutStatCell("ammo", "AMMO", unit.ammoMax)}
-            ${renderLoadoutStatCell("stamina", "STA", unit.staminaMax)}
+          <div class="run-loadout-unit-card__count" aria-label="${count} purchased">
+            <span>Count</span>
+            <strong>${count}</strong>
           </div>
-        </td>
-        <td>
-          <div class="run-loadout-purchase-cell">
-            <button
-              class="ghost-button ghost-button--small"
-              data-action="run-loadout-remove"
-              data-unit-type-id="${unitTypeId}"
-              aria-label="Remove ${unit.name} from starting squad"
-              ${count > 0 ? "" : "disabled"}
-            >
-              -
-            </button>
-            <div class="run-loadout-purchase-cell__count">
-              <span>Count</span>
-              <strong>${count}</strong>
-            </div>
-            <button
-              class="ghost-button ghost-button--small"
-              data-action="run-loadout-add"
-              data-unit-type-id="${unitTypeId}"
-              aria-label="Add ${unit.name} to starting squad"
-              ${canAfford ? "" : "disabled"}
-            >
-              +
-            </button>
-          </div>
-        </td>
-      </tr>
+        </div>
+        <button
+          class="ghost-button ghost-button--small run-loadout-unit-card__adjust"
+          data-action="run-loadout-add"
+          data-unit-type-id="${escapeHtmlAttribute(unitTypeId)}"
+          aria-label="Add ${escapeHtmlAttribute(unit.name)} to starting squad"
+          ${canAfford ? "" : "disabled"}
+        >
+          +
+        </button>
+      </article>
     `;
   }).join("");
+  const namingReviewMarkup = runLoadout.namingReviewOpen
+    ? renderRunNamingReview(runLoadout.units, previewStyles, state.metaState?.options)
+    : "";
   const previewStyleMarkup = previewStyles.size > 0
     ? `<style>${Array.from(previewStyles.values()).join("\n")}</style>`
     : "";
@@ -353,19 +424,10 @@ export function renderRunLoadoutView(state) {
                 <span class="run-loadout-summary-card__label">Unit Catalog</span>
               </div>
             </div>
-            <div class="run-loadout-table-shell" data-role="run-loadout-table-shell">
-              <table class="run-loadout-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Unit</th>
-                    <th scope="col">Battle Stats</th>
-                    <th scope="col">Purchase</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${unitRowsMarkup}
-                </tbody>
-              </table>
+            <div class="run-loadout-grid-shell" data-role="run-loadout-grid-shell">
+              <div class="run-loadout-unit-grid">
+                ${unitCardsMarkup}
+              </div>
             </div>
           </section>
         </div>
@@ -373,7 +435,7 @@ export function renderRunLoadoutView(state) {
           <button
             class="menu-button run-loadout-start-button"
             data-role="start-run-button"
-            data-action="start-run"
+            data-action="open-run-naming-review"
             ${purchasedUnitCount > 0 ? "" : "disabled"}
           >
             <span class="title-button__content">
@@ -383,6 +445,7 @@ export function renderRunLoadoutView(state) {
           </button>
         </div>
       </section>
+      ${namingReviewMarkup}
     </div>
   `;
 }

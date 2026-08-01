@@ -9,6 +9,7 @@ export const UI_AUDIO_CUES = Object.freeze({
 const CANCEL_ACTIONS = new Set([
   "back-to-title",
   "back-to-commander-select",
+  "close-run-naming-review",
   "skirmish-previous-step",
   "skip-tutorial",
   "revert-display-settings",
@@ -55,6 +56,8 @@ const ADJUST_ACTIONS = new Set([
   "select-next-unit",
   "run-loadout-add",
   "run-loadout-remove",
+  "randomize-run-loadout-name",
+  "randomize-pending-run-unit-name",
   "open-run-cards",
   "map-editor-select-tool",
   "map-editor-select-terrain",

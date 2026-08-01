@@ -1,4 +1,5 @@
 import { getBuildingTypeMetadata } from "../../content/buildings.js";
+import { UNIT_CATALOG } from "../../content/unitCatalog.js";
 
 export function buildForecastTooltipLabel(forecast) {
   if (!forecast) {
@@ -52,6 +53,10 @@ export function buildBattlefieldNameTooltip(snapshot, tile) {
   }
 
   if (unit) {
+    const unitTypeName = UNIT_CATALOG[unit.unitTypeId]?.name ?? unit.unitTypeId ?? unit.name;
+    const unitLabel = unit.name && unit.name !== unitTypeName
+      ? `${unit.name} \u2014 ${unitTypeName}`
+      : unit.name;
     const secondary = building
       ? {
           type: "building",
@@ -63,7 +68,7 @@ export function buildBattlefieldNameTooltip(snapshot, tile) {
     return {
       primary: {
         type: "unit",
-        label: unit.name,
+        label: unitLabel,
         owner: unit.owner ?? null
       },
       secondary

@@ -69,6 +69,17 @@ test("battlefield name tooltip shows a visible unit on the hovered tile", () => 
   });
 });
 
+test("battlefield name tooltip shows a custom identity with its catalog type", () => {
+  const snapshot = createTooltipSnapshot({
+    playerUnits: [createUnit({ name: "Mara", unitTypeId: "grunt", owner: "player" })]
+  });
+
+  assert.equal(
+    buildBattlefieldNameTooltip(snapshot, { x: 2, y: 3 }).primary.label,
+    "Mara \u2014 Grunt"
+  );
+});
+
 test("battlefield name tooltip shows a building on an empty hovered tile", () => {
   const snapshot = createTooltipSnapshot({
     buildings: [

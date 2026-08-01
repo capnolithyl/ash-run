@@ -5,10 +5,16 @@ import {
   getRunUpgradeRarityAsset,
   RUN_UPGRADE_RARITY_LABELS
 } from "../../../game/content/runUpgrades.js";
+import { UNIT_CATALOG } from "../../../game/content/unitCatalog.js";
+import {
+  getRunUnitNameKey,
+  validateRunUnitName
+} from "../../../game/content/runUnitNames.js";
 import { getUnitSpriteDefinition } from "../../../game/phaser/assets.js";
 import { describeRunCardsForState } from "../../../game/simulation/runCardEffects.js";
 import { renderOptionFields } from "../optionFieldsView.js";
 import { renderDebugControls } from "./interactionPanels.js";
+import { escapeHtml, escapeHtmlAttribute } from "../../shared/html.js";
 
 const BATTLE_NOTICE_HELD_IN_MS = 180;
 
@@ -132,7 +138,7 @@ function renderLevelUpUnitArt(levelUpEvent, colorOptions = {}) {
 
   return `
     <div class="level-up-art level-up-art--fallback" aria-hidden="true">
-      <span>${levelUpEvent.unitName.slice(0, 2).toUpperCase()}</span>
+      <span>${escapeHtml(levelUpEvent.unitName.slice(0, 2).toUpperCase())}</span>
     </div>
   `;
 }
@@ -168,14 +174,15 @@ export function renderLevelUpOverlay(battleSnapshot, presentation = null, colorO
   const rows = resolvedPresentation.rows ?? [];
   const continueEnabled = resolvedPresentation.continueEnabled !== false;
   const levelUpKey = `${levelUpEvent.unitId}-${levelUpEvent.previousLevel}-${levelUpEvent.newLevel}`;
+  const unitTypeName = UNIT_CATALOG[levelUpEvent.unitTypeId]?.name ?? levelUpEvent.unitTypeId;
 
   return `
     <div class="battle-overlay battle-overlay--level-up" data-level-up-key="${levelUpKey}">
       <div class="overlay-card overlay-card--level-up${continueEnabled ? " overlay-card--level-up-ready" : ""}">
         <div class="level-up-card__header">
           <p class="eyebrow">Level Up</p>
-          <h2>${levelUpEvent.unitName}</h2>
-          <p>Level ${levelUpEvent.previousLevel} to ${levelUpEvent.newLevel}</p>
+          <h2>${escapeHtml(levelUpEvent.unitName)}</h2>
+          <p>${escapeHtml(unitTypeName)} &middot; Level ${levelUpEvent.previousLevel} to ${levelUpEvent.newLevel}</p>
         </div>
         <div class="level-up-card__body">
           <div class="level-up-card__stats">
@@ -400,7 +407,7 @@ export function renderRunCardsOverlay(state, battleSnapshot) {
                       .map((entry) => `
                         <li>
                           <strong>${entry.card.name}</strong>
-                          <span>${entry.unitName}</span>
+                          <span>${escapeHtml(entry.unitName)}</span>
                         </li>
                       `)
                       .join("")}
@@ -486,6 +493,72 @@ export function renderOutcomeOverlay(state, battleSnapshot) {
       `;
     }
 
+    if (state.runStatus === "reward-name-unit") {
+      const pending = state.runState?.pendingUnitNaming ?? null;
+      const unit = pending
+        ? (state.runState?.roster ?? []).find((candidate) => candidate.id === pending.unitId)
+        : null;
+      const unitType = UNIT_CATALOG[unit?.unitTypeId];
+      const currentNameKey = getRunUnitNameKey(unit?.name);
+      const excludedNames = unit
+        ? [
+            ...(state.runState?.unitNameHistory ?? []).filter(
+              (name) => getRunUnitNameKey(name) !== currentNameKey
+            ),
+            ...(state.runState?.roster ?? [])
+              .filter((candidate) => candidate.id !== unit.id)
+              .map((candidate) => candidate.name)
+          ]
+        : [];
+      const validation = validateRunUnitName(unit?.name, excludedNames);
+      const sprite = unitType
+        ? getUnitSpriteDefinition(unitType.id, TURN_SIDES.PLAYER, state.metaState?.options)
+        : null;
+
+      return `
+        <div class="battle-overlay">
+          <div class="overlay-card overlay-card--unit-naming" role="dialog" aria-modal="true" aria-labelledby="reinforcement-name-title">
+            <p class="eyebrow">Reinforcement Acquired</p>
+            <h2 id="reinforcement-name-title">Name Your ${escapeHtml(unitType?.name ?? "Unit")}</h2>
+            <p>This name will stay with the unit for the rest of the run.</p>
+            ${unit
+              ? `
+                <div class="reinforcement-naming-card">
+                  ${sprite?.fallbackUrl
+                    ? `<img src="${escapeHtmlAttribute(sprite.fallbackUrl)}" alt="${escapeHtmlAttribute(unitType?.name ?? "Unit")} preview" />`
+                    : ""}
+                  <div class="reinforcement-naming-card__type">
+                    <strong>${escapeHtml(unitType?.name ?? unit.unitTypeId)}</strong>
+                    <span>${escapeHtml(unit.family)}</span>
+                  </div>
+                  <label>
+                    <span>Unit name</span>
+                    <input
+                      type="text"
+                      value="${escapeHtmlAttribute(unit.name)}"
+                      maxlength="24"
+                      autocomplete="off"
+                      spellcheck="false"
+                      data-pending-run-unit-name
+                      aria-invalid="${validation.valid ? "false" : "true"}"
+                      aria-describedby="pending-run-unit-name-error"
+                    />
+                    <small id="pending-run-unit-name-error">${escapeHtml(validation.error)}</small>
+                  </label>
+                  <button class="ghost-button" data-action="randomize-pending-run-unit-name">Randomize</button>
+                </div>
+                <div class="battle-actions">
+                  <button class="menu-button" data-action="confirm-pending-run-unit-name" ${validation.valid ? "" : "disabled"}>
+                    Add To Squad And Continue
+                  </button>
+                </div>
+              `
+              : `<p>The drafted unit could not be found.</p>`}
+          </div>
+        </div>
+      `;
+    }
+
     if (state.runStatus === "reward-equip") {
       const pendingGearReward = state.runState?.pendingGearReward
         ? getRunUpgradeById(state.runState.pendingGearReward.id) ?? state.runState.pendingGearReward
@@ -510,8 +583,8 @@ export function renderOutcomeOverlay(state, battleSnapshot) {
                     ${eligibleUnits
                       .map((unit) => `
                         <button class="menu-button" data-action="equip-run-gear" data-unit-id="${unit.id}">
-                          <strong>${unit.name}</strong><br />
-                          <small>Level ${unit.level}${unit.gear?.slot ? ` | Replaces ${getRunUpgradeById(unit.gear.slot)?.name ?? unit.gear.slot}` : ""}</small>
+                          <strong>${escapeHtml(unit.name)}</strong><br />
+                          <small>${escapeHtml(UNIT_CATALOG[unit.unitTypeId]?.name ?? unit.unitTypeId)} · Level ${unit.level}${unit.gear?.slot ? ` · Replaces ${escapeHtml(getRunUpgradeById(unit.gear.slot)?.name ?? unit.gear.slot)}` : ""}</small>
                         </button>
                       `)
                       .join("")}

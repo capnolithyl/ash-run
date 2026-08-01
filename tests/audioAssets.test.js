@@ -2,7 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { MUSIC_ASSETS, MUSIC_TRACK_IDS, getMusicTrackKey } from "../src/game/phaser/assets.js";
+import {
+  MUSIC_ASSETS,
+  MUSIC_TRACK_IDS,
+  getCommanderMusicTrackId,
+  getMusicTrackKey,
+} from "../src/game/phaser/assets.js";
 import { getMusicTrackIdForState } from "../src/game/phaser/audio/MusicDirector.js";
 import { SCREEN_IDS, TURN_SIDES } from "../src/game/core/constants.js";
 import { createDefaultMetaState } from "../src/game/state/defaults.js";
@@ -18,13 +23,16 @@ test("music manifest points at files that ship with the repo", () => {
   }
 });
 
-test("music manifest exposes menu, ally turn, and enemy turn keys", () => {
+test("music manifest exposes the menu and available commander theme keys", () => {
   assert.equal(getMusicTrackKey(MUSIC_TRACK_IDS.MENU), "music:menu");
-  assert.equal(getMusicTrackKey(MUSIC_TRACK_IDS.ALLY_TURN), "music:ally-turn");
-  assert.equal(getMusicTrackKey(MUSIC_TRACK_IDS.ENEMY_TURN), "music:enemy-turn");
+  assert.equal(getMusicTrackKey(MUSIC_TRACK_IDS.COMMANDER_ROOK), "music:commander:rook");
+  assert.equal(getMusicTrackKey(MUSIC_TRACK_IDS.COMMANDER_NOVA), "music:commander:nova");
+  assert.equal(getCommanderMusicTrackId("rook"), MUSIC_TRACK_IDS.COMMANDER_ROOK);
+  assert.equal(getCommanderMusicTrackId("nova"), MUSIC_TRACK_IDS.COMMANDER_NOVA);
+  assert.equal(getCommanderMusicTrackId("atlas"), null);
 });
 
-test("music track selection follows title and battle turn state", () => {
+test("music track selection follows the active commander's available theme", () => {
   assert.equal(
     getMusicTrackIdForState({
       screen: SCREEN_IDS.TITLE
@@ -36,24 +44,42 @@ test("music track selection follows title and battle turn state", () => {
     getMusicTrackIdForState({
       screen: SCREEN_IDS.BATTLE,
       battleSnapshot: {
+        player: { commanderId: "rook" },
+        enemy: { commanderId: "nova" },
         turn: {
           activeSide: TURN_SIDES.PLAYER
         }
       }
     }),
-    MUSIC_TRACK_IDS.ALLY_TURN
+    MUSIC_TRACK_IDS.COMMANDER_ROOK
   );
 
   assert.equal(
     getMusicTrackIdForState({
       screen: SCREEN_IDS.BATTLE,
       battleSnapshot: {
+        player: { commanderId: "rook" },
+        enemy: { commanderId: "nova" },
         turn: {
           activeSide: TURN_SIDES.ENEMY
         }
       }
     }),
-    MUSIC_TRACK_IDS.ENEMY_TURN
+    MUSIC_TRACK_IDS.COMMANDER_NOVA
+  );
+
+  assert.equal(
+    getMusicTrackIdForState({
+      screen: SCREEN_IDS.BATTLE,
+      battleSnapshot: {
+        player: { commanderId: "atlas" },
+        enemy: { commanderId: "viper" },
+        turn: {
+          activeSide: TURN_SIDES.PLAYER
+        }
+      }
+    }),
+    null
   );
 });
 

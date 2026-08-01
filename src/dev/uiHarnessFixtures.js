@@ -148,7 +148,7 @@ function createCommanderSelectState() {
   };
 }
 
-function createRunLoadoutState() {
+function createRunLoadoutState({ namingReviewOpen = false } = {}) {
   const metaState = createBaseMetaState();
   metaState.unlockedUnitIds = ["grunt", "longshot", "runner", "bruiser", "medic", "skyguard"];
 
@@ -159,7 +159,13 @@ function createRunLoadoutState() {
     runLoadout: {
       budget: 1000,
       fundsRemaining: 150,
-      units: ["grunt", "grunt", "longshot", "bruiser"]
+      namingReviewOpen,
+      units: [
+        { id: "harness-grunt-one", unitTypeId: "grunt", name: "Mara", nameRoll: 0 },
+        { id: "harness-grunt-two", unitTypeId: "grunt", name: "Rook", nameRoll: 0 },
+        { id: "harness-longshot", unitTypeId: "longshot", name: "Hush", nameRoll: 0 },
+        { id: "harness-bruiser", unitTypeId: "bruiser", name: "Stonewall", nameRoll: 0 }
+      ]
     },
     metaState
   };
@@ -449,6 +455,44 @@ function createBattleRewardState() {
   return state;
 }
 
+function createBattleReinforcementNamingState() {
+  const state = createBaseBattleScreenState();
+  const reinforcement = createPlacedUnit("runner", TURN_SIDES.PLAYER, 1, 1, {
+    id: "harness-reinforcement-runner",
+    name: "Redline",
+    level: 2
+  });
+
+  state.runStatus = "reward-name-unit";
+  state.banner = "Reinforcement secured. Confirm its identity before the next map.";
+  state.runState = {
+    mapIndex: 3,
+    targetMapCount: 10,
+    roster: [
+      createPlacedUnit("grunt", TURN_SIDES.PLAYER, 2, 2, {
+        id: "harness-roster-grunt",
+        name: "Mara",
+        level: 3
+      }),
+      reinforcement
+    ],
+    unitNameHistory: ["Mara", "Redline"],
+    pendingUnitNaming: {
+      unitId: reinforcement.id,
+      nameRoll: 0
+    }
+  };
+  state.battleSnapshot = {
+    ...state.battleSnapshot,
+    victory: {
+      winner: TURN_SIDES.PLAYER,
+      message: "Battle won."
+    }
+  };
+
+  return state;
+}
+
 function createBattleRunCompleteState() {
   const state = createBaseBattleScreenState();
   state.runStatus = "complete";
@@ -575,6 +619,7 @@ export const UI_HARNESS_SCENES = [
   { id: "tutorial-epilogue", label: "Tutorial Epilogue", locator: "#ui-root" },
   { id: "commander-select", label: "Commander Select", locator: "#ui-root" },
   { id: "run-loadout", label: "Run Loadout", locator: "#ui-root" },
+  { id: "run-loadout-naming", label: "Run Loadout Naming", locator: ".run-naming-dialog" },
   { id: "skirmish-commanders", label: "Skirmish Commanders", locator: "#ui-root" },
   { id: "skirmish-map", label: "Skirmish Map", locator: "#ui-root" },
   { id: "options", label: "Options", locator: "#ui-root" },
@@ -585,6 +630,7 @@ export const UI_HARNESS_SCENES = [
   { id: "battle-tutorial", label: "Battle Tutorial Guide", locator: ".battle-shell" },
   { id: "battle-pause", label: "Battle HUD Pause", locator: ".battle-shell" },
   { id: "battle-reward", label: "Battle Reward", locator: ".battle-shell" },
+  { id: "battle-reinforcement-naming", label: "Battle Reinforcement Naming", locator: ".battle-shell" },
   { id: "battle-run-complete", label: "Battle Run Complete", locator: ".battle-shell" },
   { id: "battle-run-lost", label: "Battle Run Lost", locator: ".battle-shell" },
   { id: "battle-level-up", label: "Battle Level Up", locator: ".battle-shell" }
@@ -611,6 +657,11 @@ export function createUiHarnessScene(sceneId) {
       return {
         sceneId,
         state: createRunLoadoutState()
+      };
+    case "run-loadout-naming":
+      return {
+        sceneId,
+        state: createRunLoadoutState({ namingReviewOpen: true })
       };
     case "skirmish-commanders":
       return {
@@ -661,6 +712,11 @@ export function createUiHarnessScene(sceneId) {
       return {
         sceneId,
         state: createBattleRewardState()
+      };
+    case "battle-reinforcement-naming":
+      return {
+        sceneId,
+        state: createBattleReinforcementNamingState()
       };
     case "battle-run-complete":
       return {

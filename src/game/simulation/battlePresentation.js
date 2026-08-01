@@ -664,6 +664,7 @@ export function describeUnit(state, unit) {
 
   return {
     id: unit.id,
+    unitTypeId: unit.unitTypeId,
     owner: unit.owner,
     ownerLabel: formatSelectionOwner(unit.owner),
     name: unit.name,

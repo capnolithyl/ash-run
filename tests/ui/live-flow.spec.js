@@ -262,6 +262,8 @@ test("new run flow reaches battle from the live app", async ({ page }) => {
   await expect(page.locator('[data-screen-id="run-loadout"]')).toBeVisible();
 
   await page.locator('[data-action="run-loadout-add"][data-unit-type-id="grunt"]').click({ force: true });
+  await page.locator('[data-action="open-run-naming-review"]').click({ force: true });
+  await expect(page.getByRole("dialog", { name: "Name Your Squad" })).toBeVisible();
   await page.locator('[data-action="start-run"]').click({ force: true });
 
   await expect(page.locator(".battle-shell")).toBeVisible();

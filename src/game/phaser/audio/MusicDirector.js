@@ -1,5 +1,9 @@
 import { SCREEN_IDS, TURN_SIDES } from "../../core/constants.js";
-import { MUSIC_TRACK_IDS, getMusicTrackKey } from "../assets.js";
+import {
+  MUSIC_TRACK_IDS,
+  getCommanderMusicTrackId,
+  getMusicTrackKey,
+} from "../assets.js";
 
 const MUSIC_FADE_MS = 650;
 const MUSIC_DUCK_FADE_MS = 120;
@@ -9,9 +13,15 @@ export function getMusicTrackIdForState(state) {
     return MUSIC_TRACK_IDS.MENU;
   }
 
-  return state.battleSnapshot.turn.activeSide === TURN_SIDES.ENEMY
-    ? MUSIC_TRACK_IDS.ENEMY_TURN
-    : MUSIC_TRACK_IDS.ALLY_TURN;
+  const battleSnapshot = state.battleSnapshot;
+  const activeSide = battleSnapshot.turn?.activeSide;
+  const activeCommanderId = activeSide === TURN_SIDES.PLAYER
+    ? battleSnapshot.player?.commanderId
+    : activeSide === TURN_SIDES.ENEMY
+      ? battleSnapshot.enemy?.commanderId
+      : null;
+
+  return getCommanderMusicTrackId(activeCommanderId);
 }
 
 export class MusicDirector {
@@ -36,15 +46,17 @@ export class MusicDirector {
 
     const nextTrackId = getMusicTrackIdForState(state);
     const nextKey = getMusicTrackKey(nextTrackId);
-
-    if (!nextKey) {
-      return;
-    }
-
     const alreadyTargetingTrack = this.targetKey === nextKey;
     this.targetKey = nextKey;
 
     if (this.scene.sound?.locked) {
+      return;
+    }
+
+    if (!nextKey) {
+      if (!alreadyTargetingTrack || this.currentSound) {
+        this.crossfadeTo(null);
+      }
       return;
     }
 
@@ -110,11 +122,23 @@ export class MusicDirector {
   }
 
   crossfadeTo(nextKey) {
-    if (!this.scene.cache.audio.exists(nextKey)) {
+    if (nextKey && !this.scene.cache.audio.exists(nextKey)) {
       return;
     }
 
     const previousSound = this.currentSound;
+    if (!nextKey) {
+      this.currentSound = null;
+      this.currentKey = null;
+
+      if (previousSound) {
+        this.fadeSound(previousSound, 0, () => {
+          previousSound.stop();
+        });
+      }
+      return;
+    }
+
     const nextSound = this.getOrCreateSound(nextKey);
 
     if (previousSound === nextSound) {

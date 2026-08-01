@@ -181,6 +181,51 @@ test("GameAudioDirector applies live mixer options and plays catalogued cues", (
   assert.ok(played.destroyed);
 });
 
+test("commander music follows the active side and stops for commanders without themes", () => {
+  const scene = createFakeScene();
+  const director = new GameAudioDirector(scene);
+
+  director.sync({
+    screen: "battle",
+    metaState: { options: {} },
+    battleSnapshot: {
+      player: { commanderId: "rook" },
+      enemy: { commanderId: "nova" },
+      turn: { activeSide: "player" },
+    },
+  });
+  assert.equal(director.musicDirector.currentKey, "music:commander:rook");
+  assert.equal(director.musicDirector.currentSound.playConfig.loop, true);
+
+  const rookSound = director.musicDirector.currentSound;
+  director.sync({
+    screen: "battle",
+    metaState: { options: {} },
+    battleSnapshot: {
+      player: { commanderId: "rook" },
+      enemy: { commanderId: "atlas" },
+      turn: { activeSide: "enemy" },
+    },
+  });
+  assert.equal(director.musicDirector.currentKey, null);
+  assert.equal(director.musicDirector.currentSound, null);
+  assert.equal(rookSound.isPlaying, false);
+
+  director.sync({
+    screen: "battle",
+    metaState: { options: {} },
+    battleSnapshot: {
+      player: { commanderId: "rook" },
+      enemy: { commanderId: "nova" },
+      turn: { activeSide: "enemy" },
+    },
+  });
+  assert.equal(director.musicDirector.currentKey, "music:commander:nova");
+  assert.equal(director.musicDirector.currentSound.playConfig.loop, true);
+
+  director.destroy();
+});
+
 test("SFX playback enforces event deduplication, cooldowns, and bounded polyphony", () => {
   const scene = createFakeScene();
   const director = new GameAudioDirector(scene);

@@ -884,6 +884,14 @@
   white-space: nowrap;
 }
 
+.combat-cutscene__unit-summary small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
 .combat-cutscene__unit-summary--player {
   justify-self: start;
   color: color-mix(in srgb, var(--player-color) 38%, white);
@@ -2038,6 +2046,83 @@
 .debug-card-chip small {
   color: var(--muted);
   line-height: 1.2;
+}
+
+.overlay-card--unit-naming {
+  width: min(44rem, calc(100vw - 2rem));
+}
+
+.reinforcement-naming-card {
+  display: grid;
+  grid-template-columns: 5rem minmax(7rem, 0.6fr) minmax(12rem, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 138, 61, 0.2);
+  border-radius: 0.9rem;
+  background: rgba(12, 4, 24, 0.82);
+}
+
+.reinforcement-naming-card > img {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.reinforcement-naming-card__type,
+.reinforcement-naming-card label {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.reinforcement-naming-card__type strong {
+  color: #fff4ff;
+}
+
+.reinforcement-naming-card__type span,
+.reinforcement-naming-card label > span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: capitalize;
+}
+
+.reinforcement-naming-card input {
+  width: 100%;
+  min-height: 2.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(255, 138, 61, 0.28);
+  border-radius: 0.65rem;
+  color: #fff4ff;
+  background: rgba(6, 2, 14, 0.92);
+}
+
+.reinforcement-naming-card input[aria-invalid="true"] {
+  border-color: rgba(255, 103, 122, 0.9);
+}
+
+.reinforcement-naming-card label small {
+  min-height: 1em;
+  color: #ff9bab;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .reinforcement-naming-card {
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+  }
+
+  .reinforcement-naming-card > img {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .reinforcement-naming-card label {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
 
 .debug-card-list {

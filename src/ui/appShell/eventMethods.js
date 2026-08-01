@@ -501,6 +501,15 @@ export const appShellEventMethods = {
       case "start-run":
         await this.controller.startNewRun();
         break;
+      case "open-run-naming-review":
+        this.controller.openRunLoadoutNamingReview();
+        break;
+      case "close-run-naming-review":
+        this.controller.closeRunLoadoutNamingReview();
+        break;
+      case "randomize-run-loadout-name":
+        this.controller.randomizeRunLoadoutUnitName(trigger.dataset.unitId);
+        break;
       case "back-to-commander-select":
         this.controller.returnToCommanderSelect();
         break;
@@ -707,6 +716,12 @@ export const appShellEventMethods = {
       case "select-run-reward":
         await this.controller.selectRunReward(trigger.dataset.rewardId);
         break;
+      case "randomize-pending-run-unit-name":
+        await this.controller.randomizePendingRunUnitName();
+        break;
+      case "confirm-pending-run-unit-name":
+        await this.controller.confirmPendingRunUnitName();
+        break;
       case "equip-run-gear":
         await this.controller.equipPendingRunGear(trigger.dataset.unitId);
         break;
@@ -803,6 +818,19 @@ export const appShellEventMethods = {
         dedupeKey: `change:${getAudioFeedbackKey(event.target)}`,
         source: "dom-change"
       });
+    }
+
+    if (event.target.dataset.runLoadoutUnitName) {
+      this.controller.updateRunLoadoutUnitName(
+        event.target.dataset.runLoadoutUnitName,
+        event.target.value
+      );
+      return;
+    }
+
+    if (event.target.dataset.pendingRunUnitName !== undefined) {
+      await this.controller.updatePendingRunUnitName(event.target.value);
+      return;
     }
 
     if (this.handleDisplayOptionChange?.(event)) {

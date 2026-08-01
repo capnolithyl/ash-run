@@ -16,6 +16,11 @@ import {
 } from "../content/commanders.js";
 import { UNIT_CATALOG } from "../content/unitCatalog.js";
 import {
+  generateRunUnitName,
+  getRunUnitNameKey,
+  normalizeRunUnitName
+} from "../content/runUnitNames.js";
+import {
   drawRunUpgradeChoices,
   getBattleEffectiveRunUpgrades,
   RUN_CARD_TYPES,
@@ -100,14 +105,69 @@ function normalizeBattleRewardLedger(rewardLedger) {
   return nextRewardLedger;
 }
 
+function normalizeRunUnitIdentities(units = [], historicalNames = []) {
+  const unitTypeNames = new Set(
+    Object.values(UNIT_CATALOG).map((unitType) => getRunUnitNameKey(unitType.name))
+  );
+  const nameHistory = [];
+  const usedKeys = new Set();
+
+  for (const historicalName of historicalNames) {
+    const name = normalizeRunUnitName(historicalName);
+    const key = getRunUnitNameKey(name);
+
+    if (!name || !key || unitTypeNames.has(key) || usedKeys.has(key)) {
+      continue;
+    }
+
+    usedKeys.add(key);
+    nameHistory.push(name);
+  }
+
+  const normalizedUnits = units.map((unit) => {
+    const nextUnit = structuredClone(unit);
+    const unitTypeName = UNIT_CATALOG[nextUnit.unitTypeId]?.name ?? "";
+    const currentName = normalizeRunUnitName(nextUnit.name);
+    const currentKey = getRunUnitNameKey(currentName);
+    const needsGeneratedName = !currentName || currentKey === getRunUnitNameKey(unitTypeName);
+    const name = needsGeneratedName
+      ? generateRunUnitName(nextUnit.unitTypeId, {
+          unitId: nextUnit.id,
+          excludedNames: nameHistory
+        })
+      : currentName;
+    const key = getRunUnitNameKey(name);
+
+    nextUnit.name = name;
+
+    if (key && !usedKeys.has(key)) {
+      usedKeys.add(key);
+      nameHistory.push(name);
+    }
+
+    return nextUnit;
+  });
+
+  return {
+    units: normalizedUnits,
+    nameHistory
+  };
+}
+
 export function normalizeRunState(runState) {
   if (!runState) {
     return null;
   }
 
+  const identities = normalizeRunUnitIdentities(
+    runState.roster ?? [],
+    runState.unitNameHistory ?? []
+  );
+
   return {
     ...structuredClone(runState),
-    roster: [...(runState.roster ?? [])],
+    roster: identities.units,
+    unitNameHistory: identities.nameHistory,
     completedMaps: [...(runState.completedMaps ?? [])],
     runUpgrades: [...(runState.runUpgrades ?? [])],
     availableRunCardIds: [...(runState.availableRunCardIds ?? [])],
@@ -116,6 +176,9 @@ export function normalizeRunState(runState) {
     selectedRewards: [...(runState.selectedRewards ?? [])],
     pendingRewardChoices: [...(runState.pendingRewardChoices ?? [])],
     pendingGearReward: runState.pendingGearReward ? structuredClone(runState.pendingGearReward) : null,
+    pendingUnitNaming: runState.pendingUnitNaming
+      ? structuredClone(runState.pendingUnitNaming)
+      : null,
     intelLedger: normalizeIntelLedger(runState.intelLedger)
   };
 }
@@ -134,6 +197,12 @@ export function normalizeBattleState(battleState) {
 
   if (nextBattleState.mode === BATTLE_MODES.RUN) {
     nextBattleState.rewardLedger = normalizeBattleRewardLedger(nextBattleState.rewardLedger);
+
+    if (Array.isArray(nextBattleState.player?.units)) {
+      nextBattleState.player.units = normalizeRunUnitIdentities(
+        nextBattleState.player.units
+      ).units;
+    }
   }
 
   nextBattleState.runCards = {
@@ -342,6 +411,8 @@ export function createNewRunState({ slotId, commanderId }) {
     selectedRewards: [],
     pendingRewardChoices: [],
     pendingGearReward: null,
+    pendingUnitNaming: null,
+    unitNameHistory: [],
     intelLedger: createEmptyIntelLedger()
   };
 }
@@ -500,7 +571,7 @@ export function createSlotRecord(runState, battleState) {
   const normalizedBattleState = normalizeBattleState(battleState);
 
   return {
-    version: 1,
+    version: 2,
     updatedAt: new Date().toISOString(),
     summary: {
       commanderId: normalizedRunState.commanderId,

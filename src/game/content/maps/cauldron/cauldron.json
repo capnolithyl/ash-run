@@ -268,11 +268,25 @@
               "y": 5
             },
             {
+              "id": "wave-1-grunt-0-6",
+              "unitTypeId": "grunt",
+              "level": 1,
+              "x": 0,
+              "y": 6
+            },
+            {
               "id": "wave-1-grunt-14-5",
               "unitTypeId": "grunt",
               "level": 1,
               "x": 14,
               "y": 5
+            },
+            {
+              "id": "wave-1-breaker-14-6",
+              "unitTypeId": "breaker",
+              "level": 1,
+              "x": 14,
+              "y": 6
             }
           ]
         }
@@ -583,6 +597,13 @@
               "level": 2,
               "x": 0,
               "y": 6
+            },
+            {
+              "id": "wave-2-grunt-14-6",
+              "unitTypeId": "grunt",
+              "level": 2,
+              "x": 14,
+              "y": 6
             }
           ]
         }
@@ -856,7 +877,7 @@
         {
           "id": "wave-1",
           "name": "Infantry Spawns",
-          "maxActivations": 1,
+          "maxActivations": 3,
           "trigger": {
             "type": "player-turns-completed",
             "every": 2
@@ -881,7 +902,7 @@
         {
           "id": "wave-2",
           "name": "More Infantry",
-          "maxActivations": 1,
+          "maxActivations": 6,
           "trigger": {
             "type": "player-turns-completed",
             "every": 1
@@ -1191,7 +1212,7 @@
         {
           "id": "wave-1",
           "name": "Infantry Spawns",
-          "maxActivations": 1,
+          "maxActivations": 3,
           "trigger": {
             "type": "player-turns-completed",
             "every": 2
@@ -1216,7 +1237,7 @@
         {
           "id": "wave-2",
           "name": "More Infantry",
-          "maxActivations": 1,
+          "maxActivations": 6,
           "trigger": {
             "type": "player-turns-completed",
             "every": 1
@@ -1542,7 +1563,7 @@
         {
           "id": "wave-1",
           "name": "Infantry Spawns",
-          "maxActivations": 1,
+          "maxActivations": 3,
           "trigger": {
             "type": "player-turns-completed",
             "every": 2
@@ -1567,7 +1588,7 @@
         {
           "id": "wave-2",
           "name": "More Infantry",
-          "maxActivations": 1,
+          "maxActivations": 6,
           "trigger": {
             "type": "player-turns-completed",
             "every": 1
@@ -1893,7 +1914,7 @@
         {
           "id": "wave-1",
           "name": "Infantry Spawns",
-          "maxActivations": 1,
+          "maxActivations": 3,
           "trigger": {
             "type": "player-turns-completed",
             "every": 2
@@ -1918,7 +1939,7 @@
         {
           "id": "wave-2",
           "name": "More Infantry",
-          "maxActivations": 1,
+          "maxActivations": 6,
           "trigger": {
             "type": "player-turns-completed",
             "every": 1

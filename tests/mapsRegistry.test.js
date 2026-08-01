@@ -62,6 +62,28 @@ test("getMapById resolves both base maps and run variants", () => {
   assert.equal(getMapById(runMap.id)?.id, runMap.id);
 });
 
+test("Cauldron early stages sustain reinforcement pressure through the survival clock", () => {
+  const expectedScheduledUnits = [12, 18, 14, 16, 16, 16];
+
+  const actualScheduledUnits = expectedScheduledUnits.map((_, index) => {
+    const map = getMapById(`cauldron-stage-${index + 1}`);
+    const completedPlayerTurns = map.goal.turnLimit - 1;
+
+    return map.reinforcements
+      .filter((wave) => wave.trigger.type === "player-turns-completed")
+      .reduce((total, wave) => {
+        const activations = Math.min(
+          wave.maxActivations,
+          Math.floor(completedPlayerTurns / wave.trigger.every)
+        );
+
+        return total + activations * wave.units.length;
+      }, 0);
+  });
+
+  assert.deepEqual(actualScheduledUnits, expectedScheduledUnits);
+});
+
 test("sandbox map families group staged variants and resolve exact non-contiguous stages", () => {
   const mapPool = [
     {

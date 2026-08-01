@@ -330,8 +330,10 @@ export const appShellInputMethods = {
   },
 
   getControllerFocusableElements() {
+    const focusScope = this.root.querySelector(".run-naming-overlay") ?? this.root;
+
     return Array.from(
-      this.root.querySelectorAll(
+      focusScope.querySelectorAll(
         'button[data-action], [data-tooltip-trigger], .selection-loadout-card__info, summary, label[for], select, input[type="range"], input[type="checkbox"]:not(.battle-drawer-toggle):not(.tutorial-step-toggle)'
       )
     ).filter((element) => this.isElementControllerFocusable(element));
@@ -592,6 +594,7 @@ export const appShellInputMethods = {
         '[data-action="cancel-abandon-run"]',
         '[data-action="resume-battle"]',
         '[data-action="redo-move"]',
+        '[data-action="close-run-naming-review"]',
         '[data-action="back-to-commander-select"]',
         '[data-action="back-to-title"]'
       ].join(",")

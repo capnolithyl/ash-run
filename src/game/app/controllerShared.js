@@ -68,6 +68,7 @@ export function createDefaultRunLoadoutState() {
     budget: 2500,
     fundsRemaining: 2500,
     units: [],
+    namingReviewOpen: false,
   };
 }
 

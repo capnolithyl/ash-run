@@ -10,6 +10,12 @@ import {
 } from "../core/constants.js";
 import { randomInt } from "../core/random.js";
 import {
+  generateRunUnitName,
+  getRunUnitNameKey,
+  normalizeRunUnitName,
+  validateRunUnitName
+} from "../content/runUnitNames.js";
+import {
   canUnitEquipRunUpgrade,
   drawImmediateRunCards,
   getRunUpgradeById,
@@ -51,6 +57,44 @@ const ENEMY_TURN_MAX_WALL_TIME_MS = 30000;
 
 function getEligibleGearRosterUnits(runState, reward) {
   return (runState?.roster ?? []).filter((unit) => canUnitEquipRunUpgrade(unit, reward));
+}
+
+function getPendingUnitNamingContext(runState) {
+  const pending = runState?.pendingUnitNaming ?? null;
+  const unit = pending
+    ? (runState.roster ?? []).find((candidate) => candidate.id === pending.unitId) ?? null
+    : null;
+
+  if (!pending || !unit) {
+    return null;
+  }
+
+  const currentKey = getRunUnitNameKey(unit.name);
+  const excludedNames = [
+    ...(runState.unitNameHistory ?? []).filter(
+      (name) => getRunUnitNameKey(name) !== currentKey
+    ),
+    ...(runState.roster ?? [])
+      .filter((candidate) => candidate.id !== unit.id)
+      .map((candidate) => candidate.name)
+  ];
+
+  return { pending, unit, excludedNames };
+}
+
+function replaceNameInHistory(history, previousName, nextName) {
+  const previousKey = getRunUnitNameKey(previousName);
+  const next = normalizeRunUnitName(nextName);
+  const nextKey = getRunUnitNameKey(next);
+  const names = (history ?? []).filter(
+    (name) => getRunUnitNameKey(name) !== previousKey
+  );
+
+  if (nextKey && !names.some((name) => getRunUnitNameKey(name) === nextKey)) {
+    names.push(next);
+  }
+
+  return names;
 }
 
 function getRunCardRewardSnapshot(cardId) {
@@ -368,11 +412,26 @@ export const controllerRunMethods = {
     let roster = [...(this.state.runState.roster ?? [])];
     const bonusRewards = [];
 
+    let pendingUnitNaming = null;
+
     if (reward.type === "unit" && reward.unitTypeId) {
+      const freshUnit = createUnitFromType(reward.unitTypeId, TURN_SIDES.PLAYER);
+      freshUnit.name = generateRunUnitName(reward.unitTypeId, {
+        unitId: freshUnit.id,
+        excludedNames: [
+          ...(this.state.runState.unitNameHistory ?? []),
+          ...roster.map((unit) => unit.name)
+        ]
+      });
+      const persistentUnit = createPersistentUnitSnapshot(freshUnit);
       roster = [
         ...roster,
-        createPersistentUnitSnapshot(createUnitFromType(reward.unitTypeId, TURN_SIDES.PLAYER))
+        persistentUnit
       ];
+      pendingUnitNaming = {
+        unitId: persistentUnit.id,
+        nameRoll: 0
+      };
     } else {
       ownedRunCardIds = [...new Set([...ownedRunCardIds, reward.id])];
       selectedRewards = [...selectedRewards, reward];
@@ -412,16 +471,109 @@ export const controllerRunMethods = {
       selectedRewards,
       roster,
       pendingRewardChoices: [],
-      pendingGearReward: isGearUpgrade(reward) ? reward : null
+      pendingGearReward: isGearUpgrade(reward) ? reward : null,
+      pendingUnitNaming
     };
     this.state.runState = normalizeRunState(nextRunState);
-    this.state.runStatus = isGearUpgrade(reward) ? "reward-equip" : null;
+    this.state.runStatus = pendingUnitNaming
+      ? "reward-name-unit"
+      : isGearUpgrade(reward)
+        ? "reward-equip"
+        : null;
 
-    if (isGearUpgrade(reward)) {
+    if (pendingUnitNaming || isGearUpgrade(reward)) {
       await this.persistCurrentRun();
       return;
     }
 
+    await this.startNextRunBattle();
+  },
+
+  async updatePendingRunUnitName(value) {
+    if (!this.state.runState || this.state.runStatus !== "reward-name-unit") {
+      return;
+    }
+
+    const context = getPendingUnitNamingContext(this.state.runState);
+
+    if (!context) {
+      return;
+    }
+
+    const name = normalizeRunUnitName(value);
+    const nextRoster = this.state.runState.roster.map((unit) =>
+      unit.id === context.unit.id
+        ? { ...structuredClone(unit), name }
+        : unit
+    );
+
+    this.state.runState = {
+      ...this.state.runState,
+      roster: nextRoster,
+      unitNameHistory: replaceNameInHistory(
+        this.state.runState.unitNameHistory,
+        context.unit.name,
+        name
+      )
+    };
+    await this.persistCurrentRun();
+  },
+
+  async randomizePendingRunUnitName() {
+    if (!this.state.runState || this.state.runStatus !== "reward-name-unit") {
+      return;
+    }
+
+    const context = getPendingUnitNamingContext(this.state.runState);
+
+    if (!context) {
+      return;
+    }
+
+    const nameRoll = (context.pending.nameRoll ?? 0) + 1;
+    const name = generateRunUnitName(context.unit.unitTypeId, {
+      unitId: context.unit.id,
+      roll: nameRoll,
+      excludedNames: [...context.excludedNames, context.unit.name]
+    });
+    const nextRoster = this.state.runState.roster.map((unit) =>
+      unit.id === context.unit.id
+        ? { ...structuredClone(unit), name }
+        : unit
+    );
+
+    this.state.runState = normalizeRunState({
+      ...this.state.runState,
+      roster: nextRoster,
+      unitNameHistory: replaceNameInHistory(
+        this.state.runState.unitNameHistory,
+        context.unit.name,
+        name
+      ),
+      pendingUnitNaming: {
+        ...context.pending,
+        nameRoll
+      }
+    });
+    await this.persistCurrentRun();
+  },
+
+  async confirmPendingRunUnitName() {
+    if (!this.state.runState || this.state.runStatus !== "reward-name-unit") {
+      return;
+    }
+
+    const context = getPendingUnitNamingContext(this.state.runState);
+
+    if (!context || !validateRunUnitName(context.unit.name, context.excludedNames).valid) {
+      return;
+    }
+
+    this.state.runState = normalizeRunState({
+      ...this.state.runState,
+      pendingUnitNaming: null
+    });
+    this.state.runStatus = null;
     await this.startNextRunBattle();
   },
 

@@ -213,7 +213,7 @@ export const appShellUiStatePersistenceMethods = {
   },
 
   captureRunLoadoutTableScroll() {
-    const tableShell = this.root.querySelector('[data-role="run-loadout-table-shell"]');
+    const tableShell = this.root.querySelector('[data-role="run-loadout-grid-shell"]');
 
     if (!tableShell) {
       return;
@@ -226,7 +226,7 @@ export const appShellUiStatePersistenceMethods = {
   },
 
   applyRunLoadoutTableScroll() {
-    const tableShell = this.root.querySelector('[data-role="run-loadout-table-shell"]');
+    const tableShell = this.root.querySelector('[data-role="run-loadout-grid-shell"]');
 
     if (!tableShell) {
       return;

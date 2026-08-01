@@ -295,16 +295,15 @@ export const appShellScreenRouterMethods = {
     const template = document.createElement("template");
     template.innerHTML = nextMarkup.trim();
 
-    const nextPanel = template.content.querySelector(".run-loadout-panel");
-    const currentPanel = existingScreen.querySelector(".run-loadout-panel");
+    const nextScreen = template.content.querySelector('[data-screen-id="run-loadout"]');
 
-    if (!nextPanel || !currentPanel) {
+    if (!nextScreen) {
       this.root.innerHTML = nextMarkup;
       this.applyRunLoadoutTableScroll();
       return;
     }
 
-    currentPanel.replaceWith(nextPanel);
+    existingScreen.replaceWith(nextScreen);
     this.applyRunLoadoutTableScroll();
   },
 
