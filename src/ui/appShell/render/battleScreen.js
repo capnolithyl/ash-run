@@ -307,6 +307,14 @@ export const appShellBattleScreenMethods = {
   },
 
   renderBattleScreen(state) {
+    if (
+      this.previousBattleRenderSignature &&
+      this.previousBattleRenderSignature.debugMode !== (state.debugMode === true)
+    ) {
+      this.activeBattlePauseTab = null;
+      this.battleDrawers.debugTool = "battlefield";
+    }
+
     if (this.isHoverOnlyBattleUpdate(state) && this.root.querySelector(".battle-shell")) {
       this.updateBattleHoverPanels(state);
       this.applyTutorialHighlights(state);
@@ -336,6 +344,7 @@ export const appShellBattleScreenMethods = {
         : detectedCommanderTurnAnimationFromSide;
     const previousMeterState = this.captureBattleMeterState();
     this.captureBattleDrawerState();
+    const displayContext = this.getDisplayRenderContext?.(state) ?? {};
     this.root.innerHTML = renderBattleHudView(state, {
       suppressLevelUpOverlay,
       suppressOutcomeOverlay,
@@ -343,7 +352,12 @@ export const appShellBattleScreenMethods = {
       experiencePresentation,
       levelUpPresentation,
       commanderTurnAnimationFromSide,
-      displayContext: this.getDisplayRenderContext?.(state)
+      displayContext: {
+        ...displayContext,
+        activeOptionsTab:
+          this.activeBattlePauseTab ?? (state.debugMode ? "debug" : "display"),
+        activeDebugTool: this.battleDrawers.debugTool ?? "battlefield"
+      }
     });
     this.playOutcomeAudioIfVisible(state, suppressOutcomeOverlay);
     if (commanderTurnAnimationFromSide) {
@@ -351,6 +365,10 @@ export const appShellBattleScreenMethods = {
     }
     this.syncDebugSpawnStatFields();
     this.applyBattleDrawerState();
+    this.syncSandboxStageField?.();
+    if (!state.battleUi?.pauseMenuOpen) {
+      this.battleDrawers.debugFieldValues = {};
+    }
     this.animateBattleMeters(previousMeterState);
     this.animateFundsGain(state);
     this.syncCombatCutscenePlayback(state);
@@ -414,7 +432,9 @@ export const appShellBattleScreenMethods = {
     this.battleDrawers.intel = false;
     this.battleDrawers.command = false;
     this.battleDrawers.intelTab = "selected";
-    this.battleDrawers.debugAccordion = null;
+    this.activeBattlePauseTab = null;
+    this.battleDrawers.debugTool = "battlefield";
+    this.battleDrawers.debugFieldValues = {};
     this.battleDrawers.selectedPanelScrollTop = 0;
     this.battleDrawers.targetPanelScrollTop = 0;
     this.battleDrawers.feedPanelScrollTop = 0;

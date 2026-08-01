@@ -304,10 +304,15 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
 
   const confirmingExit = state.battleUi.confirmAbandon;
   const isRunBattle = Boolean(state.runState) && !state.debugMode;
+  const debugContent = state.debugMode
+    ? renderDebugControls(state, battleSnapshot, {
+        activeTool: displayContext.activeDebugTool
+      })
+    : "";
 
   return `
     <div class="battle-overlay battle-overlay--pause">
-      <div class="overlay-card overlay-card--pause">
+      <div class="overlay-card overlay-card--pause${state.debugMode ? " overlay-card--pause-debug" : ""}">
         <div class="pause-card__header">
           <p class="eyebrow">Paused</p>
           <h2>Battle Intermission</h2>
@@ -335,20 +340,12 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
                 <div class="options-list options-list--compact">
                   ${renderOptionFields(state.metaState.options, {
                     ...displayContext,
-                    showDisplayOptions: true
+                    showDisplayOptions: true,
+                    tabScope: "battle-pause",
+                    defaultOptionsTab: state.debugMode ? "debug" : "display",
+                    debugContent
                   })}
                 </div>
-                ${state.debugMode ? `
-                  <details class="pause-section" open>
-                    <summary>
-                      <span>
-                        <strong>Debug Toolkit</strong>
-                        <small>Spawn, charge, and stat tools</small>
-                      </span>
-                    </summary>
-                    ${renderDebugControls(state, battleSnapshot)}
-                  </details>
-                ` : ""}
               </div>
               <div class="battle-actions">
                 <button class="menu-button" data-action="resume-battle">Continue Battle</button>

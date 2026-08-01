@@ -2063,7 +2063,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/content/maps.js",
     "kind": "script",
-    "byteSize": 5598,
+    "byteSize": 8260,
     "environment": "development"
   },
   {
@@ -2099,7 +2099,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/content/unitCatalog.js",
     "kind": "script",
-    "byteSize": 5395,
+    "byteSize": 9677,
     "environment": "development"
   },
   {
@@ -2537,7 +2537,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/simulation/progression.js",
     "kind": "script",
-    "byteSize": 5135,
+    "byteSize": 5814,
     "environment": "development"
   },
   {
@@ -2651,7 +2651,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/battle/overlays-and-debug.css",
     "kind": "style",
-    "byteSize": 44387,
+    "byteSize": 49549,
     "environment": "development"
   },
   {
@@ -2699,13 +2699,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/AppShell.js",
     "kind": "script",
-    "byteSize": 5045,
+    "byteSize": 5115,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/audioFeedback.js",
     "kind": "script",
-    "byteSize": 5329,
+    "byteSize": 5352,
     "environment": "development"
   },
   {
@@ -2723,7 +2723,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/eventMethods.js",
     "kind": "script",
-    "byteSize": 24022,
+    "byteSize": 29216,
     "environment": "development"
   },
   {
@@ -2747,7 +2747,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/battleScreen.js",
     "kind": "script",
-    "byteSize": 19099,
+    "byteSize": 19809,
     "environment": "development"
   },
   {
@@ -2765,7 +2765,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/uiStatePersistence.js",
     "kind": "script",
-    "byteSize": 8148,
+    "byteSize": 8700,
     "environment": "development"
   },
   {
@@ -2819,13 +2819,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/battleHud/interactionPanels.js",
     "kind": "script",
-    "byteSize": 24404,
+    "byteSize": 27507,
     "environment": "development"
   },
   {
     "url": "./src/ui/views/battleHud/overlays.js",
     "kind": "script",
-    "byteSize": 21317,
+    "byteSize": 21233,
     "environment": "development"
   },
   {
@@ -2861,7 +2861,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/optionFieldsView.js",
     "kind": "script",
-    "byteSize": 11288,
+    "byteSize": 12280,
     "environment": "development"
   },
   {
@@ -2908,4 +2908,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 98905336;
+export const ASSET_PRELOAD_TOTAL_BYTES = 98928681;

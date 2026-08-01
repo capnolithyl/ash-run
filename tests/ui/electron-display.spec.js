@@ -126,6 +126,7 @@ test("Electron applies windowed, fullscreen, and borderless display modes", asyn
       window.__ASH_RUN_DEV__.controller.startDebugRun({ keepPauseMenuOpen: true });
     });
     await expect(page.locator(".battle-overlay--pause")).toBeVisible();
+    await page.getByRole("tab", { name: "Display", exact: true }).click();
     await expect(page.locator('[data-display-option="displayMode"]')).toBeVisible();
     await expect(page.locator('[data-display-option="windowResolution"]')).toBeVisible();
   } finally {

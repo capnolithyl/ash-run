@@ -5,7 +5,10 @@ import {
   getCommanderById,
   getEnemyAiArchetypeLabel
 } from "../../../game/content/commanders.js";
-import { MAP_POOL } from "../../../game/content/maps.js";
+import {
+  getSandboxMapFamilies,
+  getSandboxMapSelection
+} from "../../../game/content/maps.js";
 import { ENEMY_AI_ARCHETYPE_ORDER } from "../../../game/core/constants.js";
 import {
   getBattleEffectiveRunUpgrades,
@@ -50,26 +53,6 @@ function renderDebugRunCardOptions() {
     const gearLabel = upgrade.type === RUN_CARD_TYPES.GEAR ? ` | ${getGearFamilyLabel(upgrade)} Gear` : "";
     return `<option value="${upgrade.id}">${upgrade.name} | ${rarityLabel}${gearLabel}</option>`;
   }).join("");
-}
-
-function getSandboxBaseMapId(mapId) {
-  if (!mapId) {
-    return MAP_POOL[0]?.id ?? "";
-  }
-
-  if (MAP_POOL.some((mapDefinition) => mapDefinition.id === mapId)) {
-    return mapId;
-  }
-
-  if (mapId.endsWith("-run")) {
-    const baseMapId = mapId.slice(0, -4);
-
-    if (MAP_POOL.some((mapDefinition) => mapDefinition.id === baseMapId)) {
-      return baseMapId;
-    }
-  }
-
-  return MAP_POOL[0]?.id ?? "";
 }
 
 function getBattleLayout(battleSnapshot) {
@@ -353,11 +336,63 @@ export function renderRecruitPanel(battleSnapshot) {
   `;
 }
 
-export function renderDebugControls(state, battleSnapshot) {
+export const DEBUG_TOOL_IDS = Object.freeze([
+  "battlefield",
+  "spawn",
+  "selected-unit",
+  "commanders",
+  "upgrade-cards",
+  "shortcuts"
+]);
+
+function normalizeDebugTool(value) {
+  return DEBUG_TOOL_IDS.includes(value) ? value : DEBUG_TOOL_IDS[0];
+}
+
+function renderDebugToolCard({ id, title, summary }, activeTool) {
+  const isActive = id === activeTool;
+
+  return `
+    <button
+      class="debug-tool-card${isActive ? " debug-tool-card--active" : ""}"
+      id="debug-tool-${id}"
+      type="button"
+      data-action="select-debug-tool"
+      data-debug-tool="${id}"
+      aria-current="${isActive ? "true" : "false"}"
+      aria-controls="debug-tool-panel-${id}"
+    >
+      <strong>${title}</strong>
+      <small>${summary}</small>
+    </button>
+  `;
+}
+
+function renderDebugToolPanel({ id, title, description, content }, activeTool) {
+  return `
+    <section
+      class="debug-tool-panel"
+      id="debug-tool-panel-${id}"
+      data-battle-debug-panel="${id}"
+      aria-labelledby="debug-tool-${id}"
+      ${id === activeTool ? "" : "hidden"}
+    >
+      <div class="debug-tool-panel__header">
+        <p class="eyebrow">Debug Tool</p>
+        <h3>${title}</h3>
+        <p>${description}</p>
+      </div>
+      ${content}
+    </section>
+  `;
+}
+
+export function renderDebugControls(state, battleSnapshot, options = {}) {
   if (!state.debugMode) {
     return "";
   }
 
+  const activeTool = normalizeDebugTool(options.activeTool);
   const selectedTile = battleSnapshot.presentation?.selectedTile;
   const selectedUnit = selectedTile?.unit;
   const selectedEditable = selectedUnit?.editable ?? null;
@@ -388,52 +423,113 @@ export function renderDebugControls(state, battleSnapshot) {
     .join("");
   const spawnX = selectedTile?.x ?? 0;
   const spawnY = selectedTile?.y ?? 0;
-  const selectedSandboxMapId = getSandboxBaseMapId(battleSnapshot.map.id);
-  const selectedSandboxMap =
-    MAP_POOL.find((mapDefinition) => mapDefinition.id === selectedSandboxMapId) ?? MAP_POOL[0] ?? null;
-  const sandboxMapOptions = MAP_POOL.map((mapDefinition) => `
-      <option value="${mapDefinition.id}" ${mapDefinition.id === selectedSandboxMapId ? "selected" : ""}>
-        ${mapDefinition.name} | ${mapDefinition.width}x${mapDefinition.height}
-      </option>
-    `).join("");
+  const sandboxFamilies = getSandboxMapFamilies();
+  const sandboxSelection = getSandboxMapSelection(battleSnapshot.map.id);
+  const selectedSandboxFamily = sandboxFamilies.find(
+    (family) => family.id === sandboxSelection.familyId
+  ) ?? sandboxFamilies[0] ?? null;
+  const selectedSandboxStage = selectedSandboxFamily?.stages.some(
+    (stage) => stage.stage === sandboxSelection.stage
+  )
+    ? sandboxSelection.stage
+    : selectedSandboxFamily?.stages[0]?.stage ?? 1;
+  const selectedStageDetails = selectedSandboxFamily?.stages.find(
+    (stage) => stage.stage === selectedSandboxStage
+  ) ?? null;
+  const availableStageNumbers = selectedSandboxFamily?.stages.map((stage) => stage.stage) ?? [1];
+  const sandboxMapOptions = sandboxFamilies.map((family) => `
+    <option
+      value="${family.id}"
+      data-debug-stages="${family.stages.map((stage) => stage.stage).join(",")}"
+      ${family.id === selectedSandboxFamily?.id ? "selected" : ""}
+    >${family.name}</option>
+  `).join("");
   const ownedRunCardIds = battleSnapshot.runCards?.ownedCardIds ?? state.runState?.ownedRunCardIds ?? [];
   const activeRunCards = getBattleEffectiveRunUpgrades({ runCards: { ownedCardIds: ownedRunCardIds } })
     .filter((upgrade) => !upgrade.hidden);
   const runCardSummary = activeRunCards.length > 0
     ? `${activeRunCards.length} active`
-    : "No active upgrade cards";
-
-  return `
-    <div class="debug-panel">
-      <details class="debug-section" data-battle-debug-accordion="battlefield" name="battle-debug-accordion">
-        <summary>
-          <span>
-            <strong>Battlefield</strong>
-            <small>${
-              selectedSandboxMap
-                ? `${selectedSandboxMap.name} | ${selectedSandboxMap.width}x${selectedSandboxMap.height}`
-                : "Load a sandbox map"
-            }</small>
-          </span>
-        </summary>
-        <div class="debug-grid">
+    : "No active cards";
+  const playerCommanderName = getCommanderById(battleSnapshot.player.commanderId)?.name ?? "Player";
+  const enemyCommanderName = getCommanderById(battleSnapshot.enemy.commanderId)?.name ?? "Enemy";
+  const selectedUnitSummary = selectedUnit
+    ? `${selectedUnit.name} | Tile ${selectedTile?.x ?? 0}, ${selectedTile?.y ?? 0}`
+    : "No unit selected";
+  const toolCards = [
+    {
+      id: "battlefield",
+      title: "Battlefield",
+      summary: selectedSandboxFamily
+        ? `${selectedSandboxFamily.name} | Stage ${selectedSandboxStage}`
+        : "Choose a map"
+    },
+    {
+      id: "spawn",
+      title: "Spawn Unit",
+      summary: selectedTile ? `Tile ${spawnX}, ${spawnY}` : "Any tile"
+    },
+    {
+      id: "selected-unit",
+      title: "Selected Unit",
+      summary: selectedUnitSummary
+    },
+    {
+      id: "commanders",
+      title: "Commanders",
+      summary: `${playerCommanderName} vs ${enemyCommanderName}`
+    },
+    {
+      id: "upgrade-cards",
+      title: "Upgrade Cards",
+      summary: runCardSummary
+    },
+    {
+      id: "shortcuts",
+      title: "Battle Shortcuts",
+      summary: "Charge and action resets"
+    }
+  ];
+  const toolPanels = [
+    {
+      id: "battlefield",
+      title: "Battlefield",
+      description: "Reload the sandbox on an exact map and stage.",
+      content: `
+        <div class="debug-grid debug-grid--battlefield">
           <label>Map
-            <select data-debug-field="sandbox-map">
+            <select data-debug-field="sandbox-map-family">
               ${sandboxMapOptions}
             </select>
           </label>
+          <label>Stage
+            <input
+              data-debug-field="sandbox-stage"
+              type="number"
+              inputmode="numeric"
+              value="${selectedSandboxStage}"
+              min="${Math.min(...availableStageNumbers)}"
+              max="${Math.max(...availableStageNumbers)}"
+              step="1"
+              aria-describedby="sandbox-stage-help sandbox-stage-error"
+            />
+            <small id="sandbox-stage-help" data-debug-stage-help>Available: ${availableStageNumbers.join(", ")}</small>
+          </label>
+        </div>
+        <p class="debug-field-error" id="sandbox-stage-error" data-debug-map-error role="alert" hidden></p>
+        <div class="debug-battlefield-meta">
+          <span data-debug-battlefield-size>${selectedStageDetails ? `${selectedStageDetails.width}x${selectedStageDetails.height}` : "No stage selected"}</span>
+          <span>Loads a fresh battle</span>
         </div>
         <div class="debug-actions">
-          <button class="menu-button menu-button--small" data-action="debug-load-map">Load Fresh Map</button>
+          <button class="menu-button menu-button--small" type="button" data-action="debug-load-map">Load Fresh Map</button>
         </div>
-      </details>
-      <details class="debug-section" data-battle-debug-accordion="spawn" name="battle-debug-accordion">
-        <summary>
-          <span>
-            <strong>Spawn Unit</strong>
-            <small>${selectedTile ? `Tile ${spawnX}, ${spawnY}` : "Any tile"}</small>
-          </span>
-        </summary>
+      `
+    },
+    {
+      id: "spawn",
+      title: "Spawn Unit",
+      description: "Create a configured unit on the selected coordinates.",
+      content: `
         <div class="debug-grid debug-grid--spawn">
           <label>Side
             <select data-debug-field="spawn-owner">
@@ -466,18 +562,48 @@ export function renderDebugControls(state, battleSnapshot) {
           <label>Luck <input data-debug-field="spawn-luck" type="number" value="${defaultSpawnUnit?.luck ?? ""}" /></label>
         </div>
         <div class="debug-actions">
-          <button class="menu-button menu-button--small" data-action="debug-spawn-unit">Spawn Unit</button>
+          <button class="menu-button menu-button--small" type="button" data-action="debug-spawn-unit">Spawn Unit</button>
         </div>
-      </details>
-      <details class="debug-section" data-battle-debug-accordion="commanders" name="battle-debug-accordion">
-        <summary>
-          <span>
-            <strong>Commander Overrides</strong>
-            <small>${getCommanderById(battleSnapshot.player.commanderId)?.name ?? "Player"} vs ${
-              getCommanderById(battleSnapshot.enemy.commanderId)?.name ?? "Enemy"
-            } | ${getEnemyAiArchetypeLabel(battleSnapshot.enemy.aiArchetype ?? "balanced")} AI</small>
-          </span>
-        </summary>
+      `
+    },
+    {
+      id: "selected-unit",
+      title: "Selected Unit",
+      description: selectedUnit ? `Override ${selectedUnitSummary}.` : "Select a battlefield unit to edit its live stats.",
+      content: `
+        <div class="debug-grid">
+          <label>HP <input data-debug-field="unit-hp" type="number" value="${selectedEditable?.hp ?? ""}" /></label>
+          <label>Max HP <input data-debug-field="unit-max-health" type="number" value="${selectedEditable?.maxHealth ?? ""}" /></label>
+          <label>ATK <input data-debug-field="unit-attack" type="number" value="${selectedEditable?.attack ?? ""}" /></label>
+          <label>ARM <input data-debug-field="unit-armor" type="number" value="${selectedEditable?.armor ?? ""}" /></label>
+          <label>MOV <input data-debug-field="unit-movement" type="number" value="${selectedEditable?.movement ?? ""}" /></label>
+          <label>Min RNG <input data-debug-field="unit-min-range" type="number" value="${selectedEditable?.minRange ?? ""}" /></label>
+          <label>Max RNG <input data-debug-field="unit-max-range" type="number" value="${selectedEditable?.maxRange ?? ""}" /></label>
+          <label>STA <input data-debug-field="unit-stamina" type="number" value="${selectedEditable?.stamina ?? ""}" /></label>
+          <label>Max STA <input data-debug-field="unit-max-stamina" type="number" value="${selectedEditable?.staminaMax ?? ""}" /></label>
+          <label>Ammo <input data-debug-field="unit-ammo" type="number" value="${selectedEditable?.ammo ?? ""}" /></label>
+          <label>Max Ammo <input data-debug-field="unit-max-ammo" type="number" value="${selectedEditable?.ammoMax ?? ""}" /></label>
+          <label>Luck <input data-debug-field="unit-luck" type="number" value="${selectedEditable?.luck ?? ""}" /></label>
+          <label>Gear
+            <select data-debug-field="unit-gear-slot" ${selectedUnit ? "" : "disabled"}>
+              ${renderDebugGearOptions(selectedEditable?.gearSlot ?? null, selectedUnit?.family ?? null)}
+            </select>
+          </label>
+          <label>Level <input data-debug-field="unit-level" type="number" value="${selectedEditable?.level ?? ""}" min="1" /></label>
+          <label>XP <input data-debug-field="unit-experience" type="number" value="${selectedEditable?.experience ?? ""}" min="0" /></label>
+        </div>
+        <div class="debug-actions">
+          <button class="menu-button menu-button--small" type="button" data-action="debug-apply-selected-stats" ${selectedUnit ? "" : "disabled"}>
+            Apply To Selected Unit
+          </button>
+        </div>
+      `
+    },
+    {
+      id: "commanders",
+      title: "Commander Overrides",
+      description: `${playerCommanderName} vs ${enemyCommanderName} | ${getEnemyAiArchetypeLabel(battleSnapshot.enemy.aiArchetype ?? "balanced")} AI`,
+      content: `
         <div class="debug-grid">
           <label>Player Commander
             <select data-debug-field="player-commander">
@@ -505,18 +631,15 @@ export function renderDebugControls(state, battleSnapshot) {
           </label>
         </div>
         <div class="debug-actions">
-          <button class="menu-button menu-button--small" data-action="debug-apply-commanders">
-            Apply Commanders
-          </button>
+          <button class="menu-button menu-button--small" type="button" data-action="debug-apply-commanders">Apply Commanders</button>
         </div>
-      </details>
-      <details class="debug-section" data-battle-debug-accordion="upgrade-cards" name="battle-debug-accordion">
-        <summary>
-          <span>
-            <strong>Upgrade Cards</strong>
-            <small>${runCardSummary}</small>
-          </span>
-        </summary>
+      `
+    },
+    {
+      id: "upgrade-cards",
+      title: "Upgrade Cards",
+      description: "Inspect active cards or reload the sandbox with another upgrade.",
+      content: `
         <div class="debug-card-list">
           ${
             activeRunCards.length > 0
@@ -533,66 +656,47 @@ export function renderDebugControls(state, battleSnapshot) {
         </div>
         <div class="debug-grid">
           <label>Card
-            <select data-debug-field="run-card-id">
-              ${renderDebugRunCardOptions()}
-            </select>
+            <select data-debug-field="run-card-id">${renderDebugRunCardOptions()}</select>
           </label>
         </div>
         <div class="debug-actions">
-          <button class="menu-button menu-button--small" data-action="debug-add-run-card">Add Card And Reload</button>
-          <button class="ghost-button ghost-button--small" data-action="debug-clear-run-cards">Clear Cards</button>
+          <button class="menu-button menu-button--small" type="button" data-action="debug-add-run-card">Add Card And Reload</button>
+          <button class="ghost-button ghost-button--small" type="button" data-action="debug-clear-run-cards">Clear Cards</button>
         </div>
-      </details>
-      <details class="debug-section" data-battle-debug-accordion="shortcuts" name="battle-debug-accordion">
-        <summary>
-          <span>
-            <strong>Battle Shortcuts</strong>
-            <small>Charge and action resets</small>
-          </span>
-        </summary>
+      `
+    },
+    {
+      id: "shortcuts",
+      title: "Battle Shortcuts",
+      description: "Refill commander charge or refresh unit actions for either side.",
+      content: `
         <div class="debug-actions debug-actions--compact">
-          <button class="ghost-button ghost-button--small" data-action="debug-full-charge-player">Player Full Charge</button>
-          <button class="ghost-button ghost-button--small" data-action="debug-full-charge-enemy">Enemy Full Charge</button>
-          <button class="ghost-button ghost-button--small" data-action="debug-refresh-player-actions">Refresh Player Actions</button>
-          <button class="ghost-button ghost-button--small" data-action="debug-refresh-enemy-actions">Refresh Enemy Actions</button>
+          <button class="ghost-button ghost-button--small" type="button" data-action="debug-full-charge-player">Player Full Charge</button>
+          <button class="ghost-button ghost-button--small" type="button" data-action="debug-full-charge-enemy">Enemy Full Charge</button>
+          <button class="ghost-button ghost-button--small" type="button" data-action="debug-refresh-player-actions">Refresh Player Actions</button>
+          <button class="ghost-button ghost-button--small" type="button" data-action="debug-refresh-enemy-actions">Refresh Enemy Actions</button>
         </div>
-      </details>
-      <details class="debug-section" data-battle-debug-accordion="selected-unit" name="battle-debug-accordion">
-        <summary>
-          <span>
-            <strong>Selected Unit Overrides</strong>
-            <small>${selectedUnit ? `${selectedUnit.name} | Tile ${selectedTile?.x ?? 0}, ${selectedTile?.y ?? 0}` : "No unit selected"}</small>
-          </span>
-        </summary>
-        <div class="debug-grid">
-          <label>HP <input data-debug-field="unit-hp" type="number" value="${selectedEditable?.hp ?? ""}" /></label>
-          <label>Max HP <input data-debug-field="unit-max-health" type="number" value="${selectedEditable?.maxHealth ?? ""}" /></label>
-          <label>ATK <input data-debug-field="unit-attack" type="number" value="${selectedEditable?.attack ?? ""}" /></label>
-          <label>ARM <input data-debug-field="unit-armor" type="number" value="${selectedEditable?.armor ?? ""}" /></label>
-          <label>MOV <input data-debug-field="unit-movement" type="number" value="${selectedEditable?.movement ?? ""}" /></label>
-          <label>Min RNG <input data-debug-field="unit-min-range" type="number" value="${selectedEditable?.minRange ?? ""}" /></label>
-          <label>Max RNG <input data-debug-field="unit-max-range" type="number" value="${selectedEditable?.maxRange ?? ""}" /></label>
-          <label>STA <input data-debug-field="unit-stamina" type="number" value="${selectedEditable?.stamina ?? ""}" /></label>
-          <label>Max STA <input data-debug-field="unit-max-stamina" type="number" value="${selectedEditable?.staminaMax ?? ""}" /></label>
-          <label>Ammo <input data-debug-field="unit-ammo" type="number" value="${selectedEditable?.ammo ?? ""}" /></label>
-          <label>Max Ammo <input data-debug-field="unit-max-ammo" type="number" value="${selectedEditable?.ammoMax ?? ""}" /></label>
-          <label>Luck <input data-debug-field="unit-luck" type="number" value="${selectedEditable?.luck ?? ""}" /></label>
-          <label>Gear
-            <select data-debug-field="unit-gear-slot" ${selectedUnit ? "" : "disabled"}>
-              ${renderDebugGearOptions(selectedEditable?.gearSlot ?? null, selectedUnit?.family ?? null)}
-            </select>
-          </label>
-          <label>Level <input data-debug-field="unit-level" type="number" value="${selectedEditable?.level ?? ""}" min="1" /></label>
-          <label>XP <input data-debug-field="unit-experience" type="number" value="${selectedEditable?.experience ?? ""}" min="0" /></label>
+      `
+    }
+  ];
+
+  return `
+    <div class="debug-toolkit">
+      <div class="debug-toolkit__header">
+        <div>
+          <p class="eyebrow">Sandbox</p>
+          <h3>Debug Toolkit</h3>
         </div>
-        <div class="debug-actions">
-          <button class="menu-button menu-button--small" data-action="debug-apply-selected-stats" ${
-            selectedUnit ? "" : "disabled"
-          }>
-            Apply To Selected Unit
-          </button>
+        <span>Live battle controls</span>
+      </div>
+      <div class="debug-toolkit__layout">
+        <nav class="debug-tool-nav" aria-label="Debug tools">
+          ${toolCards.map((tool) => renderDebugToolCard(tool, activeTool)).join("")}
+        </nav>
+        <div class="debug-tool-content">
+          ${toolPanels.map((tool) => renderDebugToolPanel(tool, activeTool)).join("")}
         </div>
-      </details>
+      </div>
     </div>
   `;
 }

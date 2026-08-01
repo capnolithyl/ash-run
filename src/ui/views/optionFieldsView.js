@@ -12,11 +12,15 @@ import { getUnitSpriteColorAvailability } from "../../game/phaser/assets.js";
 
 export const OPTION_TAB_IDS = Object.freeze(["display", "audio", "gameplay"]);
 
-function normalizeOptionTab(value) {
-  return OPTION_TAB_IDS.includes(value) ? value : "display";
+function normalizeOptionTab(value, tabIds, defaultTab = "display") {
+  if (tabIds.includes(value)) {
+    return value;
+  }
+
+  return tabIds.includes(defaultTab) ? defaultTab : tabIds[0] ?? "display";
 }
 
-function renderOptionTabButton(tabId, label, activeTab) {
+function renderOptionTabButton(tabId, label, activeTab, tabScope) {
   const isActive = tabId === activeTab;
 
   return `
@@ -30,6 +34,7 @@ function renderOptionTabButton(tabId, label, activeTab) {
       tabindex="${isActive ? "0" : "-1"}"
       data-action="select-options-tab"
       data-options-tab="${tabId}"
+      data-options-scope="${tabScope}"
     >
       ${label}
     </button>
@@ -231,14 +236,24 @@ export function renderOptionFields(options = {}, displayContext = {}) {
     : 0.4;
   const sfxVolumePercent = Math.round(sfxVolume * 100);
   const combatCutsceneAnimations = options.combatCutsceneAnimations !== false;
-  const activeTab = normalizeOptionTab(displayContext.activeOptionsTab);
+  const debugContent = typeof displayContext.debugContent === "string"
+    ? displayContext.debugContent
+    : "";
+  const tabIds = debugContent ? [...OPTION_TAB_IDS, "debug"] : [...OPTION_TAB_IDS];
+  const tabScope = displayContext.tabScope === "battle-pause" ? "battle-pause" : "options";
+  const activeTab = normalizeOptionTab(
+    displayContext.activeOptionsTab,
+    tabIds,
+    displayContext.defaultOptionsTab
+  );
 
   return `
-    <div class="options-tabs" data-options-tabs>
+    <div class="options-tabs" data-options-tabs="${tabScope}">
       <div class="options-tabs__nav" role="tablist" aria-label="Options categories" aria-orientation="vertical">
-        ${renderOptionTabButton("display", "Display", activeTab)}
-        ${renderOptionTabButton("audio", "Audio", activeTab)}
-        ${renderOptionTabButton("gameplay", "Gameplay", activeTab)}
+        ${renderOptionTabButton("display", "Display", activeTab, tabScope)}
+        ${renderOptionTabButton("audio", "Audio", activeTab, tabScope)}
+        ${renderOptionTabButton("gameplay", "Gameplay", activeTab, tabScope)}
+        ${debugContent ? renderOptionTabButton("debug", "Debug", activeTab, tabScope) : ""}
       </div>
       <div class="options-tabs__content">
         <section
@@ -299,6 +314,17 @@ export function renderOptionFields(options = {}, displayContext = {}) {
             <input type="checkbox" ${combatCutsceneAnimations ? "checked" : ""} data-option="combatCutsceneAnimations" />
           </label>
         </section>
+        ${debugContent ? `
+          <section
+            class="options-tabs__panel options-tabs__panel--debug"
+            id="options-panel-debug"
+            role="tabpanel"
+            aria-labelledby="options-tab-debug"
+            ${activeTab === "debug" ? "" : "hidden"}
+          >
+            ${debugContent}
+          </section>
+        ` : ""}
       </div>
     </div>
   `;

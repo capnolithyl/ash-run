@@ -3,9 +3,9 @@ import { ARMOR_CLASSES, WEAPON_CLASSES } from "./weaponClasses.js";
 
 /**
  * All battlefield units use the same normalized stat shape.
- * Optional `levelUpGrowths` overrides can be added per unit with partial
- * `{ chance, increment, weight }` fields keyed by stat. Shared defaults live
- * in `src/game/simulation/progression.js`.
+ * Optional `levelUpGrowthModifiers` can be added per unit with additive
+ * `{ chance, weight, increment: { min, max } }` fields keyed by stat. Shared
+ * defaults live in `src/game/simulation/progression.js`.
  */
 export const UNIT_CATALOG = {
   grunt: {
@@ -23,7 +23,15 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 60,
     ammoMax: 7,
-    luck: 3
+    luck: 3,
+    levelUpGrowthModifiers: {
+      armor: { increment: { min: -2, max: -2 } },
+      movement: { chance: 11, increment: { min: 1, max: 2 } },
+      maxRange: { chance: 4, weight: 1 },
+      staminaMax: { chance: -3, weight: -1, increment: { min: -2, max: -3 } },
+      ammoMax: { chance: 3, weight: -1, increment: { min: 1, max: 1 } },
+      luck: { increment: { max: 1 } },
+    },
   },
   breaker: {
     id: "breaker",
@@ -40,7 +48,14 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 60,
     ammoMax: 5,
-    luck: 3
+    luck: 3,
+    levelUpGrowthModifiers: {
+      armor: { increment: { min: -1, max: -2 } },
+      movement: { chance: 11, increment: { min: 1, max: 2 } },
+      maxRange: { chance: 2, weight: 1 },
+      staminaMax: { chance: 2, increment: { min: -2, max: -3 } },
+      ammoMax: { chance: 3, weight: -1, increment: { min: 1, max: 1 } },
+    },
   },
   longshot: {
     id: "longshot",
@@ -57,7 +72,17 @@ export const UNIT_CATALOG = {
     maxRange: 3,
     staminaMax: 50,
     ammoMax: 6,
-    luck: 3
+    luck: 3,
+    levelUpGrowthModifiers: {
+      attack: { chance: 8, weight: 1, increment: { min: 1, max: 0 } },
+      armor: { chance: -18, weight: -2, increment: { min: -2, max: -3 } },
+      maxHealth: { chance: -23, weight: -3, increment: { min: -3, max: -4 } },
+      movement: { chance: 2, weight: 1 },
+      maxRange: { chance: 6, weight: 1 },
+      staminaMax: { chance: -8, increment: { min: 1, max: 0 } },
+      ammoMax: { chance: 3 },
+      luck: { chance: 1, weight: 1, increment: { min: 1, max: 1 } },
+    },
   },
   medic: {
     id: "medic",
@@ -74,7 +99,17 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 60,
     ammoMax: 7,
-    luck: 2
+    luck: 2,
+    levelUpGrowthModifiers: {
+      attack: { chance: -32, weight: -3, increment: { min: -3, max: -3 } },
+      armor: { chance: 12, weight: 1, increment: { min: -1, max: -2 } },
+      maxHealth: { chance: -3, increment: { min: -1, max: -2 } },
+      movement: { chance: -2 },
+      maxRange: { chance: -1 },
+      staminaMax: { chance: -8, weight: 1, increment: { min: -2, max: -1 } },
+      ammoMax: { chance: -17, weight: -1, increment: { max: -1 } },
+      luck: { chance: 4, weight: -1, increment: { min: 1, max: 1 } },
+    },
   },
   mechanic: {
     id: "mechanic",
@@ -91,7 +126,17 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 60,
     ammoMax: 7,
-    luck: 2
+    luck: 2,
+    levelUpGrowthModifiers: {
+      attack: { chance: -32, weight: -3, increment: { min: -3, max: -3 } },
+      armor: { chance: 12, weight: 1, increment: { min: -1, max: -2 } },
+      maxHealth: { chance: -3, increment: { min: -1, max: -2 } },
+      movement: { chance: -2 },
+      maxRange: { chance: -1 },
+      staminaMax: { chance: -8, weight: 1, increment: { min: -2, max: -1 } },
+      ammoMax: { chance: -17, weight: -1, increment: { max: -1 } },
+      luck: { chance: 4, weight: -1, increment: { min: 1, max: 1 } },
+    },
   },
   runner: {
     id: "runner",
@@ -108,7 +153,17 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 80,
     ammoMax: 7,
-    luck: 3
+    luck: 3,
+    levelUpGrowthModifiers: {
+      attack: { chance: -2, weight: 1, increment: { min: 1, max: 1 } },
+      armor: { chance: -8 },
+      maxHealth: { chance: -3, weight: -1, increment: { min: -2, max: -1 } },
+      movement: { chance: 4, weight: 2, increment: { max: 1 } },
+      maxRange: { chance: 1 },
+      staminaMax: { chance: 7, weight: 1, increment: { min: 1, max: 2 } },
+      ammoMax: { chance: 3, increment: { min: 1, max: 1 } },
+      luck: { chance: 2, weight: -1 },
+    },
   },
   bruiser: {
     id: "bruiser",
@@ -125,7 +180,7 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 70,
     ammoMax: 6,
-    luck: 3
+    luck: 3,
   },
   juggernaut: {
     id: "juggernaut",
@@ -142,7 +197,15 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 55,
     ammoMax: 6,
-    luck: 2
+    luck: 2,
+    levelUpGrowthModifiers: {
+      armor: { chance: -3, weight: 1, increment: { min: 2, max: 2 } },
+      maxHealth: { chance: 2, weight: 1, increment: { min: 2, max: 1 } },
+      movement: { chance: -4, increment: { min: -1, max: -1 } },
+      maxRange: { increment: { max: 2 } },
+      ammoMax: { chance: 3, increment: { min: 1, max: 1 } },
+      luck: { chance: -8, weight: -2, increment: { max: -1 } },
+    },
   },
   "siege-gun": {
     id: "siege-gun",
@@ -159,7 +222,17 @@ export const UNIT_CATALOG = {
     maxRange: 3,
     staminaMax: 60,
     ammoMax: 6,
-    luck: 3
+    luck: 3,
+    levelUpGrowthModifiers: {
+      attack: { increment: { min: 1, max: 0 } },
+      armor: { chance: -8, weight: -1, increment: { min: -2, max: -2 } },
+      maxHealth: { chance: -28, weight: -2, increment: { min: -3, max: -7 } },
+      movement: { chance: -2, increment: { max: 1 } },
+      maxRange: { chance: 3, weight: 1, increment: { max: 1 } },
+      staminaMax: { chance: 2, weight: 1, increment: { min: -4, max: -6 } },
+      ammoMax: { chance: 5, weight: -1, increment: { min: 1, max: 2 } },
+      luck: { chance: 2, weight: 1, increment: { min: 1, max: 1 } },
+    },
   },
   skyguard: {
     id: "skyguard",
@@ -176,7 +249,16 @@ export const UNIT_CATALOG = {
     maxRange: 2,
     staminaMax: 80,
     ammoMax: 6,
-    luck: 3
+    luck: 3,
+    levelUpGrowthModifiers: {
+      attack: { chance: -27, weight: -3, increment: { min: -2, max: -3 } },
+      armor: { chance: 12, weight: 1, increment: { min: 1, max: 1 } },
+      maxHealth: { chance: -8, increment: { min: -2, max: -5 } },
+      maxRange: { chance: 2 },
+      staminaMax: { chance: 2, weight: 1, increment: { min: 1, max: -1 } },
+      ammoMax: { chance: 3, weight: -1, increment: { max: -1 } },
+      luck: { chance: -8, weight: -2, increment: { max: -1 } },
+    },
   },
   gunship: {
     id: "gunship",
@@ -193,7 +275,7 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 70,
     ammoMax: 7,
-    luck: 3
+    luck: 3,
   },
   payload: {
     id: "payload",
@@ -210,7 +292,7 @@ export const UNIT_CATALOG = {
     maxRange: 2,
     staminaMax: 60,
     ammoMax: 6,
-    luck: 2
+    luck: 2,
   },
   interceptor: {
     id: "interceptor",
@@ -227,7 +309,7 @@ export const UNIT_CATALOG = {
     maxRange: 1,
     staminaMax: 80,
     ammoMax: 7,
-    luck: 3
+    luck: 3,
   },
   carrier: {
     id: "carrier",
@@ -244,7 +326,7 @@ export const UNIT_CATALOG = {
     maxRange: 0,
     staminaMax: 100,
     ammoMax: 0,
-    luck: 0
+    luck: 0,
   },
 };
 

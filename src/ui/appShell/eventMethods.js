@@ -1,5 +1,9 @@
 import { SCREEN_IDS } from "../../game/core/constants.js";
 import {
+  getSandboxMapFamilies,
+  resolveSandboxMapId
+} from "../../game/content/maps.js";
+import {
   classifyUiActionAudioCue,
   getAudioFeedbackElement,
   getAudioFeedbackKey,
@@ -12,16 +16,22 @@ import {
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
-  selectOptionsTab(tabId, { focus = false } = {}) {
-    const tabIds = ["display", "audio", "gameplay"];
+  selectOptionsTab(tabId, { focus = false, scope = "options" } = {}) {
+    const tabsRoot = this.root.querySelector?.(`[data-options-tabs="${scope}"]`) ?? this.root;
+    const tabs = [...tabsRoot.querySelectorAll('[role="tab"][data-options-tab]')];
+    const tabIds = tabs.map((tab) => tab.dataset.optionsTab);
 
     if (!tabIds.includes(tabId)) {
       return false;
     }
 
-    this.activeOptionsTab = tabId;
+    if (scope === "battle-pause") {
+      this.activeBattlePauseTab = tabId;
+    } else {
+      this.activeOptionsTab = tabId;
+    }
 
-    for (const tab of this.root.querySelectorAll('[role="tab"][data-options-tab]')) {
+    for (const tab of tabs) {
       const isActive = tab.dataset.optionsTab === tabId;
       tab.classList.toggle("options-tabs__tab--active", isActive);
       tab.setAttribute("aria-selected", `${isActive}`);
@@ -32,8 +42,34 @@ export const appShellEventMethods = {
       }
     }
 
-    for (const panel of this.root.querySelectorAll('[role="tabpanel"][id^="options-panel-"]')) {
+    for (const panel of tabsRoot.querySelectorAll('[role="tabpanel"][id^="options-panel-"]')) {
       panel.hidden = panel.id !== `options-panel-${tabId}`;
+    }
+
+    return true;
+  },
+
+  selectDebugTool(toolId, { focus = false } = {}) {
+    const cards = [...this.root.querySelectorAll("[data-debug-tool]")];
+
+    if (!cards.some((card) => card.dataset.debugTool === toolId)) {
+      return false;
+    }
+
+    this.battleDrawers.debugTool = toolId;
+
+    for (const card of cards) {
+      const isActive = card.dataset.debugTool === toolId;
+      card.classList.toggle("debug-tool-card--active", isActive);
+      card.setAttribute("aria-current", `${isActive}`);
+
+      if (isActive && focus) {
+        card.focus();
+      }
+    }
+
+    for (const panel of this.root.querySelectorAll("[data-battle-debug-panel]")) {
+      panel.hidden = panel.dataset.battleDebugPanel !== toolId;
     }
 
     return true;
@@ -42,35 +78,143 @@ export const appShellEventMethods = {
   handleKeyDown(event) {
     const activeTab = event.target.closest?.('[role="tab"][data-options-tab]');
 
-    if (!activeTab) {
+    if (activeTab) {
+      const scope = activeTab.dataset.optionsScope ?? "options";
+      const tabsRoot = activeTab.closest?.("[data-options-tabs]") ?? this.root;
+      const tabIds = [...tabsRoot.querySelectorAll('[role="tab"][data-options-tab]')]
+        .map((tab) => tab.dataset.optionsTab);
+      const currentIndex = tabIds.indexOf(activeTab.dataset.optionsTab);
+      let nextIndex = currentIndex;
+
+      if (currentIndex < 0) {
+        return;
+      }
+
+      switch (event.key) {
+        case "ArrowDown":
+        case "ArrowRight":
+          nextIndex = (currentIndex + 1) % tabIds.length;
+          break;
+        case "ArrowUp":
+        case "ArrowLeft":
+          nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = tabIds.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      event.preventDefault();
+      this.selectOptionsTab(tabIds[nextIndex], { focus: true, scope });
       return;
     }
 
-    const tabIds = ["display", "audio", "gameplay"];
-    const currentIndex = tabIds.indexOf(activeTab.dataset.optionsTab);
+    const activeDebugTool = event.target.closest?.("[data-debug-tool]");
+
+    if (!activeDebugTool) {
+      return;
+    }
+
+    const toolIds = [...this.root.querySelectorAll("[data-debug-tool]")]
+      .map((tool) => tool.dataset.debugTool);
+    const currentIndex = toolIds.indexOf(activeDebugTool.dataset.debugTool);
     let nextIndex = currentIndex;
+
+    if (currentIndex < 0) {
+      return;
+    }
 
     switch (event.key) {
       case "ArrowDown":
       case "ArrowRight":
-        nextIndex = (currentIndex + 1) % tabIds.length;
+        nextIndex = (currentIndex + 1) % toolIds.length;
         break;
       case "ArrowUp":
       case "ArrowLeft":
-        nextIndex = (currentIndex - 1 + tabIds.length) % tabIds.length;
+        nextIndex = (currentIndex - 1 + toolIds.length) % toolIds.length;
         break;
       case "Home":
         nextIndex = 0;
         break;
       case "End":
-        nextIndex = tabIds.length - 1;
+        nextIndex = toolIds.length - 1;
         break;
       default:
         return;
     }
 
     event.preventDefault();
-    this.selectOptionsTab(tabIds[nextIndex], { focus: true });
+    this.selectDebugTool(toolIds[nextIndex], { focus: true });
+  },
+
+  syncSandboxStageField() {
+    const familyField = this.root.querySelector('[data-debug-field="sandbox-map-family"]');
+    const stageField = this.root.querySelector('[data-debug-field="sandbox-stage"]');
+    const help = this.root.querySelector("[data-debug-stage-help]");
+    const family = getSandboxMapFamilies().find((candidate) => candidate.id === familyField?.value);
+
+    if (!familyField || !stageField || !family) {
+      return false;
+    }
+
+    const stages = family.stages.map((candidate) => candidate.stage);
+    const currentStage = Number(stageField.value);
+
+    if (!stages.includes(currentStage)) {
+      stageField.value = `${stages[0] ?? 1}`;
+    }
+
+    stageField.min = `${Math.min(...stages)}`;
+    stageField.max = `${Math.max(...stages)}`;
+    stageField.step = "1";
+
+    if (help) {
+      help.textContent = `Available: ${stages.join(", ")}`;
+    }
+
+    this.resolveDebugSandboxMapId();
+    return true;
+  },
+
+  resolveDebugSandboxMapId({ report = false } = {}) {
+    const familyField = this.root.querySelector('[data-debug-field="sandbox-map-family"]');
+    const stageField = this.root.querySelector('[data-debug-field="sandbox-stage"]');
+    const error = this.root.querySelector("[data-debug-map-error]");
+    const size = this.root.querySelector("[data-debug-battlefield-size]");
+    const family = getSandboxMapFamilies().find((candidate) => candidate.id === familyField?.value);
+    const stage = Number(stageField?.value);
+    const stageDefinition = family?.stages.find((candidate) => candidate.stage === stage) ?? null;
+    const mapId = family ? resolveSandboxMapId(family.id, stage) : null;
+    const message = mapId
+      ? ""
+      : family
+        ? `Stage ${stageField?.value || "?"} is unavailable for ${family.name}. Available: ${family.stages.map((candidate) => candidate.stage).join(", ")}.`
+        : "Choose an available sandbox map.";
+
+    stageField?.setCustomValidity?.(message);
+
+    if (error) {
+      error.textContent = message;
+      error.hidden = !message;
+    }
+
+    if (size) {
+      size.textContent = stageDefinition
+        ? `${stageDefinition.width}x${stageDefinition.height}`
+        : "No stage selected";
+    }
+
+    if (message && report) {
+      stageField?.focus?.();
+      stageField?.reportValidity?.();
+    }
+
+    return mapId;
   },
 
   getDesktopApi() {
@@ -202,7 +346,15 @@ export const appShellEventMethods = {
       return;
     }
 
-    const { action, commanderId, optionsTab, slotId, unitTypeId } = trigger.dataset;
+    const {
+      action,
+      commanderId,
+      debugTool,
+      optionsScope,
+      optionsTab,
+      slotId,
+      unitTypeId
+    } = trigger.dataset;
     const isCommanderSelection = [
       "select-commander",
       "select-skirmish-player-commander",
@@ -233,7 +385,10 @@ export const appShellEventMethods = {
 
     switch (action) {
       case "select-options-tab":
-        this.selectOptionsTab(optionsTab);
+        this.selectOptionsTab(optionsTab, { scope: optionsScope ?? "options" });
+        break;
+      case "select-debug-tool":
+        this.selectDebugTool(debugTool);
         break;
       case "open-new-run":
         this.controller.openNewRun();
@@ -605,10 +760,16 @@ export const appShellEventMethods = {
         });
         break;
       case "debug-load-map":
-        this.controller.startDebugRun({
-          mapId: this.getDebugField("sandbox-map", ""),
-          keepPauseMenuOpen: true
-        });
+        {
+          const mapId = this.resolveDebugSandboxMapId({ report: true });
+
+          if (mapId) {
+            this.controller.startDebugRun({
+              mapId,
+              keepPauseMenuOpen: true
+            });
+          }
+        }
         break;
       case "debug-full-charge-player":
         await this.controller.debugSetCharge("player", 9999);
@@ -668,6 +829,16 @@ export const appShellEventMethods = {
 
     if (event.target.dataset.debugField === "spawn-unit-type") {
       this.syncDebugSpawnStatFields();
+      return;
+    }
+
+    if (event.target.dataset.debugField === "sandbox-map-family") {
+      this.syncSandboxStageField();
+      return;
+    }
+
+    if (event.target.dataset.debugField === "sandbox-stage") {
+      this.resolveDebugSandboxMapId();
       return;
     }
 

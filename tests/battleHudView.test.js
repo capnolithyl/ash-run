@@ -2005,7 +2005,7 @@ test("rescue missions expose the rescue action and show hostage-carrier status i
   assert.match(html, /Bring the hostage to your HQ/);
 });
 
-test("debug pause menu groups tools into accordion sections", () => {
+test("sandbox pause menu exposes a default Debug tab with persistent tool cards", () => {
   const battleState = createTestBattleState({
     playerUnits: [createPlacedUnit("bruiser", TURN_SIDES.PLAYER, 2, 2)]
   });
@@ -2038,26 +2038,29 @@ test("debug pause menu groups tools into accordion sections", () => {
     banner: ""
   });
 
-  assert.match(html, /class="pause-section" open/);
+  assert.match(html, /overlay-card--pause-debug/);
   assert.match(html, /data-display-option="displayMode"/);
   assert.match(html, /data-display-option="windowResolution"/);
-  assert.match(html, /<strong>Debug Toolkit<\/strong>/);
-  assert.match(html, /<strong>Battlefield<\/strong>/);
-  assert.match(html, /data-battle-debug-accordion="battlefield" name="battle-debug-accordion"/);
-  assert.match(html, /data-battle-debug-accordion="spawn" name="battle-debug-accordion"/);
-  assert.match(html, /data-battle-debug-accordion="commanders" name="battle-debug-accordion"/);
-  assert.match(html, /data-battle-debug-accordion="upgrade-cards" name="battle-debug-accordion"/);
-  assert.match(html, /data-battle-debug-accordion="shortcuts" name="battle-debug-accordion"/);
-  assert.match(html, /data-battle-debug-accordion="selected-unit" name="battle-debug-accordion"/);
-  assert.doesNotMatch(html, /<details class="debug-section"[^>]*\sopen/);
+  assert.match(html, /id="options-tab-debug"[\s\S]*?aria-selected="true"/);
+  assert.match(html, /data-options-scope="battle-pause"/);
+  assert.match(html, /<h3>Debug Toolkit<\/h3>/);
+  assert.match(html, /data-debug-tool="battlefield"[\s\S]*?aria-current="true"/);
+  assert.match(html, /data-debug-tool="battlefield"[\s\S]*?data-debug-tool="spawn"[\s\S]*?data-debug-tool="selected-unit"[\s\S]*?data-debug-tool="commanders"[\s\S]*?data-debug-tool="upgrade-cards"[\s\S]*?data-debug-tool="shortcuts"/);
+  assert.match(html, /data-battle-debug-panel="battlefield"\s+aria-labelledby="debug-tool-battlefield"\s+>/);
+  assert.match(html, /data-battle-debug-panel="spawn"[\s\S]*?hidden/);
+  assert.doesNotMatch(html, /data-battle-debug-accordion|<details class="debug-section"/);
   assert.match(html, /<strong>Spawn Unit<\/strong>/);
-  assert.match(html, /<strong>Commander Overrides<\/strong>/);
+  assert.match(html, /<h3>Commander Overrides<\/h3>/);
   assert.match(html, /<strong>Upgrade Cards<\/strong>/);
   assert.match(html, /<strong>Battle Shortcuts<\/strong>/);
-  assert.match(html, /<strong>Selected Unit Overrides<\/strong>/);
+  assert.match(html, /<strong>Selected Unit<\/strong>/);
   assert.match(html, /Bruiser \| Tile 2, 2/);
   assert.match(html, /data-debug-field="spawn-owner"/);
-  assert.match(html, /data-debug-field="sandbox-map"/);
+  assert.match(html, /data-debug-field="sandbox-map-family"/);
+  assert.match(html, /data-debug-field="sandbox-stage"[\s\S]*?type="number"[\s\S]*?min="1"[\s\S]*?max="10"[\s\S]*?step="1"/);
+  assert.equal(html.match(/>Basin Bash<\/option>/g)?.length, 1);
+  assert.equal(html.match(/>Cauldron<\/option>/g)?.length, 1);
+  assert.equal(html.match(/>Mereopolis<\/option>/g)?.length, 1);
   assert.match(html, /data-action="debug-load-map"/);
   assert.match(html, /data-debug-field="player-commander"/);
   assert.match(html, /data-debug-field="enemy-commander"/);
@@ -2299,5 +2302,5 @@ test("debug mode keeps enemy selections in target intel while debug overrides st
   assert.match(targetPanel, /<strong>Medic<\/strong>/);
   assert.match(targetPanel, /<span>Gear<\/span>[\s\S]*?<strong>Field Medpack<\/strong>[\s\S]*?1 use/);
   assert.match(targetPanel, /Can target self or an adjacent infantry ally\./);
-  assert.match(html, /<strong>Selected Unit Overrides<\/strong>[\s\S]*?<small>Medic[\s\S]*?<\/small>/);
+  assert.match(html, /data-debug-tool="selected-unit"[\s\S]*?<small>Medic \| Tile 4, 2<\/small>/);
 });

@@ -1218,7 +1218,7 @@ test("sandbox commander overrides update both battle sides without saving a run"
   assert.equal(state.battleSnapshot.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.HQ_RUSH);
 });
 
-test("sandbox map loading rebuilds the debug battle on the chosen battlefield", () => {
+test("sandbox map loading rebuilds the debug battle on the exact chosen family stage", () => {
   const controller = new GameController();
 
   controller.state.metaState.unlockedCommanderIds = ["atlas", "viper"];
@@ -1231,7 +1231,9 @@ test("sandbox map loading rebuilds the debug battle on the chosen battlefield", 
   });
 
   const currentBaseMapId = controller.getState().battleSnapshot.map.id.replace(/-run$/, "");
-  const targetMap = MAP_POOL.find((mapDefinition) => mapDefinition.id !== currentBaseMapId) ?? MAP_POOL[0];
+  const targetMap = MAP_POOL.find(
+    (mapDefinition) => mapDefinition.id !== currentBaseMapId && mapDefinition.id.endsWith("-stage-7")
+  ) ?? MAP_POOL.find((mapDefinition) => mapDefinition.id !== currentBaseMapId) ?? MAP_POOL[0];
 
   controller.startDebugRun({
     mapId: targetMap.id,
@@ -1243,6 +1245,7 @@ test("sandbox map loading rebuilds the debug battle on the chosen battlefield", 
   assert.equal(state.screen, SCREEN_IDS.BATTLE);
   assert.equal(state.battleUi.pauseMenuOpen, true);
   assert.equal(state.battleSnapshot.map.id, `${targetMap.id}-run`);
+  assert.equal(state.battleSnapshot.map.variantStage, targetMap.variantStage);
   assert.equal(state.battleSnapshot.player.commanderId, "atlas");
   assert.equal(state.battleSnapshot.enemy.commanderId, "sable");
   assert.equal(state.battleSnapshot.enemy.aiArchetype, ENEMY_AI_ARCHETYPES.HQ_RUSH);

@@ -11,22 +11,25 @@
 - On level-up, each eligible stat rolls independently for growth, so one level can increase multiple stats.
 - If every growth roll misses, the game forces at least one stat gain by making a fallback weighted pick.
 
-## Current Stat Growth Chances
+## Current Shared Stat Growth Defaults
 
-- Attack: 50%
-- Armor: 50%
-- Max Health: 50%
-- Movement: 10%
-- Max Range: 5%
-- Stamina Max: 25%
-- Ammo Max: 20%
-- Luck: 20%
+| Stat | Chance | Fallback Weight | Increment |
+| --- | ---: | ---: | ---: |
+| Attack | 57% | 6 | 6-8 |
+| Armor | 48% | 4 | 3-5 |
+| Max Health | 68% | 6 | 10-17 |
+| Movement | 4% | 0 | 1 |
+| Max Range | 1% | 0 | 1 |
+| Stamina Max | 33% | 2 | 9-13 |
+| Ammo Max | 42% | 5 | 1-2 |
+| Luck | 16% | 3 | 1-2 |
 
-Fallback weighting still favors the old tiers:
-
-- High weight: Attack, Armor, Max Health
-- Medium weight: Stamina Max, Ammo Max, Luck
-- Low weight: Movement, Max Range
+Unit-specific `levelUpGrowthModifiers` add to these defaults. `chance` and
+`weight` are signed deltas, while `increment.min` and `increment.max` adjust
+the lower and upper increment bounds independently. Omitted values add zero.
+For example, Longshot's attack modifier adds `8` chance, `1` weight, `1` to
+the minimum increment, and `0` to the maximum, resolving to `65%`, weight `7`,
+and an increment of `7-8`.
 
 Range growth is skipped for units that cannot attack at range, both on the normal rolls and on the fallback pick.
 

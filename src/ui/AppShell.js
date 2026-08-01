@@ -24,6 +24,7 @@ export class AppShell {
     this.displayStateRenderTimer = null;
     this.displayUnsubscribe = null;
     this.activeOptionsTab = "display";
+    this.activeBattlePauseTab = null;
     this.commanderSliderStates = new Map();
     this.commanderSliderTrackIndex = null;
     this.commanderSliderTransitioning = false;
@@ -55,7 +56,8 @@ export class AppShell {
       intel: false,
       command: false,
       intelTab: "selected",
-      debugAccordion: null,
+      debugTool: "battlefield",
+      debugFieldValues: {},
       selectedPanelScrollTop: 0,
       targetPanelScrollTop: 0,
       feedPanelScrollTop: 0,

@@ -51,6 +51,7 @@ const ADJUST_ACTIONS = new Set([
   "select-skirmish-enemy-commander",
   "select-skirmish-map",
   "select-options-tab",
+  "select-debug-tool",
   "select-next-unit",
   "run-loadout-add",
   "run-loadout-remove",

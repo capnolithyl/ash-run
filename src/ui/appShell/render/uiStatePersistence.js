@@ -3,13 +3,14 @@ export const appShellUiStatePersistenceMethods = {
     const intelDrawer = this.root.querySelector("#battle-intel-drawer");
     const commandDrawer = this.root.querySelector("#battle-command-drawer");
     const selectedIntelTab = this.root.querySelector('[name="battle-intel-tab"]:checked');
-    const openDebugAccordion = this.root.querySelector("details[data-battle-debug-accordion][open]");
+    const selectedDebugTool = this.root.querySelector('[data-debug-tool][aria-current="true"]');
     const selectedPanel = this.root.querySelector(".battle-side-panel--selected");
     const targetPanel = this.root.querySelector(".battle-side-panel--target");
     const feedPanel = this.root.querySelector(".battle-side-panel--feed");
     const compactSelectedPanel = this.root.querySelector(".battle-compact-sheet__panel--selected");
     const compactTargetPanel = this.root.querySelector(".battle-compact-sheet__panel--target");
     const compactFeedPanel = this.root.querySelector(".battle-compact-sheet__panel--feed");
+    const debugFields = [...this.root.querySelectorAll("[data-debug-field]")];
 
     if (intelDrawer) {
       this.battleDrawers.intel = intelDrawer.checked;
@@ -23,7 +24,21 @@ export const appShellUiStatePersistenceMethods = {
       this.battleDrawers.intelTab = selectedIntelTab.value;
     }
 
-    this.battleDrawers.debugAccordion = openDebugAccordion?.dataset.battleDebugAccordion ?? null;
+    if (selectedDebugTool?.dataset.debugTool) {
+      this.battleDrawers.debugTool = selectedDebugTool.dataset.debugTool;
+    }
+
+    if (debugFields.length > 0) {
+      this.battleDrawers.debugFieldValues = Object.fromEntries(
+        debugFields.map((field) => [
+          field.dataset.debugField,
+          {
+            value: field.value,
+            checked: field.type === "checkbox" ? field.checked : null
+          }
+        ])
+      );
+    }
     this.battleDrawers.selectedPanelScrollTop = selectedPanel?.scrollTop ?? 0;
     this.battleDrawers.targetPanelScrollTop = targetPanel?.scrollTop ?? 0;
     this.battleDrawers.feedPanelScrollTop = feedPanel?.scrollTop ?? 0;
@@ -38,17 +53,13 @@ export const appShellUiStatePersistenceMethods = {
     const selectedIntelTab = this.root.querySelector(
       `[name="battle-intel-tab"][value="${this.battleDrawers.intelTab ?? "selected"}"]`
     );
-    const openDebugAccordion = this.battleDrawers.debugAccordion
-      ? this.root.querySelector(
-          `details[data-battle-debug-accordion="${this.battleDrawers.debugAccordion}"]`
-        )
-      : null;
     const selectedPanel = this.root.querySelector(".battle-side-panel--selected");
     const targetPanel = this.root.querySelector(".battle-side-panel--target");
     const feedPanel = this.root.querySelector(".battle-side-panel--feed");
     const compactSelectedPanel = this.root.querySelector(".battle-compact-sheet__panel--selected");
     const compactTargetPanel = this.root.querySelector(".battle-compact-sheet__panel--target");
     const compactFeedPanel = this.root.querySelector(".battle-compact-sheet__panel--feed");
+    const debugFieldValues = this.battleDrawers.debugFieldValues ?? {};
 
     if (intelDrawer) {
       intelDrawer.checked = this.battleDrawers.intel;
@@ -62,8 +73,18 @@ export const appShellUiStatePersistenceMethods = {
       selectedIntelTab.checked = true;
     }
 
-    if (openDebugAccordion) {
-      openDebugAccordion.open = true;
+    for (const field of this.root.querySelectorAll("[data-debug-field]")) {
+      const savedField = debugFieldValues[field.dataset.debugField];
+
+      if (!savedField) {
+        continue;
+      }
+
+      field.value = savedField.value;
+
+      if (savedField.checked !== null) {
+        field.checked = savedField.checked;
+      }
     }
 
     if (selectedPanel) {

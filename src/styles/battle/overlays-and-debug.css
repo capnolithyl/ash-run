@@ -1452,6 +1452,10 @@
   text-align: left;
 }
 
+.overlay-card--pause-debug {
+  width: min(72rem, calc(100vw - 2rem));
+}
+
 .pause-card__header {
   flex: 0 0 auto;
 }
@@ -1461,6 +1465,36 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+}
+
+.overlay-card--pause-debug .pause-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.overlay-card--pause-debug .options-list--compact,
+.overlay-card--pause-debug .options-tabs,
+.overlay-card--pause-debug .options-tabs__content {
+  min-height: 0;
+}
+
+.overlay-card--pause-debug .options-list--compact {
+  flex: 1 1 auto;
+}
+
+.overlay-card--pause-debug .options-tabs {
+  height: 100%;
+}
+
+.overlay-card--pause-debug .options-tabs__content {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.overlay-card--pause-debug .options-tabs__panel--debug {
+  height: 100%;
+  overflow: hidden;
 }
 
 .options-list--compact {
@@ -1567,6 +1601,193 @@
   display: grid;
   gap: 0.65rem;
   padding: 0 0.75rem 0.75rem;
+}
+
+.debug-toolkit {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.debug-toolkit__header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(255, 79, 216, 0.2);
+}
+
+.debug-toolkit__header h3,
+.debug-toolkit__header p {
+  margin: 0;
+}
+
+.debug-toolkit__header > span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debug-toolkit__layout {
+  display: grid;
+  grid-template-columns: minmax(11.5rem, 13.5rem) minmax(0, 1fr);
+  gap: 0.8rem;
+  min-height: 0;
+}
+
+.debug-tool-nav {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.08rem 0.3rem 0.08rem 0.08rem;
+  scrollbar-gutter: stable;
+}
+
+.debug-tool-card {
+  display: grid;
+  gap: 0.24rem;
+  min-width: 0;
+  padding: 0.72rem 0.78rem;
+  border: 1px solid rgba(255, 138, 61, 0.2);
+  border-radius: 0.78rem;
+  color: var(--muted);
+  text-align: left;
+  cursor: var(--cursor-action);
+  background:
+    linear-gradient(135deg, rgba(255, 138, 61, 0.045), rgba(255, 79, 216, 0.035)),
+    rgba(8, 7, 18, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.018);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.debug-tool-card:hover,
+.debug-tool-card:focus-visible {
+  color: #fff6e6;
+  border-color: rgba(255, 138, 61, 0.42);
+  transform: translateX(2px);
+}
+
+.debug-tool-card--active {
+  color: #effeff;
+  border-color: rgba(53, 220, 255, 0.54);
+  background:
+    linear-gradient(135deg, rgba(53, 220, 255, 0.16), rgba(255, 79, 216, 0.1)),
+    rgba(8, 12, 24, 0.94);
+  box-shadow:
+    inset 3px 0 0 rgba(53, 220, 255, 0.86),
+    0 0 20px rgba(53, 220, 255, 0.07);
+}
+
+.debug-tool-card strong {
+  color: inherit;
+  font-size: 0.84rem;
+  line-height: 1.1;
+}
+
+.debug-tool-card small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.22;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-tool-content {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid rgba(111, 246, 255, 0.18);
+  border-radius: 0.95rem;
+  background:
+    radial-gradient(circle at top right, rgba(53, 220, 255, 0.07), transparent 16rem),
+    rgba(5, 10, 21, 0.66);
+  scrollbar-gutter: stable;
+}
+
+.debug-tool-panel {
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.debug-tool-panel[hidden] {
+  display: none;
+}
+
+.debug-tool-panel__header {
+  display: grid;
+  gap: 0.2rem;
+  padding-bottom: 0.72rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.debug-tool-panel__header h3,
+.debug-tool-panel__header p {
+  margin: 0;
+}
+
+.debug-tool-panel__header > p:last-child {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.debug-tool-panel .debug-grid,
+.debug-tool-panel .debug-actions,
+.debug-tool-panel .debug-card-list {
+  padding: 0;
+}
+
+.debug-grid--battlefield {
+  grid-template-columns: minmax(12rem, 1.4fr) minmax(7rem, 0.6fr);
+}
+
+.debug-grid--battlefield input[type="number"] {
+  color: #f4ffff;
+  font-weight: 800;
+  text-align: center;
+  -webkit-text-fill-color: #f4ffff;
+}
+
+.debug-grid label > small {
+  color: rgba(181, 210, 221, 0.72);
+  font-size: 0.66rem;
+}
+
+.debug-battlefield-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.debug-field-error {
+  margin: -0.3rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(255, 91, 143, 0.32);
+  border-radius: 0.58rem;
+  color: #ffc1d4;
+  font-size: 0.74rem;
+  line-height: 1.3;
+  background: rgba(255, 91, 143, 0.08);
+}
+
+.debug-field-error[hidden] {
+  display: none;
 }
 
 .debug-grid {
@@ -1829,6 +2050,41 @@
 .debug-card-list p {
   margin: 0;
   color: var(--muted);
+}
+
+@media (max-width: 980px) {
+  .debug-toolkit__layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(14rem, 1fr);
+  }
+
+  .debug-tool-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding: 0.08rem;
+  }
+
+  .debug-tool-card:hover,
+  .debug-tool-card:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  .debug-tool-card--active {
+    box-shadow:
+      inset 0 3px 0 rgba(53, 220, 255, 0.86),
+      0 0 20px rgba(53, 220, 255, 0.07);
+  }
+}
+
+@media (max-width: 700px) {
+  .debug-tool-nav,
+  .debug-grid--battlefield {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .debug-tool-card {
+    padding-block: 0.58rem;
+  }
 }
 
 @media (max-width: 980px) {

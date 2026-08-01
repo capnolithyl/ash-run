@@ -19,8 +19,8 @@ const CRITICAL_SELECTORS_BY_SCENE = {
     '[data-display-option="windowResolution"]'
   ],
   "battle-pause": [
-    '[data-display-option="displayMode"]',
-    '[data-display-option="windowResolution"]',
+    '[data-debug-field="sandbox-map-family"]',
+    '[data-debug-field="sandbox-stage"]',
     '[data-action="resume-battle"]'
   ],
   "battle-reward": ['[data-action="select-run-reward"]'],
@@ -163,6 +163,10 @@ for (const sceneId of ["options", "battle-pause"]) {
       ["gameplay", "Gameplay", ".unit-color-settings"]
     ];
 
+    if (sceneId === "battle-pause") {
+      categories.push(["debug", "Debug", ".debug-toolkit"]);
+    }
+
     for (const [tabId, tabName, controlSelector] of categories) {
       const tab = page.getByRole("tab", { name: tabName, exact: true });
       await expect(tab).toBeVisible();
@@ -186,3 +190,34 @@ for (const sceneId of ["options", "battle-pause"]) {
     }
   });
 }
+
+test("battle-pause debug tools remain accessible without page overflow", async ({ page }) => {
+  await page.goto("/ui-harness.html?scene=battle-pause&embed=1");
+  await expect(page.locator('[data-debug-field="sandbox-stage"]')).toHaveValue("1");
+
+  for (const toolId of [
+    "battlefield",
+    "spawn",
+    "selected-unit",
+    "commanders",
+    "upgrade-cards",
+    "shortcuts"
+  ]) {
+    await page.evaluate((nextToolId) => {
+      for (const card of document.querySelectorAll("[data-debug-tool]")) {
+        const isActive = card.dataset.debugTool === nextToolId;
+        card.classList.toggle("debug-tool-card--active", isActive);
+        card.setAttribute("aria-current", `${isActive}`);
+      }
+
+      for (const panel of document.querySelectorAll("[data-battle-debug-panel]")) {
+        panel.hidden = panel.dataset.battleDebugPanel !== nextToolId;
+      }
+    }, toolId);
+
+    await expect(page.locator(`[data-battle-debug-panel="${toolId}"]`)).toBeVisible();
+    await expectNoDocumentOverflow(page);
+    await expectNoUnexpectedTextOverflow(page);
+    await expectNoSidebarHorizontalOverflow(page);
+  }
+});

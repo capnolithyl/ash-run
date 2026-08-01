@@ -23,17 +23,17 @@ const LEVEL_UP_GROWTH_ROLL_ORDER = [
   "luck",
 ];
 
-// Shared defaults for level-up growth rolls. Override per-unit entries in
-// `UNIT_CATALOG[unitTypeId].levelUpGrowths` when a unit needs custom rates.
+// Shared defaults for level-up growth rolls. Per-unit entries in
+// `UNIT_CATALOG[unitTypeId].levelUpGrowthModifiers` add to these values.
 export const DEFAULT_LEVEL_UP_GROWTHS = {
-  attack: { chance: 45, weight: 5, increment: [4, 5] },
-  armor: { chance: 35, weight: 4, increment: [2, 4] },
-  maxHealth: { chance: 55, weight: 5, increment: [7, 10] },
-  movement: { chance: 3, weight: 1, increment: 1 },
-  maxRange: { chance: 0, weight: 0, increment: 1 },
-  staminaMax: { chance: 30, weight: 3, increment: [6, 10] },
-  ammoMax: { chance: 10, weight: 2, increment: 1 },
-  luck: { chance: 8, weight: 1, increment: 1 },
+  attack: { chance: 57, weight: 6, increment: [6, 8] },
+  armor: { chance: 48, weight: 4, increment: [3, 5] },
+  maxHealth: { chance: 68, weight: 6, increment: [10, 17] },
+  movement: { chance: 4, weight: 0, increment: 1 },
+  maxRange: { chance: 1, weight: 0, increment: 1 },
+  staminaMax: { chance: 33, weight: 2, increment: [9, 13] },
+  ammoMax: { chance: 42, weight: 5, increment: [1, 2] },
+  luck: { chance: 16, weight: 3, increment: [1, 2] },
 };
 
 function snapshotGrowthStats(unit) {
@@ -42,15 +42,34 @@ function snapshotGrowthStats(unit) {
   );
 }
 
+function resolveGrowthIncrementDefinition(defaultIncrement, modifier = {}) {
+  const [defaultMinimum, defaultMaximum] = Array.isArray(defaultIncrement)
+    ? defaultIncrement
+    : [defaultIncrement, defaultIncrement];
+  const minimum = defaultMinimum + (modifier.min ?? 0);
+  const maximum = defaultMaximum + (modifier.max ?? 0);
+
+  return minimum === maximum ? minimum : [minimum, maximum];
+}
+
 function getLevelUpGrowthEntries(unit) {
   const unitType = UNIT_CATALOG[unit.unitTypeId] ?? {};
-  const overrides = unitType.levelUpGrowths ?? {};
+  const modifiers = unitType.levelUpGrowthModifiers ?? {};
 
-  return LEVEL_UP_GROWTH_ROLL_ORDER.map((stat) => ({
-    stat,
-    ...DEFAULT_LEVEL_UP_GROWTHS[stat],
-    ...(overrides[stat] ?? {}),
-  }));
+  return LEVEL_UP_GROWTH_ROLL_ORDER.map((stat) => {
+    const defaults = DEFAULT_LEVEL_UP_GROWTHS[stat];
+    const modifier = modifiers[stat] ?? {};
+
+    return {
+      stat,
+      chance: defaults.chance + (modifier.chance ?? 0),
+      weight: defaults.weight + (modifier.weight ?? 0),
+      increment: resolveGrowthIncrementDefinition(
+        defaults.increment,
+        modifier.increment,
+      ),
+    };
+  });
 }
 
 function isGrowthEligible(unit, entry) {

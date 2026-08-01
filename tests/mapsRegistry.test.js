@@ -8,8 +8,11 @@ import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
 import {
   getMapById,
   getRunMapPoolForStage,
+  getSandboxMapFamilies,
+  getSandboxMapSelection,
   MAP_POOL,
   replaceCustomMaps,
+  resolveSandboxMapId,
   RUN_MAP_POOL,
   upsertCustomMap
 } from "../src/game/content/maps.js";
@@ -57,6 +60,61 @@ test("getMapById resolves both base maps and run variants", () => {
   assert.ok(runMap);
   assert.equal(getMapById(baseMap.id)?.id, baseMap.id);
   assert.equal(getMapById(runMap.id)?.id, runMap.id);
+});
+
+test("sandbox map families group staged variants and resolve exact non-contiguous stages", () => {
+  const mapPool = [
+    {
+      id: "field-test-stage-2",
+      name: "Field Test",
+      width: 8,
+      height: 6,
+      variantStage: 2,
+      runStages: [2]
+    },
+    {
+      id: "field-test-stage-5",
+      name: "Field Test",
+      width: 10,
+      height: 7,
+      variantStage: 5,
+      runStages: [5]
+    },
+    {
+      id: "solo-map",
+      name: "Solo Map",
+      width: 6,
+      height: 6
+    }
+  ];
+
+  assert.deepEqual(getSandboxMapFamilies(mapPool), [
+    {
+      id: "field-test",
+      name: "Field Test",
+      stages: [
+        { stage: 2, mapId: "field-test-stage-2", width: 8, height: 6 },
+        { stage: 5, mapId: "field-test-stage-5", width: 10, height: 7 }
+      ]
+    },
+    {
+      id: "solo-map",
+      name: "Solo Map",
+      stages: [{ stage: 1, mapId: "solo-map", width: 6, height: 6 }]
+    }
+  ]);
+  assert.equal(resolveSandboxMapId("field-test", 5, mapPool), "field-test-stage-5");
+  assert.equal(resolveSandboxMapId("field-test", 3, mapPool), null);
+  assert.deepEqual(getSandboxMapSelection("field-test-stage-5-run", mapPool), {
+    familyId: "field-test",
+    stage: 5,
+    mapId: "field-test-stage-5"
+  });
+  assert.deepEqual(getSandboxMapSelection("missing-map", mapPool), {
+    familyId: "field-test",
+    stage: 2,
+    mapId: "field-test-stage-2"
+  });
 });
 
 test("tutorial map stays outside skirmish and run map pools", () => {

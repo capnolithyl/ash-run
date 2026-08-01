@@ -196,4 +196,84 @@ export function getMapById(mapId) {
     ?? RUN_MAP_POOL.find((mapDefinition) => mapDefinition.id === mapId);
 }
 
+function getSandboxStagesForMap(mapDefinition) {
+  const runStages = getNormalizedRunStages(mapDefinition);
+
+  if (runStages.length > 0) {
+    return runStages;
+  }
+
+  const variantStage = normalizeRunStage(getMapDefinitionStage(mapDefinition));
+  return [variantStage ?? 1];
+}
+
+export function getSandboxMapFamilies(mapPool = MAP_POOL) {
+  const families = new Map();
+
+  for (const mapDefinition of mapPool ?? []) {
+    if (!mapDefinition?.id) {
+      continue;
+    }
+
+    const familyId = getMapDefinitionFamilyId(mapDefinition);
+    const family = families.get(familyId) ?? {
+      id: familyId,
+      name: mapDefinition.name ?? familyId,
+      stages: new Map()
+    };
+
+    for (const stage of getSandboxStagesForMap(mapDefinition)) {
+      if (!family.stages.has(stage)) {
+        family.stages.set(stage, {
+          stage,
+          mapId: mapDefinition.id,
+          width: mapDefinition.width,
+          height: mapDefinition.height
+        });
+      }
+    }
+
+    families.set(familyId, family);
+  }
+
+  return [...families.values()]
+    .map((family) => ({
+      ...family,
+      stages: [...family.stages.values()].sort((left, right) => left.stage - right.stage)
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
+}
+
+export function resolveSandboxMapId(familyId, stage, mapPool = MAP_POOL) {
+  const normalizedStage = Number(stage);
+
+  if (!Number.isInteger(normalizedStage)) {
+    return null;
+  }
+
+  const family = getSandboxMapFamilies(mapPool).find((candidate) => candidate.id === familyId);
+  return family?.stages.find((candidate) => candidate.stage === normalizedStage)?.mapId ?? null;
+}
+
+export function getSandboxMapSelection(mapId, mapPool = MAP_POOL) {
+  const availableMaps = Array.isArray(mapPool) ? mapPool : [];
+  const families = getSandboxMapFamilies(availableMaps);
+  const fallbackFamily = families[0] ?? null;
+  const baseMapId = String(mapId ?? "").replace(/-run$/, "");
+  const mapDefinition = availableMaps.find((candidate) => candidate.id === baseMapId) ?? null;
+  const familyId = mapDefinition ? getMapDefinitionFamilyId(mapDefinition) : fallbackFamily?.id ?? null;
+  const family = families.find((candidate) => candidate.id === familyId)
+    ?? fallbackFamily;
+  const preferredStages = mapDefinition ? getSandboxStagesForMap(mapDefinition) : [];
+  const stage = preferredStages.find((candidate) =>
+    family?.stages.some((familyStage) => familyStage.stage === candidate)
+  ) ?? family?.stages[0]?.stage ?? null;
+
+  return {
+    familyId: family?.id ?? null,
+    stage,
+    mapId: family?.stages.find((candidate) => candidate.stage === stage)?.mapId ?? null
+  };
+}
+
 rebuildMapPools();

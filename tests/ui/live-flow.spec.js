@@ -340,3 +340,58 @@ test("main-menu options update without rebuilding the options screen", async ({ 
     )
     .toBe(true);
 });
+
+test("sandbox pause Debug tab preserves tools and loads an exact validated stage", async ({ page }) => {
+  await gotoTitle(page);
+  await page.waitForFunction(() => Boolean(window.__ASH_RUN_DEV__?.controller?.state?.ready));
+  await page.evaluate(() => {
+    window.__ASH_RUN_DEV__.controller.startDebugRun({ keepPauseMenuOpen: true });
+  });
+
+  const debugTab = page.getByRole("tab", { name: "Debug", exact: true });
+  await expect(debugTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('[data-battle-debug-panel="battlefield"]')).toBeVisible();
+
+  await page.locator('[data-debug-tool="spawn"]').click();
+  await page.locator('[data-debug-field="spawn-attack"]').fill("77");
+  await page.locator('[data-debug-tool="selected-unit"]').click();
+  await page.locator('[data-debug-tool="spawn"]').click();
+  await expect(page.locator('[data-debug-field="spawn-attack"]')).toHaveValue("77");
+
+  await page.locator('[data-debug-tool="battlefield"]').click();
+  const mapFamily = page.locator('[data-debug-field="sandbox-map-family"]');
+  const stage = page.locator('[data-debug-field="sandbox-stage"]');
+  const familyOptions = await mapFamily.locator("option").allTextContents();
+  expect(familyOptions.map((label) => label.trim())).toEqual([
+    "Basin Bash",
+    "Cauldron",
+    "Mereopolis"
+  ]);
+
+  const originalMapId = await page.evaluate(
+    () => window.__ASH_RUN_DEV__.controller.state.battleSnapshot.map.id
+  );
+  await stage.fill("99");
+  await page.locator('[data-action="debug-load-map"]').click();
+  await expect(page.locator("[data-debug-map-error]")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => window.__ASH_RUN_DEV__.controller.state.battleSnapshot.map.id))
+    .toBe(originalMapId);
+
+  await mapFamily.selectOption("cauldron");
+  await stage.fill("7");
+  await page.locator('[data-action="debug-load-map"]').click();
+  await expect
+    .poll(() => page.evaluate(() => window.__ASH_RUN_DEV__.controller.state.battleSnapshot.map.id))
+    .toBe("cauldron-stage-7-run");
+  await expect(page.locator(".battle-overlay--pause")).toBeVisible();
+  await expect(debugTab).toHaveAttribute("aria-selected", "true");
+
+  await page.getByRole("tab", { name: "Audio", exact: true }).click();
+  await page.locator('[data-action="resume-battle"]').click();
+  await page.evaluate(() => window.__ASH_RUN_DEV__.controller.openPauseMenu());
+  await expect(page.getByRole("tab", { name: "Audio", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+});

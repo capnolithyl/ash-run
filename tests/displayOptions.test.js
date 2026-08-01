@@ -184,6 +184,23 @@ test("options renderer groups controls into accessible vertical tabs", () => {
   assert.match(html, /options-panel-audio[\s\S]*?data-option="muted"/);
   assert.match(html, /options-panel-gameplay[\s\S]*?data-option="playerColor"/);
   assert.match(html, /options-panel-gameplay[\s\S]*?data-option="showGrid"/);
+  assert.doesNotMatch(html, /options-tab-debug/);
+});
+
+test("sandbox pause options append a scoped Debug tab without changing standard options", () => {
+  const html = renderOptionFields(createDefaultMetaState().options, {
+    showDisplayOptions: true,
+    activeOptionsTab: "debug",
+    defaultOptionsTab: "debug",
+    tabScope: "battle-pause",
+    debugContent: '<div data-test-debug-content>Toolkit</div>'
+  });
+
+  assert.match(html, /data-options-tabs="battle-pause"/);
+  assert.match(html, /id="options-tab-debug"[\s\S]*?aria-selected="true"/);
+  assert.match(html, /data-options-tab="debug"[\s\S]*?data-options-scope="battle-pause"/);
+  assert.match(html, /id="options-panel-debug"[\s\S]*?data-test-debug-content/);
+  assert.match(html, /id="options-panel-display"[\s\S]*?hidden/);
 });
 
 test("options tab selection updates ARIA state and supports arrow navigation", () => {
