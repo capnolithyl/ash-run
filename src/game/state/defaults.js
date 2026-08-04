@@ -1,4 +1,5 @@
 import { DEFAULT_SAVE_VERSION, PROTOTYPE_RUN_GOAL, SLOT_IDS } from "../core/constants.js";
+import { createDefaultTutorialProgress } from "./tutorialProgress.js";
 import { normalizeDisplayOptions } from "../core/displayOptions.js";
 import { normalizeUnitColorOptions } from "../core/unitColors.js";
 import { DEFAULT_UNLOCKED_COMMANDER_IDS } from "../content/commanders.js";
@@ -75,7 +76,8 @@ export function createDefaultMetaState() {
     bestClearTurnCount: null,
     metaCurrency: 0,
     unlockedUnitIds: [...UNIT_UNLOCK_TIERS[0].unitIds],
-    unlockedRunCardIds: normalizeUnlockedRunCardIds()
+    unlockedRunCardIds: normalizeUnlockedRunCardIds(),
+    tutorial: createDefaultTutorialProgress()
   };
 }
 

@@ -11,6 +11,7 @@ test("alpha title exposes only run, progression, and utility actions", async ({ 
     "open-new-run",
     "open-continue",
     "open-progression",
+    "open-tutorial",
     "open-options",
     "quit-game"
   ]) {
@@ -22,7 +23,6 @@ test("alpha title exposes only run, progression, and utility actions", async ({ 
   for (const action of [
     "open-skirmish",
     "open-map-editor",
-    "open-tutorial",
     "open-debug-run"
   ]) {
     await expect(page.locator(`[data-action="${action}"]`)).toHaveCount(0);
@@ -34,5 +34,7 @@ test("alpha title exposes only run, progression, and utility actions", async ({ 
   await expect(page.locator(".screen--title")).toBeVisible();
 
   await page.locator('[data-action="open-new-run"]').click();
+  await expect(page.locator(".tutorial-new-run-prompt")).toBeVisible();
+  await page.locator('[data-action="resolve-tutorial-prompt"][data-tutorial-choice="skip"]').click();
   await expect(page.locator('[data-screen-id="commander-select"]')).toBeVisible();
 });

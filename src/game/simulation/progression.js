@@ -72,6 +72,21 @@ function getLevelUpGrowthEntries(unit) {
   });
 }
 
+export function getEffectiveLevelUpGrowths(unitTypeId) {
+  const unitType = UNIT_CATALOG[unitTypeId];
+
+  if (!unitType) {
+    return [];
+  }
+
+  return getLevelUpGrowthEntries({
+    unitTypeId,
+    stats: {
+      maxRange: unitType.maxRange
+    }
+  });
+}
+
 function isGrowthEligible(unit, entry) {
   return !(entry.stat === "maxRange" && unit.stats.maxRange === 0);
 }

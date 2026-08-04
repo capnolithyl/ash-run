@@ -5,6 +5,11 @@ import { getLivingUnits } from "../selectors.js";
 import { getSupportNeedScore } from "../supportScoring.js";
 
 const FIELD_MEDPACK_HEAL_RATIO = 0.33;
+export const SUPPORT_HEAL_RATIO = 0.5;
+export const SUPPORT_COOLDOWN_BY_UNIT_TYPE = Object.freeze({
+  medic: 2,
+  mechanic: 3
+});
 
 export function getSupportTargetForUnit(system, unit, { requireNeed = false } = {}) {
   return getSupportTargetsForUnit(system, unit, { requireNeed })[0]?.target ?? null;
@@ -54,14 +59,14 @@ export function applySupportAbility(system, unit, target) {
   };
 
   const result = restoreUnitServiceResources(system.state, target, {
-    healAmount: Math.ceil(target.stats.maxHealth * 0.5)
+    healAmount: Math.ceil(target.stats.maxHealth * SUPPORT_HEAL_RATIO)
   });
 
   if (!result.changed) {
     return false;
   }
 
-  unit.cooldowns.support = unit.unitTypeId === "medic" ? 2 : 3;
+  unit.cooldowns.support = SUPPORT_COOLDOWN_BY_UNIT_TYPE[unit.unitTypeId];
   unit.hasMoved = true;
   unit.hasAttacked = true;
   appendLog(system.state, `${unit.name} serviced ${target.name}.`);

@@ -217,6 +217,32 @@ export const appShellBattleScreenMethods = {
     });
   },
 
+  syncTutorialInactivityNudge(state) {
+    if (this.tutorialNudgeTimer) {
+      window.clearTimeout(this.tutorialNudgeTimer);
+      this.tutorialNudgeTimer = null;
+    }
+
+    const tutorial = state.battleSnapshot?.presentation?.tutorial;
+    if (!tutorial || tutorial.phase !== "battle" || state.battleUi?.pauseMenuOpen) {
+      return;
+    }
+
+    const delayMs = tutorial.nudge ? 12_000 : 8_000;
+    this.tutorialNudgeTimer = window.setTimeout(() => {
+      this.tutorialNudgeTimer = null;
+      this.controller.showTutorialNudge?.(
+        tutorial.nudge ?? `Next: ${tutorial.actionLabel ?? "follow the highlighted action"}.`
+      );
+    }, delayMs);
+  },
+
+  noteTutorialInputActivity() {
+    if (this.latestState?.screen === SCREEN_IDS.BATTLE) {
+      this.syncTutorialInactivityNudge(this.latestState);
+    }
+  },
+
   isHoverOnlyBattleUpdate(state) {
     const previousSignature = this.previousBattleRenderSignature;
     const nextSignature = buildBattleRenderSignature(state);
@@ -374,6 +400,7 @@ export const appShellBattleScreenMethods = {
     this.syncCombatCutscenePlayback(state);
     this.syncBattlePresentationPlayback(state, { suppressLevelUpOverlay });
     this.applyTutorialHighlights(state);
+    this.syncTutorialInactivityNudge(state);
     this.previousBattleSnapshot = state.battleSnapshot;
     this.previousBattleRenderSignature = buildBattleRenderSignature(state);
   },
@@ -397,6 +424,11 @@ export const appShellBattleScreenMethods = {
     if (this.turnBannerTimer) {
       window.clearTimeout(this.turnBannerTimer);
       this.turnBannerTimer = null;
+    }
+
+    if (this.tutorialNudgeTimer) {
+      window.clearTimeout(this.tutorialNudgeTimer);
+      this.tutorialNudgeTimer = null;
     }
 
     if (this.fundsAnimationFrame) {

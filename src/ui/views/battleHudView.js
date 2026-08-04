@@ -76,7 +76,12 @@ function renderBattleMeta(battleSnapshot) {
       <span class="battle-footer-meta__item">
         <strong>Mission</strong>
         <em>${mission?.label ?? "Rout"}</em>
-        ${mission?.status ? `<small>${mission.status}</small>` : ""}
+        ${mission?.objective ? `<small>${mission.objective}</small>` : ""}
+      </span>
+      <span class="battle-footer-meta__item battle-footer-meta__item--progress">
+        <strong>Progress</strong>
+        <em>${mission?.status ?? "Awaiting orders"}</em>
+        ${mission?.failureCondition ? `<small>Fail: ${mission.failureCondition}</small>` : ""}
       </span>
       <span class="battle-footer-meta__item">
         <strong>Map</strong>
@@ -257,6 +262,9 @@ export function renderBattleHudView(state, options = {}) {
   const turnBanner = options.turnBanner ?? null;
   const combatCutscene = state.battleUi?.combatCutscene ?? null;
   const combatCutsceneActive = Boolean(combatCutscene);
+  const tutorialResultWaitingForCombat = Boolean(
+    combatCutsceneActive && battleSnapshot?.presentation?.tutorial?.stageResult
+  );
   const sidebarBattleSnapshot = combatCutscene?.hudSnapshot ?? battleSnapshot;
   const experiencePresentation = options.experiencePresentation ?? null;
   const levelUpPresentation = options.levelUpPresentation ?? null;
@@ -382,7 +390,7 @@ export function renderBattleHudView(state, options = {}) {
       ${renderSupportPrompt(battleSnapshot)}
       ${renderMedpackPrompt(battleSnapshot)}
       ${renderExtinguishPrompt(battleSnapshot)}
-      ${renderTutorialGuide(battleSnapshot)}
+      ${tutorialResultWaitingForCombat ? "" : renderTutorialGuide(battleSnapshot)}
       ${combatCutsceneActive ? "" : renderBattleNotice(state.battleUi?.notice)}
       ${combatCutsceneActive ? "" : renderTurnBanner(turnBanner)}
       ${combatCutsceneActive ? "" : renderPowerOverlay(state.battleUi?.powerOverlay)}

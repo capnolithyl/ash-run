@@ -27,7 +27,9 @@ import { findUnitById } from "./battleUnits.js";
 import {
   canUnitDropOffHostage,
   canUnitRescueHostage,
+  getMissionFailureConditionText,
   getMissionMarkers,
+  getMissionObjectiveText,
   getMissionProgressText
 } from "./missionRules.js";
 import {
@@ -720,7 +722,9 @@ function buildMissionPresentation(state) {
   return {
     type: mission.type,
     label: mission.label,
+    objective: getMissionObjectiveText(state),
     status: getMissionProgressText(state),
+    failureCondition: getMissionFailureConditionText(state),
     turnsRemaining: mission.turnsRemaining ?? null,
     turnLimit: mission.turnLimit ?? null,
     targetHp: mission.defend?.targetHp ?? null,

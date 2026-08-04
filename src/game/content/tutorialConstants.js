@@ -1,0 +1,24 @@
+export const TUTORIAL_CURRICULUM_VERSION = 1;
+
+export const TUTORIAL_LESSON_IDS = Object.freeze({
+  BASIC_ORDERS: "basic-orders",
+  COMBAT_ROLES_TERRAIN: "combat-roles-terrain",
+  SUPPORT_TRANSPORT: "support-transport",
+  BUILDINGS_CAPTURE_SUPPLY: "buildings-capture-supply",
+  MISSION_OBJECTIVES: "mission-objectives",
+  COMMANDERS_STATUS_RUN: "commanders-status-run"
+});
+
+export const TUTORIAL_LESSON_ORDER = Object.freeze([
+  TUTORIAL_LESSON_IDS.BASIC_ORDERS,
+  TUTORIAL_LESSON_IDS.COMBAT_ROLES_TERRAIN,
+  TUTORIAL_LESSON_IDS.SUPPORT_TRANSPORT,
+  TUTORIAL_LESSON_IDS.BUILDINGS_CAPTURE_SUPPLY,
+  TUTORIAL_LESSON_IDS.MISSION_OBJECTIVES,
+  TUTORIAL_LESSON_IDS.COMMANDERS_STATUS_RUN
+]);
+
+export const TUTORIAL_TABS = Object.freeze({
+  GUIDED: "guided",
+  MANUAL: "manual"
+});

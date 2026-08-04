@@ -38,6 +38,7 @@ export class AppShell {
     this.turnBanner = null;
     this.turnBannerUntil = 0;
     this.turnBannerTimer = null;
+    this.tutorialNudgeTimer = null;
     this.lastTurnBannerKey = null;
     this.commanderTurnAnimationFrame = null;
     this.commanderTurnAnimationSettleFrame = null;
@@ -87,14 +88,32 @@ export class AppShell {
     this.gamepadPollFrame = null;
     this.root.dataset.inputMode = this.inputMode;
 
-    this.root.addEventListener("click", (event) => this.handleClick(event));
-    this.root.addEventListener("keydown", (event) => this.handleKeyDown(event));
+    this.root.addEventListener("click", (event) => {
+      this.noteTutorialInputActivity();
+      this.handleClick(event);
+    });
+    this.root.addEventListener("keydown", (event) => {
+      this.noteTutorialInputActivity();
+      this.handleKeyDown(event);
+    });
     this.root.addEventListener("pointerover", (event) => this.handleAudioPointerOver(event));
-    this.root.addEventListener("input", (event) => this.handleInput(event));
-    this.root.addEventListener("change", (event) => this.handleChange(event));
+    this.root.addEventListener("input", (event) => {
+      this.noteTutorialInputActivity();
+      this.handleInput(event);
+    });
+    this.root.addEventListener("change", (event) => {
+      this.noteTutorialInputActivity();
+      this.handleChange(event);
+    });
     this.root.addEventListener("toggle", (event) => this.handleToggle(event), true);
-    this.root.addEventListener("contextmenu", (event) => this.handleContextMenu(event));
-    this.root.addEventListener("pointerdown", (event) => this.handlePointerDown(event));
+    this.root.addEventListener("contextmenu", (event) => {
+      this.noteTutorialInputActivity();
+      this.handleContextMenu(event);
+    });
+    this.root.addEventListener("pointerdown", (event) => {
+      this.noteTutorialInputActivity();
+      this.handlePointerDown(event);
+    });
     this.root.addEventListener("dragstart", (event) => this.handleDragStart(event));
     this.root.addEventListener("transitionend", (event) => this.handleTransitionEnd(event));
     this.windowChromeRoot?.addEventListener("click", (event) =>
@@ -103,7 +122,10 @@ export class AppShell {
     this.windowChromeRoot?.addEventListener("pointerover", (event) =>
       this.handleAudioPointerOver(event)
     );
-    window.addEventListener("pointermove", (event) => this.handlePointerMove(event));
+    window.addEventListener("pointermove", (event) => {
+      this.noteTutorialInputActivity();
+      this.handlePointerMove(event);
+    });
     window.addEventListener("pointerup", (event) => this.handlePointerUp(event));
     window.addEventListener("pointercancel", (event) => this.handlePointerCancel(event));
     window.addEventListener("resize", () => this.handleResize());

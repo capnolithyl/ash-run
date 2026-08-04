@@ -9,7 +9,7 @@ import {
   isUnitZombified
 } from "./runCardEffects.js";
 
-const SECONDARY_ATTACK_RATIO = 0.55;
+export const SECONDARY_ATTACK_RATIO = 0.55;
 const NOVA_OVERLOAD_SOURCE = "nova-overload";
 
 function tileKey(x, y) {

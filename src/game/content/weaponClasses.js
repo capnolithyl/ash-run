@@ -159,6 +159,12 @@ const WEAPON_CLASS_PROFILES = {
   }
 };
 
+export function getWeaponClassProfile(weaponClass) {
+  const profile = WEAPON_CLASS_PROFILES[weaponClass];
+
+  return profile ? structuredClone(profile) : null;
+}
+
 export function getArmorClassForUnit(unit) {
   return unit?.stats?.armorClass ?? unit?.armorClass ?? null;
 }

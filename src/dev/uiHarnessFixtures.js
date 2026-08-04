@@ -10,11 +10,13 @@ import { createBlankMapDefinition, createDefaultMapEditorState } from "../game/c
 import { REINFORCEMENT_TRIGGER_TYPES } from "../game/content/reinforcements.js";
 import { RUN_UPGRADES } from "../game/content/runUpgrades.js";
 import {
-  createTutorialBattleSession,
-  createTutorialBattleState,
-  createTutorialIntroState,
-  createTutorialPresentation
+  createTutorialBattleState
 } from "../game/content/tutorial.js";
+import {
+  createTutorialHubSession,
+  createTutorialLessonPresentation,
+  createTutorialLessonSession
+} from "../game/content/tutorialCurriculum.js";
 import { createBattlefield } from "../game/content/mapFactory.js";
 import { createDefaultMetaState, createEmptySlotSummaries } from "../game/state/defaults.js";
 import { BattleSystem } from "../game/simulation/battleSystem.js";
@@ -217,21 +219,18 @@ function createProgressionState() {
   };
 }
 
-function createTutorialIntroHarnessState() {
+function createTutorialGuidedHarnessState() {
   return {
     screen: SCREEN_IDS.TUTORIAL,
-    tutorial: createTutorialIntroState(),
+    tutorial: createTutorialHubSession(),
     metaState: createBaseMetaState()
   };
 }
 
-function createTutorialEpilogueHarnessState() {
+function createTutorialManualHarnessState() {
   return {
     screen: SCREEN_IDS.TUTORIAL,
-    tutorial: createTutorialIntroState({
-      phase: "epilogue",
-      completed: true
-    }),
+    tutorial: createTutorialHubSession({ activeTab: "manual" }),
     metaState: createBaseMetaState()
   };
 }
@@ -586,10 +585,10 @@ function createBattleLevelUpState() {
 }
 
 function createTutorialBattleHarnessState() {
-  const tutorial = createTutorialBattleSession();
+  const tutorial = createTutorialLessonSession("basic-orders");
   const system = new BattleSystem(createTutorialBattleState());
   const battleSnapshot = system.getSnapshot();
-  battleSnapshot.presentation.tutorial = createTutorialPresentation(tutorial);
+  battleSnapshot.presentation.tutorial = createTutorialLessonPresentation(tutorial);
 
   return {
     screen: SCREEN_IDS.BATTLE,
@@ -615,8 +614,8 @@ function createTutorialBattleHarnessState() {
 
 export const UI_HARNESS_SCENES = [
   { id: "title", label: "Title Screen", locator: "#ui-root" },
-  { id: "tutorial-intro", label: "Tutorial Intro", locator: "#ui-root" },
-  { id: "tutorial-epilogue", label: "Tutorial Epilogue", locator: "#ui-root" },
+  { id: "tutorial-guided", label: "Tutorial Guided Training", locator: "#ui-root" },
+  { id: "tutorial-manual", label: "Tutorial Field Manual", locator: "#ui-root" },
   { id: "commander-select", label: "Commander Select", locator: "#ui-root" },
   { id: "run-loadout", label: "Run Loadout", locator: "#ui-root" },
   { id: "run-loadout-naming", label: "Run Loadout Naming", locator: ".run-naming-dialog" },
@@ -638,15 +637,15 @@ export const UI_HARNESS_SCENES = [
 
 export function createUiHarnessScene(sceneId) {
   switch (sceneId) {
-    case "tutorial-intro":
+    case "tutorial-guided":
       return {
         sceneId,
-        state: createTutorialIntroHarnessState()
+        state: createTutorialGuidedHarnessState()
       };
-    case "tutorial-epilogue":
+    case "tutorial-manual":
       return {
         sceneId,
-        state: createTutorialEpilogueHarnessState()
+        state: createTutorialManualHarnessState()
       };
     case "commander-select":
       return {

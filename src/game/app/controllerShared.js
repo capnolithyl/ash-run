@@ -34,6 +34,7 @@ export function createBattleUiState() {
   return {
     pauseMenuOpen: false,
     confirmAbandon: false,
+    tutorialManualOpen: false,
     fundsGain: null,
     notice: null,
     powerOverlay: null,

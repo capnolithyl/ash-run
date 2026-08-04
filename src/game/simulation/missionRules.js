@@ -449,6 +449,46 @@ export function getMissionProgressText(state) {
   }
 }
 
+export function getMissionObjectiveText(state) {
+  const mission = normalizeMissionState(state);
+
+  if (!mission) return "Complete the mission objective.";
+
+  switch (mission.type) {
+    case MAP_GOAL_TYPES.HQ_CAPTURE:
+      return "Capture the enemy Command Post.";
+    case MAP_GOAL_TYPES.RESCUE:
+      return "Recover the hostage and deliver them to your Command Post.";
+    case MAP_GOAL_TYPES.DEFEND:
+      return "Keep the marked objective intact until the timer expires.";
+    case MAP_GOAL_TYPES.SURVIVE:
+      return "Keep at least one player unit alive until the timer expires.";
+    case MAP_GOAL_TYPES.ROUT:
+    default:
+      return "Defeat every enemy unit.";
+  }
+}
+
+export function getMissionFailureConditionText(state) {
+  const mission = normalizeMissionState(state);
+
+  if (!mission) return "All player units are defeated.";
+
+  switch (mission.type) {
+    case MAP_GOAL_TYPES.HQ_CAPTURE:
+      return "The enemy captures your Command Post.";
+    case MAP_GOAL_TYPES.RESCUE:
+      return "The hostage carrier is defeated, or your army is eliminated.";
+    case MAP_GOAL_TYPES.DEFEND:
+      return "Objective integrity reaches zero, or your army is eliminated.";
+    case MAP_GOAL_TYPES.SURVIVE:
+      return "No player units remain alive.";
+    case MAP_GOAL_TYPES.ROUT:
+    default:
+      return "All player units are defeated.";
+  }
+}
+
 export function getMissionMarkers(state) {
   const mission = normalizeMissionState(state);
 

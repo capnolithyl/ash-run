@@ -157,6 +157,23 @@ for (const scene of UI_HARNESS_SCENES) {
   });
 }
 
+test("tutorial battle uses a reduced-motion bottom sheet at the narrow breakpoint", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "preset-1280x720-chromium");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 760, height: 900 });
+  await page.goto("/ui-harness.html?scene=battle-tutorial&embed=1");
+
+  const guide = page.locator(".tutorial-guide");
+  await expect(guide).toBeVisible();
+  const box = await guide.boundingBox();
+  const animationName = await guide.evaluate((element) => getComputedStyle(element).animationName);
+
+  expect(box.x).toBeCloseTo(0, 1);
+  expect(box.width).toBeCloseTo(760, 1);
+  expect(box.y + box.height).toBeLessThanOrEqual(900 - 60);
+  expect(animationName).toBe("none");
+});
+
 test("run loadout keeps the footer fixed while only the unit grid scrolls", async ({ page }) => {
   await page.goto("/ui-harness.html?scene=run-loadout&embed=1");
   const panel = page.locator(".run-loadout-panel");

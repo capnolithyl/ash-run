@@ -275,6 +275,9 @@ export const appShellInputMethods = {
     const previousUnitTypeId = this.controllerFocusElement.dataset?.unitTypeId;
     const previousCommanderId = this.controllerFocusElement.dataset?.commanderId;
     const previousSlotId = this.controllerFocusElement.dataset?.slotId;
+    const previousTutorialTab = this.controllerFocusElement.dataset?.tutorialTab;
+    const previousLessonId = this.controllerFocusElement.dataset?.lessonId;
+    const previousManualFilter = this.controllerFocusElement.dataset?.manualFilter;
 
     if (this.isElementControllerFocusable(this.controllerFocusElement)) {
       this.setControllerFocus(this.controllerFocusElement);
@@ -289,7 +292,10 @@ export const appShellInputMethods = {
       return (
         (!previousUnitTypeId || element.dataset.unitTypeId === previousUnitTypeId) &&
         (!previousCommanderId || element.dataset.commanderId === previousCommanderId) &&
-        (!previousSlotId || element.dataset.slotId === previousSlotId)
+        (!previousSlotId || element.dataset.slotId === previousSlotId) &&
+        (!previousTutorialTab || element.dataset.tutorialTab === previousTutorialTab) &&
+        (!previousLessonId || element.dataset.lessonId === previousLessonId) &&
+        (!previousManualFilter || element.dataset.manualFilter === previousManualFilter)
       );
     });
 
@@ -330,11 +336,12 @@ export const appShellInputMethods = {
   },
 
   getControllerFocusableElements() {
-    const focusScope = this.root.querySelector(".run-naming-overlay") ?? this.root;
+    const focusScope =
+      this.root.querySelector(".run-naming-overlay, .tutorial-new-run-prompt") ?? this.root;
 
     return Array.from(
       focusScope.querySelectorAll(
-        'button[data-action], [data-tooltip-trigger], .selection-loadout-card__info, summary, label[for], select, input[type="range"], input[type="checkbox"]:not(.battle-drawer-toggle):not(.tutorial-step-toggle)'
+        'button[data-action], [data-tooltip-trigger], .selection-loadout-card__info, summary, label[for], select, input[type="search"], input[type="range"], input[type="checkbox"]:not(.battle-drawer-toggle):not(.tutorial-step-toggle)'
       )
     ).filter((element) => this.isElementControllerFocusable(element));
   },
@@ -405,6 +412,7 @@ export const appShellInputMethods = {
     }
 
     if (announce && previousElement !== element) {
+      this.noteTutorialInputActivity?.();
       this.controller.emitAudioCue?.(UI_AUDIO_CUES.HOVER, {
         dedupeKey: `gamepad-focus:${element.dataset?.action ?? element.dataset?.option ?? element.tagName}`,
         source: "gamepad-focus"

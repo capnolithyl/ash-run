@@ -16,6 +16,35 @@ import {
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
+  applyFieldManualFilter() {
+    const manual = this.root.querySelector("[data-field-manual]");
+    if (!manual) {
+      return false;
+    }
+
+    const query = String(manual.querySelector("[data-manual-query]")?.value ?? "").trim().toLowerCase();
+    const activeFilter = manual.querySelector('[data-manual-filter][aria-pressed="true"]')?.dataset.manualFilter ?? "all";
+    let visibleCount = 0;
+
+    for (const manualEntry of manual.querySelectorAll("[data-manual-entry]")) {
+      const matchesQuery = !query || String(manualEntry.dataset.manualSearchText ?? "").includes(query);
+      const tags = String(manualEntry.dataset.manualTags ?? "").split(/\s+/);
+      const matchesFilter = activeFilter === "all" || tags.includes(activeFilter);
+      manualEntry.hidden = !(matchesQuery && matchesFilter);
+      if (!manualEntry.hidden) visibleCount += 1;
+    }
+
+    for (const manualSection of manual.querySelectorAll("[data-manual-section]")) {
+      manualSection.hidden = !manualSection.querySelector("[data-manual-entry]:not([hidden])");
+    }
+
+    const results = manual.querySelector("[data-manual-results]");
+    if (results) results.textContent = `${visibleCount} ${visibleCount === 1 ? "entry" : "entries"}`;
+    const empty = manual.querySelector("[data-manual-empty]");
+    if (empty) empty.hidden = visibleCount > 0;
+    return true;
+  },
+
   selectOptionsTab(tabId, { focus = false, scope = "options" } = {}) {
     const tabsRoot = this.root.querySelector?.(`[data-options-tabs="${scope}"]`) ?? this.root;
     const tabs = [...tabsRoot.querySelectorAll('[role="tab"][data-options-tab]')];
@@ -76,6 +105,22 @@ export const appShellEventMethods = {
   },
 
   handleKeyDown(event) {
+    const tutorialTab = event.target.closest?.('[role="tab"][data-tutorial-tab]');
+
+    if (tutorialTab?.dataset?.tutorialTab) {
+      const tabs = [...this.root.querySelectorAll('[role="tab"][data-tutorial-tab]')];
+      const currentIndex = tabs.indexOf(tutorialTab);
+      let nextIndex = currentIndex;
+      if (["ArrowDown", "ArrowRight"].includes(event.key)) nextIndex = (currentIndex + 1) % tabs.length;
+      else if (["ArrowUp", "ArrowLeft"].includes(event.key)) nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      else if (event.key === "Home") nextIndex = 0;
+      else if (event.key === "End") nextIndex = tabs.length - 1;
+      else return;
+      event.preventDefault();
+      this.controller.selectTutorialTab(tabs[nextIndex].dataset.tutorialTab);
+      return;
+    }
+
     const activeTab = event.target.closest?.('[role="tab"][data-options-tab]');
 
     if (activeTab) {
@@ -350,9 +395,13 @@ export const appShellEventMethods = {
       action,
       commanderId,
       debugTool,
+      lessonId,
+      manualFilter,
       optionsScope,
       optionsTab,
       slotId,
+      tutorialChoice,
+      tutorialTab,
       unitTypeId
     } = trigger.dataset;
     const isCommanderSelection = [
@@ -391,7 +440,7 @@ export const appShellEventMethods = {
         this.selectDebugTool(debugTool);
         break;
       case "open-new-run":
-        this.controller.openNewRun();
+        await this.controller.openNewRun();
         break;
       case "open-continue":
         this.controller.openContinue();
@@ -401,6 +450,26 @@ export const appShellEventMethods = {
         break;
       case "open-tutorial":
         this.controller.openTutorial();
+        break;
+      case "resolve-tutorial-prompt":
+        await this.controller.resolveTutorialPrompt(tutorialChoice);
+        break;
+      case "select-tutorial-tab":
+        this.controller.selectTutorialTab(tutorialTab);
+        break;
+      case "start-tutorial-lesson":
+        this.controller.startTutorialLesson(lessonId);
+        break;
+      case "continue-new-run-from-tutorial":
+        await this.controller.continueFromTutorialToNewRun();
+        break;
+      case "filter-field-manual":
+        for (const filterButton of this.root.querySelectorAll("[data-manual-filter]")) {
+          const active = filterButton.dataset.manualFilter === manualFilter;
+          filterButton.classList.toggle("field-manual-filter--active", active);
+          filterButton.setAttribute("aria-pressed", `${active}`);
+        }
+        this.applyFieldManualFilter();
         break;
       case "start-tutorial":
         this.controller.startTutorialBattle();
@@ -455,6 +524,12 @@ export const appShellEventMethods = {
         break;
       case "resume-battle":
         this.controller.closePauseMenu();
+        break;
+      case "open-pause-field-manual":
+        this.controller.openTutorialManualFromPause();
+        break;
+      case "close-pause-field-manual":
+        this.controller.closeTutorialManualFromPause();
         break;
       case "prompt-abandon-run":
         this.controller.promptAbandonRun();
@@ -895,6 +970,11 @@ export const appShellEventMethods = {
   },
 
   handleInput(event) {
+    if (event.target.matches?.("[data-manual-query]")) {
+      this.applyFieldManualFilter();
+      return;
+    }
+
     const optionKey = event.target.dataset.option;
 
     if (optionKey && event.target.type === "range") {

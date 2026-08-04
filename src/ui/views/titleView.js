@@ -614,6 +614,26 @@ function renderTitleButton({
   `;
 }
 
+function renderNewRunTutorialPrompt(state) {
+  if (state.tutorial?.phase !== "new-run-prompt") {
+    return "";
+  }
+
+  return `
+    <div class="battle-overlay tutorial-new-run-prompt" role="presentation">
+      <section class="overlay-card tutorial-new-run-prompt__card" role="dialog" aria-modal="true" aria-labelledby="tutorial-new-run-title" aria-describedby="tutorial-new-run-description">
+        <p class="eyebrow">Fresh Profile</p>
+        <h2 id="tutorial-new-run-title">Run the training sim first?</h2>
+        <p id="tutorial-new-run-description">Six short lessons cover real battle rules. Training uses no run slot and grants no rewards.</p>
+        <div class="battle-actions">
+          <button class="menu-button" data-action="resolve-tutorial-prompt" data-tutorial-choice="play">Play Tutorial</button>
+          <button class="ghost-button" data-action="resolve-tutorial-prompt" data-tutorial-choice="skip">Skip Tutorial</button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 export function renderTitleView(state, buildProfileConfig = CURRENT_BUILD_CONFIG) {
   const hasContinue = state.slots.some((slot) => slot.exists);
   const latestClearTurnCount = state.metaState.latestClearTurnCount;
@@ -709,7 +729,7 @@ export function renderTitleView(state, buildProfileConfig = CURRENT_BUILD_CONFIG
           </div>
         </div>
       </div>
-      <section class="title-card" aria-labelledby="title-screen-heading">
+      <section class="title-card" aria-labelledby="title-screen-heading" ${state.tutorial?.phase === "new-run-prompt" ? 'inert aria-hidden="true"' : ""}>
         ${renderTitleButton({
           action: "open-options",
           className: "ghost-button title-utility-button",
@@ -743,6 +763,7 @@ export function renderTitleView(state, buildProfileConfig = CURRENT_BUILD_CONFIG
           </div>
         </div>
       </section>
+      ${renderNewRunTutorialPrompt(state)}
     </div>
   `;
 }

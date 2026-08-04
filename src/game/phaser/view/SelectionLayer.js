@@ -324,6 +324,9 @@ function drawTutorialHighlight(
   const y = layout.originY + resolved.y * layout.cellSize;
   const inset = Math.max(3, Math.floor(layout.cellSize * 0.06));
   const labelText = resolved.label ?? String(index + 1);
+  const pulse = prefersReducedMotion()
+    ? 0.92
+    : 0.72 + (Math.sin(getSceneTime(graphics.scene) / 180) + 1) * 0.13;
 
   graphics.fillStyle(color, 0.16);
   graphics.fillRoundedRect(x + 2, y + 2, layout.cellSize - 6, layout.cellSize - 6, 8);
@@ -331,12 +334,16 @@ function drawTutorialHighlight(
   graphics.strokeRoundedRect(x + inset - 1, y + inset - 1, layout.cellSize - inset * 2, layout.cellSize - inset * 2, 8);
   graphics.lineStyle(3, color, 0.98);
   graphics.strokeRoundedRect(x + inset, y + inset, layout.cellSize - inset * 2, layout.cellSize - inset * 2, 8);
+  graphics.lineStyle(3, color, pulse);
+  graphics.strokeCircle(x + layout.cellSize / 2, y + layout.cellSize / 2, layout.cellSize * 0.45);
+  graphics.lineStyle(2, 0xfff2d4, pulse);
+  graphics.strokeCircle(x + layout.cellSize / 2, y + layout.cellSize / 2, layout.cellSize * 0.37);
   drawCornerMarkers(graphics, x + 5, y + 5, layout.cellSize - 12, 0xfff2d4, 0.94);
 
   const badgeX = x + layout.cellSize * 0.5;
   const badgeY = y - Math.max(8, layout.cellSize * 0.12);
   const label = graphics.scene.add
-    .text(badgeX, badgeY, labelText, {
+    .text(0, 0, labelText, {
       fontFamily: "Bahnschrift SemiCondensed, sans-serif",
       fontSize: `${Math.max(11, Math.floor(layout.cellSize * 0.18))}px`,
       color: "#12061f",
@@ -346,10 +353,31 @@ function drawTutorialHighlight(
         y: 3
       }
     })
-    .setOrigin(0.5)
-    .setDepth(CURSOR_DEPTH + 2);
+    .setOrigin(0.5);
+  const chevron = graphics.scene.add
+    .text(0, -Math.max(18, layout.cellSize * 0.28), "▼", {
+      fontFamily: "Bahnschrift SemiCondensed, sans-serif",
+      fontSize: `${Math.max(16, Math.floor(layout.cellSize * 0.24))}px`,
+      color: "#fff2d4",
+      stroke: "#12061f",
+      strokeThickness: 4
+    })
+    .setOrigin(0.5);
+  const marker = graphics.scene.add.container(badgeX, badgeY, [chevron, label]).setDepth(CURSOR_DEPTH + 2);
 
-  return label;
+  if (!prefersReducedMotion()) {
+    graphics.scene.tweens.add({
+      targets: marker,
+      alpha: 0.66,
+      y: badgeY - 4,
+      duration: 620,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut"
+    });
+  }
+
+  return marker;
 }
 
 export class SelectionLayer {
@@ -738,6 +766,10 @@ export class SelectionLayer {
       drawMovementPath(this.graphics, layout, movementPath, enemyColor);
     }
 
+    if ((options.tutorialMovementPath ?? []).length > 1) {
+      drawMovementPath(this.cursorGraphics, layout, options.tutorialMovementPath, 0xfff2d4);
+    }
+
     for (const spawn of options.editorSpawns?.player ?? []) {
       markerLabels.push(drawSpawnMarker(this.cursorGraphics, layout, spawn, playerColor, "P"));
     }
@@ -771,6 +803,27 @@ export class SelectionLayer {
       markerLabels.push(
         drawObjectiveMarker(this.cursorGraphics, layout, marker, colorOptions)
       );
+    }
+
+    if (options.tutorialDimUnrelated && (options.tutorialHighlights ?? []).length > 0) {
+      const highlightedTiles = new Set(
+        (options.tutorialHighlights ?? [])
+          .map((highlight) => resolveTutorialHighlight(snapshot, highlight))
+          .filter(Boolean)
+          .map((highlight) => `${highlight.x},${highlight.y}`)
+      );
+      for (let tileY = 0; tileY < snapshot.map.height; tileY += 1) {
+        for (let tileX = 0; tileX < snapshot.map.width; tileX += 1) {
+          if (highlightedTiles.has(`${tileX},${tileY}`)) continue;
+          this.cursorGraphics.fillStyle(0x090412, 0.28);
+          this.cursorGraphics.fillRect(
+            layout.originX + tileX * layout.cellSize,
+            layout.originY + tileY * layout.cellSize,
+            layout.cellSize,
+            layout.cellSize
+          );
+        }
+      }
     }
 
     for (const [index, highlight] of (options.tutorialHighlights ?? []).entries()) {

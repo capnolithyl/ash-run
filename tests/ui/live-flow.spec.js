@@ -7,6 +7,13 @@ async function gotoTitle(page) {
   await expect(page.locator(".screen--title")).toBeVisible({ timeout: 45_000 });
 }
 
+async function skipTutorialPromptIfShown(page) {
+  const prompt = page.locator(".tutorial-new-run-prompt");
+  if (await prompt.isVisible()) {
+    await page.locator('[data-action="resolve-tutorial-prompt"][data-tutorial-choice="skip"]').click();
+  }
+}
+
 async function getTitleLayoutSnapshot(page) {
   return page.evaluate(() =>
     Array.from(
@@ -183,6 +190,7 @@ test("commander select opens with cached art and stable layout", async ({ page }
   await gotoTitle(page);
 
   await page.locator('[data-action="open-new-run"]').click({ force: true });
+  await skipTutorialPromptIfShown(page);
   await expect(page.locator('[data-screen-id="commander-select"]')).toBeVisible();
   await page.mouse.move(1, 1);
 
@@ -253,6 +261,7 @@ test("new run flow reaches battle from the live app", async ({ page }) => {
   await gotoTitle(page);
 
   await page.locator('[data-action="open-new-run"]').click({ force: true });
+  await skipTutorialPromptIfShown(page);
   await expect(page.locator('[data-screen-id="commander-select"]')).toBeVisible();
   await page
     .locator('[data-action="select-commander"][data-commander-id="atlas"][data-copy-index="1"]')
@@ -286,11 +295,153 @@ test("tutorial flow reaches the guided battle from the live app", async ({ page 
 
   await page.locator('[data-action="open-tutorial"]').click({ force: true });
   await expect(page.locator('[data-screen-id="tutorial"]')).toBeVisible();
-  await page.locator('[data-action="start-tutorial"]').click({ force: true });
+  await page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]').click({ force: true });
 
   await expect(page.locator(".battle-shell")).toBeVisible();
   await expect(page.locator(".tutorial-guide")).toBeVisible();
   await expect(page.locator(".tutorial-guide")).toContainText("Pip");
+});
+
+test("highlighted tutorial commands keep the fitted battlefield camera stable", async ({ page }) => {
+  await gotoTitle(page);
+  await page.locator('[data-action="open-tutorial"]').click({ force: true });
+  await page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]').click({ force: true });
+  await expect(page.locator(".tutorial-guide")).toBeVisible();
+
+  await page.evaluate(async () => {
+    const controller = window.__ASH_RUN_DEV__.controller;
+    controller.continueTutorialStep();
+    await controller.handleBattleTileClick(1, 4);
+    await controller.handleBattleTileClick(3, 4);
+  });
+  await expect(page.locator('[data-action="redo-move"]')).toBeVisible();
+
+  await page.evaluate(() => {
+    const scene = window.__ASH_RUN_DEV__.game.scene.getScene("BattleScene");
+    const startedAt = performance.now();
+    const samples = [];
+    window.__tutorialCameraSampling = { done: false, samples };
+
+    const sample = () => {
+      samples.push({ x: scene.cameras.main.scrollX, y: scene.cameras.main.scrollY });
+      if (performance.now() - startedAt < 500) {
+        requestAnimationFrame(sample);
+      } else {
+        window.__tutorialCameraSampling.done = true;
+      }
+    };
+    requestAnimationFrame(sample);
+  });
+
+  await page.locator('[data-action="redo-move"]').click({ force: true });
+  await page.waitForFunction(() => window.__tutorialCameraSampling?.done === true);
+
+  const cameraMotion = await page.evaluate(() => {
+    const samples = window.__tutorialCameraSampling.samples;
+    const first = samples[0];
+    return Math.max(
+      ...samples.map((sample) => Math.hypot(sample.x - first.x, sample.y - first.y))
+    );
+  });
+  expect(cameraMotion).toBeLessThan(0.01);
+});
+
+test("mission Rout animation resolves before its victory result advances", async ({ page }) => {
+  await gotoTitle(page);
+  await page.evaluate(() => {
+    const controller = window.__ASH_RUN_DEV__.controller;
+    controller.state.metaState.tutorial = {
+      promptSeen: true,
+      curriculumVersion: 1,
+      completedLessonIds: [
+        "basic-orders",
+        "combat-roles-terrain",
+        "support-transport",
+        "buildings-capture-supply"
+      ],
+      unlockedLessonIds: [
+        "basic-orders",
+        "combat-roles-terrain",
+        "support-transport",
+        "buildings-capture-supply",
+        "mission-objectives"
+      ]
+    };
+    controller.openTutorialHub();
+    controller.startTutorialLesson("mission-objectives");
+  });
+  await expect(page.locator(".tutorial-guide")).toContainText("Rout: defeat every enemy");
+
+  const routBattleId = await page.evaluate(async () => {
+    const controller = window.__ASH_RUN_DEV__.controller;
+    const battleId = controller.state.battleSnapshot.id;
+    await controller.handleBattleTileClick(2, 4);
+    await controller.handleBattleTileClick(2, 4);
+    await controller.beginSelectedAttack();
+    await controller.handleBattleTileClick(3, 4);
+    return battleId;
+  });
+
+  await expect(page.locator(".battle-overlay--combat-cutscene")).toHaveCount(1);
+  await expect(page.locator(".tutorial-guide")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__ASH_RUN_DEV__.controller.state.battleSnapshot.id)).toBe(routBattleId);
+
+  await expect(page.locator(".battle-overlay--combat-cutscene")).toHaveCount(0, { timeout: 12_000 });
+  await expect(page.locator(".tutorial-guide--result")).toContainText("Objective Secured");
+  await expect(page.locator(".tutorial-guide--result")).toContainText("Victory: enemy force routed");
+  expect(await page.evaluate(() => window.__ASH_RUN_DEV__.controller.state.battleSnapshot.id)).toBe(routBattleId);
+
+  await page.locator('[data-action="tutorial-next"]').click();
+  await expect(page.locator(".tutorial-guide")).toContainText("HQ Capture: take command ownership");
+  await expect.poll(() => page.evaluate(() => window.__ASH_RUN_DEV__.controller.state.battleSnapshot.map.name))
+    .toBe("Objective Drill: HQ Capture");
+});
+
+test("tutorial manual searches and filters current entries", async ({ page }) => {
+  await gotoTitle(page);
+  await page.locator('[data-action="open-tutorial"]').click({ force: true });
+  await page.locator('[data-action="select-tutorial-tab"][data-tutorial-tab="manual"]').click();
+  const search = page.locator("[data-manual-query]");
+  await search.fill("Carrier");
+  await expect(page.locator('[data-manual-entry]:not([hidden])')).toHaveCount(2);
+  await expect(page.locator('[data-manual-entry][data-manual-search-text*="carrier"]:not([hidden])').first()).toBeVisible();
+  await search.fill("");
+  await page.locator('[data-action="filter-field-manual"][data-manual-filter="missions"]').click();
+  await expect(page.locator('[data-manual-entry]:not([hidden])')).toHaveCount(5);
+  await expect(page.locator("[data-manual-results]")).toHaveText("5 entries");
+});
+
+test("lesson completion unlocks, persists, and leaves Lesson 1 replayable", async ({ page }) => {
+  await gotoTitle(page);
+  await page.locator('[data-action="open-tutorial"]').click();
+  await page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]').click();
+  await expect(page.locator(".tutorial-guide")).toBeVisible();
+  await page.evaluate(async () => globalThis.__ASH_RUN_DEV__.controller.completeActiveTutorialLesson());
+  await expect(page.locator('[data-action="tutorial-epilogue"]')).toBeVisible();
+  await page.locator('[data-action="tutorial-epilogue"]').click();
+
+  await expect(page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]')).toHaveText("Replay");
+  await expect(page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="combat-roles-terrain"]')).toBeEnabled();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator(".screen--title")).toBeVisible({ timeout: 45_000 });
+  await page.locator('[data-action="open-tutorial"]').click();
+  await expect(page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]')).toHaveText("Replay");
+  await expect(page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="combat-roles-terrain"]')).toBeEnabled();
+  await page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]').click();
+  await expect(page.locator(".tutorial-guide")).toBeVisible();
+});
+
+test("fresh-profile New Run choice persists after reload", async ({ page }) => {
+  await gotoTitle(page);
+  await page.locator('[data-action="open-new-run"]').click();
+  await expect(page.locator(".tutorial-new-run-prompt")).toBeVisible();
+  await page.locator('[data-action="resolve-tutorial-prompt"][data-tutorial-choice="skip"]').click();
+  await expect(page.locator('[data-screen-id="commander-select"]')).toBeVisible();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator(".screen--title")).toBeVisible({ timeout: 45_000 });
+  await page.locator('[data-action="open-new-run"]').click();
+  await expect(page.locator(".tutorial-new-run-prompt")).toHaveCount(0);
+  await expect(page.locator('[data-screen-id="commander-select"]')).toBeVisible();
 });
 
 test("title utility screens open and return cleanly", async ({ page }) => {

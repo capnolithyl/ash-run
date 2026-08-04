@@ -10,10 +10,12 @@ import {
 import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { MAP_GOAL_TYPES } from "../src/game/content/mapGoals.js";
 import {
-  createTutorialBattleSession,
   createTutorialBattleState,
-  createTutorialPresentation
 } from "../src/game/content/tutorial.js";
+import {
+  createTutorialLessonPresentation,
+  createTutorialLessonSession
+} from "../src/game/content/tutorialCurriculum.js";
 import { UNIT_CATALOG } from "../src/game/content/unitCatalog.js";
 import { deriveBattleCombatCutscene } from "../src/game/phaser/view/battleCombatCutscene.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
@@ -713,9 +715,9 @@ test("battle HUD renders commander power activation overlays", () => {
 
 test("battle HUD renders tutorial guide and highlights", () => {
   const system = new BattleSystem(createTutorialBattleState());
-  const tutorialSession = createTutorialBattleSession();
+  const tutorialSession = createTutorialLessonSession("basic-orders", { returnIntent: "new-run" });
   const battleSnapshot = system.getSnapshot();
-  battleSnapshot.presentation.tutorial = createTutorialPresentation(tutorialSession);
+  battleSnapshot.presentation.tutorial = createTutorialLessonPresentation(tutorialSession);
   const html = renderBattleHudView({
     battleSnapshot,
     battleUi: {
@@ -732,12 +734,60 @@ test("battle HUD renders tutorial guide and highlights", () => {
     banner: ""
   });
 
-  assert.match(html, /class="tutorial-guide"/);
-  assert.match(html, /Pip Says/);
+  assert.match(html, /class="tutorial-guide tutorial-guide--left"/);
+  assert.match(html, /Pip · Basic Orders/);
   assert.match(html, /Read the mission first/);
-  assert.match(html, /1\/23/);
+  assert.match(html, /1\/28/);
   assert.match(html, /data-action="tutorial-next"/);
   assert.match(html, /data-action="skip-tutorial"/);
+});
+
+test("paused tutorial battle renders the Field Manual without replacing battle state", () => {
+  const system = new BattleSystem(createTutorialBattleState());
+  const tutorialSession = createTutorialLessonSession("basic-orders");
+  const battleSnapshot = system.getSnapshot();
+  battleSnapshot.presentation.tutorial = createTutorialLessonPresentation(tutorialSession);
+  const html = renderBattleHudView({
+    battleSnapshot,
+    battleUi: {
+      pauseMenuOpen: true,
+      tutorialManualOpen: true,
+      confirmAbandon: false,
+      fundsGain: null,
+      hoveredTile: null,
+      playerFocus: null,
+      enemyFocus: null
+    },
+    tutorial: tutorialSession,
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /Battle Intermission/);
+  assert.match(html, /data-field-manual/);
+  assert.match(html, /data-action="close-pause-field-manual"/);
+  assert.match(html, /Carrier/);
+});
+
+test("completed lessons offer a route back to the Tutorial Hub", () => {
+  const system = new BattleSystem(createTutorialBattleState());
+  const tutorialSession = createTutorialLessonSession("basic-orders", { returnIntent: "new-run" });
+  tutorialSession.phase = "lesson-complete";
+  const battleSnapshot = system.getSnapshot();
+  battleSnapshot.presentation.tutorial = createTutorialLessonPresentation(tutorialSession);
+  const html = renderBattleHudView({
+    battleSnapshot,
+    battleUi: { pauseMenuOpen: false, confirmAbandon: false, fundsGain: null, hoveredTile: null, playerFocus: null, enemyFocus: null },
+    tutorial: tutorialSession,
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /data-action="tutorial-epilogue"/);
+  assert.match(html, /data-action="continue-new-run-from-tutorial"/);
+  assert.match(html, /Tutorial Hub/);
 });
 
 test("battle HUD renders the combat cutscene overlay with stable sprite layers and split lanes", () => {

@@ -16,13 +16,13 @@ const profiles = [
       "open-new-run",
       "open-continue",
       "open-progression",
+      "open-tutorial",
       "open-options",
       "quit-game"
     ],
     restrictedActions: [
       "open-skirmish",
       "open-map-editor",
-      "open-tutorial",
       "open-debug-run"
     ],
     mapToolsEnabled: false

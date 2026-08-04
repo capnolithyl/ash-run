@@ -21,6 +21,7 @@ import { getCommanderPowerMax } from "../src/game/content/commanders.js";
 import { getMapById, MAP_POOL, replaceCustomMaps } from "../src/game/content/maps.js";
 import { getDefaultUnlockedRunCardIds } from "../src/game/content/runUpgrades.js";
 import { TUTORIAL_IDS } from "../src/game/content/tutorial.js";
+import { TUTORIAL_LESSON_ORDER } from "../src/game/content/tutorialConstants.js";
 import { BattleSystem } from "../src/game/simulation/battleSystem.js";
 import { createBattleStateForRun } from "../src/game/state/runFactory.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
@@ -86,6 +87,25 @@ test("initialize expands stale run card unlocks to the current default catalog",
   assert.ok(unlockedRunCardIds.includes("field-repairs-1"));
   assert.ok(staleCardIds.every((cardId) => unlockedRunCardIds.includes(cardId)));
   assert.equal(unlockedRunCardIds.length, getDefaultUnlockedRunCardIds().length);
+});
+
+test("initialize treats saved profiles without tutorial metadata as established players", async () => {
+  const controller = new GameController({
+    async loadMeta() {
+      return { metaCurrency: 25 };
+    },
+    async listSlots() {
+      return [];
+    },
+    async listCustomMaps() {
+      return [];
+    }
+  });
+
+  await controller.initialize();
+  assert.equal(controller.getState().metaState.tutorial.promptSeen, true);
+  await controller.openNewRun();
+  assert.equal(controller.getState().screen, SCREEN_IDS.COMMANDER_SELECT);
 });
 
 test("unit color option updates normalize and persist", async () => {
@@ -529,12 +549,19 @@ test("tutorial blocks wrong actions with a guide nudge", async () => {
 
   controller.startTutorialBattle();
   controller.continueTutorialStep();
+  assert.equal(controller.getState().battleSnapshot.presentation.tutorial.panelPlacement, "right");
   await controller.handleBattleTileClick(2, 5);
 
   const state = controller.getState();
   assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "select-grunt");
   assert.match(state.tutorial.nudge.message, /Grunt/);
   assert.equal(state.battleSnapshot.selection.type, null);
+
+  await controller.handleBattleTileClick(1, 4);
+  await controller.handleBattleContextAction();
+  const afterContext = controller.getState();
+  assert.equal(afterContext.battleSnapshot.selection.id, "tutorial-grunt");
+  assert.match(afterContext.tutorial.nudge.message, /sector/);
 });
 
 test("tutorial correct capture advances without writing a save", async () => {
@@ -551,6 +578,8 @@ test("tutorial correct capture advances without writing a save", async () => {
   controller.startTutorialBattle();
   controller.continueTutorialStep();
   await controller.handleBattleTileClick(1, 4);
+  await controller.handleBattleTileClick(3, 4);
+  await controller.redoSelectedMove();
   await controller.handleBattleTileClick(3, 4);
   await controller.captureWithSelectedUnit();
 
@@ -576,10 +605,274 @@ test("tutorial can return cleanly to the title", async () => {
   assert.equal(state.runState, null);
 });
 
+test("fresh-profile New Run prompt saves either choice and never consumes a slot", async () => {
+  let saveMetaCalls = 0;
+  let saveSlotCalls = 0;
+  const controller = new GameController({
+    async saveMeta() {
+      saveMetaCalls += 1;
+    },
+    async saveSlot() {
+      saveSlotCalls += 1;
+    },
+    async listSlots() {
+      return [];
+    }
+  });
+
+  controller.openNewRun();
+  assert.equal(controller.getState().screen, SCREEN_IDS.TITLE);
+  assert.equal(controller.getState().tutorial.phase, "new-run-prompt");
+
+  await controller.resolveTutorialPrompt("skip");
+  assert.equal(controller.getState().screen, SCREEN_IDS.COMMANDER_SELECT);
+  assert.equal(controller.getState().metaState.tutorial.promptSeen, true);
+  assert.equal(controller.getState().tutorial.returnIntent, null);
+  assert.equal(saveMetaCalls, 1);
+  assert.equal(saveSlotCalls, 0);
+});
+
+test("Play Tutorial retains New Run intent through lesson exit and completion", async () => {
+  const controller = new GameController({
+    async saveMeta(metaState) {
+      return metaState;
+    },
+    async listSlots() {
+      return [];
+    }
+  });
+
+  controller.openNewRun();
+  await controller.resolveTutorialPrompt("play");
+  assert.equal(controller.getState().screen, SCREEN_IDS.TUTORIAL);
+  assert.equal(controller.getState().tutorial.returnIntent, "new-run");
+
+  controller.startTutorialLesson("basic-orders");
+  controller.exitTutorialLesson();
+  assert.equal(controller.getState().tutorial.returnIntent, "new-run");
+
+  controller.startTutorialLesson("basic-orders");
+  await controller.completeActiveTutorialLesson();
+  assert.deepEqual(controller.getState().metaState.tutorial.completedLessonIds, ["basic-orders"]);
+  assert.ok(controller.getState().metaState.tutorial.unlockedLessonIds.includes("combat-roles-terrain"));
+  await controller.continueFromTutorialToNewRun();
+  assert.equal(controller.getState().screen, SCREEN_IDS.COMMANDER_SELECT);
+  assert.equal(controller.getState().tutorial.returnIntent, null);
+});
+
+test("all six lessons can start, exit, complete, unlock sequentially, and replay without a run save", async () => {
+  let saveMetaCalls = 0;
+  let saveSlotCalls = 0;
+  const controller = new GameController({
+    async saveMeta() {
+      saveMetaCalls += 1;
+    },
+    async saveSlot() {
+      saveSlotCalls += 1;
+    },
+    async listSlots() {
+      return [];
+    }
+  });
+
+  controller.openTutorialHub();
+  for (const lessonId of TUTORIAL_LESSON_ORDER) {
+    assert.equal(controller.startTutorialLesson(lessonId), true, lessonId);
+    assert.equal(controller.exitTutorialLesson(), true, lessonId);
+    assert.equal(controller.getState().screen, SCREEN_IDS.TUTORIAL, lessonId);
+    assert.equal(controller.startTutorialLesson(lessonId), true, lessonId);
+    assert.equal(await controller.completeActiveTutorialLesson(), true, lessonId);
+    assert.equal(controller.getState().tutorial.phase, "lesson-complete", lessonId);
+    const effectCount = controller.getState().tutorial.appliedEffectKeys.length;
+    assert.equal(await controller.completeActiveTutorialLesson(), false, lessonId);
+    assert.equal(controller.getState().tutorial.appliedEffectKeys.length, effectCount, lessonId);
+    controller.openTutorialHub();
+  }
+
+  assert.deepEqual(controller.getState().metaState.tutorial.completedLessonIds, TUTORIAL_LESSON_ORDER);
+  assert.equal(controller.startTutorialLesson("basic-orders"), true);
+  assert.equal(controller.getState().runState, null);
+  assert.equal(controller.getState().metaState.metaCurrency, 0);
+  assert.equal(saveMetaCalls, 6);
+  assert.equal(saveSlotCalls, 0);
+});
+
+test("tutorial Field Manual opens and closes inside the paused battle", () => {
+  const controller = new GameController();
+  controller.startTutorialBattle();
+  const battleId = controller.getState().battleSnapshot.id;
+
+  assert.equal(controller.openPauseMenu(), true);
+  assert.equal(controller.openTutorialManualFromPause(), true);
+  assert.equal(controller.getState().battleUi.tutorialManualOpen, true);
+  assert.equal(controller.getState().battleSnapshot.id, battleId);
+  assert.equal(controller.closeTutorialManualFromPause(), true);
+  assert.equal(controller.getState().battleUi.pauseMenuOpen, true);
+  assert.equal(controller.getState().battleUi.tutorialManualOpen, false);
+});
+
+test("building tutorial requires a new turn between Capture and Supply", async () => {
+  const controller = new GameController({
+    async saveMeta() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  controller.state.metaState.tutorial = {
+    promptSeen: true,
+    curriculumVersion: 1,
+    completedLessonIds: TUTORIAL_LESSON_ORDER.slice(0, 3),
+    unlockedLessonIds: TUTORIAL_LESSON_ORDER.slice(0, 4)
+  };
+
+  controller.startTutorialLesson("buildings-capture-supply");
+  controller.continueTutorialStep();
+  await controller.handleBattleTileClick(3, 4);
+  await controller.handleBattleTileClick(3, 4);
+  await controller.captureWithSelectedUnit();
+
+  let state = controller.getState();
+  let capper = controller.battleSystem.state.player.units.find(
+    (unit) => unit.id === "buildings-capper"
+  );
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "building-end-turn-for-supply");
+  assert.equal(capper.hasMoved, true);
+  assert.equal(capper.hasAttacked, true);
+
+  await controller.handleBattleTileClick(3, 4);
+  assert.equal(
+    controller.getState().battleSnapshot.presentation.tutorial.stepId,
+    "building-end-turn-for-supply"
+  );
+
+  await controller.endTurn();
+  state = controller.getState();
+  capper = controller.battleSystem.state.player.units.find(
+    (unit) => unit.id === "buildings-capper"
+  );
+  assert.equal(state.battleSnapshot.turn.activeSide, TURN_SIDES.PLAYER);
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "building-select-sector-for-supply");
+  assert.equal(capper.hasMoved, false);
+  assert.equal(capper.hasAttacked, false);
+
+  await controller.handleBattleTileClick(3, 4);
+  await controller.handleBattleTileClick(3, 4);
+  await controller.useSelectedSupply();
+
+  state = controller.getState();
+  capper = controller.battleSystem.state.player.units.find(
+    (unit) => unit.id === "buildings-capper"
+  );
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "building-service-sites");
+  assert.ok(capper.current.hp > 55);
+  assert.ok(capper.current.ammo > 2);
+  assert.ok(capper.current.stamina > 20);
+});
+
+test("mission Rout victory holds the resolved battle through its combat animation and result", async () => {
+  const controller = new GameController({
+    async saveMeta() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  controller.state.metaState.tutorial = {
+    promptSeen: true,
+    curriculumVersion: 1,
+    completedLessonIds: TUTORIAL_LESSON_ORDER.slice(0, 4),
+    unlockedLessonIds: TUTORIAL_LESSON_ORDER.slice(0, 5)
+  };
+
+  controller.startTutorialLesson("mission-objectives");
+  const routBattleId = controller.getState().battleSnapshot.id;
+  await controller.handleBattleTileClick(2, 4);
+  await controller.handleBattleTileClick(2, 4);
+  await controller.beginSelectedAttack();
+  await controller.handleBattleTileClick(3, 4);
+
+  let state = controller.getState();
+  assert.equal(state.battleSnapshot.id, routBattleId);
+  assert.equal(state.battleSnapshot.victory.winner, TURN_SIDES.PLAYER);
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "mission-rout-complete");
+  assert.equal(state.battleSnapshot.presentation.tutorial.stageResult.objective, "Rout");
+  assert.ok(state.battleUi.combatCutscene);
+  assert.equal(controller.continueTutorialStep(), false);
+  assert.equal(controller.getState().battleSnapshot.id, routBattleId);
+
+  clearTimeout(controller.battleCombatCutsceneTimer);
+  controller.battleCombatCutsceneTimer = null;
+  controller.state.battleUi.combatCutscene = null;
+  assert.equal(controller.continueTutorialStep(), true);
+
+  state = controller.getState();
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "mission-hq");
+  assert.notEqual(state.battleSnapshot.id, routBattleId);
+  assert.equal(state.battleSnapshot.map.name, "Objective Drill: HQ Capture");
+});
+
+test("commander lesson grants one temporary real level-up through an idempotent completion effect", async () => {
+  const controller = new GameController({
+    async saveMeta() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  controller.state.metaState.options.combatCutsceneAnimations = false;
+  controller.state.metaState.tutorial = {
+    promptSeen: true,
+    curriculumVersion: 1,
+    completedLessonIds: TUTORIAL_LESSON_ORDER.slice(0, 5),
+    unlockedLessonIds: [...TUTORIAL_LESSON_ORDER]
+  };
+
+  controller.startTutorialLesson("commanders-status-run");
+  controller.continueTutorialStep();
+  await controller.handleBattleTileClick(3, 3);
+  await controller.handleBattleTileClick(3, 3);
+  await controller.beginSelectedAttack();
+  await controller.handleBattleTileClick(4, 3);
+
+  assert.equal(controller.getState().tutorial.stepIndex, 2);
+  assert.equal(controller.battleSystem.state.levelUpQueue.length, 1);
+  assert.equal(controller.getState().tutorial.appliedEffectKeys.filter((key) => key.includes("grant-training-level-up")).length, 1);
+  await controller.acknowledgeLevelUp();
+  assert.equal(controller.battleSystem.state.player.units.find((unit) => unit.id === "commander-attacker").level, 2);
+  assert.equal(controller.getState().tutorial.stepIndex, 3);
+});
+
+test("tutorial prompt save failures do not block New Run", async () => {
+  const controller = new GameController({
+    async saveMeta() {
+      throw new Error("storage unavailable");
+    },
+    async listSlots() {
+      return [];
+    }
+  });
+  controller.openNewRun();
+  await controller.resolveTutorialPrompt("skip");
+  assert.equal(controller.getState().screen, SCREEN_IDS.COMMANDER_SELECT);
+});
+
+test("tutorial registry failures fall back into New Run", async () => {
+  const controller = new GameController({
+    async saveMeta() {},
+    async listSlots() {
+      return [];
+    }
+  });
+  controller.validateTutorialRegistry = () => ["invalid lesson registry"];
+  controller.openNewRun();
+  await controller.resolveTutorialPrompt("play");
+  assert.equal(controller.getState().screen, SCREEN_IDS.COMMANDER_SELECT);
+  assert.equal(controller.getState().tutorial.returnIntent, null);
+  assert.equal(controller.getState().metaState.tutorial.promptSeen, true);
+});
+
 test("new run can advance to loadout once a commander is selected", () => {
   const controller = new GameController();
 
-  controller.openNewRun();
+  controller.openNewRun({ bypassTutorialPrompt: true });
   controller.openRunLoadout();
 
   const state = controller.getState();
@@ -626,7 +919,7 @@ test("opening squad names can be reviewed, rerolled, customized, and persisted i
     }
   });
 
-  controller.openNewRun();
+  controller.openNewRun({ bypassTutorialPrompt: true });
   controller.state.metaState.unlockedUnitIds = ["grunt"];
   controller.openRunLoadout();
   controller.addRunLoadoutUnit("grunt");

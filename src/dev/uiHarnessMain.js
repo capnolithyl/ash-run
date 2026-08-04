@@ -7,6 +7,7 @@ import { renderBattleHudView } from "../ui/views/battleHudView.js";
 import { renderRunLoadoutView } from "../ui/views/runLoadoutView.js";
 import { renderSkirmishSetupView } from "../ui/views/skirmishSetupView.js";
 import { renderTitleView } from "../ui/views/titleView.js";
+import { renderTutorialView } from "../ui/views/tutorialView.js";
 import { UI_HARNESS_SCENES, createUiHarnessScene } from "./uiHarnessFixtures.js";
 import { applyUnitColorTheme } from "../ui/unitColorTheme.js";
 
@@ -45,6 +46,9 @@ function renderSceneMarkup(sceneId, state) {
       return renderOptionsView(state);
     case "progression":
       return renderProgressionView(state);
+    case "tutorial-guided":
+    case "tutorial-manual":
+      return renderTutorialView(state);
     case "map-editor":
       return renderMapEditorView(state);
     case "battle-commander-layout":

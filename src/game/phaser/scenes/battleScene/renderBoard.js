@@ -284,9 +284,18 @@ export const battleSceneRenderMethods = {
         colorOptions,
         enemyMovementPaths,
         tutorialHighlights: snapshot.presentation?.tutorial?.battlefieldHighlights ?? [],
+        tutorialMovementPath: snapshot.presentation?.tutorial?.movementPath ?? [],
+        tutorialDimUnrelated: snapshot.presentation?.tutorial?.dimUnrelated === true,
         showNameTooltips:
           this.latestState.metaState.options.battlefieldNameTooltips !== false
       }
+    );
+    this.focusTutorialTarget?.(
+      snapshot,
+      layout,
+      snapshot.presentation?.tutorial?.cameraTarget,
+      snapshot.presentation?.tutorial?.stepId,
+      snapshot.presentation?.tutorial?.panelPlacement
     );
     this.buildingLayer.render(snapshot, layout, colorOptions);
     presentationEvents

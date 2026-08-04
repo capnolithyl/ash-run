@@ -41,7 +41,90 @@ function getTileCenter(layout, tile) {
   };
 }
 
+function resolveTutorialCameraTile(snapshot, target) {
+  if (!target) return null;
+  if (Number.isInteger(target.x) && Number.isInteger(target.y)) return target;
+  if (target.type === "unit") {
+    return [...(snapshot.player?.units ?? []), ...(snapshot.enemy?.units ?? [])].find((unit) => unit.id === target.id) ?? null;
+  }
+  if (target.type === "building") {
+    return (snapshot.map?.buildings ?? []).find((building) => building.id === target.id) ?? null;
+  }
+  return null;
+}
+
+function getTutorialFocusKey(snapshot, target, tile, panelPlacement) {
+  const targetId = target?.id ?? `${tile.x},${tile.y}`;
+  return `${snapshot.id}:${target?.type ?? "tile"}:${targetId}:${tile.x},${tile.y}:${panelPlacement}`;
+}
+
+function isTutorialTargetInSafeViewport(camera, screenX, screenY, panelPlacement, compact) {
+  const insideBoardViewport =
+    screenX >= camera.width * 0.1 &&
+    screenX <= camera.width * 0.9 &&
+    screenY >= camera.height * 0.1 &&
+    screenY <= camera.height * (compact ? 0.56 : 0.88);
+
+  if (!insideBoardViewport || compact || screenY < camera.height * 0.5) {
+    return insideBoardViewport;
+  }
+
+  // On desktop the guide occupies only one lower corner. Its placement already
+  // moves away from the cue, so lower-center tiles do not need camera motion.
+  return panelPlacement === "right"
+    ? screenX <= camera.width * 0.64
+    : screenX >= camera.width * 0.36;
+}
+
 export const battleSceneCameraMethods = {
+  focusTutorialTarget(snapshot, layout, target, _stepId = "", panelPlacement = "left") {
+    const tile = resolveTutorialCameraTile(snapshot, target);
+    if (!tile) return;
+
+    const focusKey = getTutorialFocusKey(snapshot, target, tile, panelPlacement);
+    if (this.lastTutorialCameraFocusKey === focusKey) return;
+    this.lastTutorialCameraFocusKey = focusKey;
+
+    const camera = this.cameras.main;
+    const center = getTileCenter(layout, tile);
+    const originX = camera.width * camera.originX;
+    const originY = camera.height * camera.originY;
+    const screenX = originX + (center.x - camera.scrollX - originX) * camera.zoom;
+    const screenY = originY + (center.y - camera.scrollY - originY) * camera.zoom;
+    const compact = this.scale.width <= 900;
+
+    if (
+      isTutorialTargetInSafeViewport(
+        camera,
+        screenX,
+        screenY,
+        panelPlacement,
+        compact
+      )
+    ) {
+      return;
+    }
+
+    // At the base zoom the battlefield is fitted to the viewport and the
+    // normal camera clamp fixes scroll at zero. Starting a pan here only makes
+    // the map lurch before the clamp restores it, which is especially visible
+    // when a highlighted tutorial command advances to the next cue.
+    if (camera.zoom <= this.getCameraZoomRange().min + 0.001) {
+      return;
+    }
+
+    const duration = prefersReducedMotion() ? 0 : 260;
+    if (duration === 0) {
+      camera.centerOn(center.x, center.y - layout.cellSize);
+      this.clampBattlefieldCamera();
+      return;
+    }
+
+    camera.pan(center.x, center.y - layout.cellSize, duration, "Sine.easeOut", false, (_camera, progress) => {
+      if (progress >= 1) this.clampBattlefieldCamera();
+    });
+  },
+
   canUseBattlefieldCamera() {
     return (
       isBoardScreen(this.latestState) &&
@@ -150,6 +233,7 @@ export const battleSceneCameraMethods = {
     this.mapEditorPaintPointerId = null;
     this.mapEditorPaintToolId = null;
     this.lastPaintedTileKey = null;
+    this.lastTutorialCameraFocusKey = null;
   },
 
   stopBattlefieldZoomTween() {

@@ -17,6 +17,8 @@ import {
 const RECON_UNIT_IDS = new Set(["runner"]);
 const AIRCRAFT_FAMILY = UNIT_TAGS.AIR;
 const CORRUPTED_STATS = ["attack", "armor", "range", "ammo", "stamina"];
+export const ATTACKER_CHARGE_PER_DAMAGE = 0.5;
+export const DEFENDER_CHARGE_PER_DAMAGE = 1;
 
 function hashString(value) {
   let hash = 2166136261;
@@ -554,14 +556,14 @@ export function applyChargeFromCombat(state, attackingSide, defendingSide, damag
   if (!attackingPowerLocked) {
     state[attackingSide].charge = Math.min(
       getCommanderPowerMaxForSide(state, attackingSide),
-      state[attackingSide].charge + damageDealt * 0.5
+      state[attackingSide].charge + damageDealt * ATTACKER_CHARGE_PER_DAMAGE
     );
   }
 
   if (!defendingPowerLocked) {
     state[defendingSide].charge = Math.min(
       getCommanderPowerMaxForSide(state, defendingSide),
-      state[defendingSide].charge + damageTaken
+      state[defendingSide].charge + damageTaken * DEFENDER_CHARGE_PER_DAMAGE
     );
   }
 }

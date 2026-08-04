@@ -15,6 +15,7 @@ import { describeRunCardsForState } from "../../../game/simulation/runCardEffect
 import { renderOptionFields } from "../optionFieldsView.js";
 import { renderDebugControls } from "./interactionPanels.js";
 import { escapeHtml, escapeHtmlAttribute } from "../../shared/html.js";
+import { renderFieldManualPanel } from "../tutorialView.js";
 
 const BATTLE_NOTICE_HELD_IN_MS = 180;
 
@@ -311,6 +312,8 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
 
   const confirmingExit = state.battleUi.confirmAbandon;
   const isRunBattle = Boolean(state.runState) && !state.debugMode;
+  const isTutorialBattle = battleSnapshot?.mode === BATTLE_MODES.TUTORIAL;
+  const tutorialManualOpen = isTutorialBattle && state.battleUi.tutorialManualOpen;
   const debugContent = state.debugMode
     ? renderDebugControls(state, battleSnapshot, {
         activeTool: displayContext.activeDebugTool
@@ -342,7 +345,16 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
                 <button class="ghost-button" data-action="cancel-abandon-run">Keep Playing</button>
               </div>
             `
-            : `
+            : tutorialManualOpen
+              ? `
+                <div class="pause-card__body pause-card__body--manual">
+                  ${renderFieldManualPanel({ compact: true })}
+                </div>
+                <div class="battle-actions">
+                  <button class="menu-button" data-action="close-pause-field-manual">Back to Pause</button>
+                </div>
+              `
+              : `
               <div class="pause-card__body">
                 <div class="options-list options-list--compact">
                   ${renderOptionFields(state.metaState.options, {
@@ -356,6 +368,7 @@ export function renderPauseOverlay(state, battleSnapshot, displayContext = {}) {
               </div>
               <div class="battle-actions">
                 <button class="menu-button" data-action="resume-battle">Continue Battle</button>
+                ${isTutorialBattle ? '<button class="ghost-button" data-action="open-pause-field-manual">Field Manual</button>' : ""}
                 <button class="ghost-button" data-action="prompt-abandon-run">${isRunBattle ? "Forfeit Run" : "Back To Main Menu"}</button>
               </div>
             `
@@ -442,15 +455,22 @@ export function renderOutcomeOverlay(state, battleSnapshot) {
   }
 
   if (battleSnapshot.mode === BATTLE_MODES.TUTORIAL) {
+    if (state.tutorial?.phase !== "lesson-complete") {
+      return "";
+    }
+
+    const continueNewRun = state.tutorial?.returnIntent === "new-run"
+      ? '<button class="menu-button" data-action="continue-new-run-from-tutorial">Continue to New Run</button>'
+      : "";
     return `
       <div class="battle-overlay">
         <div class="overlay-card">
-          <p class="eyebrow">Training Complete</p>
-          <h2>${battleSnapshot.victory.message}</h2>
-          <p>Pip logged the sim as practice only: no saves, Intel, unlocks, or run progress changed.</p>
+          <p class="eyebrow">Lesson Complete</p>
+          <h2>${escapeHtml(state.tutorial?.activeLessonId?.replaceAll("-", " ") ?? "Training complete")}</h2>
+          <p>Pip saved curriculum progress only. No run slot, Intel, unit EXP, unlock, or run record changed.</p>
           <div class="battle-actions">
-            <button class="menu-button" data-action="tutorial-epilogue">Field Notes</button>
-            <button class="ghost-button" data-action="start-tutorial">Replay Training</button>
+            ${continueNewRun}
+            <button class="menu-button" data-action="tutorial-epilogue">Tutorial Hub</button>
           </div>
         </div>
       </div>

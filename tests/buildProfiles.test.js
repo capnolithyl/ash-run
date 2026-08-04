@@ -47,7 +47,7 @@ test("build profiles expose the exact alpha capability matrix", () => {
     progression: true,
     skirmish: false,
     mapEditor: false,
-    tutorial: false,
+    tutorial: true,
     sandbox: false,
     customMaps: false
   });
@@ -68,6 +68,7 @@ test("production title keeps run utilities and progression while hiding internal
     "open-new-run",
     "open-continue",
     "open-progression",
+    "open-tutorial",
     "open-options",
     "quit-game"
   ]) {
@@ -77,7 +78,6 @@ test("production title keeps run utilities and progression while hiding internal
   for (const action of [
     "open-skirmish",
     "open-map-editor",
-    "open-tutorial",
     "open-debug-run"
   ]) {
     assert.doesNotMatch(html, new RegExp(`data-action="${action}"`));
@@ -91,12 +91,15 @@ test("production controller rejects restricted mode entry points without changin
   const originalState = controller.getState();
 
   assert.equal(controller.openSkirmish(), false);
-  assert.equal(controller.openTutorial(), false);
-  assert.equal(controller.startTutorialBattle(), false);
   assert.equal(controller.openMapEditor(), false);
   assert.equal(controller.startDebugRun(), false);
   assert.equal(await controller.startSkirmish(), false);
   assert.deepEqual(controller.getState(), originalState);
+
+  assert.equal(controller.openTutorial(), true);
+  assert.equal(controller.getState().screen, SCREEN_IDS.TUTORIAL);
+  assert.equal(controller.startTutorialBattle(), true);
+  assert.equal(controller.getState().screen, SCREEN_IDS.BATTLE);
 
   controller.state.screen = SCREEN_IDS.MAP_EDITOR;
   controller.emit();

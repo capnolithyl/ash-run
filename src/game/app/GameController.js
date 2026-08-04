@@ -25,7 +25,8 @@ import { controllerRunMethods } from "./controllerRunMethods.js";
 import { controllerTutorialMethods } from "./controllerTutorialMethods.js";
 import { createBlankMapDefinition, createDefaultMapEditorState } from "../content/mapEditor.js";
 import { replaceCustomMaps } from "../content/maps.js";
-import { createTutorialIntroState } from "../content/tutorial.js";
+import { createTutorialHubSession } from "../content/tutorialCurriculum.js";
+import { normalizeTutorialProgress } from "../state/tutorialProgress.js";
 
 /**
  * The controller owns app flow and save orchestration.
@@ -61,7 +62,7 @@ export class GameController {
       toast: null,
       runStatus: null,
       battleUi: createBattleUiState(),
-      tutorial: createTutorialIntroState(),
+      tutorial: createTutorialHubSession(),
       skirmishSetup: createDefaultSkirmishSetupState(),
       mapEditor: createDefaultMapEditorState(createBlankMapDefinition()),
       runLoadout: createDefaultRunLoadoutState()
@@ -146,11 +147,19 @@ export class GameController {
   async initialize() {
     const loadedMeta = await this.storage.loadMeta();
     const defaultMeta = createDefaultMetaState();
+    const legacyTutorialProfile = Boolean(
+      loadedMeta &&
+      typeof loadedMeta === "object" &&
+      !Object.prototype.hasOwnProperty.call(loadedMeta, "tutorial")
+    );
     this.state.metaState = {
       ...defaultMeta,
       ...loadedMeta,
       options: normalizeMetaOptions(loadedMeta?.options),
-      unlockedRunCardIds: normalizeUnlockedRunCardIds(loadedMeta?.unlockedRunCardIds)
+      unlockedRunCardIds: normalizeUnlockedRunCardIds(loadedMeta?.unlockedRunCardIds),
+      tutorial: normalizeTutorialProgress(loadedMeta?.tutorial, {
+        legacyProfile: legacyTutorialProfile
+      })
     };
     if (this.isFeatureEnabled(BUILD_FEATURES.CUSTOM_MAPS)) {
       replaceCustomMaps((await this.storage.listCustomMaps?.()) ?? []);

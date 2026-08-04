@@ -112,7 +112,23 @@ export const controllerFlowMethods = {
     this.resetBattleUi();
   },
 
-  openNewRun() {
+  async openNewRun({ bypassTutorialPrompt = false } = {}) {
+    if (
+      !bypassTutorialPrompt &&
+      this.isFeatureEnabled(BUILD_FEATURES.TUTORIAL) &&
+      this.state.metaState.tutorial?.promptSeen !== true
+    ) {
+      this.state.screen = SCREEN_IDS.TITLE;
+      this.state.tutorial = {
+        ...this.state.tutorial,
+        phase: "new-run-prompt",
+        returnIntent: "new-run"
+      };
+      this.state.banner = "";
+      this.emit();
+      return true;
+    }
+
     this.state.screen = SCREEN_IDS.COMMANDER_SELECT;
     this.state.selectedCommanderId = this.state.metaState.unlockedCommanderIds[0] ?? null;
     this.state.selectedSlotId = pickFirstAvailableSlot(this.state.slots);
@@ -121,6 +137,7 @@ export const controllerFlowMethods = {
     this.state.runLoadout = createDefaultRunLoadoutState();
     this.resetBattleUi();
     this.emit();
+    return true;
   },
 
   openRunLoadout() {
@@ -247,21 +264,7 @@ export const controllerFlowMethods = {
       return false;
     }
 
-    this.state.screen = SCREEN_IDS.TUTORIAL;
-    if (!this.state.tutorial) {
-      this.resetTutorialToIntro?.();
-    }
-    if (this.state.tutorial?.completed) {
-      this.state.tutorial = {
-        ...this.state.tutorial,
-        phase: "epilogue"
-      };
-    } else if (!this.state.tutorial || this.state.tutorial.phase === "battle") {
-      this.resetTutorialToIntro?.();
-    }
-    this.state.banner = "";
-    this.resetBattleUi();
-    this.emit();
+    return this.openTutorialHub?.() ?? false;
   },
 
   openOptions() {
@@ -285,6 +288,7 @@ export const controllerFlowMethods = {
 
     this.state.screen = SCREEN_IDS.TITLE;
     this.clearBattleSession();
+    this.resetTutorialToHub?.();
     this.state.banner = bannerMessage;
     this.emit();
   },

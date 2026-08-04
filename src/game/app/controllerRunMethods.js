@@ -645,6 +645,7 @@ export const controllerRunMethods = {
     const changed = this.battleSystem.acknowledgeLevelUp();
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("acknowledge-level-up", {}, changed);
       await this.persistCurrentRun();
     }
   },

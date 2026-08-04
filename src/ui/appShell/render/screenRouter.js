@@ -154,6 +154,9 @@ export const appShellScreenRouterMethods = {
         this.previousBattleSnapshot = null;
         this.root.innerHTML = renderTitleView(state, this.controller.buildProfileConfig);
         this.syncLoadedTitleButtonImages();
+        if (state.tutorial?.phase === "new-run-prompt") {
+          this.root.querySelector('.tutorial-new-run-prompt button[data-action="resolve-tutorial-prompt"]')?.focus();
+        }
         this.syncAppToast(state);
         this.syncControllerFocusAfterRender();
     }

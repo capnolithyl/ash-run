@@ -189,6 +189,25 @@ export const controllerBattleMethods = {
 
     this.state.battleUi.pauseMenuOpen = false;
     this.state.battleUi.confirmAbandon = false;
+    this.state.battleUi.tutorialManualOpen = false;
+    this.emit();
+    return true;
+  },
+
+  openTutorialManualFromPause() {
+    if (!this.state.battleUi.pauseMenuOpen || !this.isTutorialBattle?.()) {
+      return false;
+    }
+    this.state.battleUi.tutorialManualOpen = true;
+    this.emit();
+    return true;
+  },
+
+  closeTutorialManualFromPause() {
+    if (!this.state.battleUi.tutorialManualOpen) {
+      return false;
+    }
+    this.state.battleUi.tutorialManualOpen = false;
     this.emit();
     return true;
   },
@@ -349,6 +368,11 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (this.isTutorialBattle?.()) {
+      this.exitTutorialLesson?.();
+      return;
+    }
+
     this.state.screen = SCREEN_IDS.TITLE;
     this.clearBattleSession();
     this.emit();
@@ -414,6 +438,10 @@ export const controllerBattleMethods = {
 
   async handleBattleContextAction() {
     if (!this.battleSystem || this.isBattleInputLocked()) {
+      return;
+    }
+
+    if (!this.guardTutorialBattleAction?.("context-action")) {
       return;
     }
 
@@ -498,6 +526,7 @@ export const controllerBattleMethods = {
         "battle.select",
         `select-next:${selected?.id ?? "unit"}`
       );
+      await this.handleTutorialBattleActionResult?.("select-next-unit", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -514,6 +543,7 @@ export const controllerBattleMethods = {
     const changed = this.battleSystem.waitWithPendingUnit();
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("wait-unit", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -567,9 +597,14 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("use-supply")) {
+      return;
+    }
+
     const changed = this.battleSystem.useSupplyWithPendingUnit();
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("use-supply", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -579,9 +614,14 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("rescue-hostage")) {
+      return;
+    }
+
     const changed = this.battleSystem.rescueHostageWithPendingUnit();
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("rescue-hostage", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -591,9 +631,14 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("drop-off-hostage")) {
+      return;
+    }
+
     const changed = this.battleSystem.dropOffHostageWithPendingUnit();
 
     if (changed) {
+      await this.handleTutorialBattleActionResult?.("drop-off-hostage", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -603,11 +648,16 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("use-support")) {
+      return;
+    }
+
     const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.useSupportAbilityWithPendingUnit();
 
     if (changed) {
       emitTargetingModeCueIfEntered(this, beforeControlState, "support");
+      await this.handleTutorialBattleActionResult?.("use-support", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -617,11 +667,16 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("use-medpack")) {
+      return;
+    }
+
     const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.useMedpackWithPendingUnit();
 
     if (changed) {
       emitTargetingModeCueIfEntered(this, beforeControlState, "medpack");
+      await this.handleTutorialBattleActionResult?.("use-medpack", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -631,11 +686,16 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("use-extinguish")) {
+      return;
+    }
+
     const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.useExtinguishAbilityWithPendingUnit();
 
     if (changed) {
       emitTargetingModeCueIfEntered(this, beforeControlState, "extinguish");
+      await this.handleTutorialBattleActionResult?.("use-extinguish", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -645,11 +705,16 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("enter-transport")) {
+      return;
+    }
+
     const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.enterTransportWithPendingUnit();
 
     if (changed) {
       emitTargetingModeCueIfEntered(this, beforeControlState, "transport");
+      await this.handleTutorialBattleActionResult?.("enter-transport", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -659,11 +724,16 @@ export const controllerBattleMethods = {
       return;
     }
 
+    if (!this.guardTutorialBattleAction?.("begin-unload")) {
+      return;
+    }
+
     const beforeControlState = captureBattleControlState(this);
     const changed = this.battleSystem.beginPendingUnload();
 
     if (changed) {
       emitTargetingModeCueIfEntered(this, beforeControlState, "unload");
+      await this.handleTutorialBattleActionResult?.("begin-unload", {}, changed);
       await this.persistCurrentRun();
     }
   },
@@ -717,6 +787,7 @@ export const controllerBattleMethods = {
 
     if (changed) {
       emitBattleControlCue(this, "ui.cancel", "cancel:move-rollback");
+      await this.handleTutorialBattleActionResult?.("redo-move", {}, changed);
       await this.persistCurrentRun();
     }
   },

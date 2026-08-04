@@ -171,9 +171,9 @@ Ash Run has two isolated build profiles:
 | Profile | Included gameplay | Web output | Windows output | Save identity |
 | --- | --- | --- | --- | --- |
 | Development | Run, Progression, Skirmish, Map Editor, Tutorial, Sandbox | `dist-dev/` | `release/dev/` | `Ash Run '84 Dev` |
-| Production Alpha | Run and Progression | `dist/` | `release/prod/` | `Ash Run '84 Alpha` |
+| Production Alpha | Run, Progression, and Tutorial | `dist/` | `release/prod/` | `Ash Run '84 Alpha` |
 
-The production title keeps `New Run`, `Continue`, `Progression`, `Options`, and `Quit`. Restricted modes are guarded in the controller and their Electron map APIs are not registered. Production also ignores saved custom maps so alpha runs always use the bundled authored pool.
+The production title keeps `New Run`, `Continue`, `Tutorial`, `Progression`, `Options`, and `Quit`. Restricted modes are guarded in the controller and their Electron map APIs are not registered. Production also ignores saved custom maps so alpha runs always use the bundled authored pool.
 
 Both profiles start with separate browser and Electron save data. There is no automatic migration between development and alpha progression.
 
