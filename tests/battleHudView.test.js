@@ -23,27 +23,30 @@ import { getXpThreshold } from "../src/game/simulation/progression.js";
 import { renderBattleHudView } from "../src/ui/views/battleHudView.js";
 import { createPlacedUnit, createTestBattleState } from "./helpers/createTestBattleState.js";
 
-function renderHudForBattleState(battleState) {
+function renderHudForBattleState(battleState, options = {}) {
   const system = new BattleSystem(battleState);
 
-  return renderBattleHudView({
-    battleSnapshot: system.getSnapshot(),
-    runState: {
-      mapIndex: 0,
-      targetMapCount: 10
+  return renderBattleHudView(
+    {
+      battleSnapshot: system.getSnapshot(),
+      runState: {
+        mapIndex: 0,
+        targetMapCount: 10
+      },
+      battleUi: {
+        pauseMenuOpen: false,
+        confirmAbandon: false,
+        fundsGain: null,
+        hoveredTile: null,
+        playerFocus: null,
+        enemyFocus: null
+      },
+      debugMode: false,
+      runStatus: null,
+      banner: ""
     },
-    battleUi: {
-      pauseMenuOpen: false,
-      confirmAbandon: false,
-      fundsGain: null,
-      hoveredTile: null,
-      playerFocus: null,
-      enemyFocus: null
-    },
-    debugMode: false,
-    runStatus: null,
-    banner: ""
-  });
+    options
+  );
 }
 
 function getActionButton(html, action) {
@@ -742,6 +745,30 @@ test("battle HUD renders tutorial guide and highlights", () => {
   assert.match(html, /data-action="skip-tutorial"/);
 });
 
+test("battle HUD renders a Continue-gated enemy turn recap", () => {
+  const system = new BattleSystem(createTutorialBattleState());
+  const tutorialSession = createTutorialLessonSession("basic-orders");
+  tutorialSession.enemyObservation = {
+    phase: "recap",
+    pendingAction: { action: "end-turn", payload: {}, changed: true }
+  };
+  const battleSnapshot = system.getSnapshot();
+  battleSnapshot.presentation.tutorial = createTutorialLessonPresentation(tutorialSession);
+  const html = renderBattleHudView({
+    battleSnapshot,
+    battleUi: { pauseMenuOpen: false, confirmAbandon: false },
+    tutorial: tutorialSession,
+    debugMode: false,
+    runStatus: null,
+    banner: ""
+  });
+
+  assert.match(html, /Enemy Turn Reviewed/);
+  assert.match(html, /tutorial-guide--enemy-observation/);
+  assert.match(html, /data-action="continue-tutorial-enemy-recap"/);
+  assert.doesNotMatch(html, /data-action="tutorial-next"/);
+});
+
 test("paused tutorial battle renders the Field Manual without replacing battle state", () => {
   const system = new BattleSystem(createTutorialBattleState());
   const tutorialSession = createTutorialLessonSession("basic-orders");
@@ -1154,6 +1181,18 @@ test("battle HUD includes drawer toggles and footer turn controls", () => {
   assert.match(html, /data-action="pause-battle"/);
   assert.match(html, /data-action="select-next-unit"/);
   assert.match(html, /data-action="end-turn"/);
+  assert.match(html, /data-action="toggle-mission-details"/);
+  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, /aria-controls="battle-mission-details"/);
+  assert.match(html, /aria-label="Show mission details"/);
+  assert.match(html, /id="battle-mission-details"/);
+  assert.match(html, /aria-hidden="true"/);
+
+  const openHtml = renderHudForBattleState(battleState, { missionDetailsOpen: true });
+  assert.match(openHtml, /data-mission-details-open="true"/);
+  assert.match(openHtml, /aria-expanded="true"/);
+  assert.match(openHtml, /aria-label="Hide mission details"/);
+  assert.match(openHtml, /aria-hidden="false"/);
 });
 
 test("battle HUD turns the power meter into the activation control", () => {

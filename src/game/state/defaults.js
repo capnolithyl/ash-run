@@ -31,6 +31,7 @@ export function createDefaultOptions() {
     screenShake: true,
     battlefieldNameTooltips: true,
     combatCutsceneAnimations: true,
+    safeGraphicsMode: false,
     ...DEFAULT_AUDIO_OPTIONS,
     ...normalizeUnitColorOptions(),
     ...normalizeDisplayOptions()
@@ -51,6 +52,7 @@ export function normalizeMetaOptions(options = {}) {
     ),
     sfxVolume: normalizeVolume(options.sfxVolume, DEFAULT_AUDIO_OPTIONS.sfxVolume),
     muted: options.muted === true,
+    safeGraphicsMode: options.safeGraphicsMode === true,
     ...normalizeUnitColorOptions(options),
     ...normalizeDisplayOptions(options)
   };

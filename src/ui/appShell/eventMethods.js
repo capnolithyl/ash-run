@@ -16,6 +16,98 @@ import {
 import { DEBUG_SPAWN_STAT_DATASETS, delay } from "./shared.js";
 
 export const appShellEventMethods = {
+  scheduleMissionDetailsPanelPosition() {
+    if (this.missionDetailsLayoutFrame) {
+      window.cancelAnimationFrame(this.missionDetailsLayoutFrame);
+    }
+
+    this.missionDetailsLayoutFrame = window.requestAnimationFrame(() => {
+      this.missionDetailsLayoutFrame = window.requestAnimationFrame(() => {
+        this.missionDetailsLayoutFrame = null;
+        this.positionMissionDetailsPanel();
+      });
+    });
+  },
+
+  positionMissionDetailsPanel() {
+    const drawer = this.root.querySelector(".battle-mission-drawer");
+    const panel = drawer?.querySelector(".battle-mission-drawer__panel");
+    const shell = drawer?.closest(".battle-shell");
+
+    if (!drawer || !panel || !shell || drawer.dataset.missionDetailsOpen !== "true") {
+      return false;
+    }
+
+    panel.style.removeProperty("bottom");
+    panel.style.removeProperty("max-height");
+
+    const drawerRect = drawer.getBoundingClientRect();
+    const shellRect = shell.getBoundingClientRect();
+    const gap = 8;
+    const panelLeft = drawerRect.left;
+    const panelRight = Math.min(shellRect.right, panelLeft + panel.offsetWidth);
+    const baseBottom = drawerRect.top - gap;
+    let targetBottom = baseBottom;
+    let panelTop = targetBottom - panel.offsetHeight;
+
+    for (const blocker of shell.querySelectorAll(
+      ".battle-footer-actions, .battle-command-prompt, .tutorial-guide"
+    )) {
+      const blockerRect = blocker.getBoundingClientRect();
+      const overlapsHorizontally = panelLeft < blockerRect.right && panelRight > blockerRect.left;
+      const overlapsVertically = panelTop < blockerRect.bottom && targetBottom > blockerRect.top;
+
+      if (overlapsHorizontally && overlapsVertically) {
+        targetBottom = Math.min(targetBottom, blockerRect.top - gap);
+        panelTop = targetBottom - panel.offsetHeight;
+      }
+    }
+
+    const availableHeight = Math.max(96, targetBottom - shellRect.top - gap);
+    if (panel.offsetHeight > availableHeight) {
+      panel.style.maxHeight = `${availableHeight}px`;
+    }
+
+    panel.style.bottom = `calc(100% + 0.5rem + ${Math.max(0, baseBottom - targetBottom)}px)`;
+    return true;
+  },
+
+  setMissionDetailsOpen(open) {
+    const expanded = open === true;
+    const drawer = this.root.querySelector(".battle-mission-drawer");
+    const toggle = drawer?.querySelector('[data-action="toggle-mission-details"]');
+    const panel = drawer?.querySelector(".battle-mission-drawer__panel");
+
+    this.battleDrawers.missionDetailsOpen = expanded;
+
+    if (!drawer || !toggle || !panel) {
+      return false;
+    }
+
+    drawer.dataset.missionDetailsOpen = `${expanded}`;
+    toggle.setAttribute("aria-expanded", `${expanded}`);
+    toggle.setAttribute("aria-label", `${expanded ? "Hide" : "Show"} mission details`);
+    panel.setAttribute("aria-hidden", `${!expanded}`);
+
+    if (expanded) {
+      this.positionMissionDetailsPanel();
+      this.scheduleMissionDetailsPanelPosition();
+    } else {
+      if (this.missionDetailsLayoutFrame) {
+        window.cancelAnimationFrame(this.missionDetailsLayoutFrame);
+        this.missionDetailsLayoutFrame = null;
+      }
+      panel.style.removeProperty("bottom");
+      panel.style.removeProperty("max-height");
+    }
+
+    return true;
+  },
+
+  toggleMissionDetails() {
+    return this.setMissionDetailsOpen(!this.battleDrawers.missionDetailsOpen);
+  },
+
   applyFieldManualFilter() {
     const manual = this.root.querySelector("[data-field-manual]");
     if (!manual) {
@@ -105,6 +197,21 @@ export const appShellEventMethods = {
   },
 
   handleKeyDown(event) {
+    const levelUpContinue = this.root.querySelector?.(
+      '.battle-overlay--level-up [data-action="acknowledge-level-up"]:not(:disabled)'
+    );
+
+    if (
+      levelUpContinue &&
+      !event.repeat &&
+      ["Enter", " "].includes(event.key) &&
+      event.target !== levelUpContinue
+    ) {
+      event.preventDefault();
+      levelUpContinue.click();
+      return;
+    }
+
     const tutorialTab = event.target.closest?.('[role="tab"][data-tutorial-tab]');
 
     if (tutorialTab?.dataset?.tutorialTab) {
@@ -439,6 +546,9 @@ export const appShellEventMethods = {
       case "select-debug-tool":
         this.selectDebugTool(debugTool);
         break;
+      case "toggle-mission-details":
+        this.toggleMissionDetails();
+        break;
       case "open-new-run":
         await this.controller.openNewRun();
         break;
@@ -476,6 +586,9 @@ export const appShellEventMethods = {
         break;
       case "tutorial-next":
         this.controller.continueTutorialStep();
+        break;
+      case "continue-tutorial-enemy-recap":
+        await this.controller.continueTutorialEnemyRecap();
         break;
       case "skip-tutorial":
         this.controller.skipTutorial();
@@ -590,6 +703,9 @@ export const appShellEventMethods = {
         break;
       case "run-loadout-add":
         this.controller.addRunLoadoutUnit(unitTypeId);
+        break;
+      case "apply-balanced-run-loadout":
+        this.controller.applyBalancedRunLoadout();
         break;
       case "run-loadout-remove":
         this.controller.removeRunLoadoutUnit(unitTypeId);

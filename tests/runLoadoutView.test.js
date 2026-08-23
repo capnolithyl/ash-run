@@ -38,6 +38,11 @@ test("run loadout view renders budget feedback, purchased counts, and unit art",
   assert.doesNotMatch(html, /Commander:/);
   assert.doesNotMatch(html, /Battle Stats/);
   assert.match(html, /data-role="run-loadout-grid-shell"/);
+  assert.match(html, /tabindex="0"/);
+  assert.match(html, /More units below/);
+  assert.match(html, /data-action="apply-balanced-run-loadout"/);
+  assert.match(html, /Counters matter/);
+  assert.match(html, /Baseline infantry weapon/);
   assert.match(html, /Selected Squad/);
   assert.match(html, /2x Grunt/);
   assert.match(html, /1x Longshot/);

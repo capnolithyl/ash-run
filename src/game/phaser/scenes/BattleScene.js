@@ -42,6 +42,7 @@ export class BattleScene extends Phaser.Scene {
     this.gamepadButtonState = new Map();
     this.gamepadActionBusy = false;
     this.lastEnemyMoveHoldFxId = null;
+    this.pointerFrameWatch = null;
   }
 
   preload() {

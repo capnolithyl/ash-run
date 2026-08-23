@@ -12,7 +12,9 @@ export function renderTutorialGuide(battleSnapshot) {
     : "";
   const primaryAction = tutorial.phase === "lesson-complete"
     ? `${tutorial.returnIntent === "new-run" ? '<button class="menu-button menu-button--small" data-action="continue-new-run-from-tutorial">Continue to New Run</button>' : ""}<button class="menu-button menu-button--small" data-action="tutorial-epilogue">Tutorial Hub</button>`
-    : tutorial.canContinue
+    : tutorial.enemyObservationPhase === "recap"
+      ? '<button class="menu-button menu-button--small" data-action="continue-tutorial-enemy-recap">Continue</button>'
+      : tutorial.canContinue
       ? '<button class="menu-button menu-button--small" data-action="tutorial-next">Continue</button>'
       : "";
   const exitAction = tutorial.canExit
@@ -22,7 +24,8 @@ export function renderTutorialGuide(battleSnapshot) {
   const guideClasses = [
     "tutorial-guide",
     `tutorial-guide--${tutorial.panelPlacement === "right" ? "right" : "left"}`,
-    stageResult ? "tutorial-guide--result" : ""
+    stageResult ? "tutorial-guide--result" : "",
+    tutorial.enemyObservationPhase ? "tutorial-guide--enemy-observation" : ""
   ].filter(Boolean).join(" ");
   const eyebrow = stageResult
     ? `${escapeHtml(stageResult.label)} · ${escapeHtml(stageResult.objective)}`

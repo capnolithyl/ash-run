@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   TUTORIAL_LESSONS,
+  createTutorialLessonPresentation,
+  createTutorialLessonSession,
   createTutorialLessonBattleState,
   evaluateTutorialObjective,
   validateTutorialCurriculum
@@ -35,6 +37,21 @@ test("building lesson teaches the required turn boundary before Supply", () => {
     "button"
   ]);
   assert.equal(sequence.at(-1).expectedAction.action, "use-supply");
+});
+
+test("enemy observation guidance stays visible through action and recap phases", () => {
+  const active = createTutorialLessonSession("basic-orders");
+  active.enemyObservation = { phase: "active" };
+  const activePresentation = createTutorialLessonPresentation(active);
+
+  assert.equal(activePresentation.title, "Enemy Turn: Watch the response");
+  assert.equal(activePresentation.canContinue, false);
+  assert.match(activePresentation.body, /pauses after every enemy action/);
+
+  active.enemyObservation = { phase: "recap", pendingAction: { action: "end-turn", changed: true } };
+  const recapPresentation = createTutorialLessonPresentation(active);
+  assert.equal(recapPresentation.title, "Enemy Turn Reviewed");
+  assert.equal(recapPresentation.enemyObservationPhase, "recap");
 });
 
 test("every lesson creates a real isolated tutorial battle", () => {

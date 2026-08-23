@@ -120,6 +120,11 @@ export const appShellInputMethods = {
   },
 
   handleResize() {
+    if (this.latestState?.screen === SCREEN_IDS.BATTLE) {
+      this.scheduleMissionDetailsPanelPosition?.();
+      return;
+    }
+
     if (
       this.latestState?.screen !== SCREEN_IDS.COMMANDER_SELECT &&
       this.latestState?.screen !== SCREEN_IDS.SKIRMISH_SETUP
@@ -444,6 +449,25 @@ export const appShellInputMethods = {
     if (current?.type === "range" && direction.x !== 0) {
       this.adjustRangeWithController(current, direction.x);
       return;
+    }
+
+    const loadoutCard = current?.closest?.(".run-loadout-unit-card");
+
+    if (loadoutCard && direction.y !== 0) {
+      const cards = Array.from(
+        loadoutCard.closest(".run-loadout-unit-grid")?.querySelectorAll(".run-loadout-unit-card") ?? []
+      );
+      const nextCard = cards[cards.indexOf(loadoutCard) + direction.y];
+      const preferredAction = current.dataset?.action;
+      const nextControl = nextCard?.querySelector(
+        `[data-action="${preferredAction}"]:not(:disabled), [data-action]:not(:disabled)`
+      );
+
+      if (nextControl) {
+        nextCard.scrollIntoView({ block: "nearest", inline: "nearest" });
+        this.setControllerFocus(nextControl, { announce: true });
+        return;
+      }
     }
 
     const elements = this.getControllerFocusableElements();

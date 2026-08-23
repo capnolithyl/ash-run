@@ -34,6 +34,27 @@ function getMidpointBetweenPoints(left, right) {
   };
 }
 
+function ensurePointerFrame(scene) {
+  if (scene.pointerFrameWatch !== null || typeof window === "undefined") {
+    return;
+  }
+
+  const loop = scene.game?.loop;
+  const observedFrame = Number(loop?.frame) || 0;
+  scene.pointerFrameWatch = window.requestAnimationFrame(() => {
+    scene.pointerFrameWatch = null;
+
+    if (!loop || (Number(loop.frame) || 0) !== observedFrame || document.hidden) {
+      return;
+    }
+
+    // If Electron dropped Phaser's pending RAF during a display transition,
+    // restart it and paint the hover command that was just accepted.
+    loop.sleep?.();
+    loop.wake?.(true);
+  });
+}
+
 export function bindBattleScenePointerControls(scene) {
   scene.input.keyboard?.on("keydown-ESC", () => {
     if (!isBattleScreen(scene.latestState)) {
@@ -160,7 +181,9 @@ export function bindBattleScenePointerControls(scene) {
       }
     }
 
-    scene.updateHoveredTileFromScreenPoint(pointer.x, pointer.y);
+    if (scene.updateHoveredTileFromScreenPoint(pointer.x, pointer.y)) {
+      ensurePointerFrame(scene);
+    }
   });
 
   scene.input.on("pointerup", async (pointer) => {
@@ -349,5 +372,7 @@ export const battleScenePointerMethods = {
         this.renderBattle();
       }
     }
+
+    return hoveredChanged;
   }
 };

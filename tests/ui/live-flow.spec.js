@@ -14,6 +14,17 @@ async function skipTutorialPromptIfShown(page) {
   }
 }
 
+async function pressTestGamepadButton(page, buttonIndex) {
+  await page.evaluate((index) => {
+    window.__testGamepadButtons[index].pressed = true;
+  }, buttonIndex);
+  await page.waitForTimeout(180);
+  await page.evaluate((index) => {
+    window.__testGamepadButtons[index].pressed = false;
+  }, buttonIndex);
+  await page.waitForTimeout(80);
+}
+
 async function getTitleLayoutSnapshot(page) {
   return page.evaluate(() =>
     Array.from(
@@ -278,6 +289,32 @@ test("new run flow reaches battle from the live app", async ({ page }) => {
   await expect(page.locator(".battle-shell")).toBeVisible();
 });
 
+test("short live loadout retains catalog scroll after adding and removing the final starter unit", async ({ page }) => {
+  await page.setViewportSize({ width: 760, height: 600 });
+  await gotoTitle(page);
+  await page.evaluate(() => {
+    const controller = window.__ASH_RUN_DEV__.controller;
+    controller.openNewRun({ bypassTutorialPrompt: true });
+    controller.state.metaState.unlockedUnitIds = ["grunt", "breaker", "runner", "skyguard", "gunship"];
+    controller.openRunLoadout();
+  });
+
+  const grid = page.locator('[data-role="run-loadout-grid-shell"]');
+  await grid.focus();
+  await page.keyboard.press("End");
+  await expect.poll(() => grid.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+  const beforeAdd = await grid.evaluate((element) => element.scrollTop);
+  const addGunship = page.locator('[data-action="run-loadout-add"][data-unit-type-id="gunship"]');
+  await expect(addGunship).toBeVisible();
+  await addGunship.click();
+  await expect.poll(() => grid.evaluate((element) => element.scrollTop)).toBeGreaterThanOrEqual(beforeAdd - 2);
+
+  const beforeRemove = await grid.evaluate((element) => element.scrollTop);
+  await page.locator('[data-action="run-loadout-remove"][data-unit-type-id="gunship"]').click();
+  await expect.poll(() => grid.evaluate((element) => element.scrollTop)).toBeGreaterThanOrEqual(beforeRemove - 2);
+});
+
 test("skirmish flow reaches battle from the live app", async ({ page }) => {
   await gotoTitle(page);
 
@@ -300,6 +337,180 @@ test("tutorial flow reaches the guided battle from the live app", async ({ page 
   await expect(page.locator(".battle-shell")).toBeVisible();
   await expect(page.locator(".tutorial-guide")).toBeVisible();
   await expect(page.locator(".tutorial-guide")).toContainText("Pip");
+});
+
+test("mission details toggle, persist through battle renders, avoid controls, and reset", async ({ page }) => {
+  await gotoTitle(page);
+  await page.locator('[data-action="open-tutorial"]').click({ force: true });
+  await page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]').click({
+    force: true,
+  });
+
+  const drawer = page.locator(".battle-mission-drawer");
+  const toggle = page.locator('[data-action="toggle-mission-details"]');
+  const panel = page.locator("#battle-mission-details");
+
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toHaveAttribute("aria-controls", "battle-mission-details");
+  await expect(toggle).toHaveAttribute("aria-label", "Show mission details");
+  await expect(panel).toHaveAttribute("aria-hidden", "true");
+  await expect(panel).toBeHidden();
+
+  await toggle.click();
+  await expect(toggle).toBeFocused();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(toggle).toHaveAttribute("aria-label", "Hide mission details");
+  await expect(panel).toHaveAttribute("aria-hidden", "false");
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".battle-footer-meta__item")).toHaveCount(4);
+  for (const label of ["Mission", "Progress", "Map", "Turn"]) {
+    await expect(panel.locator("strong", { hasText: label })).toHaveCount(1);
+  }
+
+  await page.evaluate(() => window.__ASH_RUN_DEV__.controller.emit());
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(panel).toBeVisible();
+
+  await toggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+  await page.evaluate(async () => {
+    const controller = window.__ASH_RUN_DEV__.controller;
+    controller.continueTutorialStep();
+    await controller.handleBattleTileClick(1, 4);
+    await controller.handleBattleTileClick(3, 4);
+  });
+  await expect(page.locator(".battle-command-prompt")).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+  for (const viewport of [
+    { width: 1366, height: 768 },
+    { width: 1280, height: 720 },
+    { width: 1093, height: 614 },
+    { width: 1024, height: 576 },
+    { width: 760, height: 600 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(toggle).toBeVisible();
+    await expect(panel).toBeVisible();
+
+    const readGeometry = () => page.evaluate(() => {
+      const openPanel = document.querySelector("#battle-mission-details");
+      const blockers = Array.from(
+        document.querySelectorAll(
+          ".battle-footer-actions, .battle-command-prompt, .battle-footer-button--pause, .battle-footer-button--next, .battle-footer-button--end-turn, .tutorial-guide",
+        ),
+      ).filter((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+      });
+      const panelRect = openPanel.getBoundingClientRect();
+      const overlaps = blockers
+        .filter((element) => {
+          const rect = element.getBoundingClientRect();
+          return (
+            panelRect.left < rect.right &&
+            panelRect.right > rect.left &&
+            panelRect.top < rect.bottom &&
+            panelRect.bottom > rect.top
+          );
+        })
+        .map((element) => element.className);
+
+      return {
+        panel: {
+          left: panelRect.left,
+          top: panelRect.top,
+          right: panelRect.right,
+          bottom: panelRect.bottom,
+        },
+        viewport: { width: innerWidth, height: innerHeight },
+        overlaps,
+      };
+    });
+
+    await expect
+      .poll(async () => (await readGeometry()).overlaps, {
+        message: `${viewport.width}x${viewport.height} mission panel must avoid battle controls`,
+      })
+      .toEqual([]);
+    const geometry = await readGeometry();
+
+    expect(geometry.panel.left).toBeGreaterThanOrEqual(-1);
+    expect(geometry.panel.top).toBeGreaterThanOrEqual(-1);
+    expect(geometry.panel.right).toBeLessThanOrEqual(geometry.viewport.width + 1);
+    expect(geometry.panel.bottom).toBeLessThanOrEqual(geometry.viewport.height + 1);
+  }
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(panel).toHaveCSS("transition-duration", /^0s(, 0s)*$/);
+
+  const previousTutorialSessionId = await page.evaluate(
+    () => window.__ASH_RUN_DEV__.controller.state.tutorial.sessionId,
+  );
+  await page.evaluate(() => window.__ASH_RUN_DEV__.controller.startTutorialBattle());
+  await expect(page.locator('[data-action="toggle-mission-details"]')).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+  await expect
+    .poll(() => page.evaluate(() => window.__ASH_RUN_DEV__.controller.state.tutorial.sessionId))
+    .not.toBe(previousTutorialSessionId);
+
+  await page.locator('[data-action="toggle-mission-details"]').click();
+  await expect(page.locator('[data-action="toggle-mission-details"]')).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await page.evaluate(async () => {
+    const controller = window.__ASH_RUN_DEV__.controller;
+    await controller.returnToTitle();
+    controller.startTutorialBattle();
+  });
+  await expect(page.locator(".battle-shell")).toBeVisible();
+  await expect(page.locator('[data-action="toggle-mission-details"]')).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+});
+
+test("controller focus can activate the mission details button", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__testGamepadButtons = Array.from({ length: 16 }, () => ({ pressed: false }));
+    const gamepad = {
+      connected: true,
+      buttons: window.__testGamepadButtons,
+      axes: [0, 0],
+    };
+    Object.defineProperty(navigator, "getGamepads", {
+      configurable: true,
+      value: () => [gamepad],
+    });
+  });
+  await gotoTitle(page);
+  await page.locator('[data-action="open-tutorial"]').click({ force: true });
+  await page.locator('[data-action="start-tutorial-lesson"][data-lesson-id="basic-orders"]').click({
+    force: true,
+  });
+
+  await pressTestGamepadButton(page, 0);
+  await expect(page.locator(".is-controller-focused")).toHaveCount(1);
+  const toggle = page.locator('[data-action="toggle-mission-details"]');
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    if (await toggle.evaluate((element) => element.classList.contains("is-controller-focused"))) {
+      break;
+    }
+    await pressTestGamepadButton(page, 14);
+  }
+
+  await expect(toggle).toHaveClass(/is-controller-focused/);
+  await pressTestGamepadButton(page, 0);
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
 });
 
 test("highlighted tutorial commands keep the fitted battlefield camera stable", async ({ page }) => {

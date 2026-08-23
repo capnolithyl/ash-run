@@ -5,6 +5,7 @@ import {
   GameAudioDirector,
   getEffectiveAudioGains,
   normalizeAudioOptions,
+  requestImmediateAudioUnlock,
 } from "../src/game/phaser/audio/GameAudioDirector.js";
 import {
   getConservativePan,
@@ -162,6 +163,44 @@ test("pitch variation is deterministic and battlefield pan is conservative", () 
   assert.equal(getConservativePan(0.2), 0.2);
   assert.equal(getConservativePan(2), 0.35);
   assert.equal(getConservativePan(undefined), 0);
+});
+
+test("locked Web Audio is resumed immediately when the host autoplay policy allows it", async () => {
+  const scene = createFakeScene();
+  let resumeCalls = 0;
+  scene.sound.locked = true;
+  scene.sound.context = {
+    state: "suspended",
+    async resume() {
+      resumeCalls += 1;
+      this.state = "running";
+    },
+  };
+
+  assert.equal(requestImmediateAudioUnlock(scene.sound), true);
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(resumeCalls, 1);
+  assert.equal(scene.sound.unlocked, true);
+});
+
+test("immediate Web Audio resume leaves the interaction fallback intact when blocked", async () => {
+  const scene = createFakeScene();
+  scene.sound.locked = true;
+  scene.sound.context = {
+    state: "suspended",
+    resume() {
+      return Promise.reject(new Error("User gesture required"));
+    },
+  };
+
+  assert.equal(requestImmediateAudioUnlock(scene.sound), true);
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(scene.sound.locked, true);
+  assert.notEqual(scene.sound.unlocked, true);
 });
 
 test("GameAudioDirector applies live mixer options and plays catalogued cues", () => {

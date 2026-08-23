@@ -2041,6 +2041,81 @@
   }
 }
 
+@media (max-width: 1024px), (max-height: 700px) {
+  .battle-mission-drawer .battle-mission-drawer__panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: calc(100vw - var(--screen-edge-gutter) - var(--screen-edge-gutter));
+    max-width: calc(100vw - var(--screen-edge-gutter) - var(--screen-edge-gutter));
+    max-height: min(44dvh, 18rem);
+  }
+
+  .battle-mission-drawer .battle-footer-meta__item {
+    min-width: 0;
+  }
+
+  .battle-mission-drawer .battle-footer-meta__item + .battle-footer-meta__item {
+    border-left: 0;
+  }
+
+  .battle-mission-drawer .battle-footer-meta__item:nth-child(even) {
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .battle-mission-drawer .battle-footer-meta__item:nth-child(n + 3) {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .battle-mission-drawer .battle-footer-meta em {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 1024px) {
+  .battle-mission-drawer {
+    left: var(--screen-edge-gutter);
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 4.35rem);
+  }
+
+  .battle-shell:has(.battle-mission-drawer) .tutorial-guide {
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 7.6rem);
+  }
+
+  .battle-mission-drawer__toggle {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .battle-mission-drawer {
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 8.45rem);
+  }
+
+  .battle-shell:has(.battle-mission-drawer) .tutorial-guide {
+    bottom: calc(max(0.65rem, env(safe-area-inset-bottom)) + 11.4rem);
+  }
+
+  .battle-mission-drawer__toggle {
+    min-width: 6.5rem;
+    min-height: 2.45rem;
+    padding: 0.5rem 0.68rem;
+    font-size: 0.66rem;
+  }
+
+  .battle-mission-drawer .battle-mission-drawer__panel {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: min(42dvh, 15rem);
+  }
+
+  .battle-mission-drawer .battle-footer-meta__item:nth-child(even) {
+    border-left: 0;
+  }
+
+  .battle-mission-drawer .battle-footer-meta__item + .battle-footer-meta__item {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+}
+
 @media (max-height: 520px) and (max-width: 1024px) {
   .battle-footer-actions {
     padding: 0.4rem;
@@ -2061,6 +2136,88 @@
 }
 
 @media (max-width: 760px), (max-height: 700px) {
+  [data-screen-id="run-loadout"] .run-loadout-panel {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    padding: 0.6rem;
+  }
+
+  [data-screen-id="run-loadout"] .panel-header--commander {
+    align-items: center;
+  }
+
+  [data-screen-id="run-loadout"] .commander-select-heading p:last-child,
+  [data-screen-id="run-loadout"] .run-loadout-summary-card--commander {
+    display: none;
+  }
+
+  [data-screen-id="run-loadout"] .commander-select-heading h2 {
+    margin: 0.1rem 0 0;
+    font-size: clamp(1.25rem, 5vh, 2rem);
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-topband {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 0.35rem;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-summary-card--squad {
+    padding: 0.4rem 0.55rem;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-summary-card__label,
+  [data-screen-id="run-loadout"] .run-loadout-selected__empty {
+    margin: 0;
+    font-size: 0.7rem;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-selected__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-selected__chip {
+    flex: 0 0 auto;
+    min-height: 1.45rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.7rem;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-layout {
+    margin-top: 0.35rem;
+    overflow: hidden;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-catalog {
+    gap: 0.3rem;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-catalog__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.5rem;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-catalog__guidance,
+  [data-screen-id="run-loadout"] .run-loadout-catalog__starter small {
+    display: none;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-scroll-hint {
+    margin: 0;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-panel__footer {
+    margin-top: 0.3rem;
+    padding-top: 0.3rem;
+  }
+
+  [data-screen-id="run-loadout"] .run-loadout-start-button {
+    min-height: 2.4rem;
+    margin: 0;
+  }
+
   .screen--title {
     align-items: start;
     padding: 0.75rem;

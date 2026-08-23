@@ -273,6 +273,11 @@ function updateLevelUpOverlay(overlay, presentation) {
 
   if (continueButton) {
     continueButton.disabled = !presentation.continueEnabled;
+
+    if (presentation.continueEnabled && overlay.dataset.continueFocusSet !== "true") {
+      overlay.dataset.continueFocusSet = "true";
+      continueButton.focus({ preventScroll: true });
+    }
   }
 
   for (const row of presentation.rows ?? []) {

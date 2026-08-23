@@ -751,6 +751,10 @@ test("building tutorial requires a new turn between Capture and Supply", async (
     (unit) => unit.id === "buildings-capper"
   );
   assert.equal(state.battleSnapshot.turn.activeSide, TURN_SIDES.PLAYER);
+  assert.equal(state.battleSnapshot.presentation.tutorial.enemyObservationPhase, "recap");
+  assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "building-end-turn-for-supply");
+  assert.equal(await controller.continueTutorialEnemyRecap(), true);
+  state = controller.getState();
   assert.equal(state.battleSnapshot.presentation.tutorial.stepId, "building-select-sector-for-supply");
   assert.equal(capper.hasMoved, false);
   assert.equal(capper.hasAttacked, false);
@@ -905,6 +909,31 @@ test("run loadout purchases update counts and remaining funds", () => {
   state = controller.getState();
   assert.deepEqual(state.runLoadout.units.map((unit) => unit.unitTypeId), ["runner"]);
   assert.equal(state.runLoadout.fundsRemaining, 100);
+});
+
+test("balanced starter uses every default role without changing the 2,500 budget", () => {
+  const controller = new GameController();
+  controller.state.metaState.unlockedUnitIds = ["grunt", "breaker", "runner", "skyguard", "gunship"];
+  controller.state.runLoadout = {
+    budget: 2500,
+    fundsRemaining: 2500,
+    units: [],
+    namingReviewOpen: false
+  };
+
+  assert.equal(controller.applyBalancedRunLoadout(), true);
+  assert.deepEqual(controller.getState().runLoadout.units.map((unit) => unit.unitTypeId), [
+    "grunt",
+    "grunt",
+    "breaker",
+    "breaker",
+    "runner",
+    "skyguard",
+    "gunship"
+  ]);
+  assert.equal(controller.getState().runLoadout.budget, 2500);
+  assert.equal(controller.getState().runLoadout.fundsRemaining, 0);
+  assert.equal(new Set(controller.getState().runLoadout.units.map((unit) => unit.name)).size, 7);
 });
 
 test("opening squad names can be reviewed, rerolled, customized, and persisted into battle", async () => {

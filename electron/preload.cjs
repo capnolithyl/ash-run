@@ -24,8 +24,12 @@ contextBridge.exposeInMainWorld("ashRun84Api", {
   getDisplayState: () => ipcRenderer.invoke("display:get-state"),
   applyDisplaySettings: (displayOptions) =>
     ipcRenderer.invoke("display:apply", displayOptions),
-  confirmDisplaySettings: () => ipcRenderer.invoke("display:confirm"),
-  revertDisplaySettings: () => ipcRenderer.invoke("display:revert"),
+  acknowledgeDisplayRenderer: (rendererState) =>
+    ipcRenderer.invoke("display:renderer-ready", rendererState),
+  confirmDisplaySettings: (transitionId) =>
+    ipcRenderer.invoke("display:confirm", transitionId),
+  revertDisplaySettings: (transitionId) =>
+    ipcRenderer.invoke("display:revert", transitionId),
   returnToWindowed: () => ipcRenderer.invoke("display:return-windowed"),
   onDisplayChanged: (callback) => {
     const listener = (_event, displayState) => callback(displayState);

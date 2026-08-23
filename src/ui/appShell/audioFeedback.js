@@ -53,6 +53,7 @@ const ADJUST_ACTIONS = new Set([
   "select-skirmish-map",
   "select-options-tab",
   "select-debug-tool",
+  "toggle-mission-details",
   "select-next-unit",
   "run-loadout-add",
   "run-loadout-remove",

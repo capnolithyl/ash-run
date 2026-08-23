@@ -40,6 +40,32 @@ export function getEffectiveAudioGains(options = {}) {
   };
 }
 
+export function requestImmediateAudioUnlock(soundManager) {
+  const audioContext = soundManager?.context;
+
+  if (!soundManager?.locked || typeof audioContext?.resume !== "function") {
+    return false;
+  }
+
+  try {
+    Promise.resolve(audioContext.resume())
+      .then(() => {
+        if (soundManager.locked && audioContext.state === "running") {
+          // Phaser clears `locked` and emits its normal `unlocked` event on the
+          // next game step. Using that path keeps every audio director in sync.
+          soundManager.unlocked = true;
+        }
+      })
+      .catch(() => {
+        // Browsers may require a user gesture. Phaser's input unlock handlers
+        // remain registered as the fallback in that case.
+      });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export class GameAudioDirector {
   constructor(scene, controller = null, { logger = console } = {}) {
     this.scene = scene;
@@ -65,6 +91,7 @@ export class GameAudioDirector {
       }
     };
     this.scene.sound?.on?.("unlocked", this.handleUnlocked);
+    requestImmediateAudioUnlock(this.scene.sound);
 
     this.unsubscribeAudioCues = this.controller?.subscribeAudioCues?.((request) => {
       if (request?.cueId) {

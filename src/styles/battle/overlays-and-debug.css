@@ -483,15 +483,20 @@
 
 .battle-overlay--level-up {
   z-index: 10;
+  padding: clamp(0.4rem, 2vh, 1rem);
+  overflow: hidden;
   backdrop-filter: blur(10px);
   animation: overlay-fade-in 220ms ease forwards;
 }
 
 .overlay-card.overlay-card--level-up {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: fit-content;
-  max-width: calc(100vw - 96px);
+  max-width: calc(100vw - 0.8rem);
+  max-height: calc(100dvh - 0.8rem);
   padding: 1.1rem 1.15rem 1rem;
+  overflow: hidden;
   border: 1px solid rgba(255, 129, 214, 0.3);
   background:
     linear-gradient(180deg, rgba(255, 79, 216, 0.08), rgba(93, 184, 255, 0.04)),
@@ -542,8 +547,12 @@
 .level-up-card__body {
   display: grid;
   grid-template-columns: max-content max-content;
+  min-height: 0;
   gap: 1.35rem;
   align-items: stretch;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .level-up-card__stats {
@@ -740,6 +749,9 @@
   display: flex;
   justify-content: center;
   margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 129, 214, 0.12);
+  background: rgba(11, 5, 24, 0.96);
   opacity: 0;
   transform: translateY(0.35rem);
   pointer-events: none;
@@ -752,6 +764,60 @@
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+@media (max-height: 700px) {
+  .overlay-card.overlay-card--level-up {
+    width: min(38rem, calc(100vw - 0.8rem));
+    padding: 0.65rem 0.75rem 0.55rem;
+  }
+
+  .level-up-card__header {
+    gap: 0;
+    margin-bottom: 0.35rem;
+  }
+
+  .level-up-card__header h2 {
+    font-size: clamp(1.35rem, 5vh, 2rem);
+  }
+
+  .level-up-card__header p:last-child {
+    font-size: 0.72rem;
+  }
+
+  .level-up-card__body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .level-up-art {
+    display: none;
+  }
+
+  .level-up-card__stats {
+    width: 100%;
+    gap: 0.3rem;
+  }
+
+  .level-up-card__stats-header,
+  .level-up-stat {
+    grid-template-columns: minmax(7rem, 1fr) minmax(3.5rem, 4.5rem) minmax(3.5rem, 4.5rem);
+    gap: 0.35rem;
+  }
+
+  .level-up-card__stats-header {
+    padding-inline: 0.65rem;
+  }
+
+  .level-up-stat {
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.7rem;
+  }
+
+  .level-up-card__footer {
+    margin-top: 0.35rem;
+    padding-top: 0.4rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

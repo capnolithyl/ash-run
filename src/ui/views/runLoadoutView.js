@@ -1,6 +1,7 @@
 import { getCommanderById } from "../../game/content/commanders.js";
 import { getCommanderPortraitImageUrl } from "../../game/content/commanderArt.js";
 import { UNIT_CATALOG } from "../../game/content/unitCatalog.js";
+import { getWeaponClassProfile } from "../../game/content/weaponClasses.js";
 import {
   RUN_UNIT_NAME_MAX_LENGTH,
   validateRunUnitName
@@ -303,6 +304,7 @@ export function renderRunLoadoutView(state) {
     const unit = UNIT_CATALOG[unitTypeId];
     const count = loadoutCounts.get(unitTypeId) ?? 0;
     const canAfford = (runLoadout.fundsRemaining ?? 0) >= (unit?.cost ?? Number.POSITIVE_INFINITY);
+    const roleDescription = getWeaponClassProfile(unit?.weaponClass)?.role ?? "Flexible battlefield unit.";
 
     if (!unit) {
       return "";
@@ -327,6 +329,7 @@ export function renderRunLoadoutView(state) {
             <div class="run-loadout-unit-card__body">
               <strong>${escapeHtml(unit.name)}</strong>
               <span>${escapeHtml(UNIT_FAMILY_LABELS[unit.family] ?? unit.family)}</span>
+              <p>${escapeHtml(roleDescription)}</p>
               <small>${unit.cost} funds</small>
             </div>
           </div>
@@ -422,9 +425,21 @@ export function renderRunLoadoutView(state) {
             <div class="run-loadout-catalog__header">
               <div>
                 <span class="run-loadout-summary-card__label">Unit Catalog</span>
+                <p class="run-loadout-catalog__guidance">Counters matter: mix anti-vehicle, anti-air, and mobile units instead of relying on Grunts alone.</p>
+              </div>
+              <div class="run-loadout-catalog__starter">
+                <button class="ghost-button ghost-button--small" data-action="apply-balanced-run-loadout">Use Balanced Starter</button>
+                <small>2 Grunts, 2 Breakers, Runner, Skyguard, Gunship &middot; 2,500 funds</small>
               </div>
             </div>
-            <div class="run-loadout-grid-shell" data-role="run-loadout-grid-shell">
+            <p class="run-loadout-scroll-hint" id="run-loadout-scroll-hint">More units below &mdash; scroll the catalog to see every unlocked unit.</p>
+            <div
+              class="run-loadout-grid-shell"
+              data-role="run-loadout-grid-shell"
+              tabindex="0"
+              aria-label="Unlocked unit catalog"
+              aria-describedby="run-loadout-scroll-hint"
+            >
               <div class="run-loadout-unit-grid">
                 ${unitCardsMarkup}
               </div>

@@ -543,6 +543,7 @@ export function createTutorialHubSession(overrides = {}) {
     appliedEffectKeys: [],
     currentScenarioId: null,
     returnIntent: null,
+    enemyObservation: null,
     ...overrides
   };
 }
@@ -566,19 +567,41 @@ export function createTutorialLessonPresentation(session) {
   }
 
   const complete = session.phase === "lesson-complete";
+  const enemyObservation = !complete ? session.enemyObservation : null;
+  const observingEnemy = enemyObservation?.phase === "active";
+  const reviewingEnemy = enemyObservation?.phase === "recap";
   return {
     phase: session.phase,
     returnIntent: session.returnIntent ?? null,
     lessonId: lesson.id,
     lessonTitle: lesson.title,
     stepId: step.id,
-    title: complete ? `${lesson.title} complete.` : step.title,
-    body: complete ? "Training record saved. Replay this lesson any time, or continue through the curriculum." : step.body,
-    actionLabel: complete ? "Return to the Tutorial Hub" : step.actionLabel,
+    title: complete
+      ? `${lesson.title} complete.`
+      : observingEnemy
+        ? "Enemy Turn: Watch the response"
+        : reviewingEnemy
+          ? "Enemy Turn Reviewed"
+          : step.title,
+    body: complete
+      ? "Training record saved. Replay this lesson any time, or continue through the curriculum."
+      : observingEnemy
+        ? "Follow each highlighted move and attack. The training sim pauses after every enemy action so you can see the decision."
+        : reviewingEnemy
+          ? "Review how the enemy moved, chose targets, and reacted to the board. Continue when you are ready to apply the lesson."
+          : step.body,
+    actionLabel: complete
+      ? "Return to the Tutorial Hub"
+      : observingEnemy
+        ? "Watch movement, target choice, and terrain use."
+        : reviewingEnemy
+          ? "Acknowledge the recap before giving another order."
+          : step.actionLabel,
     progress: complete ? "Complete" : `${session.stepIndex + 1}/${lesson.steps.length}`,
     mascotName: "Pip",
-    nudge: session.nudge?.message ?? null,
-    canContinue: !complete && step.expectedAction?.type === "continue",
+    nudge: enemyObservation ? null : session.nudge?.message ?? null,
+    canContinue: !complete && !enemyObservation && step.expectedAction?.type === "continue",
+    enemyObservationPhase: enemyObservation?.phase ?? null,
     canExit: !complete,
     uiSelectors: [...(step.uiSelectors ?? [])],
     battlefieldHighlights: structuredClone(step.battlefieldHighlights ?? []),

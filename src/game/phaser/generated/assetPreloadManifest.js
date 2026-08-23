@@ -1971,7 +1971,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/dev/uiHarnessFixtures.js",
     "kind": "script",
-    "byteSize": 19747,
+    "byteSize": 19731,
     "environment": "development"
   },
   {
@@ -1983,13 +1983,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/controllerBattleMethods.js",
     "kind": "script",
-    "byteSize": 24706,
+    "byteSize": 24928,
     "environment": "development"
   },
   {
     "url": "./src/game/app/controllerFlowMethods.js",
     "kind": "script",
-    "byteSize": 17194,
+    "byteSize": 18306,
     "environment": "development"
   },
   {
@@ -2001,19 +2001,19 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/app/controllerRunMethods.js",
     "kind": "script",
-    "byteSize": 29970,
+    "byteSize": 30226,
     "environment": "development"
   },
   {
     "url": "./src/game/app/controllerShared.js",
     "kind": "script",
-    "byteSize": 4115,
+    "byteSize": 4267,
     "environment": "development"
   },
   {
     "url": "./src/game/app/controllerTutorialMethods.js",
     "kind": "script",
-    "byteSize": 17071,
+    "byteSize": 18401,
     "environment": "development"
   },
   {
@@ -2127,7 +2127,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/content/tutorialCurriculum.js",
     "kind": "script",
-    "byteSize": 43968,
+    "byteSize": 44957,
     "environment": "development"
   },
   {
@@ -2163,7 +2163,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/core/displayOptions.js",
     "kind": "script",
-    "byteSize": 3928,
+    "byteSize": 4909,
     "environment": "development"
   },
   {
@@ -2211,7 +2211,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/audio/GameAudioDirector.js",
     "kind": "script",
-    "byteSize": 6192,
+    "byteSize": 7036,
     "environment": "development"
   },
   {
@@ -2235,7 +2235,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/createGame.js",
     "kind": "script",
-    "byteSize": 1408,
+    "byteSize": 10816,
     "environment": "development"
   },
   {
@@ -2259,7 +2259,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/scenes/BattleScene.js",
     "kind": "script",
-    "byteSize": 2733,
+    "byteSize": 2768,
     "environment": "development"
   },
   {
@@ -2277,13 +2277,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/phaser/scenes/battleScene/pointerControls.js",
     "kind": "script",
-    "byteSize": 9522,
+    "byteSize": 10212,
     "environment": "development"
   },
   {
     "url": "./src/game/phaser/scenes/battleScene/renderBoard.js",
     "kind": "script",
-    "byteSize": 26193,
+    "byteSize": 26893,
     "environment": "development"
   },
   {
@@ -2625,7 +2625,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/game/state/defaults.js",
     "kind": "script",
-    "byteSize": 2583,
+    "byteSize": 2669,
     "environment": "development"
   },
   {
@@ -2667,7 +2667,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/base/foundation.css",
     "kind": "style",
-    "byteSize": 17420,
+    "byteSize": 17577,
     "environment": "development"
   },
   {
@@ -2679,7 +2679,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/battle/commander-panels.css",
     "kind": "style",
-    "byteSize": 34113,
+    "byteSize": 33828,
     "environment": "development"
   },
   {
@@ -2691,13 +2691,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/battle/layout.css",
     "kind": "style",
-    "byteSize": 20555,
+    "byteSize": 22936,
     "environment": "development"
   },
   {
     "url": "./src/styles/battle/overlays-and-debug.css",
     "kind": "style",
-    "byteSize": 51273,
+    "byteSize": 52614,
     "environment": "development"
   },
   {
@@ -2709,13 +2709,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/styles/responsive/layout.css",
     "kind": "style",
-    "byteSize": 49983,
+    "byteSize": 54096,
     "environment": "development"
   },
   {
     "url": "./src/styles/scenes/run-loadout.css",
     "kind": "style",
-    "byteSize": 11866,
+    "byteSize": 12613,
     "environment": "development"
   },
   {
@@ -2745,13 +2745,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/AppShell.js",
     "kind": "script",
-    "byteSize": 5536,
+    "byteSize": 5773,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/audioFeedback.js",
     "kind": "script",
-    "byteSize": 5450,
+    "byteSize": 5478,
     "environment": "development"
   },
   {
@@ -2763,19 +2763,19 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/displayMethods.js",
     "kind": "script",
-    "byteSize": 10864,
+    "byteSize": 15245,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/eventMethods.js",
     "kind": "script",
-    "byteSize": 33629,
+    "byteSize": 37651,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/inputMethods.js",
     "kind": "script",
-    "byteSize": 18954,
+    "byteSize": 19819,
     "environment": "development"
   },
   {
@@ -2787,13 +2787,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/battlePresentationPlayback.js",
     "kind": "script",
-    "byteSize": 17492,
+    "byteSize": 17688,
     "environment": "development"
   },
   {
     "url": "./src/ui/appShell/render/battleScreen.js",
     "kind": "script",
-    "byteSize": 20806,
+    "byteSize": 21750,
     "environment": "development"
   },
   {
@@ -2811,7 +2811,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/appShell/render/uiStatePersistence.js",
     "kind": "script",
-    "byteSize": 8698,
+    "byteSize": 9028,
     "environment": "development"
   },
   {
@@ -2877,7 +2877,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/battleHud/overlays.js",
     "kind": "script",
-    "byteSize": 25879,
+    "byteSize": 25888,
     "environment": "development"
   },
   {
@@ -2889,13 +2889,13 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/battleHud/tutorialGuide.js",
     "kind": "script",
-    "byteSize": 2348,
+    "byteSize": 2597,
     "environment": "development"
   },
   {
     "url": "./src/ui/views/battleHudView.js",
     "kind": "script",
-    "byteSize": 15450,
+    "byteSize": 16226,
     "environment": "development"
   },
   {
@@ -2913,7 +2913,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/optionFieldsView.js",
     "kind": "script",
-    "byteSize": 12282,
+    "byteSize": 13538,
     "environment": "development"
   },
   {
@@ -2931,7 +2931,7 @@ export const ASSET_PRELOAD_MANIFEST = [
   {
     "url": "./src/ui/views/runLoadoutView.js",
     "kind": "script",
-    "byteSize": 17113,
+    "byteSize": 18149,
     "environment": "development"
   },
   {
@@ -2960,4 +2960,4 @@ export const ASSET_PRELOAD_MANIFEST = [
   }
 ];
 
-export const ASSET_PRELOAD_TOTAL_BYTES = 109453422;
+export const ASSET_PRELOAD_TOTAL_BYTES = 109492994;

@@ -214,7 +214,7 @@ export function renderLevelUpOverlay(battleSnapshot, presentation = null, colorO
           ${renderLevelUpUnitArt(levelUpEvent, colorOptions)}
         </div>
         <div class="level-up-card__footer${continueEnabled ? " level-up-card__footer--visible" : ""}">
-          <button class="menu-button" data-action="acknowledge-level-up" ${continueEnabled ? "" : "disabled"}>Continue</button>
+          <button class="menu-button" data-action="acknowledge-level-up" ${continueEnabled ? "autofocus" : "disabled"}>Continue</button>
         </div>
       </div>
     </div>

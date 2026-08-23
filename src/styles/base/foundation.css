@@ -334,6 +334,13 @@ body:has(#ui-root .map-editor-shell) #game-root canvas {
   pointer-events: auto;
 }
 
+:is(
+  html[data-display-transition-phase="applying"],
+  html[data-display-transition-phase="reverting"]
+) #ui-root > * {
+  pointer-events: none !important;
+}
+
 .screen {
   display: grid;
   place-items: center;

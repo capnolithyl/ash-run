@@ -46,6 +46,11 @@ function buildBattleRenderSignature(state) {
     screen: state.screen,
     snapshotId: battleSnapshot?.id ?? null,
     mapId: battleSnapshot?.map?.id ?? null,
+    battleSessionKey: battleSnapshot
+      ? state.tutorial?.phase === "battle" && state.tutorial?.sessionId
+        ? `tutorial:${state.tutorial.sessionId}`
+        : `battle:${battleSnapshot.id ?? ""}:${battleSnapshot.map?.id ?? ""}`
+      : null,
     turnKey: battleSnapshot
       ? `${battleSnapshot.turn?.number ?? 0}:${battleSnapshot.turn?.activeSide ?? ""}`
       : null,
@@ -258,6 +263,7 @@ export const appShellBattleScreenMethods = {
     if (
       previousSignature.snapshotId !== nextSignature.snapshotId ||
       previousSignature.mapId !== nextSignature.mapId ||
+      previousSignature.battleSessionKey !== nextSignature.battleSessionKey ||
       previousSignature.turnKey !== nextSignature.turnKey ||
       previousSignature.selectionKey !== nextSignature.selectionKey ||
       previousSignature.pendingActionKey !== nextSignature.pendingActionKey ||
@@ -370,6 +376,11 @@ export const appShellBattleScreenMethods = {
         : detectedCommanderTurnAnimationFromSide;
     const previousMeterState = this.captureBattleMeterState();
     this.captureBattleDrawerState();
+    const previousBattleSessionKey = this.previousBattleRenderSignature?.battleSessionKey ?? null;
+    const currentBattleSessionKey = buildBattleRenderSignature(state).battleSessionKey;
+    if (previousBattleSessionKey && previousBattleSessionKey !== currentBattleSessionKey) {
+      this.battleDrawers.missionDetailsOpen = false;
+    }
     const displayContext = this.getDisplayRenderContext?.(state) ?? {};
     this.root.innerHTML = renderBattleHudView(state, {
       suppressLevelUpOverlay,
@@ -378,6 +389,7 @@ export const appShellBattleScreenMethods = {
       experiencePresentation,
       levelUpPresentation,
       commanderTurnAnimationFromSide,
+      missionDetailsOpen: this.battleDrawers.missionDetailsOpen,
       displayContext: {
         ...displayContext,
         activeOptionsTab:
@@ -451,6 +463,11 @@ export const appShellBattleScreenMethods = {
       this.commanderTurnAnimationClearTimer = null;
     }
 
+    if (this.missionDetailsLayoutFrame) {
+      window.cancelAnimationFrame(this.missionDetailsLayoutFrame);
+      this.missionDetailsLayoutFrame = null;
+    }
+
     this.stopCombatCutscenePlayback();
     this.clearBattlePresentationPlayback();
 
@@ -463,6 +480,7 @@ export const appShellBattleScreenMethods = {
     this.activeFundsGainId = null;
     this.battleDrawers.intel = false;
     this.battleDrawers.command = false;
+    this.battleDrawers.missionDetailsOpen = false;
     this.battleDrawers.intelTab = "selected";
     this.activeBattlePauseTab = null;
     this.battleDrawers.debugTool = "battlefield";

@@ -54,6 +54,8 @@ function renderDisplaySettings(options, displayContext = {}) {
   const applyDisabled =
     displayContext.applyDisabled || !displayContext.desktopAvailable;
   const confirmation = displayContext.confirmation;
+  const displayBusy = displayContext.displayBusy === true;
+  const transitionPhase = displayContext.transitionPhase;
 
   return `
     <section class="options-section options-section--display" aria-label="Display settings">
@@ -63,7 +65,7 @@ function renderDisplaySettings(options, displayContext = {}) {
       </div>
       <label class="option-row option-row--select">
         <span>Display Mode</span>
-        <select data-display-option="displayMode" ${confirmation ? "disabled" : ""}>
+        <select data-display-option="displayMode" ${confirmation || displayBusy ? "disabled" : ""}>
           ${Object.values(DISPLAY_MODES)
             .map(
               (mode) => `
@@ -84,7 +86,7 @@ function renderDisplaySettings(options, displayContext = {}) {
               : "<small>Fullscreen and Borderless use monitor bounds.</small>"
           }
         </span>
-        <select data-display-option="windowResolution" ${confirmation ? "disabled" : ""}>
+        <select data-display-option="windowResolution" ${confirmation || displayBusy ? "disabled" : ""}>
           ${presets
             .map(
               (preset) => `
@@ -100,6 +102,23 @@ function renderDisplaySettings(options, displayContext = {}) {
             .join("")}
         </select>
       </label>
+      <label class="option-row">
+        <span>
+          Safe Graphics Mode
+          <small>Uses software rendering after the application restarts.</small>
+        </span>
+        <input
+          type="checkbox"
+          data-option="safeGraphicsMode"
+          ${options.safeGraphicsMode === true ? "checked" : ""}
+          ${confirmation || displayBusy ? "disabled" : ""}
+        />
+      </label>
+      ${
+        displayContext.displayState?.safeGraphicsModeActive
+          ? '<small class="option-note">Safe Graphics Mode is active for this session.</small>'
+          : ""
+      }
       <div class="display-actions">
         <button
           class="menu-button menu-button--small"
@@ -117,6 +136,7 @@ function renderDisplaySettings(options, displayContext = {}) {
                 class="ghost-button ghost-button--small"
                 type="button"
                 data-action="return-windowed-display"
+                ${displayBusy ? "disabled" : ""}
               >
                 Return Windowed
               </button>
@@ -124,16 +144,27 @@ function renderDisplaySettings(options, displayContext = {}) {
         }
       </div>
       ${
+        displayBusy
+          ? `<p class="option-note" role="status">${
+              transitionPhase === "reverting"
+                ? "Restoring the previous display settings..."
+                : transitionPhase === "awaiting-renderer"
+                  ? "Verifying the resized game canvas..."
+                  : "Applying display settings..."
+            }</p>`
+          : ""
+      }
+      ${
         confirmation
           ? `
             <div class="display-confirmation" role="alert">
               <span>Keep these display settings?</span>
               <strong data-display-countdown>${confirmation.secondsRemaining}s</strong>
               <div class="display-confirmation__actions">
-                <button class="menu-button menu-button--small" type="button" data-action="keep-display-settings">
+                <button class="menu-button menu-button--small" type="button" data-action="keep-display-settings" ${displayBusy ? "disabled" : ""}>
                   Keep
                 </button>
-                <button class="ghost-button ghost-button--small" type="button" data-action="revert-display-settings">
+                <button class="ghost-button ghost-button--small" type="button" data-action="revert-display-settings" ${displayBusy ? "disabled" : ""}>
                   Revert
                 </button>
               </div>

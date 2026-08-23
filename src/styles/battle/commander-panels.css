@@ -12,7 +12,7 @@
   --commander-highlight-clip: inset(0);
   position: relative;
   flex: 0 1 36.4rem;
-  min-width: min(100%, 34.9rem);
+  min-width: 0;
   isolation: isolate;
   z-index: 0;
   transform:
@@ -492,12 +492,7 @@
 
 .commander-panel__details {
   display: grid;
-  grid-template-columns:
-    minmax(var(--commander-details-summary-min), 1fr)
-    minmax(
-      var(--commander-details-systems-min),
-      var(--commander-details-systems-max)
-    );
+  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 45%);
   grid-template-areas:
     "name systems"
     "charge systems";
@@ -649,7 +644,7 @@
   width: 100%;
   min-width: 0;
   min-height: clamp(3.15rem, 3.45vw, 3.45rem);
-  aspect-ratio: var(--system-frame-aspect);
+  aspect-ratio: auto;
   position: relative;
   padding: 0.96rem 0.78rem 0.62rem;
   align-items: center;
@@ -716,8 +711,8 @@
   font-weight: 700;
   line-height: 1.08;
   letter-spacing: 0.055em;
-  white-space: nowrap;
-  overflow-wrap: normal;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-align: center;
   text-shadow: 0 1px 10px rgba(5, 1, 14, 0.62);
   text-transform: uppercase;
@@ -872,12 +867,7 @@
 }
 
 .commander-panel--enemy .commander-panel__details {
-  grid-template-columns:
-    minmax(
-      var(--commander-details-systems-min),
-      var(--commander-details-systems-max)
-    )
-    minmax(var(--commander-details-summary-min), 1fr);
+  grid-template-columns: minmax(8.5rem, 45%) minmax(0, 1fr);
   grid-template-areas:
     "systems name"
     "systems charge";

@@ -413,6 +413,49 @@
   backdrop-filter: none;
 }
 
+.battle-mission-drawer {
+  position: absolute;
+  left: var(--battle-desktop-inset);
+  bottom: max(0.85rem, env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+.battle-mission-drawer__toggle {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-width: 7.25rem;
+  min-height: 3rem;
+  padding: 0.65rem 0.9rem;
+  border-color: color-mix(in srgb, var(--player-color) 42%, rgba(255, 255, 255, 0.12));
+  background:
+    linear-gradient(135deg, rgba(152, 93, 255, 0.18), rgba(255, 79, 216, 0.12)),
+    rgba(12, 5, 24, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.025),
+    0 14px 30px rgba(5, 1, 14, 0.42),
+    0 0 22px color-mix(in srgb, var(--player-color) 13%, transparent);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.battle-mission-drawer__chevron {
+  color: #ffb066;
+  font-size: 1.25rem;
+  line-height: 0.7;
+  transform: translateX(0);
+  transition: transform 220ms ease;
+}
+
+.battle-mission-drawer[data-mission-details-open="true"]
+  .battle-mission-drawer__chevron {
+  transform: rotate(180deg);
+}
+
 .battle-footer-meta {
   --battle-shell-color: color-mix(in srgb, var(--player-color) 26%, transparent);
   --battle-shell-accent: color-mix(in srgb, var(--enemy-color) 22%, transparent);
@@ -540,6 +583,50 @@
   letter-spacing: 0.04em;
   white-space: nowrap;
   text-transform: uppercase;
+}
+
+.battle-mission-drawer .battle-mission-drawer__panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.5rem);
+  display: grid;
+  grid-template-columns:
+    minmax(16rem, 1.2fr)
+    minmax(20rem, 1.45fr)
+    minmax(8rem, 0.65fr)
+    minmax(4.75rem, 0.35fr);
+  width: min(
+    68rem,
+    calc(100vw - var(--battle-desktop-inset) - var(--battle-desktop-inset))
+  );
+  max-width: calc(100vw - var(--battle-desktop-inset) - var(--battle-desktop-inset));
+  max-height: min(48dvh, 20rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(-100% - var(--battle-desktop-inset)));
+  visibility: hidden;
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    visibility 0s linear 260ms,
+    bottom 160ms ease;
+}
+
+.battle-mission-drawer[data-mission-details-open="true"]
+  .battle-mission-drawer__panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.battle-shell:has(.battle-mission-drawer[data-mission-details-open="true"])
+  .tutorial-guide {
+  animation: none;
 }
 
 .battle-footer-actions .battle-footer-button {
@@ -794,7 +881,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .battle-side-panel-shell,
-  .battle-side-panel {
+  .battle-side-panel,
+  .battle-mission-drawer .battle-mission-drawer__panel,
+  .battle-mission-drawer__chevron {
     transition: none;
   }
 

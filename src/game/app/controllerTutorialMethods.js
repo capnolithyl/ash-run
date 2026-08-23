@@ -317,6 +317,55 @@ export const controllerTutorialMethods = {
     return this.advanceTutorialStep();
   },
 
+  beginTutorialEnemyObservation() {
+    if (!isActiveTutorialBattle(this)) {
+      return false;
+    }
+
+    this.state.tutorial = {
+      ...this.state.tutorial,
+      nudge: null,
+      enemyObservation: { phase: "active" }
+    };
+    this.syncBattleState();
+    return true;
+  },
+
+  completeTutorialEnemyObservation(action, payload = {}, changed = false) {
+    if (!isActiveTutorialBattle(this) || this.state.tutorial?.enemyObservation?.phase !== "active") {
+      return false;
+    }
+
+    this.state.tutorial = {
+      ...this.state.tutorial,
+      enemyObservation: {
+        phase: "recap",
+        pendingAction: { action, payload, changed }
+      }
+    };
+    this.syncBattleState();
+    return true;
+  },
+
+  async continueTutorialEnemyRecap() {
+    const observation = this.state.tutorial?.enemyObservation;
+
+    if (!isActiveTutorialBattle(this) || observation?.phase !== "recap") {
+      return false;
+    }
+
+    const pendingAction = observation.pendingAction;
+    this.state.tutorial = {
+      ...this.state.tutorial,
+      enemyObservation: null
+    };
+    return this.evaluateTutorialProgress(
+      pendingAction?.action,
+      pendingAction?.payload ?? {},
+      pendingAction?.changed === true
+    );
+  },
+
   showTutorialNudge(message) {
     if (!this.state.tutorial || !["battle", "lesson-complete"].includes(this.state.tutorial.phase)) {
       return false;
@@ -480,7 +529,8 @@ export const controllerTutorialMethods = {
     this.state.tutorial = {
       ...this.state.tutorial,
       stepIndex: this.state.tutorial.stepIndex + 1,
-      nudge: null
+      nudge: null,
+      enemyObservation: null
     };
     this.applyTutorialStepEntryEffects();
     this.syncBattleState();
@@ -490,6 +540,10 @@ export const controllerTutorialMethods = {
   guardTutorialIntent(action, payload = {}) {
     if (!isActiveTutorialBattle(this)) {
       return true;
+    }
+
+    if (this.state.tutorial?.enemyObservation) {
+      return false;
     }
 
     const expected = currentStep(this)?.expectedAction;

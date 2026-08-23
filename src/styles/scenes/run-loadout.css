@@ -41,7 +41,7 @@
   align-content: start;
   gap: 0.9rem;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .run-loadout-summary-card {
@@ -190,6 +190,31 @@
   gap: 1rem;
 }
 
+.run-loadout-catalog__guidance {
+  max-width: 44rem;
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.run-loadout-catalog__starter {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+  text-align: right;
+}
+
+.run-loadout-catalog__starter small,
+.run-loadout-scroll-hint {
+  color: #ffd9a1;
+  font-size: 0.72rem;
+}
+
+.run-loadout-scroll-hint {
+  margin: -0.45rem 0 0;
+}
+
 .run-loadout-budget-pill {
   display: grid;
   gap: 0.18rem;
@@ -227,6 +252,9 @@
 .run-loadout-grid-shell {
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
   padding: 0.75rem;
   border: 1px solid rgba(255, 138, 61, 0.18);
   border-radius: 1rem;
@@ -238,6 +266,11 @@
     ),
     rgba(10, 4, 20, 0.82);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.run-loadout-grid-shell:focus-visible {
+  outline: 2px solid rgba(255, 214, 102, 0.8);
+  outline-offset: 2px;
 }
 
 .run-loadout-unit-grid {
@@ -306,6 +339,13 @@
 .run-loadout-unit-card__body span {
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.run-loadout-unit-card__body p {
+  margin: 0.08rem 0;
+  color: rgba(245, 236, 255, 0.78);
+  font-size: 0.76rem;
+  line-height: 1.25;
 }
 
 .run-loadout-unit-card__body small {

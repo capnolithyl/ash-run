@@ -66,31 +66,50 @@ function getBattleChromeStyle(animationClockMs) {
   ].join("; ");
 }
 
-function renderBattleMeta(battleSnapshot) {
+function renderBattleMeta(battleSnapshot, open = false) {
   const mapName = battleSnapshot.map?.name ?? "Unknown Map";
   const turnLabel = battleSnapshot.turn?.number ?? 1;
   const mission = battleSnapshot.presentation?.mission ?? null;
+  const expanded = open === true;
 
   return `
-    <div class="battle-footer-meta" aria-label="Battle mission details">
-      <span class="battle-footer-meta__item">
-        <strong>Mission</strong>
-        <em>${mission?.label ?? "Rout"}</em>
-        ${mission?.objective ? `<small>${mission.objective}</small>` : ""}
-      </span>
-      <span class="battle-footer-meta__item battle-footer-meta__item--progress">
-        <strong>Progress</strong>
-        <em>${mission?.status ?? "Awaiting orders"}</em>
-        ${mission?.failureCondition ? `<small>Fail: ${mission.failureCondition}</small>` : ""}
-      </span>
-      <span class="battle-footer-meta__item">
-        <strong>Map</strong>
-        <em>${mapName}</em>
-      </span>
-      <span class="battle-footer-meta__item">
-        <strong>Turn</strong>
-        <em>${turnLabel}</em>
-      </span>
+    <div class="battle-mission-drawer" data-mission-details-open="${expanded}">
+      <button
+        class="ghost-button ghost-button--small battle-mission-drawer__toggle"
+        type="button"
+        data-action="toggle-mission-details"
+        aria-expanded="${expanded}"
+        aria-controls="battle-mission-details"
+        aria-label="${expanded ? "Hide" : "Show"} mission details"
+      >
+        <span>Mission</span>
+        <span class="battle-mission-drawer__chevron" aria-hidden="true">›</span>
+      </button>
+      <div
+        class="battle-footer-meta battle-mission-drawer__panel"
+        id="battle-mission-details"
+        aria-label="Battle mission details"
+        aria-hidden="${!expanded}"
+      >
+        <span class="battle-footer-meta__item">
+          <strong>Mission</strong>
+          <em>${mission?.label ?? "Rout"}</em>
+          ${mission?.objective ? `<small>${mission.objective}</small>` : ""}
+        </span>
+        <span class="battle-footer-meta__item battle-footer-meta__item--progress">
+          <strong>Progress</strong>
+          <em>${mission?.status ?? "Awaiting orders"}</em>
+          ${mission?.failureCondition ? `<small>Fail: ${mission.failureCondition}</small>` : ""}
+        </span>
+        <span class="battle-footer-meta__item">
+          <strong>Map</strong>
+          <em>${mapName}</em>
+        </span>
+        <span class="battle-footer-meta__item">
+          <strong>Turn</strong>
+          <em>${turnLabel}</em>
+        </span>
+      </div>
     </div>
   `;
 }
@@ -365,7 +384,7 @@ export function renderBattleHudView(state, options = {}) {
           Feed
         </label>
       </div>
-      ${renderBattleMeta(battleSnapshot)}
+      ${renderBattleMeta(battleSnapshot, options.missionDetailsOpen)}
       ${renderDesktopBattlePanels(
         battleSnapshot,
         sidebarBattleSnapshot,

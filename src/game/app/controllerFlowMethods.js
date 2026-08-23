@@ -20,6 +20,7 @@ import {
   normalizeRunState
 } from "../state/runFactory.js";
 import {
+  BALANCED_RUN_LOADOUT_UNIT_IDS,
   createBattleUiState,
   createDefaultRunLoadoutState,
   pickFirstAvailableSlot
@@ -336,6 +337,39 @@ export const controllerFlowMethods = {
     });
     this.state.runLoadout.fundsRemaining -= unitType.cost;
     this.emit();
+  },
+
+  applyBalancedRunLoadout() {
+    const unitTypes = BALANCED_RUN_LOADOUT_UNIT_IDS.map((unitTypeId) => UNIT_CATALOG[unitTypeId]);
+    const totalCost = unitTypes.reduce((total, unitType) => total + (unitType?.cost ?? Infinity), 0);
+    const allUnlocked = BALANCED_RUN_LOADOUT_UNIT_IDS.every((unitTypeId) =>
+      this.state.metaState.unlockedUnitIds.includes(unitTypeId)
+    );
+
+    if (!allUnlocked || !Number.isFinite(totalCost) || totalCost > this.state.runLoadout.budget) {
+      return false;
+    }
+
+    const drafts = [];
+
+    for (const unitTypeId of BALANCED_RUN_LOADOUT_UNIT_IDS) {
+      const id = createId(unitTypeId);
+      drafts.push({
+        id,
+        unitTypeId,
+        name: generateRunUnitName(unitTypeId, {
+          unitId: id,
+          excludedNames: drafts.map((draft) => draft.name)
+        }),
+        nameRoll: 0
+      });
+    }
+
+    this.state.runLoadout.units = drafts;
+    this.state.runLoadout.fundsRemaining = this.state.runLoadout.budget - totalCost;
+    this.state.runLoadout.namingReviewOpen = false;
+    this.emit();
+    return true;
   },
 
   removeRunLoadoutUnit(unitTypeId) {

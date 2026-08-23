@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   DEFAULT_WINDOW_RESOLUTION,
   DISPLAY_MODES,
+  getClampedWindowBoundsForWorkArea,
   getClosestDisplayResolutionPreset,
   getDisplayPresetAvailability,
   normalizeDisplayOptions,
@@ -35,6 +36,7 @@ test("display option normalization repairs unsupported saved values", () => {
       screenShake: true,
       battlefieldNameTooltips: true,
       combatCutsceneAnimations: true,
+      safeGraphicsMode: false,
       masterVolume: 0.2,
       musicVolume: 0.6,
       sfxVolume: 0.45,
@@ -63,6 +65,7 @@ test("unit color options repair invalid and duplicate saved values", () => {
       screenShake: true,
       battlefieldNameTooltips: true,
       combatCutsceneAnimations: true,
+      safeGraphicsMode: false,
       masterVolume: 0.45,
       musicVolume: 0.6,
       sfxVolume: 0.45,
@@ -100,6 +103,20 @@ test("battlefield name tooltip option can be persisted off", () => {
   );
 });
 
+test("Safe Graphics Mode persists as an explicit restart option", () => {
+  const options = normalizeMetaOptions({ safeGraphicsMode: true });
+  const html = renderOptionFields(options, {
+    showDisplayOptions: true,
+    desktopAvailable: true,
+    displayState: { safeGraphicsModeActive: true }
+  });
+
+  assert.equal(options.safeGraphicsMode, true);
+  assert.match(html, /data-option="safeGraphicsMode"/);
+  assert.match(html, /Requires|restarts?/i);
+  assert.match(html, /Safe Graphics Mode is active/);
+});
+
 test("installed animated palettes are enabled and keep their accent selection", () => {
   const options = normalizeMetaOptions({
     playerColor: "green",
@@ -129,6 +146,36 @@ test("display preset availability filters resolutions against monitor work area"
   assert.equal(
     resolveWindowResolutionForWorkArea("2560x1440", { width: 1366, height: 728 }).id,
     "1280x720"
+  );
+});
+
+test("window sizing falls back to the real work area when no desktop preset fits", () => {
+  assert.deepEqual(
+    resolveWindowResolutionForWorkArea("1280x720", { width: 1093, height: 614 }),
+    {
+      id: "1280x720",
+      label: "1280 x 720",
+      width: 1093,
+      height: 614,
+      constrainedToWorkArea: true
+    }
+  );
+});
+
+test("window bounds stay centered and contained in scaled and negative work areas", () => {
+  assert.deepEqual(
+    getClampedWindowBoundsForWorkArea(
+      { width: 1440, height: 900 },
+      { x: -1920, y: 40, width: 1600, height: 860 }
+    ),
+    { x: -1840, y: 40, width: 1440, height: 860 }
+  );
+  assert.deepEqual(
+    getClampedWindowBoundsForWorkArea(
+      { width: 1280, height: 720 },
+      { x: 0, y: 0, width: 1093, height: 614 }
+    ),
+    { x: 0, y: 0, width: 1093, height: 614 }
   );
 });
 
@@ -166,6 +213,20 @@ test("options view renders display mode and resolution controls", () => {
   assert.match(html, /value="orange"/);
   assert.match(html, /Player Units: Blue[\s\S]*disabled/);
   assert.match(html, /Enemy Units: Purple[\s\S]*disabled/);
+});
+
+test("display controls stay disabled while Electron verifies a resized canvas", () => {
+  const html = renderOptionFields(createDefaultMetaState().options, {
+    showDisplayOptions: true,
+    desktopAvailable: true,
+    displayBusy: true,
+    transitionPhase: "awaiting-renderer"
+  });
+
+  assert.match(html, /data-display-option="displayMode" disabled/);
+  assert.match(html, /data-display-option="windowResolution" disabled/);
+  assert.match(html, /data-option="safeGraphicsMode"[\s\S]*disabled/);
+  assert.match(html, /Verifying the resized game canvas/);
 });
 
 test("options renderer groups controls into accessible vertical tabs", () => {

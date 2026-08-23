@@ -52,6 +52,7 @@ import {
 
 const ENEMY_TURN_MAX_STEPS = 100;
 const ENEMY_TURN_MAX_WALL_TIME_MS = 30000;
+export const TUTORIAL_ENEMY_ACTION_HOLD_MS = 650;
 
 function getEligibleGearRosterUnits(runState, reward) {
   return (runState?.roster ?? []).filter((unit) => canUnitEquipRunUpgrade(unit, reward));
@@ -769,6 +770,10 @@ export const controllerRunMethods = {
     if (enemyPowerUsed) {
       await this.playPowerOverlay(TURN_SIDES.ENEMY);
 
+      if (this.isTutorialBattle?.()) {
+        await delay(TUTORIAL_ENEMY_ACTION_HOLD_MS);
+      }
+
       if (this.state.battleSnapshot?.victory) {
         await this.persistCurrentRun();
         return;
@@ -831,6 +836,10 @@ export const controllerRunMethods = {
         await delay(Math.max(stepDelay, combatCutsceneDuration));
 
         await playEnemyMoveHold(this, previousSnapshot, this.state.battleSnapshot, step);
+
+        if (this.isTutorialBattle?.()) {
+          await delay(TUTORIAL_ENEMY_ACTION_HOLD_MS);
+        }
       } catch {
         forcePassEnemyTurn(this, "error");
         enemyTurnForcePassed = true;

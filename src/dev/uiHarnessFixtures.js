@@ -152,21 +152,21 @@ function createCommanderSelectState() {
 
 function createRunLoadoutState({ namingReviewOpen = false } = {}) {
   const metaState = createBaseMetaState();
-  metaState.unlockedUnitIds = ["grunt", "longshot", "runner", "bruiser", "medic", "skyguard"];
+  metaState.unlockedUnitIds = ["grunt", "breaker", "runner", "skyguard", "gunship"];
 
   return {
     screen: SCREEN_IDS.RUN_LOADOUT,
     selectedSlotId: SLOT_IDS[1],
     selectedCommanderId: "atlas",
     runLoadout: {
-      budget: 1000,
-      fundsRemaining: 150,
+      budget: 2500,
+      fundsRemaining: 1650,
       namingReviewOpen,
       units: [
         { id: "harness-grunt-one", unitTypeId: "grunt", name: "Mara", nameRoll: 0 },
         { id: "harness-grunt-two", unitTypeId: "grunt", name: "Rook", nameRoll: 0 },
-        { id: "harness-longshot", unitTypeId: "longshot", name: "Hush", nameRoll: 0 },
-        { id: "harness-bruiser", unitTypeId: "bruiser", name: "Stonewall", nameRoll: 0 }
+        { id: "harness-breaker", unitTypeId: "breaker", name: "Hush", nameRoll: 0 },
+        { id: "harness-runner", unitTypeId: "runner", name: "Redline", nameRoll: 0 }
       ]
     },
     metaState
@@ -372,9 +372,9 @@ function createBattleCommanderLayoutState() {
     playerUnits: [playerUnit],
     enemyUnits: [enemyUnit]
   });
-  battleState.player.commanderId = "atlas";
+  battleState.player.commanderId = "rook";
   battleState.player.charge = 275;
-  battleState.enemy.commanderId = "echo";
+  battleState.enemy.commanderId = "rook";
   battleState.enemy.charge = 200;
   battleState.selection = { type: "unit", id: playerUnit.id, x: playerUnit.x, y: playerUnit.y };
 

@@ -209,6 +209,101 @@ test("run loadout remains single-scroll at the narrow breakpoint", async ({ page
   ).toBe("hidden");
 });
 
+for (const viewport of [
+  { width: 1093, height: 614 },
+  { width: 1024, height: 576 }
+]) {
+  test(`level-up Continue stays visible and actionable at ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "preset-1280x720-chromium");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize(viewport);
+    await page.goto("/ui-harness.html?scene=battle-level-up&embed=1");
+
+    const button = page.locator('[data-action="acknowledge-level-up"]');
+    await expect(button).toBeVisible();
+    await expect(button).toBeEnabled();
+    await expect(button).toBeFocused();
+    await expectCriticalControlsInViewport(page, "battle-level-up");
+    await button.click();
+  });
+}
+
+test("short loadout exposes and keyboard-scrolls to the final starter unit", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "preset-1280x720-chromium");
+  await page.setViewportSize({ width: 760, height: 600 });
+  await page.goto("/ui-harness.html?scene=run-loadout&embed=1");
+
+  const grid = page.locator('[data-role="run-loadout-grid-shell"]');
+  const metrics = await grid.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight
+  }));
+  expect(metrics.clientHeight).toBeGreaterThanOrEqual(120);
+  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+
+  await grid.focus();
+  await page.keyboard.press("End");
+  await expect.poll(() => grid.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  const gunship = page.locator('.run-loadout-unit-card:has-text("Gunship")');
+  await expect(gunship).toBeVisible();
+  await expect(gunship.locator('[data-action="run-loadout-add"]')).toBeVisible();
+  await expectCriticalControlsInViewport(page, "run-loadout");
+});
+
+test("long commander trait and ability names remain inside both panels", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "preset-1280x720-chromium");
+  await page.goto("/ui-harness.html?scene=battle-commander-layout&embed=1");
+
+  const violations = await page.locator(".commander-panel").evaluateAll((panels) =>
+    panels.flatMap((panel) => {
+      const panelRect = panel.getBoundingClientRect();
+      return Array.from(panel.querySelectorAll(".commander-panel__system strong"))
+        .filter((label) => {
+          const rect = label.getBoundingClientRect();
+          return rect.left < panelRect.left - 1 || rect.right > panelRect.right + 1 ||
+            rect.top < panelRect.top - 1 || rect.bottom > panelRect.bottom + 1;
+        })
+        .map((label) => label.textContent.trim());
+    })
+  );
+
+  expect(violations).toEqual([]);
+  await expect(page.locator('.commander-panel__system strong').filter({ hasText: "Estate Claim" })).toHaveCount(2);
+  await expect(page.locator('.commander-panel__system strong').filter({ hasText: "Hostile Takeover" })).toHaveCount(2);
+});
+
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 760, height: 600 }
+]) {
+  test(`open mission drawer matches the layout at ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "preset-1280x720-chromium");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize(viewport);
+    await page.goto("/ui-harness.html?scene=battle-commander-layout&embed=1");
+
+    await page.evaluate(() => {
+      const drawer = document.querySelector(".battle-mission-drawer");
+      const toggle = drawer?.querySelector('[data-action="toggle-mission-details"]');
+      const panel = drawer?.querySelector("#battle-mission-details");
+      drawer.dataset.missionDetailsOpen = "true";
+      toggle?.setAttribute("aria-expanded", "true");
+      toggle?.setAttribute("aria-label", "Hide mission details");
+      panel?.setAttribute("aria-hidden", "false");
+    });
+
+    await expect(page.locator("#battle-mission-details")).toBeVisible();
+    await expect(page.locator(".battle-shell")).toHaveScreenshot(
+      `battle-mission-drawer-open-${viewport.width}x${viewport.height}.png`,
+      {
+        animations: "disabled",
+        caret: "hide",
+        maxDiffPixels: 4000
+      }
+    );
+  });
+}
+
 for (const sceneId of ["options", "battle-pause"]) {
   test(`${sceneId} tabs expose every settings category without overflow`, async ({ page }) => {
     await page.goto(`/ui-harness.html?scene=${sceneId}&embed=1`);

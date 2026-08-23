@@ -106,6 +106,24 @@ export const battleSceneRenderMethods = {
     });
   },
 
+  refreshBattlefieldSurface({ clearHover = false } = {}) {
+    if (clearHover) {
+      this.hoveredTile = null;
+      this.controller?.setBattleHoverTile?.(null);
+      this.controller?.setMapEditorHoverTile?.(null);
+    }
+
+    this.latestState = this.controller?.getState?.() ?? this.latestState;
+    this.renderBattle();
+
+    // A physical Electron window resize can recreate and append hundreds of
+    // terrain sprites before Chromium composites the next Canvas frame. Force
+    // Phaser's depth order now so the persistent grid, hover cursor, and
+    // selected-tile Graphics remain above the rebuilt terrain display list.
+    this.sys?.queueDepthSort?.();
+    this.sys?.depthSort?.();
+  },
+
   renderBattle() {
     const snapshot = getBoardSnapshot(this.latestState, this.hoveredTile);
     const colorOptions = this.latestState?.metaState?.options ?? {};

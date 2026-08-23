@@ -23,6 +23,10 @@ export class AppShell {
     this.displayConfirmationTimer = null;
     this.displayStateRenderTimer = null;
     this.displayUnsubscribe = null;
+    this.displayOperation = null;
+    this.lastDisplayTransitionFailureId = null;
+    this.displayStateRevision = -1;
+    this.displayRestoreFocusAction = null;
     this.activeOptionsTab = "display";
     this.activeBattlePauseTab = null;
     this.commanderSliderStates = new Map();
@@ -56,6 +60,7 @@ export class AppShell {
     this.battleDrawers = {
       intel: false,
       command: false,
+      missionDetailsOpen: false,
       intelTab: "selected",
       debugTool: "battlefield",
       debugFieldValues: {},
@@ -66,6 +71,7 @@ export class AppShell {
       compactTargetScrollTop: 0,
       compactFeedScrollTop: 0
     };
+    this.missionDetailsLayoutFrame = null;
     this.mapEditorUi = {
       openAccordion: null,
       leftRailScrollTop: 0,

@@ -70,13 +70,58 @@ export const appShellDisplayMethods = {
 
   setDesktopDisplayState(displayState, options = {}) {
     const { render = true } = options;
+    const revision = Number(displayState?.revision);
+    if (Number.isFinite(revision) && revision < this.displayStateRevision) {
+      return;
+    }
+    if (Number.isFinite(revision)) {
+      this.displayStateRevision = revision;
+    }
+    const transitionPhase = displayState?.transitionPhase ?? null;
+    const transitionFailure = displayState?.transitionFailure ?? null;
+    let confirmationStarted = false;
     this.desktopDisplayState = displayState;
+
+    if (transitionFailure?.id && transitionFailure.id !== this.lastDisplayTransitionFailureId) {
+      this.lastDisplayTransitionFailureId = transitionFailure.id;
+      this.controller.showToast?.({
+        title: "Display settings restored",
+        message: transitionFailure.message,
+        tone: "warning"
+      });
+    }
+
+    if (transitionPhase === "previewing" && displayState?.transitionId) {
+      this.displayOperation = null;
+      if (this.displayConfirmation?.transitionId !== displayState.transitionId) {
+        this.startDisplayConfirmationTimer(
+          normalizeDisplayOptions(displayState.current),
+          displayState.expiresAt,
+          displayState.transitionId
+        );
+        confirmationStarted = true;
+      }
+    } else if (["applying", "awaiting-renderer", "reverting"].includes(transitionPhase)) {
+      this.displayOperation = transitionPhase;
+    } else {
+      this.displayOperation = null;
+      if (!displayState?.pending && this.displayConfirmation) {
+        this.clearDisplayConfirmationTimer();
+        this.displayDraft = normalizeDisplayOptions(displayState?.current);
+      }
+    }
+
     this.applyDisplayRootAttributes();
     this.renderWindowChrome();
 
     if (render && this.latestState) {
       if (this.displayConfirmation) {
-        this.syncDisplayConfirmationCountdown();
+        if (confirmationStarted) {
+          this.render(this.latestState);
+        } else {
+          this.syncDisplayConfirmationCountdown();
+        }
+        window.setTimeout(() => this.focusDisplayControl("keep-display-settings"), 0);
         return;
       }
 
@@ -120,16 +165,21 @@ export const appShellDisplayMethods = {
       this.root
     ].filter(Boolean);
     const preset = getDisplayResolutionPreset(displayOptions.windowResolution);
+    const actualBounds = this.desktopDisplayState?.bounds;
+    const windowWidth = Number(actualBounds?.width) || preset?.width || "";
+    const windowHeight = Number(actualBounds?.height) || preset?.height || "";
+    const transitionPhase = this.desktopDisplayState?.transitionPhase ?? "";
 
     for (const target of targetRoots) {
       target.dataset.displayMode = displayOptions.displayMode;
       target.dataset.windowResolution = displayOptions.windowResolution;
-      target.dataset.windowWidth = String(preset?.width ?? "");
-      target.dataset.windowHeight = String(preset?.height ?? "");
+      target.dataset.windowWidth = String(windowWidth);
+      target.dataset.windowHeight = String(windowHeight);
+      target.dataset.displayTransitionPhase = transitionPhase;
 
-      if (preset) {
-        target.style.setProperty("--app-window-width", `${preset.width}px`);
-        target.style.setProperty("--app-window-height", `${preset.height}px`);
+      if (windowWidth && windowHeight) {
+        target.style.setProperty("--app-window-width", `${windowWidth}px`);
+        target.style.setProperty("--app-window-height", `${windowHeight}px`);
       }
     }
   },
@@ -154,6 +204,9 @@ export const appShellDisplayMethods = {
     const draft = this.getDisplayDraft(state);
     const displayState = this.desktopDisplayState;
     const currentMode = draft.displayMode;
+    const transitionPhase = displayState?.transitionPhase ?? null;
+    const displayBusy = Boolean(this.displayOperation) ||
+      ["applying", "awaiting-renderer", "reverting"].includes(transitionPhase);
     const presetsWithAvailability =
       displayState?.presets ?? DISPLAY_RESOLUTION_PRESETS.map((preset) => ({
         ...preset,
@@ -176,13 +229,19 @@ export const appShellDisplayMethods = {
       displayState,
       draft,
       confirmation: this.displayConfirmation,
+      displayBusy,
+      transitionPhase,
       presets: DISPLAY_RESOLUTION_PRESETS.map((preset) => ({
         ...preset,
         available: presetAvailability.get(preset.id) !== false
       })),
       applyDisabled:
-        Boolean(this.displayConfirmation) || isSameDisplayOptions(draft, savedOptions)
+        displayBusy || Boolean(this.displayConfirmation) || isSameDisplayOptions(draft, savedOptions)
     };
+  },
+
+  focusDisplayControl(action) {
+    this.root.querySelector(`[data-action="${action}"]`)?.focus?.();
   },
 
   renderWindowChrome() {
@@ -245,7 +304,7 @@ export const appShellDisplayMethods = {
   handleDisplayOptionChange(event) {
     const displayOption = event.target.dataset.displayOption;
 
-    if (!displayOption) {
+    if (!displayOption || this.displayOperation || this.displayConfirmation) {
       return false;
     }
 
@@ -259,49 +318,83 @@ export const appShellDisplayMethods = {
   async applyDisplaySettings() {
     const desktopApi = this.getDesktopApi?.();
 
-    if (!desktopApi?.applyDisplaySettings || this.displayConfirmation) {
+    if (!desktopApi?.applyDisplaySettings || this.displayConfirmation || this.displayOperation) {
       return;
     }
 
     const requestedOptions = this.getDisplayDraft();
-    const displayState = await desktopApi.applyDisplaySettings(requestedOptions);
-    const appliedOptions = normalizeDisplayOptions(displayState?.current ?? requestedOptions);
-
-    this.displayDraft = appliedOptions;
-    this.desktopDisplayState = displayState;
-    this.startDisplayConfirmationTimer(appliedOptions);
-    this.applyDisplayRootAttributes();
-    this.renderWindowChrome();
+    this.displayRestoreFocusAction = document.activeElement?.dataset?.action ??
+      "apply-display-settings";
+    this.displayOperation = "applying";
     this.render(this.latestState);
+
+    try {
+      const displayState = await desktopApi.applyDisplaySettings(requestedOptions);
+      const appliedOptions = normalizeDisplayOptions(displayState?.current ?? requestedOptions);
+      this.displayDraft = appliedOptions;
+      const newerPreviewAlreadyArrived =
+        this.desktopDisplayState?.transitionId === displayState?.transitionId &&
+        this.desktopDisplayState?.transitionPhase === "previewing" &&
+        displayState?.transitionPhase === "awaiting-renderer";
+      if (!newerPreviewAlreadyArrived) {
+        this.setDesktopDisplayState(displayState);
+      }
+    } catch (error) {
+      this.displayOperation = null;
+      this.controller.showToast?.({
+        title: "Display change failed",
+        message: "The requested resolution could not be applied.",
+        tone: "warning"
+      });
+      this.render(this.latestState);
+    }
   },
 
   async keepDisplaySettings() {
     const desktopApi = this.getDesktopApi?.();
     const nextOptions = normalizeDisplayOptions(this.displayConfirmation?.nextOptions ?? this.getDisplayDraft());
 
+    this.displayOperation = "confirming";
+    this.render(this.latestState);
     if (desktopApi?.confirmDisplaySettings) {
-      this.desktopDisplayState = await desktopApi.confirmDisplaySettings();
+      this.desktopDisplayState = await desktopApi.confirmDisplaySettings(
+        this.displayConfirmation?.transitionId
+      );
     }
 
     this.clearDisplayConfirmationTimer();
+    this.displayOperation = null;
     this.displayDraft = nextOptions;
     this.applyDisplayRootAttributes();
     this.renderWindowChrome();
     await this.controller.updateOptions(nextOptions);
+    window.setTimeout(
+      () => this.focusDisplayControl(this.displayRestoreFocusAction ?? "apply-display-settings"),
+      0
+    );
   },
 
   async revertDisplaySettings() {
     const desktopApi = this.getDesktopApi?.();
 
+    const transitionId = this.displayConfirmation?.transitionId ??
+      this.desktopDisplayState?.transitionId;
+    this.displayOperation = "reverting";
+    this.render(this.latestState);
     if (desktopApi?.revertDisplaySettings) {
-      this.desktopDisplayState = await desktopApi.revertDisplaySettings();
+      this.desktopDisplayState = await desktopApi.revertDisplaySettings(transitionId);
     }
 
     this.clearDisplayConfirmationTimer();
+    this.displayOperation = null;
     this.displayDraft = normalizeDisplayOptions(this.latestState?.metaState?.options);
     this.applyDisplayRootAttributes();
     this.renderWindowChrome();
     this.render(this.latestState);
+    window.setTimeout(
+      () => this.focusDisplayControl(this.displayRestoreFocusAction ?? "apply-display-settings"),
+      0
+    );
   },
 
   async returnToWindowedDisplay() {
@@ -311,21 +404,33 @@ export const appShellDisplayMethods = {
       return;
     }
 
+    this.displayRestoreFocusAction = document.activeElement?.dataset?.action ??
+      "return-windowed-display";
+    this.displayOperation = "applying";
+    this.render(this.latestState);
     this.desktopDisplayState = await desktopApi.returnToWindowed();
     const nextOptions = normalizeDisplayOptions(this.desktopDisplayState?.current);
     this.clearDisplayConfirmationTimer();
+    this.displayOperation = null;
     this.displayDraft = nextOptions;
     this.applyDisplayRootAttributes();
     this.renderWindowChrome();
     await this.controller.updateOptions(nextOptions);
+    window.setTimeout(
+      () => this.focusDisplayControl(this.displayRestoreFocusAction ?? "apply-display-settings"),
+      0
+    );
   },
 
-  startDisplayConfirmationTimer(nextOptions) {
+  startDisplayConfirmationTimer(nextOptions, expiresAt = null, transitionId = null) {
     this.clearDisplayConfirmationTimer();
+    const authoritativeExpiry = Number(expiresAt) ||
+      Date.now() + DISPLAY_PREVIEW_TIMEOUT_SECONDS * 1000;
     this.displayConfirmation = {
       nextOptions,
-      secondsRemaining: DISPLAY_PREVIEW_TIMEOUT_SECONDS,
-      expiresAt: Date.now() + DISPLAY_PREVIEW_TIMEOUT_SECONDS * 1000
+      transitionId,
+      secondsRemaining: Math.max(0, Math.ceil((authoritativeExpiry - Date.now()) / 1000)),
+      expiresAt: authoritativeExpiry
     };
     this.displayConfirmationTimer = window.setInterval(() => {
       if (!this.displayConfirmation) {
@@ -343,7 +448,7 @@ export const appShellDisplayMethods = {
       };
 
       if (secondsRemaining <= 0) {
-        void this.revertDisplaySettings();
+        void this.refreshDesktopDisplayState();
         return;
       }
 

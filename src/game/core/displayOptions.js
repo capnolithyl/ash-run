@@ -71,12 +71,34 @@ export function resolveWindowResolutionForWorkArea(resolutionId, workArea = {}) 
   );
   const requestedPreset = availablePresets.find((preset) => preset.id === resolutionId);
 
-  return (
-    requestedPreset ??
-    availablePresets.at(-1) ??
-    getDisplayResolutionPreset("1280x720") ??
-    getDisplayResolutionPreset(DEFAULT_WINDOW_RESOLUTION)
-  );
+  if (requestedPreset ?? availablePresets.at(-1)) {
+    return requestedPreset ?? availablePresets.at(-1);
+  }
+
+  const fallback = getDisplayResolutionPreset("1280x720") ??
+    getDisplayResolutionPreset(DEFAULT_WINDOW_RESOLUTION);
+  return {
+    ...fallback,
+    width: Math.max(1, Math.round(Number(workArea.width) || fallback.width)),
+    height: Math.max(1, Math.round(Number(workArea.height) || fallback.height)),
+    constrainedToWorkArea: true
+  };
+}
+
+export function getClampedWindowBoundsForWorkArea(size = {}, workArea = {}) {
+  const workAreaX = Math.round(Number(workArea.x) || 0);
+  const workAreaY = Math.round(Number(workArea.y) || 0);
+  const workAreaWidth = Math.max(1, Math.round(Number(workArea.width) || 1));
+  const workAreaHeight = Math.max(1, Math.round(Number(workArea.height) || 1));
+  const width = Math.min(workAreaWidth, Math.max(1, Math.round(Number(size.width) || 1)));
+  const height = Math.min(workAreaHeight, Math.max(1, Math.round(Number(size.height) || 1)));
+
+  return {
+    x: Math.round(workAreaX + (workAreaWidth - width) / 2),
+    y: Math.round(workAreaY + (workAreaHeight - height) / 2),
+    width,
+    height
+  };
 }
 
 export function getClosestDisplayResolutionPreset(bounds = {}) {

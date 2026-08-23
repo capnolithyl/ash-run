@@ -817,8 +817,14 @@ export const controllerBattleMethods = {
     this.syncBattleState();
 
     if (this.battleSystem.isEnemyTurnActive()) {
+      const observingTutorialEnemy = this.beginTutorialEnemyObservation?.() === true;
       await this.runEnemyTurnSequence();
-      await this.handleTutorialBattleActionResult?.("end-turn", {}, changed);
+
+      if (observingTutorialEnemy) {
+        this.completeTutorialEnemyObservation?.("end-turn", {}, changed);
+      } else {
+        await this.handleTutorialBattleActionResult?.("end-turn", {}, changed);
+      }
       this.syncBattleState();
       return;
     }

@@ -2,6 +2,7 @@ export const appShellUiStatePersistenceMethods = {
   captureBattleDrawerState() {
     const intelDrawer = this.root.querySelector("#battle-intel-drawer");
     const commandDrawer = this.root.querySelector("#battle-command-drawer");
+    const missionDetailsToggle = this.root.querySelector('[data-action="toggle-mission-details"]');
     const selectedIntelTab = this.root.querySelector('[name="battle-intel-tab"]:checked');
     const selectedDebugTool = this.root.querySelector('[data-debug-tool][aria-current="true"]');
     const selectedPanel = this.root.querySelector(".battle-side-panel--selected");
@@ -18,6 +19,11 @@ export const appShellUiStatePersistenceMethods = {
 
     if (commandDrawer) {
       this.battleDrawers.command = commandDrawer.checked;
+    }
+
+    if (missionDetailsToggle) {
+      this.battleDrawers.missionDetailsOpen =
+        missionDetailsToggle.getAttribute("aria-expanded") === "true";
     }
 
     if (selectedIntelTab?.value) {
@@ -68,6 +74,8 @@ export const appShellUiStatePersistenceMethods = {
     if (commandDrawer) {
       commandDrawer.checked = this.battleDrawers.command;
     }
+
+    this.setMissionDetailsOpen?.(this.battleDrawers.missionDetailsOpen);
 
     if (selectedIntelTab) {
       selectedIntelTab.checked = true;
