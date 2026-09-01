@@ -32,6 +32,7 @@ const distRoot = path.resolve(root, distDirectoryName);
 const assetsRoot = path.join(distRoot, "assets");
 const releaseVersion = packageMetadata.version ?? "dev";
 const sourceRevision = (process.env.GITHUB_SHA ?? "").slice(0, 12);
+const buildRevision = sourceRevision.slice(0, 7);
 const assetCacheToken = encodeURIComponent(sourceRevision || releaseVersion);
 
 /**
@@ -59,7 +60,8 @@ await build({
   define: {
     "import.meta.env.DEV": "false",
     "import.meta.env.PROD": "true",
-    "__ASH_RUN_BUILD_PROFILE__": JSON.stringify(requestedProfile)
+    "__ASH_RUN_BUILD_PROFILE__": JSON.stringify(requestedProfile),
+    "__ASH_RUN_BUILD_REVISION__": JSON.stringify(buildRevision)
   },
   loader: {
     ".ani": "file",
