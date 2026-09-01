@@ -7,11 +7,17 @@ import { AppShell } from "./ui/AppShell.js";
 const gameRoot = document.getElementById("game-root");
 const uiRoot = document.getElementById("ui-root");
 const windowChromeRoot = document.getElementById("window-chrome-root");
+const buildRevision =
+  typeof __ASH_RUN_BUILD_REVISION__ === "string" ? __ASH_RUN_BUILD_REVISION__ : "";
+const versionText = `v${packageMetadata.version}${buildRevision ? ` · ${buildRevision}` : ""}`;
 
 const versionLabel = document.createElement("span");
 versionLabel.className = "app-version";
-versionLabel.textContent = `v${packageMetadata.version}`;
-versionLabel.setAttribute("aria-label", `Ash Run version ${packageMetadata.version}`);
+versionLabel.textContent = versionText;
+versionLabel.setAttribute(
+  "aria-label",
+  `Ash Run version ${packageMetadata.version}${buildRevision ? ` build ${buildRevision}` : ""}`
+);
 document.body.append(versionLabel);
 
 const controller = new GameController();
