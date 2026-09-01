@@ -12,6 +12,9 @@ import {
 } from "../src/game/core/buildProfiles.js";
 
 const root = process.cwd();
+const packageMetadata = JSON.parse(
+  await fs.readFile(path.resolve(root, "package.json"), "utf8")
+);
 const requestedProfile =
   process.argv.find((argument) => argument.startsWith("--profile="))?.split("=")[1] ??
   BUILD_PROFILES.PRODUCTION;
@@ -27,6 +30,10 @@ const distDirectoryName =
   requestedProfile === BUILD_PROFILES.DEVELOPMENT ? "dist-dev" : "dist";
 const distRoot = path.resolve(root, distDirectoryName);
 const assetsRoot = path.join(distRoot, "assets");
+const releaseVersion = packageMetadata.version ?? "dev";
+const sourceRevision = (process.env.GITHUB_SHA ?? "").slice(0, 12);
+const buildRevision = sourceRevision.slice(0, 7);
+const assetCacheToken = encodeURIComponent(sourceRevision || releaseVersion);
 
 /**
  * Production builds use esbuild directly because it handles the current
@@ -53,7 +60,8 @@ await build({
   define: {
     "import.meta.env.DEV": "false",
     "import.meta.env.PROD": "true",
-    "__ASH_RUN_BUILD_PROFILE__": JSON.stringify(requestedProfile)
+    "__ASH_RUN_BUILD_PROFILE__": JSON.stringify(requestedProfile),
+    "__ASH_RUN_BUILD_REVISION__": JSON.stringify(buildRevision)
   },
   loader: {
     ".ani": "file",
@@ -73,8 +81,11 @@ await build({
 
 const indexTemplate = await fs.readFile(path.resolve(root, "index.html"), "utf8");
 const productionHtml = indexTemplate
-  .replace("</head>", '    <link rel="stylesheet" href="./assets/main.css" />\n  </head>')
-  .replace('./src/main.js', "./assets/main.js");
+  .replace(
+    "</head>",
+    `    <link rel="stylesheet" href="./assets/main.css?v=${assetCacheToken}" />\n  </head>`
+  )
+  .replace('./src/main.js', `./assets/main.js?v=${assetCacheToken}`);
 
 await fs.writeFile(path.join(distRoot, "index.html"), productionHtml, "utf8");
 await fs.writeFile(
@@ -110,5 +121,5 @@ await fs.cp(
 );
 
 console.log(
-  `Built ${buildProfileConfig.identity.productName} (${requestedProfile}) in ${distDirectoryName}/.`
+  `Built ${buildProfileConfig.identity.productName} v${releaseVersion} (${requestedProfile}) in ${distDirectoryName}/ with cache token ${assetCacheToken}.`
 );
