@@ -1,0 +1,8 @@
+/* Keep the title-screen backdrop independent from Phaser so browser tab/window
+ * suspension cannot leave the menu sitting on a cleared renderer surface. */
+
+.screen--title {
+  background:
+    #091210 url("../../../assets/img/splash/splash-background.png") center / cover
+      no-repeat;
+}
