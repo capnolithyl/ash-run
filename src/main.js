@@ -9,14 +9,18 @@ const uiRoot = document.getElementById("ui-root");
 const windowChromeRoot = document.getElementById("window-chrome-root");
 const buildRevision =
   typeof __ASH_RUN_BUILD_REVISION__ === "string" ? __ASH_RUN_BUILD_REVISION__ : "";
-const versionText = `v${packageMetadata.version}${buildRevision ? ` · ${buildRevision}` : ""}`;
+const buildVersion =
+  typeof __ASH_RUN_BUILD_VERSION__ === "string" && __ASH_RUN_BUILD_VERSION__
+    ? __ASH_RUN_BUILD_VERSION__
+    : packageMetadata.version;
+const versionText = `v${buildVersion}${buildRevision ? ` · ${buildRevision}` : ""}`;
 
 const versionLabel = document.createElement("span");
 versionLabel.className = "app-version";
 versionLabel.textContent = versionText;
 versionLabel.setAttribute(
   "aria-label",
-  `Ash Run version ${packageMetadata.version}${buildRevision ? ` build ${buildRevision}` : ""}`
+  `Ash Run version ${buildVersion}${buildRevision ? ` build ${buildRevision}` : ""}`
 );
 document.body.append(versionLabel);
 
