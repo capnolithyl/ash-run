@@ -30,7 +30,17 @@ const distDirectoryName =
   requestedProfile === BUILD_PROFILES.DEVELOPMENT ? "dist-dev" : "dist";
 const distRoot = path.resolve(root, distDirectoryName);
 const assetsRoot = path.join(distRoot, "assets");
-const releaseVersion = packageMetadata.version ?? "dev";
+const sourceVersion = packageMetadata.version ?? "0.0.0";
+const [majorVersion = "0", minorVersion = "0"] = sourceVersion.split(".");
+const automatedBuildNumber = process.env.ASH_RUN_BUILD_NUMBER?.trim() ?? "";
+
+if (automatedBuildNumber && !/^\d+$/.test(automatedBuildNumber)) {
+  throw new Error(`Invalid ASH_RUN_BUILD_NUMBER: ${automatedBuildNumber}`);
+}
+
+const releaseVersion = automatedBuildNumber
+  ? `${majorVersion}.${minorVersion}.${automatedBuildNumber}`
+  : sourceVersion;
 const sourceRevision = (process.env.GITHUB_SHA ?? "").slice(0, 12);
 const buildRevision = sourceRevision.slice(0, 7);
 const assetCacheToken = encodeURIComponent(sourceRevision || releaseVersion);
@@ -61,7 +71,8 @@ await build({
     "import.meta.env.DEV": "false",
     "import.meta.env.PROD": "true",
     "__ASH_RUN_BUILD_PROFILE__": JSON.stringify(requestedProfile),
-    "__ASH_RUN_BUILD_REVISION__": JSON.stringify(buildRevision)
+    "__ASH_RUN_BUILD_REVISION__": JSON.stringify(buildRevision),
+    "__ASH_RUN_BUILD_VERSION__": JSON.stringify(releaseVersion)
   },
   loader: {
     ".ani": "file",
