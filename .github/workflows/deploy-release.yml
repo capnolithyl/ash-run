@@ -32,6 +32,8 @@ jobs:
         run: npm ci
 
       - name: Build production web release
+        env:
+          ASH_RUN_BUILD_NUMBER: ${{ github.run_number }}
         run: npm run build:prod
 
       - name: Verify production build
