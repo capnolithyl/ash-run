@@ -179,6 +179,19 @@ Both profiles start with separate browser and Electron save data. There is no au
 
 `build` and `package` intentionally default to the restricted production profile. Upload the contents of `dist/` for a production web build, or distribute the installer from `release/prod/` to Windows testers.
 
+### Production website deployment
+
+`.github/workflows/deploy-website.yml` automatically builds and deploys the production web build to [ash-run-84.articus-studios.com](https://ash-run-84.articus-studios.com) for every push to `main`. It can also be run manually from the GitHub Actions page.
+
+Add these secrets to the repository's `production` environment (or as repository Actions secrets):
+
+- `FTP_SERVER` - the Hostinger FTP hostname, without `ftp://`
+- `FTP_USERNAME` - an FTP account with access to the Ash Run subdomain
+- `FTP_PASSWORD` - that FTP account's password
+- `FTP_SERVER_DIR` - the dedicated subdomain document-root path, ending in `/`
+
+Use a dedicated FTP account or directory for the subdomain. The workflow intentionally rejects `/`, `.`, and `./` as `FTP_SERVER_DIR`, builds only the production profile into `dist/`, and syncs only `dist/` to that destination over explicit FTPS.
+
 ## Commands
 
 - `yarn dev` - start the Vite + Electron development workflow

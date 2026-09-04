@@ -1,0 +1,110 @@
+name: Deploy website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ash-run-84-production-website
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://ash-run-84.articus-studios.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production website
+        run: npm run build
+
+      - name: Verify deploy artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/assets/main.js
+          grep -Fq './assets/main.js' dist/index.html
+          if grep -Fq './src/main.js' dist/index.html; then
+            echo 'dist/index.html still references source files.' >&2
+            exit 1
+          fi
+
+      - name: Validate deployment secrets
+        shell: bash
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for variable in FTP_SERVER FTP_USERNAME FTP_PASSWORD FTP_SERVER_DIR; do
+            if [[ -z "${!variable:-}" ]]; then
+              missing+=("$variable")
+            fi
+          done
+
+          if (( ${#missing[@]} )); then
+            echo "Missing required GitHub Actions secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+
+          case "$FTP_SERVER_DIR" in
+            /|.|./)
+              echo 'FTP_SERVER_DIR must be the dedicated Ash Run subdomain folder, not an FTP account root.' >&2
+              exit 1
+              ;;
+          esac
+
+          if [[ "$FTP_SERVER_DIR" != */ ]]; then
+            echo 'FTP_SERVER_DIR must end with a slash.' >&2
+            exit 1
+          fi
+
+      - name: Deploy dist over FTPS
+        uses: SamKirkland/FTP-Deploy-Action@110f9186c050f71550953127052e77650219c287 # v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          security: strict
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          state-name: .ash-run-84-deploy-state.json
+          log-level: standard
+          timeout: 120000
+
+      - name: Verify deployed website
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache_buster="${GITHUB_SHA}-${GITHUB_RUN_ID}"
+          curl --fail --silent --show-error --retry 5 --retry-all-errors \
+            "https://ash-run-84.articus-studios.com/?deploy=${cache_buster}" \
+            --output deployed-index.html
+          grep -Fq './assets/main.js' deployed-index.html
+          curl --fail --silent --show-error --retry 5 --retry-all-errors \
+            "https://ash-run-84.articus-studios.com/assets/main.js?deploy=${cache_buster}" \
+            --output /dev/null
