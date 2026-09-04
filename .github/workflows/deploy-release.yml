@@ -1,0 +1,52 @@
+name: Deploy Development Web Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: development-web-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout deployment revision
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build development web release
+        env:
+          ASH_RUN_BUILD_NUMBER: ${{ github.run_number }}
+        run: npm run build:dev
+
+      - name: Verify development build
+        shell: bash
+        run: |
+          test -f dist-dev/index.html
+          test -d dist-dev/assets
+
+      - name: Deploy dist-dev to Hostinger
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./dist-dev/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}

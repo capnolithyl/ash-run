@@ -1,7 +1,9 @@
 /* Aggregated stylesheet entrypoint. Keep src/main.js and uiHarnessMain.js pointing here. */
 
 @import "./base/foundation.css";
+@import "./base/app-version.css";
 @import "./shared/chrome.css";
+@import "./scenes/title-backdrop.css";
 @import "./scenes/setup.css";
 @import "./scenes/tutorial-utility.css";
 @import "./battle/layout.css";
